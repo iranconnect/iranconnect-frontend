@@ -1,3 +1,4 @@
+//components/LegalLayout.js
 import { useState } from "react";
 import LanguageToggle from "./LanguageToggle";
 import Header from "./Header";
