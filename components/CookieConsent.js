@@ -1,7 +1,7 @@
 // frontend/components/CookieConsent.js
 import { useEffect, useState } from "react";
 import CookieSettingsModal from "./CookieSettingsModal";
-import apiClient from "../utils/apiClient"; // ✅ اضافه شد — مشکل ReferenceError حل شد
+import apiClient from "../utils/apiClient";
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
@@ -9,7 +9,7 @@ export default function CookieConsent() {
   const [lang, setLang] = useState("en");
   const [texts, setTexts] = useState(null);
 
-  // 🎯 بارگذاری ترجمه‌ها از دیتابیس
+  // بارگذاری زبان
   useEffect(() => {
     const stored =
       localStorage.getItem("iran_lang") ||
@@ -18,13 +18,14 @@ export default function CookieConsent() {
     setLang(stored);
   }, []);
 
+  // بارگذاری متن بنر کوکی — 🔥 مسیر اصلاح شد
   useEffect(() => {
     if (!lang) return;
 
     apiClient
-      .get(`/policies/cookie-banner`, {
+      .get(`/policies/banner`, {
         params: { lang },
-        withCredentials: true, // apiClient خودش هم این را دارد
+        withCredentials: true,
       })
       .then((res) => {
         try {
@@ -37,6 +38,7 @@ export default function CookieConsent() {
       .catch(() => setTexts(null));
   }, [lang]);
 
+  // نمایش بنر اگر قبلاً انتخاب نشده
   useEffect(() => {
     const consent = localStorage.getItem("cookieConsent");
     if (!consent) setVisible(true);
@@ -68,7 +70,10 @@ export default function CookieConsent() {
   return (
     <>
       {showSettings && (
-        <CookieSettingsModal lang={lang} onClose={() => setShowSettings(false)} />
+        <CookieSettingsModal
+          lang={lang}
+          onClose={() => setShowSettings(false)}
+        />
       )}
 
       <div
