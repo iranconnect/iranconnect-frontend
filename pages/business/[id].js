@@ -7,7 +7,7 @@ import RatingStars from "../../components/RatingStars";
 import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
 import ClaimBusinessWidget from "../../components/ClaimBusinessWidget";
-import apiClient from "../../utils/apiClient"; // مسیر صحیح
+import apiClient from "../../utils/apiClient";
 
 export default function Detail() {
   const router = useRouter();
@@ -20,7 +20,6 @@ export default function Detail() {
   const [showImageModal, setShowImageModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  /* 🎨 بررسی تم */
   useEffect(() => {
     const currentTheme =
       document.documentElement.getAttribute("data-theme") || "light";
@@ -40,7 +39,6 @@ export default function Detail() {
     return () => observer.disconnect();
   }, []);
 
-  /* 🔐 بررسی لاگین بودن با HttpOnly cookie */
   useEffect(() => {
     apiClient
       .get("/auth/me")
@@ -48,7 +46,6 @@ export default function Detail() {
       .catch(() => setIsLoggedIn(false));
   }, []);
 
-  /* 📌 دریافت اطلاعات بیزینس */
   useEffect(() => {
     if (!id) return;
 
@@ -58,7 +55,6 @@ export default function Detail() {
       .catch(console.error);
   }, [id]);
 
-  /* ⭐ ثبت امتیاز */
   async function submitRating() {
     try {
       if (!isLoggedIn) {
@@ -70,10 +66,8 @@ export default function Detail() {
 
       setMessage("✅ Rating submitted");
 
-      // بیزینس را مجددا واکشی کن
       const refreshed = await apiClient.get(`/businesses/${id}`);
       setBiz(refreshed.data);
-
     } catch (e) {
       setMessage(e.response?.data?.error || "Error submitting rating.");
     }
@@ -87,21 +81,18 @@ export default function Detail() {
     );
   }
 
-  /* 🖼 تعیین آدرس تصویر */
+  /* 🎯 نسخه نهایی: Cloudinary مستقیم */
   const base = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
-  const imageSrc = biz.image_url
-    ? biz.image_url.startsWith("http")
-      ? `${base}/cdn?url=${encodeURIComponent(biz.image_url)}`
-      : `${base}${biz.image_url}`
-    : "/logo.png";
+  const imageSrc =
+    biz.image_url
+      ? (biz.image_url.startsWith("http") ? biz.image_url : `${base}${biz.image_url}`)
+      : "/logo.png";
 
-  /* 📞 شماره با کد کشور */
   const phoneWithCode =
     biz?.phone && biz?.country
       ? `+${getCountryCallingCode(biz.country)} ${biz.phone}`
       : biz?.phone || "";
 
-  /* 📍 لینک Google Maps */
   const googleMapsLink =
     biz?.lat && biz?.lng
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -109,7 +100,6 @@ export default function Detail() {
         )}`
       : null;
 
-  /* 📧 ایمیل ضد اسپم */
   const obfuscatedEmail = biz?.email
     ? biz.email.replace("@", " [at] ")
     : null;
@@ -157,17 +147,12 @@ export default function Detail() {
               className="w-40 h-40 md:w-48 md:h-48 rounded-xl object-cover border border-gray-300 shadow-md cursor-pointer hover:opacity-90 transition mx-auto md:mx-0"
               onClick={() => setShowImageModal(true)}
             />
+
             <div className="flex-1 flex flex-col items-center md:items-start space-y-3 leading-relaxed">
-              {/* 🏅 نام بیزینس + تیک مالک تأیید شده */}
               <h1 className="text-2xl font-semibold flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start gap-1 md:gap-2">
                 <span className="order-2 md:order-none">{biz.name}</span>
                 {biz.owner_verified && (
-                  <span
-                    className="text-2xl leading-none order-1 md:order-none"
-                    title="Verified Business"
-                  >
-                    🎖️
-                  </span>
+                  <span className="text-2xl leading-none order-1 md:order-none">🎖️</span>
                 )}
               </h1>
 
@@ -180,7 +165,6 @@ export default function Detail() {
                 {biz.category} • {biz.city}
               </p>
 
-              {/* 📍 آدرس */}
               {biz.address && (
                 <p className="text-center md:text-left">
                   📍{" "}
@@ -199,7 +183,6 @@ export default function Detail() {
                 </p>
               )}
 
-              {/* 🔒 اطلاعات تماس - فقط کاربران لاگین‌کرده */}
               {isLoggedIn ? (
                 <div className="text-center md:text-left space-y-3">
                   {phoneWithCode && <p>📞 {phoneWithCode}</p>}
@@ -241,14 +224,12 @@ export default function Detail() {
                 </button>
               )}
 
-              {/* ⭐ میانگین امتیاز */}
               <p className="pt-2 text-lg font-medium text-turquoise text-center md:text-left">
                 ⭐ {biz.avg_rating ?? "—"}
               </p>
             </div>
           </div>
 
-          {/* ⭐ بخش امتیازدهی */}
           <div
             className="mt-8 border-t pt-6 text-center md:text-left"
             style={{
@@ -262,11 +243,7 @@ export default function Detail() {
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-center md:justify-start gap-3 text-center">
               <div className="flex justify-center w-full sm:w-auto">
-                <RatingStars
-                  value={rating}
-                  onChange={setRating}
-                  color="#40E0D0"
-                />
+                <RatingStars value={rating} onChange={setRating} color="#40E0D0" />
               </div>
 
               <button
@@ -289,7 +266,6 @@ export default function Detail() {
             )}
           </div>
 
-          {/* 🆕 Claim Business */}
           <div className="mt-10 border-t pt-6 text-center">
             {biz.owner_verified ? (
               <div className="text-green-600 font-medium">
@@ -319,7 +295,6 @@ export default function Detail() {
 
       <Footer />
 
-      {/* 🖼 مودال نمایش تصویر */}
       {showImageModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
