@@ -1,3 +1,4 @@
+//components/CookieSettingsModal.js
 export default function CookieSettingsModal({ lang, onClose }) {
   const texts = {
     en: {
