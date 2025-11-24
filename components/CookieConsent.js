@@ -9,7 +9,6 @@ export default function CookieConsent() {
   const [lang, setLang] = useState("en");
   const [texts, setTexts] = useState(null);
 
-  // بارگذاری زبان
   useEffect(() => {
     const stored =
       localStorage.getItem("iran_lang") ||
@@ -18,12 +17,12 @@ export default function CookieConsent() {
     setLang(stored);
   }, []);
 
-  // بارگذاری متن بنر کوکی — 🔥 مسیر اصلاح شد
+  // ✅ مسیر صحیح و کاملاً سازگار با بک‌اند
   useEffect(() => {
     if (!lang) return;
 
     apiClient
-      .get(`/policies/banner`, {
+      .get(`/policies/cookie-banner`, {
         params: { lang },
         withCredentials: true,
       })
@@ -38,7 +37,6 @@ export default function CookieConsent() {
       .catch(() => setTexts(null));
   }, [lang]);
 
-  // نمایش بنر اگر قبلاً انتخاب نشده
   useEffect(() => {
     const consent = localStorage.getItem("cookieConsent");
     if (!consent) setVisible(true);
