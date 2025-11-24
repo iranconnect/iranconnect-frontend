@@ -1,3 +1,4 @@
+//pages/admin/policies.js
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import apiClient from "../../utils/apiClient"; // ✅ axios امن با JWT و interceptor
