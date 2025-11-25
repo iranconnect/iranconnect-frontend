@@ -106,7 +106,7 @@ export default function App({ Component, pageProps }) {
 
     setIsLoggedIn(false);
     setInactive(false);
-    router.push('/auth/login');
+    router.replace('/auth/login');
   }
 
   /* 🙋 ادامه حضور */
