@@ -13,6 +13,10 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     config.withCredentials = true;
+    // ⬅️ اضافه کردن هدر امنیتی مخصوص درخواست‌های Admin
+    if (config.url.startsWith("/admin")) {
+      config.headers["x-iranconnect-admin"] = "1";
+    }
     return config;
   },
   (err) => Promise.reject(err)
