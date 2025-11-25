@@ -41,7 +41,7 @@ export default function ProfileMenu({ role, hasClaim }) {
     try {
       await apiClient.post('/auth/logout', {}, { withCredentials: true });
     } catch {}
-    window.location.href = '/';
+    window.location.replace('/auth/login');
   };
 
   return (
