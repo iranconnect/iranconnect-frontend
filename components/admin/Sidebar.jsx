@@ -134,7 +134,7 @@ export default function Sidebar() {
       {/* Header */}
       <div className="px-6 py-6 border-b border-[var(--border)] flex items-center gap-4">
         <img
-          src={theme === "dark" ? "/logo-light.png" : "/logo-dark.png"}
+          src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
           alt="IranConnect Logo"
           className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-lg transition-all duration-300"
         />
