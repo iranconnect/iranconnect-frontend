@@ -17,12 +17,12 @@ export default function CookieConsent() {
     setLang(stored);
   }, []);
 
-  // ✅ مسیر صحیح و کاملاً سازگار با بک‌اند
+  // 🔥 مسیر درست شده: cookie_banner
   useEffect(() => {
     if (!lang) return;
 
     apiClient
-      .get(`/policies/cookie-banner`, {
+      .get(`/policies/cookie_banner`, {
         params: { lang },
         withCredentials: true,
       })
@@ -48,7 +48,8 @@ export default function CookieConsent() {
 
     if (choice === "accepted") {
       const script = document.createElement("script");
-      script.src = "https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX";
+      script.src =
+        "https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX";
       script.async = true;
       document.body.appendChild(script);
 
@@ -113,10 +114,16 @@ export default function CookieConsent() {
               key={l}
               onClick={() => setLang(l)}
               className={`text-xs px-2 py-1 rounded-md transition-all ${
-                lang === l ? "bg-[#0a1a44] text-white" : "bg-gray-100 text-[#0a1a44]"
+                lang === l
+                  ? "bg-[#0a1a44] text-white"
+                  : "bg-gray-100 text-[#0a1a44]"
               }`}
             >
-              {l === "en" ? "English" : l === "fr" ? "Français" : "فارسی"}
+              {l === "en"
+                ? "English"
+                : l === "fr"
+                ? "Français"
+                : "فارسی"}
             </button>
           ))}
         </div>
