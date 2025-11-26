@@ -1,7 +1,7 @@
 //frontend/pages/admin/edit/[id].js
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
-import axios from "axios";
+import apiClient from "../../../utils/apiClient";
 import Select from "react-select";
 import { Country, City } from "country-state-city";
 import categoriesList from "../../../data/categories";
@@ -122,8 +122,8 @@ export default function EditBusinessPage() {
     async function fetchBusiness() {
       setLoading(true);
       try {
-        const res = await axios.get(
-          `/api/admin/businesses/${id}`,
+        const res = await apiClient.get(
+          `/admin/businesses/${id}`,
           { withCredentials: true }
         );
         const data = res.data;
@@ -240,8 +240,8 @@ export default function EditBusinessPage() {
         if (value !== null && value !== undefined) data.append(key, value);
       }
 
-      await axios.put(
-        `/api/admin/businesses/${id}`,
+      await apiClient.put(
+        `/admin/businesses/${id}`,
         data,
         {
           withCredentials: true,
