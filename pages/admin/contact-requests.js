@@ -1,3 +1,4 @@
+//pages/admin/contact-requests.js
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
