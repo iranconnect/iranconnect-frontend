@@ -64,7 +64,7 @@ export default function AddBusinessPage() {
   useEffect(() => {
     async function check() {
       try {
-        const res = await apiClient.get("/auth/me");
+        const res = await apiClient.get("/auth/me", { withCredentials: true });
   
         if (!res.data?.ok) {
           window.location.href = "/auth/login";
