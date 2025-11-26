@@ -57,10 +57,13 @@ export default function AdminFileLogsPage() {
       if (status) params.status = status;
       if (source) params.source = source;
 
-      const res = await apiClient.get("admin/files/logs", {
+      const res = await apiClient.get("/admin/files/logs", {
         params,
-        withCredentials: true,
+        headers: {
+          "X-Iranconnect-Admin": "true",
+        },
       });
+
 
       setLogs(res.data || []);
     } catch (err) {
@@ -136,7 +139,11 @@ export default function AdminFileLogsPage() {
             <div className="flex flex-row flex-wrap gap-3 items-center ml-auto">
               {/* XLSX */}
               <button
-                onClick={() => window.open("/api/admin/files/export/xlsx", "_blank")}
+                onClick={() => window.open(
+                  `${process.env.NEXT_PUBLIC_API_BASE}/admin/files/export/xlsx?X-Iranconnect-Admin=true`,
+                  "_blank"
+                );
+
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
                 Export XLSX
@@ -144,7 +151,11 @@ export default function AdminFileLogsPage() {
 
               {/* PDF */}
               <button
-                onClick={() => window.open("/api/admin/files/export/pdf", "_blank")}
+                onClick={() => window.open(
+                  `${process.env.NEXT_PUBLIC_API_BASE}/admin/files/export/xlsx?X-Iranconnect-Admin=true`,
+                  "_blank"
+                );
+
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
                 Export PDF
