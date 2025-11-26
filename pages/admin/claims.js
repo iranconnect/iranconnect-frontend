@@ -1,5 +1,6 @@
+// frontend/pages/admin/claims.js
 import { useEffect, useState } from "react";
-import apiClient from "../../utils/apiClient"; // ✅ axios امن با interceptor
+import apiClient from "../../utils/apiClient"; 
 import AdminLayout from "../../components/admin/AdminLayout";
 import ClaimDetailsModal from "../../components/admin/ClaimDetailsModal";
 
@@ -10,31 +11,44 @@ export default function AdminClaimsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClaim, setSelectedClaim] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // 🧭 بررسی نقش و توکن قبل از بارگذاری
+  // 🧭 بررسی نقش و ورود با HttpOnly Cookie
   useEffect(() => {
-    const token = localStorage.getItem("iran_token");
-    const role = localStorage.getItem("iran_role");
+    async function checkAccess() {
+      try {
+        const me = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
 
-    if (!token) {
-      window.location.href = "/auth/login";
-      return;
-    }
-    if (role !== "admin" && role !== 'superadmin') {
-      window.location.href = "/";
-      return;
+        if (!me.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
+        }
+
+        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
+          window.location.href = "/";
+          return;
+        }
+
+        setAuthChecked(true);
+        fetchClaims();
+      } catch (err) {
+        window.location.href = "/auth/login";
+      }
     }
 
-    fetchClaims();
+    checkAccess();
   }, [statusFilter]);
 
   // 📜 دریافت درخواست‌های Claim
   async function fetchClaims() {
     setLoading(true);
     try {
-      const res = await apiClient.get(`/admin/claims`, {
+      const res = await apiClient.get("/admin/claims", {
         params: statusFilter ? { status: statusFilter } : {},
       });
+
       setClaims(res.data || []);
       setFilteredClaims(res.data || []);
     } catch (err) {
@@ -46,7 +60,7 @@ export default function AdminClaimsPage() {
     }
   }
 
-  // 🔍 فیلتر جستجو
+  // 🔍 جستجو
   useEffect(() => {
     const lower = searchTerm.toLowerCase();
     setFilteredClaims(
@@ -60,9 +74,9 @@ export default function AdminClaimsPage() {
     );
   }, [searchTerm, claims]);
 
-  // ✅ تأیید درخواست
+  // 🔵 تأیید
   async function handleApprove(id, note = "") {
-    if (!note || !note.trim()) {
+    if (!note.trim()) {
       alert("Approval note is required.");
       return;
     }
@@ -78,8 +92,13 @@ export default function AdminClaimsPage() {
     }
   }
 
-  // ❌ رد درخواست
+  // 🔴 رد درخواست
   async function handleReject(id, note = "") {
+    if (!note.trim()) {
+      alert("Rejection note is required.");
+      return;
+    }
+
     try {
       await apiClient.post(`/admin/claims/${id}/reject`, { note });
       fetchClaims();
@@ -90,42 +109,57 @@ export default function AdminClaimsPage() {
     }
   }
 
-  // 📤 خروجی XLSX
+  // 📤 XLSX
   async function handleExportXLSX() {
     try {
       const res = await apiClient.get(`/admin/claims/export/xlsx`, {
         responseType: "blob",
       });
+
       const blob = new Blob([res.data]);
-      const url = window.URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
+
       const a = document.createElement("a");
       a.href = url;
       a.download = "IranConnect_Claims_Report.xlsx";
       a.click();
-      window.URL.revokeObjectURL(url);
+
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error("❌ XLSX export error:", err);
       alert("Failed to export XLSX.");
     }
   }
 
-  // 📄 خروجی PDF
+  // 📄 PDF
   async function handleExportPDF() {
     try {
       const res = await apiClient.get(`/admin/claims/export/pdf`, {
         responseType: "blob",
       });
+
       const blob = new Blob([res.data]);
-      const url = window.URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
+
       const a = document.createElement("a");
       a.href = url;
       a.download = "IranConnect_Claims_Report.pdf";
       a.click();
-      window.URL.revokeObjectURL(url);
+
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error("❌ PDF export error:", err);
       alert("Failed to export PDF.");
     }
+  }
+
+  // تا قبل از AuthChecked هیچ رندری انجام نده
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Checking access...
+      </div>
+    );
   }
 
   return (
@@ -134,7 +168,7 @@ export default function AdminClaimsPage() {
         <div className="admin-section">
           <h2 className="admin-title mb-4">📨 Business Claim Requests</h2>
 
-          {/* 🔹 فیلتر + جستجو + خروجی‌ها */}
+          {/* 🔹 فیلتر + جستجو + خروجی */}
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <select
               value={statusFilter}
@@ -178,7 +212,7 @@ export default function AdminClaimsPage() {
             </div>
           </div>
 
-          {/* 🔹 جدول اصلی */}
+          {/* 🔹 جدول */}
           {loading ? (
             <p className="admin-muted">Loading...</p>
           ) : filteredClaims.length === 0 ? (
@@ -198,31 +232,18 @@ export default function AdminClaimsPage() {
                     <th>Actions</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {filteredClaims.map((c) => (
                     <tr key={c.id}>
-                      <td
-                        className="max-w-[100px] truncate"
-                        title={c.business_name}
-                      >
-                        {c.business_name}
-                      </td>
-                      <td
-                        className="max-w-[100px] truncate"
-                        title={c.full_name}
-                      >
-                        {c.full_name || "—"}
-                      </td>
+                      <td className="max-w-[120px] truncate">{c.business_name}</td>
+                      <td className="max-w-[100px] truncate">{c.full_name || "—"}</td>
                       <td>{c.applicant_role || "—"}</td>
-                      <td className="max-w-[100px] truncate" title={c.email}>
-                        {c.email}
-                      </td>
-                      <td
-                        className="max-w-[100px] truncate opacity-80"
-                        title={c.user_email || c.email}
-                      >
+                      <td className="max-w-[100px] truncate">{c.email}</td>
+                      <td className="max-w-[100px] truncate opacity-80">
                         {c.user_email || c.email || "—"}
                       </td>
+
                       <td>
                         <span
                           className={`px-2 py-1 rounded text-xs font-semibold ${
@@ -238,7 +259,9 @@ export default function AdminClaimsPage() {
                           {c.status}
                         </span>
                       </td>
+
                       <td>{new Date(c.created_at).toLocaleDateString()}</td>
+
                       <td>
                         <button
                           className="admin-btn admin-btn-secondary text-sm px-3 py-1"
@@ -256,7 +279,7 @@ export default function AdminClaimsPage() {
         </div>
       </div>
 
-      {/* ✅ مودال جزئیات Claim */}
+      {/* 🔹 مودال جزئیات */}
       {selectedClaim && (
         <ClaimDetailsModal
           claim={selectedClaim}
