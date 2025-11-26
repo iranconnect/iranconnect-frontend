@@ -1,6 +1,6 @@
-//pages/admin/contact-requests.js
+// pages/admin/contact-requests.js
 import { useEffect, useState } from "react";
-import apiClient from "../../utils/apiClient"; 
+import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 import ContactRequestDetailsModal from "../../components/admin/ContactRequestDetailsModal";
 
@@ -10,7 +10,7 @@ export default function ContactRequestsPage() {
   const [error, setError] = useState("");
   const [selectedRequest, setSelectedRequest] = useState(null);
 
-  // فیلترها
+  // Filters
   const [searchName, setSearchName] = useState("");
   const [searchEmail, setSearchEmail] = useState("");
   const [searchSubject, setSearchSubject] = useState("");
@@ -21,9 +21,12 @@ export default function ContactRequestsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const perPage = 10;
 
-  // کنترل دسترسی با HttpOnly Cookie
+  // Access control
   const [authChecked, setAuthChecked] = useState(false);
 
+  /* ============================================================
+     🔐 Check authentication & role using HttpOnly Cookie
+  ============================================================ */
   useEffect(() => {
     async function checkAccess() {
       try {
@@ -43,7 +46,7 @@ export default function ContactRequestsPage() {
 
         setAuthChecked(true);
         fetchRequests();
-      } catch {
+      } catch (err) {
         window.location.href = "/auth/login";
       }
     }
@@ -51,7 +54,9 @@ export default function ContactRequestsPage() {
     checkAccess();
   }, []);
 
-  // دریافت داده‌ها از API
+  /* ============================================================
+     📡 Fetch contact requests with filters
+  ============================================================ */
   async function fetchRequests() {
     setLoading(true);
     setError("");
@@ -80,7 +85,9 @@ export default function ContactRequestsPage() {
     }
   }
 
-  // پاک کردن فیلترها
+  /* ============================================================
+     🔄 Clear all filters
+  ============================================================ */
   function clearFilters() {
     setSearchName("");
     setSearchEmail("");
@@ -90,13 +97,17 @@ export default function ContactRequestsPage() {
     fetchRequests();
   }
 
-  // Pagination Logic
+  /* ============================================================
+     📑 Pagination Logic
+  ============================================================ */
   const indexOfLast = currentPage * perPage;
   const indexOfFirst = indexOfLast - perPage;
   const currentData = requests.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(requests.length / perPage);
 
-  // جلوگیری از رندر قبل از تأیید Auth
+  /* ============================================================
+     ⛔ Prevent rendering before auth is checked
+  ============================================================ */
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -105,6 +116,9 @@ export default function ContactRequestsPage() {
     );
   }
 
+  /* ============================================================
+     🎨 UI Rendering
+  ============================================================ */
   return (
     <AdminLayout>
       <div className="admin-container">
@@ -113,7 +127,7 @@ export default function ContactRequestsPage() {
             📩 Contact Requests
           </h2>
 
-          {/* فیلترها */}
+          {/* Filters */}
           <div className="flex flex-wrap gap-3 mb-6 items-center">
             <input
               type="text"
@@ -122,6 +136,7 @@ export default function ContactRequestsPage() {
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
             />
+
             <input
               type="text"
               placeholder="Filter by email..."
@@ -129,6 +144,7 @@ export default function ContactRequestsPage() {
               value={searchEmail}
               onChange={(e) => setSearchEmail(e.target.value)}
             />
+
             <input
               type="text"
               placeholder="Filter by subject..."
@@ -168,11 +184,16 @@ export default function ContactRequestsPage() {
               Clear
             </button>
 
-            {/* Export Buttons */}
+            {/* Export */}
             <div className="flex flex-row gap-3 ml-auto">
               <button
                 onClick={() =>
-                  window.open("/api/admin/contact-requests/export/xlsx", "_blank")
+                  window.open(
+                    `${
+                      process.env.NEXT_PUBLIC_API_BASE
+                    }/admin/contact-requests/export/xlsx`,
+                    "_blank"
+                  )
                 }
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
@@ -181,7 +202,12 @@ export default function ContactRequestsPage() {
 
               <button
                 onClick={() =>
-                  window.open("/api/admin/contact-requests/export/pdf", "_blank")
+                  window.open(
+                    `${
+                      process.env.NEXT_PUBLIC_API_BASE
+                    }/admin/contact-requests/export/pdf`,
+                    "_blank"
+                  )
                 }
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
