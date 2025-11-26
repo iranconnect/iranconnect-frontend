@@ -1,6 +1,6 @@
-//pages/admin/consents.js
+// frontend/pages/admin/consents.js
 import { useEffect, useState } from "react";
-import apiClient from "../../utils/apiClient"; // ✅ axios امن با interceptor
+import apiClient from "../../utils/apiClient"; 
 import AdminLayout from "../../components/admin/AdminLayout";
 
 export default function AdminConsentsPage() {
@@ -9,29 +9,39 @@ export default function AdminConsentsPage() {
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // 🧭 بررسی نقش و توکن قبل از بارگذاری صفحه
+  // 🧭 چک دسترسی با HttpOnly Cookie
   useEffect(() => {
-    const token = localStorage.getItem("iran_token");
-    const role = localStorage.getItem("iran_role");
+    async function checkAccess() {
+      try {
+        const me = await apiClient.get("/auth/me", { withCredentials: true });
 
-    if (!token) {
-      window.location.href = "/auth/login";
-      return;
-    }
-    if (role !== "admin" && role !== 'superadmin') {
-      window.location.href = "/";
-      return;
+        if (!me.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
+        }
+
+        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
+          window.location.href = "/";
+          return;
+        }
+
+        setAuthChecked(true);
+        fetchConsents();
+      } catch (err) {
+        window.location.href = "/auth/login";
+      }
     }
 
-    fetchConsents();
+    checkAccess();
   }, []);
 
-  // 🟢 دریافت داده‌ها
+  // 🟢 Fetch consents
   async function fetchConsents() {
     setLoading(true);
     try {
-      const res = await apiClient.get(`/admin/consents`);
+      const res = await apiClient.get("/admin/consents");
       setConsents(res.data || []);
       setFilteredConsents(res.data || []);
     } catch (err) {
@@ -42,30 +52,38 @@ export default function AdminConsentsPage() {
     }
   }
 
-  // 🔍 جستجو و فیلتر
+  // 🔍 Search + Filter
   useEffect(() => {
     let list = consents;
-    if (filterType)
+
+    if (filterType) {
       list = list.filter((c) => c.consent_type === filterType);
-    if (searchTerm)
+    }
+
+    if (searchTerm) {
       list = list.filter((c) =>
         c.email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
+    }
+
     setFilteredConsents(list);
   }, [filterType, searchTerm, consents]);
 
-  // 📤 خروجی XLSX
+  // 📤 XLSX Export
   async function handleExportXLSX() {
     try {
-      const res = await apiClient.get(`/admin/consents/export/xlsx`, {
+      const res = await apiClient.get("/admin/consents/export/xlsx", {
         responseType: "blob",
       });
+
       const blob = new Blob([res.data]);
       const url = window.URL.createObjectURL(blob);
+
       const a = document.createElement("a");
       a.href = url;
       a.download = "IranConnect_User_Consents.xlsx";
       a.click();
+
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("❌ XLSX export failed:", err);
@@ -73,23 +91,35 @@ export default function AdminConsentsPage() {
     }
   }
 
-  // 🧾 خروجی PDF
+  // 🧾 PDF Export
   async function handleExportPDF() {
     try {
-      const res = await apiClient.get(`/admin/consents/export/pdf`, {
+      const res = await apiClient.get("/admin/consents/export/pdf", {
         responseType: "blob",
       });
+
       const blob = new Blob([res.data]);
       const url = window.URL.createObjectURL(blob);
+
       const a = document.createElement("a");
       a.href = url;
       a.download = "IranConnect_User_Consents.pdf";
       a.click();
+
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("❌ PDF export failed:", err);
       alert("Failed to export PDF file.");
     }
+  }
+
+  // ⛔ قبل از تأیید auth رندر نکن
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Checking access...
+      </div>
+    );
   }
 
   return (
@@ -98,7 +128,7 @@ export default function AdminConsentsPage() {
         <div className="admin-section">
           <h2 className="admin-title mb-4">🧾 User Consents Log</h2>
 
-          {/* 🔹 فیلتر + جستجو + خروجی‌ها */}
+          {/* 🔹 Filters */}
           <div className="flex flex-wrap gap-3 mb-5 items-center">
             <select
               value={filterType}
@@ -126,13 +156,13 @@ export default function AdminConsentsPage() {
               Refresh
             </button>
 
-            {/* 🟢 دکمه‌های خروجی */}
             <button
               className="admin-btn bg-green-600 hover:bg-green-700"
               onClick={handleExportXLSX}
             >
               📊 Export XLSX
             </button>
+
             <button
               className="admin-btn bg-turquoise hover:bg-turquoise/90"
               onClick={handleExportPDF}
@@ -141,7 +171,7 @@ export default function AdminConsentsPage() {
             </button>
           </div>
 
-          {/* 🔹 جدول اصلی */}
+          {/* 🔹 Table */}
           {loading ? (
             <p className="admin-muted">Loading...</p>
           ) : filteredConsents.length === 0 ? (
@@ -159,6 +189,7 @@ export default function AdminConsentsPage() {
                     <th>Date</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {filteredConsents.map((c) => (
                     <tr key={c.id}>
