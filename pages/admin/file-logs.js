@@ -1,6 +1,6 @@
-// frontend/pages/admin/file-logs.js
+//pages/admin/file-logs.js
 import { useEffect, useState } from "react";
-import apiClient from "../../utils/apiClient"; // ← ایمپورت صحیح
+import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 import FileLogDetailsModal from "../../components/admin/FileLogDetailsModal";
 
@@ -12,10 +12,42 @@ export default function AdminFileLogsPage() {
   const [error, setError] = useState("");
   const [selectedLog, setSelectedLog] = useState(null);
 
+  // کنترل دسترسی Admin/SuperAdmin
+  const [authChecked, setAuthChecked] = useState(false);
+
+  /* ================================================
+     🔐 Check access using HttpOnly Cookie
+  ================================================= */
   useEffect(() => {
-    fetchLogs();
+    async function checkAccess() {
+      try {
+        const me = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
+
+        if (!me.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
+        }
+
+        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
+          window.location.href = "/";
+          return;
+        }
+
+        setAuthChecked(true);
+        fetchLogs();
+      } catch (err) {
+        window.location.href = "/auth/login";
+      }
+    }
+
+    checkAccess();
   }, []);
 
+  /* ================================================
+     📂 Fetch file logs
+  ================================================= */
   async function fetchLogs() {
     setLoading(true);
     setError("");
@@ -25,8 +57,10 @@ export default function AdminFileLogsPage() {
       if (status) params.status = status;
       if (source) params.source = source;
 
-      // 🔐 درخواست با apiClient (HttpOnly cookie auto)
-      const res = await apiClient.get("/api/admin/files/logs", { params });
+      const res = await apiClient.get("/api/admin/files/logs", {
+        params,
+        withCredentials: true,
+      });
 
       setLogs(res.data || []);
     } catch (err) {
@@ -37,6 +71,20 @@ export default function AdminFileLogsPage() {
     }
   }
 
+  /* ================================================
+     ⛔ Prevent render until auth check
+  ================================================= */
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Checking access…
+      </div>
+    );
+  }
+
+  /* ================================================
+     🖼️ UI Render
+  ================================================= */
   return (
     <AdminLayout>
       <div className="admin-container">
@@ -88,10 +136,7 @@ export default function AdminFileLogsPage() {
             <div className="flex flex-row flex-wrap gap-3 items-center ml-auto">
               {/* XLSX */}
               <button
-                onClick={() => {
-                  const url = "/api/admin/files/export/xlsx";
-                  window.open(url, "_blank");
-                }}
+                onClick={() => window.open("/api/admin/files/export/xlsx", "_blank")}
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
                 Export XLSX
@@ -99,10 +144,7 @@ export default function AdminFileLogsPage() {
 
               {/* PDF */}
               <button
-                onClick={() => {
-                  const url = "/api/admin/files/export/pdf";
-                  window.open(url, "_blank");
-                }}
+                onClick={() => window.open("/api/admin/files/export/pdf", "_blank")}
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
                 Export PDF
