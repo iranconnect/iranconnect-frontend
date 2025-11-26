@@ -42,8 +42,12 @@ apiClient.interceptors.response.use(
     if (status === 423)
       forceLogoutAndRedirect("Your account was temporarily locked.");
 
-    if (status === 440 || data?.reason === "logged_in_elsewhere")
-      forceLogoutAndRedirect("New login detected.");
+    if (status === 440 || data?.reason === "logged_in_elsewhere") {
+      if (window.location.pathname !== "/auth/login") {
+        forceLogoutAndRedirect("New login detected.");
+      }
+    }
+
 
     if (
       status === 403 &&
