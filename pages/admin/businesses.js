@@ -1,6 +1,6 @@
 //frontend/pages/admin/businesses.js
 import { useEffect, useState, useMemo } from "react";
-import apiClient from "../../utils/apiClient"; // ✅ axios با interceptor
+import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 
 export default function BusinessesPage() {
@@ -8,34 +8,46 @@ export default function BusinessesPage() {
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // 🧭 بررسی نقش و توکن قبل از بارگذاری
+  // 🧭 بررسی نقش و ورود با HttpOnly Cookie (نسخه جدید)
   useEffect(() => {
-    const token = localStorage.getItem("iran_token");
-    const role = localStorage.getItem("iran_role");
+    async function checkAccess() {
+      try {
+        const res = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
 
-    if (!token) {
-      window.location.href = "/auth/login";
-      return;
-    }
-    if (role !== "admin" && role !== 'superadmin') {
-      window.location.href = "/";
-      return;
+        if (!res.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
+        }
+
+        if (res.data.role !== "admin" && res.data.role !== "superadmin") {
+          window.location.href = "/";
+          return;
+        }
+
+        setAuthChecked(true);
+        fetchBusinesses();
+      } catch (err) {
+        window.location.href = "/auth/login";
+      }
     }
 
-    fetchBusinesses();
+    checkAccess();
   }, []);
 
-  // 📦 دریافت لیست بیزینس‌ها
+  // 📦 دریافت لیست
   async function fetchBusinesses(search = "") {
     setLoading(true);
     try {
-      const res = await apiClient.get(`/admin/businesses`, {
+      const res = await apiClient.get("/admin/businesses", {
         params: { q: search },
       });
       setList(res.data || []);
-    } catch (e) {
-      console.error("❌ Error fetching businesses:", e);
+    } catch (err) {
+      console.error("❌ Error fetching businesses:", err);
     } finally {
       setLoading(false);
     }
@@ -51,19 +63,25 @@ export default function BusinessesPage() {
 
   // ❌ حذف بیزینس
   async function deleteBusiness(id) {
-    const confirmDelete = confirm(
-      "Are you sure you want to delete this business?"
-    );
-    if (!confirmDelete) return;
+    const ok = confirm("Delete this business?");
+    if (!ok) return;
 
     try {
       await apiClient.delete(`/admin/businesses/${id}`);
       setList((prev) => prev.filter((b) => b.id !== id));
-      alert("✅ Business deleted successfully.");
-    } catch (e) {
-      console.error("❌ Delete error:", e);
-      alert(e.response?.data?.error || "Failed to delete business.");
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || "Failed to delete.");
     }
+  }
+
+  // قبل از authChecked رندر نکن
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Checking access...
+      </div>
+    );
   }
 
   // ✂️ کوتاه‌سازی متن
