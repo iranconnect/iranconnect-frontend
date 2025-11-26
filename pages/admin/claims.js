@@ -1,6 +1,6 @@
-// frontend/pages/admin/claims.js
+//pages/admin/claims.js
 import { useEffect, useState } from "react";
-import apiClient from "../../utils/apiClient"; 
+import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 import ClaimDetailsModal from "../../components/admin/ClaimDetailsModal";
 
@@ -8,18 +8,20 @@ export default function AdminClaimsPage() {
   const [claims, setClaims] = useState([]);
   const [filteredClaims, setFilteredClaims] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [statusFilter, setStatusFilter] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClaim, setSelectedClaim] = useState(null);
+
   const [authChecked, setAuthChecked] = useState(false);
 
-  // 🧭 بررسی نقش و ورود با HttpOnly Cookie
+  /* ==========================================================
+     ✅ ۱. چک کردن دسترسی با HttpOnly (فقط یک‌بار)
+  ========================================================== */
   useEffect(() => {
     async function checkAccess() {
       try {
-        const me = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
+        const me = await apiClient.get("/auth/me", { withCredentials: true });
 
         if (!me.data?.ok) {
           window.location.href = "/auth/login";
@@ -32,21 +34,24 @@ export default function AdminClaimsPage() {
         }
 
         setAuthChecked(true);
-        fetchClaims();
-      } catch (err) {
+        fetchClaims(); // اولین بار
+      } catch {
         window.location.href = "/auth/login";
       }
     }
 
     checkAccess();
-  }, [statusFilter]);
+  }, []);
 
-  // 📜 دریافت درخواست‌های Claim
+  /* ==========================================================
+     📌 ۲. دریافت لیست Claim (بر اساس فیلترها)
+  ========================================================== */
   async function fetchClaims() {
     setLoading(true);
     try {
       const res = await apiClient.get("/admin/claims", {
         params: statusFilter ? { status: statusFilter } : {},
+        withCredentials: true,
       });
 
       setClaims(res.data || []);
@@ -60,9 +65,12 @@ export default function AdminClaimsPage() {
     }
   }
 
-  // 🔍 جستجو
+  /* ==========================================================
+     🔍 ۳. اعمال جستجو
+  ========================================================== */
   useEffect(() => {
     const lower = searchTerm.toLowerCase();
+
     setFilteredClaims(
       claims.filter(
         (c) =>
@@ -74,12 +82,12 @@ export default function AdminClaimsPage() {
     );
   }, [searchTerm, claims]);
 
-  // 🔵 تأیید
+  /* ==========================================================
+     🔵 ۴. Approve / Reject
+  ========================================================== */
   async function handleApprove(id, note = "") {
-    if (!note.trim()) {
-      alert("Approval note is required.");
-      return;
-    }
+    if (!note.trim()) return alert("Approval note is required.");
+
     if (!confirm("Confirm approval?")) return;
 
     try {
@@ -87,33 +95,30 @@ export default function AdminClaimsPage() {
       fetchClaims();
       setSelectedClaim(null);
     } catch (err) {
-      console.error("❌ Approve error:", err);
       alert(err.response?.data?.error || "Error approving claim.");
     }
   }
 
-  // 🔴 رد درخواست
   async function handleReject(id, note = "") {
-    if (!note.trim()) {
-      alert("Rejection note is required.");
-      return;
-    }
+    if (!note.trim()) return alert("Rejection note is required.");
 
     try {
       await apiClient.post(`/admin/claims/${id}/reject`, { note });
       fetchClaims();
       setSelectedClaim(null);
     } catch (err) {
-      console.error("❌ Reject error:", err);
       alert(err.response?.data?.error || "Error rejecting claim.");
     }
   }
 
-  // 📤 XLSX
+  /* ==========================================================
+     📤 ۵. Export XLSX / PDF
+  ========================================================== */
   async function handleExportXLSX() {
     try {
-      const res = await apiClient.get(`/admin/claims/export/xlsx`, {
+      const res = await apiClient.get("/admin/claims/export/xlsx", {
         responseType: "blob",
+        withCredentials: true,
       });
 
       const blob = new Blob([res.data]);
@@ -125,17 +130,16 @@ export default function AdminClaimsPage() {
       a.click();
 
       URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("❌ XLSX export error:", err);
+    } catch {
       alert("Failed to export XLSX.");
     }
   }
 
-  // 📄 PDF
   async function handleExportPDF() {
     try {
-      const res = await apiClient.get(`/admin/claims/export/pdf`, {
+      const res = await apiClient.get("/admin/claims/export/pdf", {
         responseType: "blob",
+        withCredentials: true,
       });
 
       const blob = new Blob([res.data]);
@@ -147,13 +151,14 @@ export default function AdminClaimsPage() {
       a.click();
 
       URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("❌ PDF export error:", err);
+    } catch {
       alert("Failed to export PDF.");
     }
   }
 
-  // تا قبل از AuthChecked هیچ رندری انجام نده
+  /* ==========================================================
+     ⏳ جلوگیری از رندر قبل از authChecked
+  ========================================================== */
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -162,13 +167,16 @@ export default function AdminClaimsPage() {
     );
   }
 
+  /* ==========================================================
+     🎨 UI
+  ========================================================== */
   return (
     <AdminLayout>
       <div className="admin-container">
         <div className="admin-section">
           <h2 className="admin-title mb-4">📨 Business Claim Requests</h2>
 
-          {/* 🔹 فیلتر + جستجو + خروجی */}
+          {/* فیلتر + جستجو */}
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <select
               value={statusFilter}
@@ -192,19 +200,19 @@ export default function AdminClaimsPage() {
 
             <div className="flex flex-row flex-wrap gap-3 items-center">
               <button
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
                 onClick={fetchClaims}
               >
                 Refresh
               </button>
               <button
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
                 onClick={handleExportXLSX}
               >
                 Export XLSX
               </button>
               <button
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
                 onClick={handleExportPDF}
               >
                 Export PDF
@@ -212,7 +220,7 @@ export default function AdminClaimsPage() {
             </div>
           </div>
 
-          {/* 🔹 جدول */}
+          {/* جدول */}
           {loading ? (
             <p className="admin-muted">Loading...</p>
           ) : filteredClaims.length === 0 ? (
@@ -237,11 +245,13 @@ export default function AdminClaimsPage() {
                   {filteredClaims.map((c) => (
                     <tr key={c.id}>
                       <td className="max-w-[120px] truncate">{c.business_name}</td>
-                      <td className="max-w-[100px] truncate">{c.full_name || "—"}</td>
+                      <td className="max-w-[100px] truncate">
+                        {c.full_name || "—"}
+                      </td>
                       <td>{c.applicant_role || "—"}</td>
                       <td className="max-w-[100px] truncate">{c.email}</td>
                       <td className="max-w-[100px] truncate opacity-80">
-                        {c.user_email || c.email || "—"}
+                        {c.user_email || "—"}
                       </td>
 
                       <td>
@@ -279,7 +289,6 @@ export default function AdminClaimsPage() {
         </div>
       </div>
 
-      {/* 🔹 مودال جزئیات */}
       {selectedClaim && (
         <ClaimDetailsModal
           claim={selectedClaim}
