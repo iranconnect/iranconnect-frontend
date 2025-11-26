@@ -15,9 +15,8 @@ export default function AdminBlockedIPs() {
 
   const [selectedIP, setSelectedIP] = useState(null);
 
-  const base = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Pagination
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -26,9 +25,36 @@ export default function AdminBlockedIPs() {
     totalPages: 1,
   });
 
+  // 🔐 احراز هویت ادمین
   useEffect(() => {
-    fetchBlockedIPs(1);
+    async function check() {
+      try {
+        const res = await apiClient.get("/auth/me");
+
+        if (!res.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
+        }
+
+        if (res.data.role !== "admin" && res.data.role !== "superadmin") {
+          window.location.href = "/";
+          return;
+        }
+
+        setAuthChecked(true);
+      } catch (err) {
+        window.location.href = "/auth/login";
+      }
+    }
+
+    check();
   }, []);
+
+  // 📥 دریافت لیست پس از تأیید احراز هویت
+  useEffect(() => {
+    if (!authChecked) return;
+    fetchBlockedIPs(1);
+  }, [authChecked]);
 
   async function fetchBlockedIPs(newPage = page) {
     setLoading(true);
@@ -39,7 +65,6 @@ export default function AdminBlockedIPs() {
         pageSize: 10,
       };
 
-      // 🔥 با HttpOnly کوکی — نیازی نیست دستی توکن بدهیم
       const res = await apiClient.get("/admin/blocked-ips", { params });
 
       setList(res.data?.data || []);
@@ -51,7 +76,6 @@ export default function AdminBlockedIPs() {
           totalPages: 1,
         }
       );
-
       setPage(newPage);
     } catch (err) {
       console.error("Failed to fetch blocked IPs:", err);
@@ -61,7 +85,6 @@ export default function AdminBlockedIPs() {
   }
 
   function handleExport(format) {
-    // فقط URL را باز می‌کنیم — کوکی HttpOnly خودکار ارسال می‌شود
     window.open(
       `${process.env.NEXT_PUBLIC_API_BASE}/admin/blocked-ips/export/${format}`,
       "_blank"
@@ -87,6 +110,15 @@ export default function AdminBlockedIPs() {
     fetchBlockedIPs(newPage);
   }
 
+  // ⏳ نمایش هنگام چک کردن احراز هویت
+  if (!authChecked) {
+    return (
+      <AdminLayout>
+        <div className="p-6 text-center opacity-70">Checking authentication...</div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="admin-container">
@@ -96,7 +128,6 @@ export default function AdminBlockedIPs() {
 
           {/* Filters */}
           <div className="flex flex-wrap gap-3 mb-6 items-center">
-
             <input
               className="admin-input w-48"
               placeholder="Filter by IP"
@@ -147,6 +178,7 @@ export default function AdminBlockedIPs() {
               </button>
             </div>
           </div>
+
           {/* Table */}
           {loading ? (
             <p className="text-sm opacity-70">Loading blocked IPs...</p>
@@ -171,23 +203,19 @@ export default function AdminBlockedIPs() {
                           <td className="truncate max-w-[150px]">
                             {item.ip_address}
                           </td>
-
                           <td className="truncate max-w-[100px]">
                             {item.status}
                           </td>
-
                           <td className="truncate max-w-[160px]">
                             {item.blocked_at
                               ? new Date(item.blocked_at).toLocaleString()
                               : "—"}
                           </td>
-
                           <td className="truncate max-w-[150px]">
                             {item.automatic
                               ? "🤖 Automatic system"
-                              : (item.blocked_by_email || "—")}
+                              : item.blocked_by_email || "—"}
                           </td>
-
                           <td className="text-right">
                             <button
                               onClick={() => setSelectedIP(item)}
@@ -248,7 +276,6 @@ export default function AdminBlockedIPs() {
               refreshList={() => fetchBlockedIPs(page)}
             />
           )}
-
         </section>
       </div>
     </AdminLayout>
