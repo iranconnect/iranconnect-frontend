@@ -1,7 +1,7 @@
-//frontend/pages/admin/bulk-email.js
+// frontend/pages/admin/bulk-email.js
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import apiClient from "../../utils/apiClient"; // ✅ نسخه امن axios
+import apiClient from "../../utils/apiClient"; // نسخه امن axios
 import AdminLayout from "../../components/admin/AdminLayout";
 import "react-quill/dist/quill.snow.css";
 
@@ -26,9 +26,9 @@ export default function BulkEmailPage() {
 
   const previewRef = useRef(null);
 
-  /* ======================================================================
-      🧩 کنترل دسترسی جدید — فقط با HttpOnly Cookie (بدون localStorage)
-     ====================================================================== */
+  // 🔐 احراز هویت صحیح فقط با کوکی HttpOnly
+  const [authChecked, setAuthChecked] = useState(false);
+
   useEffect(() => {
     async function checkAccess() {
       try {
@@ -45,6 +45,7 @@ export default function BulkEmailPage() {
           return;
         }
 
+        setAuthChecked(true);
         fetchLogs();
       } catch (err) {
         window.location.href = "/auth/login";
@@ -53,13 +54,12 @@ export default function BulkEmailPage() {
 
     checkAccess();
   }, []);
-
   /* ======================================================================
       📜 دریافت لاگ‌ها
      ====================================================================== */
   async function fetchLogs(bulkCodeDigits = null) {
     try {
-      let url = `/api/admin/bulk-email/logs`;
+      let url = `/admin/bulk-email/logs`;
       if (bulkCodeDigits) url += `?bulk_code=${bulkCodeDigits}`;
 
       const res = await apiClient.get(url, { withCredentials: true });
@@ -127,13 +127,13 @@ export default function BulkEmailPage() {
   }
 
   /* ======================================================================
-      🧩 ساخت URL گزارش
+      🧩 ساخت URL گزارش فیلترشده
      ====================================================================== */
   function buildFilteredReportUrl(filter, value) {
     const params = new URLSearchParams();
     params.set("filter", filter);
     if (value) params.set("value", value.trim());
-    return `/api/admin/bulk-email/report/filter?${params.toString()}`;
+    return `/admin/bulk-email/report/filter?${params.toString()}`;
   }
 
   /* ======================================================================
@@ -151,7 +151,7 @@ export default function BulkEmailPage() {
   }
 
   /* ======================================================================
-      🧩 تولید گزارش فیلترشده
+      🧩 تولید گزارش
      ====================================================================== */
   async function handleGenerateReport() {
     if (!filterType) {
@@ -182,7 +182,8 @@ export default function BulkEmailPage() {
       (filterType === "sender_email" || filterType === "admin_email") &&
       !filterValue.includes("@")
     ) {
-      if (!confirm("Value doesn't look like an email. Continue anyway?")) return;
+      if (!confirm("Value doesn't look like an email. Continue anyway?"))
+        return;
     }
 
     const url = buildFilteredReportUrl(filterType, filterValue);
@@ -190,13 +191,14 @@ export default function BulkEmailPage() {
   }
 
   /* ======================================================================
-      ✂️ کوتاه‌سازی متن برای جدول
+      ✂️ کوتاه‌سازی متن جدول
      ====================================================================== */
   function truncate(text, length = 25) {
     if (!text) return "-";
     return text.length > length ? text.slice(0, length) + "..." : text;
   }
-  // ⚙️ تنظیمات Quill Editor
+
+  // ⚙️ تنظیمات Quill
   const quillModules = {
     toolbar: [
       [{ font: [] }, { size: [] }],
@@ -225,6 +227,15 @@ export default function BulkEmailPage() {
     "image",
   ];
 
+  if (!authChecked) {
+    return (
+      <AdminLayout>
+        <div className="admin-container">
+          <p className="text-center text-gray-500">Checking access...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
   return (
     <AdminLayout>
       <div className="admin-container">
@@ -243,7 +254,9 @@ export default function BulkEmailPage() {
 
             {/* Sender Email */}
             <div>
-              <label className="block mb-1 text-sm font-medium">Sender Email</label>
+              <label className="block mb-1 text-sm font-medium">
+                Sender Email
+              </label>
               <select
                 className="admin-input"
                 value={senderEmail}
@@ -290,7 +303,9 @@ export default function BulkEmailPage() {
           {/* Editor + Preview */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             <div className="quill-wrapper relative z-[50]">
-              <label className="block mb-2 text-sm font-medium">Email Content</label>
+              <label className="block mb-2 text-sm font-medium">
+                Email Content
+              </label>
               <ReactQuill
                 theme="snow"
                 value={body}
@@ -327,7 +342,7 @@ export default function BulkEmailPage() {
           </div>
         </section>
 
-        {/* === فیلتر گزارش‌ها === */}
+        {/* === بخش فیلتر گزارش‌ها === */}
         <section className="admin-section mb-6">
           <h2 className="admin-title mb-3">📊 Filter Reports</h2>
 
@@ -417,9 +432,7 @@ export default function BulkEmailPage() {
                         {log.sent_count}/{log.total_count}
                       </td>
 
-                      <td>
-                        {new Date(log.created_at).toLocaleString("en-GB")}
-                      </td>
+                      <td>{new Date(log.created_at).toLocaleString("en-GB")}</td>
 
                       <td
                         className="text-blue-700 font-medium"
@@ -431,7 +444,7 @@ export default function BulkEmailPage() {
                       <td>
                         <div className="flex gap-2">
                           <a
-                            href={`/api/admin/bulk-email/report/${log.id}/pdf`}
+                            href={`/admin/bulk-email/report/${log.id}/pdf`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="admin-btn admin-btn-secondary"
@@ -439,7 +452,7 @@ export default function BulkEmailPage() {
                             PDF
                           </a>
                           <a
-                            href={`/api/admin/bulk-email/report/${log.id}/xlsx`}
+                            href={`/admin/bulk-email/report/${log.id}/xlsx`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="admin-btn admin-btn-secondary"
@@ -448,7 +461,6 @@ export default function BulkEmailPage() {
                           </a>
                         </div>
                       </td>
-
                     </tr>
                   ))
                 )}
@@ -462,4 +474,3 @@ export default function BulkEmailPage() {
     </AdminLayout>
   );
 }
-
