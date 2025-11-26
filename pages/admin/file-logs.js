@@ -139,10 +139,12 @@ export default function AdminFileLogsPage() {
             <div className="flex flex-row flex-wrap gap-3 items-center ml-auto">
               {/* XLSX */}
               <button
-                onClick={() => window.open(
-                  `${process.env.NEXT_PUBLIC_API_BASE}/admin/files/export/xlsx?X-Iranconnect-Admin=true`,
-                  "_blank"
-                );
+                onClick={() => 
+                  window.open(
+                    `${process.env.NEXT_PUBLIC_API_BASE}/admin/files/export/xlsx?X-Iranconnect-Admin=true`,
+                    "_blank"
+                  )
+                }
 
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
@@ -151,11 +153,12 @@ export default function AdminFileLogsPage() {
 
               {/* PDF */}
               <button
-                onClick={() => window.open(
-                  `${process.env.NEXT_PUBLIC_API_BASE}/admin/files/export/xlsx?X-Iranconnect-Admin=true`,
-                  "_blank"
-                );
-
+                onClick={() => 
+                  window.open(
+                    `${process.env.NEXT_PUBLIC_API_BASE}/admin/files/export/pdf?X-Iranconnect-Admin=true`,
+                    "_blank"
+                  )
+                }
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
                 Export PDF
