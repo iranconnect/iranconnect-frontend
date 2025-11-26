@@ -23,6 +23,17 @@ export default function Login() {
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
 
+
+  /* ───────────── 📌 پیام امنیتی ورود هم‌زمان ───────────── */
+  useEffect(() => {
+    const sec = localStorage.getItem("iran_security_msg");
+    if (sec) {
+      setSecurityMsg(sec);
+      localStorage.removeItem("iran_security_msg");
+    }
+  }, []);
+
+
   /* ───────────── 🎨 مدیریت تم و زبان ───────────── */
   useEffect(() => {
     const currentTheme =
