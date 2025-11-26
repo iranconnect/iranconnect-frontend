@@ -57,7 +57,7 @@ export default function AdminFileLogsPage() {
       if (status) params.status = status;
       if (source) params.source = source;
 
-      const res = await apiClient.get("/api/admin/files/logs", {
+      const res = await apiClient.get("admin/files/logs", {
         params,
         withCredentials: true,
       });
