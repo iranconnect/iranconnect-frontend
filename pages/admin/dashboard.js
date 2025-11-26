@@ -1,25 +1,57 @@
+/*pages/admin/dashboard.js*/
 /*frontend/pages/admin/dashboard.js*/
 import { useEffect, useMemo, useState } from "react";
-import apiClient from "../../utils/apiClient"; // ✅ نسخه توکن‌دار axios
+import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 import StatCard from "../../components/admin/StatCard";
 
 export default function AdminDashboard({ toggleTheme, currentTheme }) {
   const [businesses, setBusinesses] = useState([]);
   const [users, setUsers] = useState([]);
+
   const [loadingBiz, setLoadingBiz] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
+  const [authChecked, setAuthChecked] = useState(false);
+
+  /* ============================================================
+     🔐 Check authentication using HttpOnly Cookie
+  ============================================================ */
   useEffect(() => {
-    fetchBusinesses();
-    fetchUsers();
+    async function checkAccess() {
+      try {
+        const me = await apiClient.get("/auth/me", { withCredentials: true });
+
+        if (!me.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
+        }
+
+        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
+          window.location.href = "/";
+          return;
+        }
+
+        setAuthChecked(true);
+
+        // Load dashboard data
+        fetchBusinesses();
+        fetchUsers();
+      } catch (err) {
+        window.location.href = "/auth/login";
+      }
+    }
+
+    checkAccess();
   }, []);
 
-  /* ───────────── 📦 دریافت بیزینس‌ها ───────────── */
+  /* ============================================================
+     📦 Fetch Businesses
+  ============================================================ */
   async function fetchBusinesses() {
     setLoadingBiz(true);
     try {
-      const r = await apiClient.get(`/admin/businesses`);
+      const r = await apiClient.get("/admin/businesses");
       setBusinesses(r.data || []);
     } catch (e) {
       console.error("❌ Error fetching businesses:", e);
@@ -28,11 +60,13 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
     }
   }
 
-  /* ───────────── 👥 دریافت کاربران ───────────── */
+  /* ============================================================
+     👥 Fetch Users
+  ============================================================ */
   async function fetchUsers() {
     setLoadingUsers(true);
     try {
-      const r = await apiClient.get(`/admin/users`);
+      const r = await apiClient.get("/admin/users");
       setUsers(r.data || []);
     } catch (e) {
       console.error("❌ Error fetching users:", e);
@@ -41,26 +75,49 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
     }
   }
 
-  /* ───────────── 📊 محاسبه آمار ───────────── */
+  /* ============================================================
+     📊 Compute Statistics
+  ============================================================ */
   const stats = useMemo(() => {
     const totalBusinesses = businesses.length;
+
     const ratings = businesses
       .map((b) => Number(b.avg_rating))
       .filter((v) => !isNaN(v));
+
     const avgRatings = ratings.length
       ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2)
       : "—";
-    return { totalBusinesses, avgRatings, totalUsers: users.length };
+
+    return {
+      totalBusinesses,
+      avgRatings,
+      totalUsers: users.length,
+    };
   }, [businesses, users]);
 
-  /* ───────────── 📋 جدول عمومی ───────────── */
+  /* ============================================================
+     ⛔ Prevent UI before auth is checked
+  ============================================================ */
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Checking access...
+      </div>
+    );
+  }
+
+  /* ============================================================
+     📋 Reusable Table Component
+  ============================================================ */
   const Table = ({ title, headers, data, loading }) => (
     <section
-      className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] 
+      className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--card-bg)]
       text-[var(--text)] shadow-[5px_5px_15px_var(--shadow-dark),
       -5px_-5px_15px_var(--shadow-light)] transition"
     >
       <h2 className="text-lg font-semibold mb-4">{title}</h2>
+
       {loading ? (
         <p className="text-sm opacity-70">Loading...</p>
       ) : data.length ? (
@@ -104,7 +161,9 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
     </section>
   );
 
-  /* ───────────── 🖥️ رندر صفحه ───────────── */
+  /* ============================================================
+     🖥️ Render
+  ============================================================ */
   return (
     <AdminLayout toggleTheme={toggleTheme} currentTheme={currentTheme}>
       {/* 📊 Stats */}
