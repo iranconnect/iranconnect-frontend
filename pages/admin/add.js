@@ -6,6 +6,7 @@ import { Country, City } from "country-state-city";
 import categoriesList from "../../data/categories";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../utils/apiClient"; // ✅ تغییر امنیتی
+import { useRouter } from "next/router";
 
 /* 🎨 Custom react-select styles */
 const customSelectStyles = {
@@ -57,6 +58,33 @@ const customSelectStyles = {
 };
 
 export default function AddBusinessPage() {
+  const [authChecked, setAuthChecked] = useState(false);
+  const router = useRouter();
+  
+  useEffect(() => {
+    async function check() {
+      try {
+        const res = await apiClient.get("/auth/me");
+  
+        if (!res.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
+        }
+  
+        if (res.data.role !== "admin" && res.data.role !== "superadmin") {
+          window.location.href = "/";
+          return;
+        }
+  
+        setAuthChecked(true);
+      } catch (err) {
+        window.location.href = "/auth/login";
+      }
+    }
+  
+    check();
+  }, []);
+
   const [form, setForm] = useState({
     name: "",
     category: "",
@@ -74,6 +102,7 @@ export default function AddBusinessPage() {
     image: null,
   });
 
+  
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -81,6 +110,7 @@ export default function AddBusinessPage() {
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
+  
 
   // ========= COUNTRY & CITY =========
   const countryOptions = Country.getAllCountries().map((c) => ({
@@ -288,6 +318,16 @@ export default function AddBusinessPage() {
       setLoading(false);
     }
   }
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Checking authentication...
+      </div>
+    );
+  }
+
+  
   return (
     <AdminLayout>
       <main className="admin-container">
