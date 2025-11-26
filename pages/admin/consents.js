@@ -1,3 +1,4 @@
+//pages/admin/consents.js
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient"; // ✅ axios امن با interceptor
 import AdminLayout from "../../components/admin/AdminLayout";
