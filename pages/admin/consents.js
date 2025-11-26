@@ -1,6 +1,6 @@
-// frontend/pages/admin/consents.js
+//pages/admin/consents.js
 import { useEffect, useState } from "react";
-import apiClient from "../../utils/apiClient"; 
+import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 
 export default function AdminConsentsPage() {
@@ -11,7 +11,9 @@ export default function AdminConsentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [authChecked, setAuthChecked] = useState(false);
 
-  // 🧭 چک دسترسی با HttpOnly Cookie
+  /* ==========================================================
+     ✅ ۱. چک کردن دسترسی با HttpOnly (فقط یک‌بار)
+  ========================================================== */
   useEffect(() => {
     async function checkAccess() {
       try {
@@ -28,7 +30,7 @@ export default function AdminConsentsPage() {
         }
 
         setAuthChecked(true);
-        fetchConsents();
+        fetchConsents(); // دریافت اولیه
       } catch (err) {
         window.location.href = "/auth/login";
       }
@@ -37,11 +39,16 @@ export default function AdminConsentsPage() {
     checkAccess();
   }, []);
 
-  // 🟢 Fetch consents
+  /* ==========================================================
+     📡 ۲. دریافت لیست consents
+  ========================================================== */
   async function fetchConsents() {
     setLoading(true);
     try {
-      const res = await apiClient.get("/admin/consents");
+      const res = await apiClient.get("/admin/consents", {
+        withCredentials: true,
+      });
+
       setConsents(res.data || []);
       setFilteredConsents(res.data || []);
     } catch (err) {
@@ -52,7 +59,9 @@ export default function AdminConsentsPage() {
     }
   }
 
-  // 🔍 Search + Filter
+  /* ==========================================================
+     🔍 ۳. اعمال جستجو و فیلتر
+  ========================================================== */
   useEffect(() => {
     let list = consents;
 
@@ -69,11 +78,14 @@ export default function AdminConsentsPage() {
     setFilteredConsents(list);
   }, [filterType, searchTerm, consents]);
 
-  // 📤 XLSX Export
+  /* ==========================================================
+     📤 ۴. خروجی XLSX
+  ========================================================== */
   async function handleExportXLSX() {
     try {
       const res = await apiClient.get("/admin/consents/export/xlsx", {
         responseType: "blob",
+        withCredentials: true,
       });
 
       const blob = new Blob([res.data]);
@@ -91,11 +103,14 @@ export default function AdminConsentsPage() {
     }
   }
 
-  // 🧾 PDF Export
+  /* ==========================================================
+     🧾 ۵. خروجی PDF
+  ========================================================== */
   async function handleExportPDF() {
     try {
       const res = await apiClient.get("/admin/consents/export/pdf", {
         responseType: "blob",
+        withCredentials: true,
       });
 
       const blob = new Blob([res.data]);
@@ -113,7 +128,9 @@ export default function AdminConsentsPage() {
     }
   }
 
-  // ⛔ قبل از تأیید auth رندر نکن
+  /* ==========================================================
+     ⛔ قبل از تأیید authChecked رندر نکن
+  ========================================================== */
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -122,13 +139,16 @@ export default function AdminConsentsPage() {
     );
   }
 
+  /* ==========================================================
+     🎨 UI
+  ========================================================== */
   return (
     <AdminLayout>
       <div className="admin-container">
         <div className="admin-section">
           <h2 className="admin-title mb-4">🧾 User Consents Log</h2>
 
-          {/* 🔹 Filters */}
+          {/* Filters */}
           <div className="flex flex-wrap gap-3 mb-5 items-center">
             <select
               value={filterType}
@@ -171,7 +191,7 @@ export default function AdminConsentsPage() {
             </button>
           </div>
 
-          {/* 🔹 Table */}
+          {/* Table */}
           {loading ? (
             <p className="admin-muted">Loading...</p>
           ) : filteredConsents.length === 0 ? (
@@ -196,6 +216,7 @@ export default function AdminConsentsPage() {
                       <td>{c.email}</td>
                       <td className="capitalize">{c.consent_type}</td>
                       <td>{c.version}</td>
+
                       <td
                         className={`font-semibold ${
                           c.choice === "accepted"
@@ -205,7 +226,9 @@ export default function AdminConsentsPage() {
                       >
                         {c.choice}
                       </td>
+
                       <td>{c.ip_address || "—"}</td>
+
                       <td>{new Date(c.created_at).toLocaleString()}</td>
                     </tr>
                   ))}
