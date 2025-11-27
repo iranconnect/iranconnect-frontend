@@ -43,7 +43,7 @@ apiClient.interceptors.response.use(
       forceLogoutAndRedirect("Your account was temporarily locked.");
 
     // صفحات عمومی احراز هویت که نباید در آن‌ها redirect اجباری انجام شود
-    const authPages = ["/auth/login", "/auth/forgot", "/auth/register", "/auth/change-password"];
+    const authPages = ["/auth/login", "/auth/forgot", "/auth/register", "/auth/change-password", "/index", "/about", "/contact", "/privacy-policy", "/terms-of-service" ];
     
     // --- Auto Logout (Session invalidation: login on another device)
     if (status === 440 && data?.reason === "logged_in_elsewhere") {
