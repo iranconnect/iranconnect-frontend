@@ -1,7 +1,6 @@
 //frontend/pages/admin/add.js
 import { useState, useEffect, useRef } from "react";
 import Select from "react-select";
-import { Loader } from "@googlemaps/js-api-loader";
 import { Country, City } from "country-state-city";
 import categoriesList from "../../data/categories";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -59,7 +58,6 @@ const customSelectStyles = {
 
 export default function AddBusinessPage() {
   const [authChecked, setAuthChecked] = useState(false);
-  const router = useRouter();
   
   useEffect(() => {
     async function check() {
@@ -97,8 +95,6 @@ export default function AddBusinessPage() {
     email: "",
     website: "",
     location: "",
-    lat: "",
-    lng: "",
     image: null,
   });
 
@@ -109,7 +105,6 @@ export default function AddBusinessPage() {
   const [countryCode, setCountryCode] = useState("+00");
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef(null);
-  const markerRef = useRef(null);
   
 
   // ========= COUNTRY & CITY =========
@@ -161,7 +156,7 @@ export default function AddBusinessPage() {
   async function loadMap() {
     if (mapLoaded) return;
     setMapLoaded(true);
-
+  
     try {
       if (!window.google) {
         await new Promise((resolve, reject) => {
@@ -174,52 +169,31 @@ export default function AddBusinessPage() {
           document.head.appendChild(script);
         });
       }
-
+  
       const map = new window.google.maps.Map(mapRef.current, {
         center: { lat: 43.7102, lng: 7.262 },
         zoom: 13,
       });
-
+  
       const input = document.getElementById("location-input");
       const autocomplete = new window.google.maps.places.Autocomplete(input, {
         fields: ["formatted_address", "geometry"],
       });
-
+  
       autocomplete.addListener("place_changed", () => {
         const place = autocomplete.getPlace();
         if (!place.geometry) return;
-
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-
-        map.setCenter({ lat, lng });
+  
+        map.setCenter(place.geometry.location);
         map.setZoom(15);
-
-        if (markerRef.current) markerRef.current.setMap(null);
-
-        const marker = new window.google.maps.Marker({
-          map,
-          position: { lat, lng },
-          draggable: true,
-        });
-
-        marker.addListener("dragend", () => {
-          const pos = marker.getPosition();
-          setForm((prev) => ({
-            ...prev,
-            lat: pos.lat(),
-            lng: pos.lng(),
-          }));
-        });
-
-        markerRef.current = marker;
+  
+        // فقط آدرس ذخیره می‌شود
         setForm((prev) => ({
           ...prev,
           location: place.formatted_address,
-          lat,
-          lng,
         }));
       });
+  
     } catch (err) {
       console.error("Google Maps failed to load:", err);
       setError(
@@ -227,6 +201,7 @@ export default function AddBusinessPage() {
       );
     }
   }
+  
 
   // ========= Validation =========
   function isValidEmail(email) {
@@ -307,8 +282,6 @@ export default function AddBusinessPage() {
         email: "",
         website: "",
         location: "",
-        lat: "",
-        lng: "",
         image: null,
       });
     } catch (err) {
@@ -536,11 +509,7 @@ export default function AddBusinessPage() {
                   className="mt-3 h-64 w-full rounded-lg border border-[var(--border)]"
                 ></div>
               )}
-              {form.lat && form.lng && (
-                <p className="text-xs mt-1 text-gray-500">
-                  📍 Lat: {form.lat.toFixed(5)}, Lng: {form.lng.toFixed(5)}
-                </p>
-              )}
+              
             </div>
 
             {/* IMAGE UPLOAD */}
