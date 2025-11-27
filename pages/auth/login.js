@@ -204,19 +204,14 @@ export default function Login() {
             Welcome Back 👋
           </h2>
 
-          {/* ⚠️ پیام امنیتی یکپارچه‌شده */}
+          {/* ⚠️ پیام امنیتی + دکمه Reset Password (Mobile Optimized) */}
           {securityMsg && (
             <div
-              className="mb-4 p-3 rounded-lg text-sm font-medium"
-              style={{
-                background: "#fff8e1",
-                color: "#7a4e00",
-                border: "1px solid #ffecb3",
-                lineHeight: "1.4",
-              }}
+              className="mb-4"
               dangerouslySetInnerHTML={{ __html: securityMsg }}
             />
           )}
+
 
           {/* 🔐 فرم ورود */}
           <form onSubmit={submit} className="space-y-4">
