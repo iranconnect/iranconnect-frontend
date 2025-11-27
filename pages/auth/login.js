@@ -44,9 +44,6 @@ export default function Login() {
       document.documentElement.getAttribute("lang") || "en";
     setLang(initialLang); // ❗️ دیگر از localStorage خوانده نمی‌شود
 
-    // 🚫 iran_security_msg از localStorage حذف شد (HttpOnly فعال)
-    setSecurityMsg("");
-
     const observer = new MutationObserver(() => {
       const newTheme = document.documentElement.getAttribute("data-theme");
       setTheme(newTheme);
