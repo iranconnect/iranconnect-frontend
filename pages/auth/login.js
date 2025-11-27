@@ -26,10 +26,10 @@ export default function Login() {
 
   /* ───────────── 📌 پیام امنیتی ورود هم‌زمان ───────────── */
   useEffect(() => {
-    const sec = localStorage.getItem("iran_security_msg");
-    if (sec) {
-      setSecurityMsg(sec);
-      localStorage.removeItem("iran_security_msg");
+    const msg = sessionStorage.getItem("iran_auto_logout_msg");
+    if (msg) {
+      setSecurityMsg(msg);
+      sessionStorage.removeItem("iran_auto_logout_msg");
     }
   }, []);
 
@@ -217,9 +217,8 @@ export default function Login() {
                 border: "1px solid #ffecb3",
                 lineHeight: "1.4",
               }}
-            >
-              {securityMsg}
-            </div>
+              dangerouslySetInnerHTML={{ __html: securityMsg }}
+            />
           )}
 
           {/* 🔐 فرم ورود */}
