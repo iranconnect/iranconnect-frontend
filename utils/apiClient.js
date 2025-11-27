@@ -42,11 +42,29 @@ apiClient.interceptors.response.use(
     if (status === 423)
       forceLogoutAndRedirect("Your account was temporarily locked.");
 
-    if (status === 440 || data?.reason === "logged_in_elsewhere") {
+    // --- Auto Logout (Session invalidation: login on another device)
+    if (status === 440 && data?.reason === "logged_in_elsewhere") {
+    
+      // فقط وقتی که روی صفحه لاگین نیستیم
       if (window.location.pathname !== "/auth/login") {
-        forceLogoutAndRedirect("New login detected.");
+    
+        // پیام امنیتی — با لینک به Forgot Password
+        const msg = `
+    We detected a new login to your account from another device. 
+    For your security, you have been logged out on this device. 
+    If this wasn’t you, please <a href="/auth/forgot" class="text-turquoise font-medium underline">reset your password</a>.
+        `;
+    
+        // ذخیره پیام در sessionStorage
+        sessionStorage.setItem("iran_auto_logout_msg", msg);
+    
+        // ریدایرکت بدون لوپ
+        window.location.href = "/auth/login?forced=1";
       }
+    
+      return Promise.reject(error);
     }
+
 
 
     if (
