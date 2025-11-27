@@ -42,28 +42,29 @@ apiClient.interceptors.response.use(
     if (status === 423)
       forceLogoutAndRedirect("Your account was temporarily locked.");
 
-    // صفحات عمومی که نباید redirect شوند
+    // صفحات عمومی احراز هویت که نباید در آن‌ها redirect اجباری انجام شود
     const authPages = ["/auth/login", "/auth/forgot", "/auth/register", "/auth/change-password"];
     
     // --- Auto Logout (Session invalidation: login on another device)
     if (status === 440 && data?.reason === "logged_in_elsewhere") {
-      if (window.location.pathname !== "/auth/login") {
-        
-        // پیام HTML کامل برای موبایل
+      const currentPath = window.location.pathname || "";
+    
+      // فقط اگر روی صفحات غیر-auth هستیم ریدایرکت کنیم
+      if (!authPages.includes(currentPath)) {
         const htmlMsg = `
           <div style="
             background:#fff7d6;
             color:#6b4e00;
-            padding:14px 16px;
+            padding:12px 14px;
             border:1px solid #f4e2a4;
             border-radius:12px;
-            font-size:14px;
+            font-size:13px;
             line-height:1.5;
-            margin-bottom:12px;
+            margin-bottom:10px;
           ">
-            <strong>Security Notice</strong><br/>
-            We detected a login to your account from another device.  
-            You have been logged out for your protection.
+            <strong>Security notice</strong><br/>
+            You were logged out because we detected a login from another device.
+            If this wasn't you, please reset your password.
           </div>
     
           <a 
@@ -72,24 +73,24 @@ apiClient.interceptors.response.use(
               display:block;
               width:100%;
               text-align:center;
-              padding:12px;
+              padding:10px 12px;
               background:#00c4b4;
               color:#0a1b2a;
               border-radius:10px;
               font-weight:600;
-              margin-bottom:18px;
+              margin-bottom:16px;
               text-decoration:none;
             "
           >
-            Reset Password
+            Reset password
           </a>
         `;
     
         sessionStorage.setItem("iran_auto_logout_msg", htmlMsg);
-    
         window.location.href = "/auth/login?forced=1";
       }
     
+      // روی خود صفحات auth فقط خطا را پاس می‌دهیم، بدون redirect
       return Promise.reject(err);
     }
 
