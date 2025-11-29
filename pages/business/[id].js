@@ -81,19 +81,22 @@ export default function Detail() {
     );
   }
 
-  const base = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+  const cdnBase = process.env.NEXT_PUBLIC_CDN_BASE || "http://localhost:5000";
 
-  // 📌 مرحله 1: تعیین URL اصلی
+  // 📌 1) تعیین URL اصلی تصویر
   const original = biz.image_url
-    ? (biz.image_url.startsWith("http") ? biz.image_url : `${base}${biz.image_url}`)
+    ? (biz.image_url.startsWith("http")
+        ? biz.image_url
+        : `${apiBase.replace('/api','')}${biz.image_url}`)
     : "/logo.png";
-  
-  // 📌 مرحله 2: اگر تصویر محلی باشد → کش لازم نیست
+
+  // 📌 2) اگر Cloudinary باشد → از CDN استفاده کن
   let imageSrc = original;
-  
+
   if (original.startsWith("http")) {
     const filename = original.split("/").pop().split("?")[0];
-    imageSrc = `${base}/cdn/${filename}?url=${encodeURIComponent(original)}`;
+    imageSrc = `${cdnBase}/cdn/${filename}?url=${encodeURIComponent(original)}`;
   }
 
 
