@@ -1,5 +1,4 @@
-/*pages/admin/dashboard.js*/
-/*frontend/pages/admin/dashboard.js*/
+// pages/admin/dashboard.js
 import { useEffect, useMemo, useState } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -20,7 +19,9 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   useEffect(() => {
     async function checkAccess() {
       try {
-        const me = await apiClient.get("/auth/me", { withCredentials: true });
+        const me = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
 
         if (!me.data?.ok) {
           window.location.href = "/auth/login";
@@ -34,7 +35,6 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
 
         setAuthChecked(true);
 
-        // Load dashboard data
         fetchBusinesses();
         fetchUsers();
       } catch (err) {
@@ -46,12 +46,14 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   }, []);
 
   /* ============================================================
-     📦 Fetch Businesses
+     📦 Fetch Businesses (Secure)
   ============================================================ */
   async function fetchBusinesses() {
     setLoadingBiz(true);
     try {
-      const r = await apiClient.get("/admin/businesses");
+      const r = await apiClient.get("/admin/businesses", {
+        withCredentials: true,
+      });
       setBusinesses(r.data || []);
     } catch (e) {
       console.error("❌ Error fetching businesses:", e);
@@ -61,12 +63,14 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   }
 
   /* ============================================================
-     👥 Fetch Users
+     👥 Fetch Users (Secure)
   ============================================================ */
   async function fetchUsers() {
     setLoadingUsers(true);
     try {
-      const r = await apiClient.get("/admin/users");
+      const r = await apiClient.get("/admin/users", {
+        withCredentials: true,
+      });
       setUsers(r.data || []);
     } catch (e) {
       console.error("❌ Error fetching users:", e);
@@ -166,14 +170,15 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   ============================================================ */
   return (
     <AdminLayout toggleTheme={toggleTheme} currentTheme={currentTheme}>
-      {/* 📊 Stats */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <StatCard title="Total Businesses" value={stats.totalBusinesses} />
+
         <StatCard
           title="Average Ratings"
           value={stats.avgRatings}
           subtitle="Across all businesses"
         />
+
         <StatCard
           title="Total Users"
           value={stats.totalUsers}
@@ -181,7 +186,6 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
         />
       </section>
 
-      {/* 🏢 Latest Businesses */}
       <Table
         title="Latest Businesses"
         headers={["Name", "Category", "Country", "City"]}
@@ -197,7 +201,6 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
           }))}
       />
 
-      {/* 👥 Latest Users */}
       <div className="mt-8">
         <Table
           title="Latest Users"
