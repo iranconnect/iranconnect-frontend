@@ -81,12 +81,21 @@ export default function Detail() {
     );
   }
 
-  /* 🎯 نسخه نهایی: Cloudinary مستقیم */
   const base = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
-  const imageSrc =
-    biz.image_url
-      ? (biz.image_url.startsWith("http") ? biz.image_url : `${base}${biz.image_url}`)
-      : "/logo.png";
+
+  // 📌 مرحله 1: تعیین URL اصلی
+  const original = biz.image_url
+    ? (biz.image_url.startsWith("http") ? biz.image_url : `${base}${biz.image_url}`)
+    : "/logo.png";
+  
+  // 📌 مرحله 2: اگر تصویر محلی باشد → کش لازم نیست
+  let imageSrc = original;
+  
+  if (original.startsWith("http")) {
+    const filename = original.split("/").pop().split("?")[0];
+    imageSrc = `${base}/cdn/${filename}?url=${encodeURIComponent(original)}`;
+  }
+
 
   const phoneWithCode =
     biz?.phone && biz?.country
