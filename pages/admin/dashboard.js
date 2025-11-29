@@ -191,7 +191,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
         headers={["Name", "Category", "Country", "City"]}
         loading={loadingBiz}
         data={[...businesses]
-          .reverse()
+          .sort((a, b) => b.id - a.id)
           .slice(0, 5)
           .map((b) => ({
             Name: b.name,
@@ -207,7 +207,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
           headers={["Email", "Role", "Verified", "Created At"]}
           loading={loadingUsers}
           data={[...users]
-            .reverse()
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
             .slice(0, 5)
             .map((u) => ({
               Email: u.email,
