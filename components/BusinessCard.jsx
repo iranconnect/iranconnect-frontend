@@ -4,13 +4,25 @@ import Link from 'next/link';
 export default function BusinessCard({ b }) {
   const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
 
-  // 🎯 نسخه نهایی — Cloudinary مستقیم، بدون /cdn
-  const imageSrc =
+  // 📌 مرحله 1: انتخاب URL اصلی بدون تغییر
+  const original =
     b.image_url
       ? (b.image_url.startsWith("http") ? b.image_url : `${apiBase}${b.image_url}`)
       : b.logo_url
       ? (b.logo_url.startsWith("http") ? b.logo_url : `${apiBase}${b.logo_url}`)
       : "/logo.png";
+  
+  // 📌 مرحله 2: اگر تصویر پیش‌فرض محلی است → کش لازم نیست
+  let imageSrc = original;
+  
+  if (original.startsWith("http")) {
+    // 📌 استخراج نام فایل
+    const filename = original.split("/").pop().split("?")[0];
+  
+    // 📌 مسیر CDN (بک‌اند → cacheImage.js)
+    imageSrc = `${apiBase}/cdn/${filename}?url=${encodeURIComponent(original)}`;
+  }
+
 
   return (
     <Link href={`/business/${b.id}`} className="block group w-full">
