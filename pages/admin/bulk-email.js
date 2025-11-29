@@ -1,16 +1,16 @@
 // frontend/pages/admin/bulk-email.js
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import apiClient from "../../utils/apiClient"; // نسخه امن axios
+import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 import "react-quill/dist/quill.snow.css";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 export default function BulkEmailPage() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
-  // Compose / Send
+  // Send form
   const [senderEmail, setSenderEmail] = useState("privacy@iranconnect.org");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -26,52 +26,65 @@ export default function BulkEmailPage() {
 
   const previewRef = useRef(null);
 
-  // 🔐 احراز هویت صحیح فقط با کوکی HttpOnly
+  // 🔐 Access control
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+
     async function checkAccess() {
       try {
-        const me = await apiClient.get("/auth/me", { withCredentials: true });
+        const me = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
 
         if (!me?.data?.ok) {
-          window.location.href = "/auth/login";
+          if (mounted) window.location.href = "/auth/login";
           return;
         }
 
-        const role = me.data.role || "user";
+        const role = me.data.role;
         if (role !== "admin" && role !== "superadmin") {
-          window.location.href = "/";
+          if (mounted) window.location.href = "/";
           return;
         }
 
-        setAuthChecked(true);
-        fetchLogs();
+        if (mounted) setAuthChecked(true);
       } catch (err) {
-        window.location.href = "/auth/login";
+        if (mounted) window.location.href = "/auth/login";
       }
     }
 
     checkAccess();
+    return () => (mounted = false);
   }, []);
-  /* ======================================================================
-      📜 دریافت لاگ‌ها
-     ====================================================================== */
+
+  /* ============================================================
+     📜 Fetch logs AFTER auth
+  ============================================================ */
+  useEffect(() => {
+    if (!authChecked) return;
+    fetchLogs();
+  }, [authChecked]);
+
   async function fetchLogs(bulkCodeDigits = null) {
     try {
-      let url = `/admin/bulk-email/logs`;
+      let url = "/admin/bulk-email/logs";
       if (bulkCodeDigits) url += `?bulk_code=${bulkCodeDigits}`;
 
-      const res = await apiClient.get(url, { withCredentials: true });
+      const res = await apiClient.get(url, {
+        withCredentials: true,
+      });
+
       setLogs(res.data || []);
     } catch (err) {
       console.error("❌ Error fetching logs:", err);
     }
   }
 
-  /* ======================================================================
-      🚀 ارسال ایمیل گروهی
-     ====================================================================== */
+  /* ============================================================
+     🚀 Send Bulk Emails
+  ============================================================ */
   async function handleSendEmail() {
     if (!subject.trim() || !body.trim()) {
       alert("Please enter subject and body.");
@@ -89,13 +102,13 @@ export default function BulkEmailPage() {
         payload.append("body", body);
         attachments.forEach((file) => payload.append("attachments", file));
 
-        await apiClient.post(`/admin/bulk-email/send`, payload, {
+        await apiClient.post("/admin/bulk-email/send", payload, {
           headers: { "Content-Type": "multipart/form-data" },
           withCredentials: true,
         });
       } else {
         await apiClient.post(
-          `/admin/bulk-email/send`,
+          "/admin/bulk-email/send",
           { sender_email: senderEmail, subject, body },
           { withCredentials: true }
         );
@@ -110,25 +123,26 @@ export default function BulkEmailPage() {
       console.error("❌ Error sending emails:", err);
       alert(err.response?.data?.error || "❌ Error sending emails");
     }
+
     setLoading(false);
   }
 
-  /* ======================================================================
-      ⬇️ دانلود فایل
-     ====================================================================== */
-  function downloadFrom(url, filename = "") {
-    const link = document.createElement("a");
-    link.href = url;
-    if (filename) link.download = filename;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+  /* ============================================================
+     📥 Download helper
+  ============================================================ */
+  function downloadFrom(url) {
+    const fullUrl = `${API_BASE}${url}`;
+    const a = document.createElement("a");
+    a.href = fullUrl;
+    a.target = "_blank";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
 
-  /* ======================================================================
-      🧩 ساخت URL گزارش فیلترشده
-     ====================================================================== */
+  /* ============================================================
+     Report Filter Builder
+  ============================================================ */
   function buildFilteredReportUrl(filter, value) {
     const params = new URLSearchParams();
     params.set("filter", filter);
@@ -136,9 +150,9 @@ export default function BulkEmailPage() {
     return `/admin/bulk-email/report/filter?${params.toString()}`;
   }
 
-  /* ======================================================================
-      🧮 اعتبارسنجی تاریخ
-     ====================================================================== */
+  /* ============================================================
+     Date Validation
+  ============================================================ */
   function isValidDDMMYYYY(v) {
     if (!/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return false;
     const [dd, mm, yyyy] = v.split("/").map(Number);
@@ -150,9 +164,9 @@ export default function BulkEmailPage() {
     );
   }
 
-  /* ======================================================================
-      🧩 تولید گزارش
-     ====================================================================== */
+  /* ============================================================
+     Generate Report
+  ============================================================ */
   async function handleGenerateReport() {
     if (!filterType) {
       alert("Please select a filter first.");
@@ -169,36 +183,30 @@ export default function BulkEmailPage() {
     }
 
     if (!filterValue.trim()) {
-      alert("Please enter a value for the selected filter.");
+      alert("Please enter a value.");
       return;
     }
 
     if (filterType === "date" && !isValidDDMMYYYY(filterValue.trim())) {
-      alert("Please enter date as DD/MM/YYYY (e.g. 21/10/2025)");
+      alert("Please enter date as DD/MM/YYYY");
       return;
-    }
-
-    if (
-      (filterType === "sender_email" || filterType === "admin_email") &&
-      !filterValue.includes("@")
-    ) {
-      if (!confirm("Value doesn't look like an email. Continue anyway?"))
-        return;
     }
 
     const url = buildFilteredReportUrl(filterType, filterValue);
     downloadFrom(url);
   }
 
-  /* ======================================================================
-      ✂️ کوتاه‌سازی متن جدول
-     ====================================================================== */
+  /* ============================================================
+     Utility
+  ============================================================ */
   function truncate(text, length = 25) {
     if (!text) return "-";
     return text.length > length ? text.slice(0, length) + "..." : text;
   }
 
-  // ⚙️ تنظیمات Quill
+  /* ============================================================
+     Quill Config
+  ============================================================ */
   const quillModules = {
     toolbar: [
       [{ font: [] }, { size: [] }],
@@ -227,6 +235,9 @@ export default function BulkEmailPage() {
     "image",
   ];
 
+  /* ============================================================
+     Loading state before auth
+  ============================================================ */
   if (!authChecked) {
     return (
       <AdminLayout>
@@ -236,11 +247,14 @@ export default function BulkEmailPage() {
       </AdminLayout>
     );
   }
+
+  /* ============================================================
+     ✔ Render UI (same as original)
+  ============================================================ */
   return (
     <AdminLayout>
       <div className="admin-container">
 
-        {/* === عنوان صفحه === */}
         <div className="mb-6">
           <h1 className="admin-title">📨 Bulk Email Manager</h1>
           <p className="admin-muted">
@@ -248,15 +262,12 @@ export default function BulkEmailPage() {
           </p>
         </div>
 
-        {/* === فرم ارسال ایمیل === */}
+        {/* -------------------- SEND EMAIL -------------------- */}
         <section className="admin-section mb-10" style={{ overflow: "visible" }}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
 
-            {/* Sender Email */}
             <div>
-              <label className="block mb-1 text-sm font-medium">
-                Sender Email
-              </label>
+              <label className="block mb-1 text-sm font-medium">Sender Email</label>
               <select
                 className="admin-input"
                 value={senderEmail}
@@ -268,7 +279,6 @@ export default function BulkEmailPage() {
               </select>
             </div>
 
-            {/* Subject */}
             <div className="md:col-span-2">
               <label className="block mb-1 text-sm font-medium">Subject</label>
               <input
@@ -282,11 +292,8 @@ export default function BulkEmailPage() {
 
           </div>
 
-          {/* Attachments */}
           <div className="mb-4">
-            <label className="block mb-1 text-sm font-medium">
-              Attachments (optional)
-            </label>
+            <label className="block mb-1 text-sm font-medium">Attachments</label>
             <input
               type="file"
               multiple
@@ -300,12 +307,9 @@ export default function BulkEmailPage() {
             )}
           </div>
 
-          {/* Editor + Preview */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             <div className="quill-wrapper relative z-[50]">
-              <label className="block mb-2 text-sm font-medium">
-                Email Content
-              </label>
+              <label className="block mb-2 text-sm font-medium">Email Content</label>
               <ReactQuill
                 theme="snow"
                 value={body}
@@ -313,7 +317,7 @@ export default function BulkEmailPage() {
                 modules={quillModules}
                 formats={quillFormats}
                 placeholder="Write your email content here..."
-                className="min-h-[300px] text-[var(--text)] bg-[var(--bg)] rounded-lg"
+                className="min-h-[300px] bg-[var(--bg)] rounded-lg"
               />
             </div>
 
@@ -330,7 +334,6 @@ export default function BulkEmailPage() {
             </div>
           </div>
 
-          {/* Send Button */}
           <div className="flex justify-end mt-6">
             <button
               onClick={handleSendEmail}
@@ -342,13 +345,11 @@ export default function BulkEmailPage() {
           </div>
         </section>
 
-        {/* === بخش فیلتر گزارش‌ها === */}
+        {/* -------------------- REPORT FILTER -------------------- */}
         <section className="admin-section mb-6">
           <h2 className="admin-title mb-3">📊 Filter Reports</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-4">
-
-            {/* Filter Type */}
             <div>
               <label className="block mb-1 text-sm font-medium">Filter Type</label>
               <select
@@ -367,7 +368,6 @@ export default function BulkEmailPage() {
               </select>
             </div>
 
-            {/* Filter Value */}
             {filterType && (
               <div className="md:col-span-2">
                 <label className="block mb-1 text-sm font-medium">Value</label>
@@ -392,7 +392,7 @@ export default function BulkEmailPage() {
           </div>
         </section>
 
-        {/* === جدول لاگ‌ها === */}
+        {/* -------------------- LOGS TABLE -------------------- */}
         <section className="admin-section">
           <h2 className="admin-title mb-3">📋 Sent Email Logs</h2>
 
@@ -432,19 +432,18 @@ export default function BulkEmailPage() {
                         {log.sent_count}/{log.total_count}
                       </td>
 
-                      <td>{new Date(log.created_at).toLocaleString("en-GB")}</td>
+                      <td>
+                        {new Date(log.created_at).toLocaleString("en-GB")}
+                      </td>
 
-                      <td
-                        className="text-blue-700 font-medium"
-                        title={log.admin_email}
-                      >
+                      <td title={log.admin_email} className="text-blue-700">
                         {truncate(log.admin_email)}
                       </td>
 
                       <td>
                         <div className="flex gap-2">
                           <a
-                            href={`/admin/bulk-email/report/${log.id}/pdf`}
+                            href={`${API_BASE}/admin/bulk-email/report/${log.id}/pdf`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="admin-btn admin-btn-secondary"
@@ -452,7 +451,7 @@ export default function BulkEmailPage() {
                             PDF
                           </a>
                           <a
-                            href={`/admin/bulk-email/report/${log.id}/xlsx`}
+                            href={`${API_BASE}/admin/bulk-email/report/${log.id}/xlsx`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="admin-btn admin-btn-secondary"
@@ -470,6 +469,7 @@ export default function BulkEmailPage() {
           </div>
 
         </section>
+
       </div>
     </AdminLayout>
   );
