@@ -14,7 +14,6 @@ export default function AdminBlockedIPs() {
   });
 
   const [selectedIP, setSelectedIP] = useState(null);
-
   const [authChecked, setAuthChecked] = useState(false);
 
   const [page, setPage] = useState(1);
@@ -25,32 +24,43 @@ export default function AdminBlockedIPs() {
     totalPages: 1,
   });
 
-  // 🔐 احراز هویت ادمین
+  /* ===========================================================
+     🔐 مرحله 1: احراز هویت ادمین با کوکی HttpOnly (ایمن)
+     =========================================================== */
   useEffect(() => {
-    async function check() {
+    let mounted = true;
+
+    async function checkAuth() {
       try {
-        const res = await apiClient.get("/auth/me");
+        const res = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
 
         if (!res.data?.ok) {
-          window.location.href = "/auth/login";
+          if (mounted) window.location.href = "/auth/login";
           return;
         }
 
         if (res.data.role !== "admin" && res.data.role !== "superadmin") {
-          window.location.href = "/";
+          if (mounted) window.location.href = "/";
           return;
         }
 
-        setAuthChecked(true);
+        if (mounted) setAuthChecked(true);
       } catch (err) {
-        window.location.href = "/auth/login";
+        if (mounted) window.location.href = "/auth/login";
       }
     }
 
-    check();
+    checkAuth();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // 📥 دریافت لیست پس از تأیید احراز هویت
+  /* ===========================================================
+     📥 مرحله 2: دریافت رکوردها — فقط بعد از احراز هویت
+     =========================================================== */
   useEffect(() => {
     if (!authChecked) return;
     fetchBlockedIPs(1);
@@ -65,7 +75,10 @@ export default function AdminBlockedIPs() {
         pageSize: 10,
       };
 
-      const res = await apiClient.get("/admin/blocked-ips", { params });
+      const res = await apiClient.get("/admin/blocked-ips", {
+        params,
+        withCredentials: true,
+      });
 
       setList(res.data?.data || []);
       setPagination(
@@ -76,6 +89,7 @@ export default function AdminBlockedIPs() {
           totalPages: 1,
         }
       );
+
       setPage(newPage);
     } catch (err) {
       console.error("Failed to fetch blocked IPs:", err);
@@ -84,9 +98,12 @@ export default function AdminBlockedIPs() {
     }
   }
 
+  /* ===========================================================
+     📁 Export
+     =========================================================== */
   function handleExport(format) {
     window.open(
-      `${process.env.NEXT_PUBLIC_API_BASE}/admin/blocked-ips/export/${format}`,
+      `${process.env.NEXT_PUBLIC_API_BASE}/admin/blocked-ips/export/${format}?t=${Date.now()}`,
       "_blank"
     );
   }
@@ -110,15 +127,22 @@ export default function AdminBlockedIPs() {
     fetchBlockedIPs(newPage);
   }
 
-  // ⏳ نمایش هنگام چک کردن احراز هویت
+  /* ===========================================================
+     ⏳ حالت لودینگ قبل از احراز نقش
+     =========================================================== */
   if (!authChecked) {
     return (
       <AdminLayout>
-        <div className="p-6 text-center opacity-70">Checking authentication...</div>
+        <div className="p-6 text-center opacity-70">
+          Checking authentication...
+        </div>
       </AdminLayout>
     );
   }
 
+  /* ===========================================================
+     🎉 صفحه اصلی
+     =========================================================== */
   return (
     <AdminLayout>
       <div className="admin-container">
@@ -163,6 +187,7 @@ export default function AdminBlockedIPs() {
               Clear
             </button>
 
+            {/* Export Buttons */}
             <div className="flex flex-row gap-2 ml-auto">
               <button
                 onClick={() => handleExport("xlsx")}
