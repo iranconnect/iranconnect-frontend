@@ -1,4 +1,4 @@
-//pages/admin/consents.js
+// pages/admin/consents.js
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -12,35 +12,42 @@ export default function AdminConsentsPage() {
   const [authChecked, setAuthChecked] = useState(false);
 
   /* ==========================================================
-     ✅ ۱. چک کردن دسترسی با HttpOnly (فقط یک‌بار)
+     🔐 ۱. چک کردن دسترسی با JWT HttpOnly + نقش Admin/Superadmin
   ========================================================== */
   useEffect(() => {
+    let mounted = true;
+
     async function checkAccess() {
       try {
-        const me = await apiClient.get("/auth/me", { withCredentials: true });
+        const res = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
 
-        if (!me.data?.ok) {
-          window.location.href = "/auth/login";
+        if (!res.data?.ok) {
+          if (mounted) window.location.href = "/auth/login";
           return;
         }
 
-        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
-          window.location.href = "/";
+        if (res.data.role !== "admin" && res.data.role !== "superadmin") {
+          if (mounted) window.location.href = "/";
           return;
         }
 
-        setAuthChecked(true);
-        fetchConsents(); // دریافت اولیه
-      } catch (err) {
+        if (mounted) {
+          setAuthChecked(true);
+          fetchConsents();
+        }
+      } catch {
         window.location.href = "/auth/login";
       }
     }
 
     checkAccess();
+    return () => (mounted = false);
   }, []);
 
   /* ==========================================================
-     📡 ۲. دریافت لیست consents
+     📡 ۲. دریافت لیست Consents
   ========================================================== */
   async function fetchConsents() {
     setLoading(true);
@@ -70,9 +77,8 @@ export default function AdminConsentsPage() {
     }
 
     if (searchTerm) {
-      list = list.filter((c) =>
-        c.email?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const lower = searchTerm.toLowerCase();
+      list = list.filter((c) => c.email?.toLowerCase().includes(lower));
     }
 
     setFilteredConsents(list);
@@ -84,8 +90,8 @@ export default function AdminConsentsPage() {
   async function handleExportXLSX() {
     try {
       const res = await apiClient.get("/admin/consents/export/xlsx", {
-        responseType: "blob",
         withCredentials: true,
+        responseType: "blob",
       });
 
       const blob = new Blob([res.data]);
@@ -109,8 +115,8 @@ export default function AdminConsentsPage() {
   async function handleExportPDF() {
     try {
       const res = await apiClient.get("/admin/consents/export/pdf", {
-        responseType: "blob",
         withCredentials: true,
+        responseType: "blob",
       });
 
       const blob = new Blob([res.data]);
@@ -129,7 +135,7 @@ export default function AdminConsentsPage() {
   }
 
   /* ==========================================================
-     ⛔ قبل از تأیید authChecked رندر نکن
+     🚫 جلوگیری از رندر بدون احراز هویت
   ========================================================== */
   if (!authChecked) {
     return (
@@ -169,10 +175,7 @@ export default function AdminConsentsPage() {
               className="admin-input w-60"
             />
 
-            <button
-              className="admin-btn admin-btn-primary"
-              onClick={fetchConsents}
-            >
+            <button className="admin-btn admin-btn-primary" onClick={fetchConsents}>
               Refresh
             </button>
 
