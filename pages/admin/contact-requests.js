@@ -191,7 +191,7 @@ export default function ContactRequestsPage() {
                   window.open(
                     `${
                       process.env.NEXT_PUBLIC_API_BASE
-                    }/admin/contact-requests/export/xlsx`,
+                    }/admin/contact-requests/export/xlsx?X-Iranconnect-Admin=true`,
                     "_blank"
                   )
                 }
@@ -205,7 +205,7 @@ export default function ContactRequestsPage() {
                   window.open(
                     `${
                       process.env.NEXT_PUBLIC_API_BASE
-                    }/admin/contact-requests/export/pdf`,
+                    }/admin/contact-requests/export/pdf?X-Iranconnect-Admin=true`,
                     "_blank"
                   )
                 }
