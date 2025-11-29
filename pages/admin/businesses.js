@@ -10,14 +10,18 @@ export default function BusinessesPage() {
   const [searching, setSearching] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // ✂️ کوتاه‌سازی متن — باید قبل از Table تعریف شود
+  // ✂️ کوتاه‌سازی متن
   function truncate(text, length = 20) {
     if (!text) return "—";
     return text.length > length ? text.slice(0, length) + "..." : text;
   }
 
-  // 🧭 بررسی نقش و ورود با HttpOnly Cookie
+  /* ================================================================
+     🔐 مرحله 1: احراز هویت ادمین با HttpOnly Cookie
+     ================================================================ */
   useEffect(() => {
+    let mounted = true;
+
     async function checkAccess() {
       try {
         const res = await apiClient.get("/auth/me", {
@@ -25,32 +29,40 @@ export default function BusinessesPage() {
         });
 
         if (!res.data?.ok) {
-          window.location.href = "/auth/login";
+          if (mounted) window.location.href = "/auth/login";
           return;
         }
 
-        if (res.data.role !== "admin" && res.data.role !== "superadmin") {
-          window.location.href = "/";
+        const role = res.data.role;
+        if (role !== "admin" && role !== "superadmin") {
+          if (mounted) window.location.href = "/";
           return;
         }
 
-        setAuthChecked(true);
-        fetchBusinesses();
+        if (mounted) {
+          setAuthChecked(true);
+          fetchBusinesses();
+        }
       } catch (err) {
         window.location.href = "/auth/login";
       }
     }
 
     checkAccess();
+    return () => (mounted = false);
   }, []);
 
-  // 📦 دریافت لیست بیزینس‌ها
+  /* ================================================================
+     📦 مرحله 2: دریافت لیست بیزینس‌ها با ارسال Credentials
+     ================================================================ */
   async function fetchBusinesses(search = "") {
     setLoading(true);
     try {
       const res = await apiClient.get("/admin/businesses", {
         params: { q: search },
+        withCredentials: true,
       });
+
       setList(res.data || []);
     } catch (err) {
       console.error("❌ Error fetching businesses:", err);
@@ -59,7 +71,9 @@ export default function BusinessesPage() {
     }
   }
 
-  // 🔍 جستجو
+  /* ================================================================
+     🔍 جستجو
+     ================================================================ */
   async function handleSearch(e) {
     e.preventDefault();
     setSearching(true);
@@ -67,13 +81,18 @@ export default function BusinessesPage() {
     setSearching(false);
   }
 
-  // ❌ حذف بیزینس
+  /* ================================================================
+     ❌ حذف بیزینس (با ارسال کوکی)
+     ================================================================ */
   async function deleteBusiness(id) {
     const ok = confirm("Delete this business?");
     if (!ok) return;
 
     try {
-      await apiClient.delete(`/admin/businesses/${id}`);
+      await apiClient.delete(`/admin/businesses/${id}`, {
+        withCredentials: true,
+      });
+
       setList((prev) => prev.filter((b) => b.id !== id));
     } catch (err) {
       console.error(err);
@@ -81,7 +100,9 @@ export default function BusinessesPage() {
     }
   }
 
-  // قبل از authChecked چیزی رندر نکن
+  /* ================================================================
+     ⏳ نمایش قبل از احراز هویت
+     ================================================================ */
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -90,6 +111,9 @@ export default function BusinessesPage() {
     );
   }
 
+  /* ================================================================
+     🎨 رابط کاربری بدون تغییر
+     ================================================================ */
   return (
     <AdminLayout>
       {/* 🏷 عنوان و نوار جستجو */}
