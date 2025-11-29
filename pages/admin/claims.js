@@ -1,4 +1,4 @@
-//pages/admin/claims.js
+// pages/admin/claims.js
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -16,35 +16,42 @@ export default function AdminClaimsPage() {
   const [authChecked, setAuthChecked] = useState(false);
 
   /* ==========================================================
-     ✅ ۱. چک کردن دسترسی با HttpOnly (فقط یک‌بار)
+     🔐 ۱. احراز هویت با HttpOnly کوکی + چک نقش
   ========================================================== */
   useEffect(() => {
+    let mounted = true;
+
     async function checkAccess() {
       try {
-        const me = await apiClient.get("/auth/me", { withCredentials: true });
+        const me = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
 
         if (!me.data?.ok) {
-          window.location.href = "/auth/login";
+          if (mounted) window.location.href = "/auth/login";
           return;
         }
 
         if (me.data.role !== "admin" && me.data.role !== "superadmin") {
-          window.location.href = "/";
+          if (mounted) window.location.href = "/";
           return;
         }
 
-        setAuthChecked(true);
-        fetchClaims(); // اولین بار
+        if (mounted) {
+          setAuthChecked(true);
+          fetchClaims(); // داده اولیه
+        }
       } catch {
         window.location.href = "/auth/login";
       }
     }
 
     checkAccess();
+    return () => (mounted = false);
   }, []);
 
   /* ==========================================================
-     📌 ۲. دریافت لیست Claim (بر اساس فیلترها)
+     📌 ۲. دریافت لیست Claim
   ========================================================== */
   async function fetchClaims() {
     setLoading(true);
@@ -66,7 +73,7 @@ export default function AdminClaimsPage() {
   }
 
   /* ==========================================================
-     🔍 ۳. اعمال جستجو
+     🔍 ۳. جستجو
   ========================================================== */
   useEffect(() => {
     const lower = searchTerm.toLowerCase();
@@ -83,15 +90,19 @@ export default function AdminClaimsPage() {
   }, [searchTerm, claims]);
 
   /* ==========================================================
-     🔵 ۴. Approve / Reject
+     🟢 ۴. Approve / Reject (با ارسال کوکی)
   ========================================================== */
   async function handleApprove(id, note = "") {
     if (!note.trim()) return alert("Approval note is required.");
-
     if (!confirm("Confirm approval?")) return;
 
     try {
-      await apiClient.post(`/admin/claims/${id}/approve`, { note });
+      await apiClient.post(
+        `/admin/claims/${id}/approve`,
+        { note },
+        { withCredentials: true }
+      );
+
       fetchClaims();
       setSelectedClaim(null);
     } catch (err) {
@@ -102,8 +113,15 @@ export default function AdminClaimsPage() {
   async function handleReject(id, note = "") {
     if (!note.trim()) return alert("Rejection note is required.");
 
+    if (!confirm("Confirm rejection?")) return;
+
     try {
-      await apiClient.post(`/admin/claims/${id}/reject`, { note });
+      await apiClient.post(
+        `/admin/claims/${id}/reject`,
+        { note },
+        { withCredentials: true }
+      );
+
       fetchClaims();
       setSelectedClaim(null);
     } catch (err) {
@@ -112,7 +130,7 @@ export default function AdminClaimsPage() {
   }
 
   /* ==========================================================
-     📤 ۵. Export XLSX / PDF
+     📤 ۵. خروجی گرفتن
   ========================================================== */
   async function handleExportXLSX() {
     try {
@@ -157,7 +175,7 @@ export default function AdminClaimsPage() {
   }
 
   /* ==========================================================
-     ⏳ جلوگیری از رندر قبل از authChecked
+     🚫 جلوگیری از رندر بدون احراز هویت
   ========================================================== */
   if (!authChecked) {
     return (
