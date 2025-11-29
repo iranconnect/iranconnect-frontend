@@ -1,59 +1,43 @@
-//frontend/components/BusinessCard.jsx
+//frontend/components/BusinessCard.jsxی
 import Link from 'next/link';
 
 export default function BusinessCard({ b }) {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE;      // برای APIها
+  const cdnBase = process.env.NEXT_PUBLIC_CDN_BASE;      // برای کش تصاویر
 
-  // 📌 مرحله 1: انتخاب URL اصلی بدون تغییر
+  // مرحله 1: URL اصلی تصویر
   const original =
     b.image_url
-      ? (b.image_url.startsWith("http") ? b.image_url : `${apiBase}${b.image_url}`)
+      ? (b.image_url.startsWith("http") ? b.image_url : `${apiBase.replace('/api','')}${b.image_url}`)
       : b.logo_url
-      ? (b.logo_url.startsWith("http") ? b.logo_url : `${apiBase}${b.logo_url}`)
+      ? (b.logo_url.startsWith("http") ? b.logo_url : `${apiBase.replace('/api','')}${b.logo_url}`)
       : "/logo.png";
-  
-  // 📌 مرحله 2: اگر تصویر پیش‌فرض محلی است → کش لازم نیست
-  let imageSrc = original;
-  
-  if (original.startsWith("http")) {
-    // 📌 استخراج نام فایل
-    const filename = original.split("/").pop().split("?")[0];
-  
-    // 📌 مسیر CDN (بک‌اند → cacheImage.js)
-    imageSrc = `${apiBase}/cdn/${filename}?url=${encodeURIComponent(original)}`;
-  }
 
+  // مرحله 2: اگر Cloudinary بود → از مسیر CDN استفاده می‌کنیم
+  let imageSrc = original;
+
+  if (original.startsWith("http")) {
+    const filename = original.split("/").pop().split("?")[0];
+    imageSrc = `${cdnBase}/cdn/${filename}?url=${encodeURIComponent(original)}`;
+  }
 
   return (
     <Link href={`/business/${b.id}`} className="block group w-full">
-      <div
-        className="admin-card flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-between 
-        gap-4 p-5 transition-all duration-300 text-center sm:text-left"
-      >
-        {/* تصویر بیزینس */}
+      <div className="admin-card flex flex-col sm:flex-row items-center justify-between gap-4 p-5">
         <img
           src={imageSrc}
           alt={`${b.name} logo`}
-          className="w-24 h-24 sm:w-20 sm:h-20 rounded-xl object-cover border border-[var(--border)] mb-2 sm:mb-0"
+          className="w-24 h-24 rounded-xl object-cover border mb-2 sm:mb-0"
         />
-
-        {/* جزئیات */}
         <div className="flex flex-col flex-1 min-w-0 items-center sm:items-start">
-          <h3 className="text-[var(--text)] font-semibold text-base group-hover:text-turquoise transition flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1 sm:gap-2 text-center sm:text-left">
-            <span className="truncate order-2 sm:order-none">{b.name}</span>
-            {b.owner_verified && (
-              <span className="text-lg order-1 sm:order-none mb-1 sm:mb-0">🎖️</span>
-            )}
+          <h3 className="text-[var(--text)] font-semibold text-base truncate">
+            {b.name}
           </h3>
-
           <p className="text-sm text-muted text-center sm:text-left">
-            {b.category}
-            {b.sub_category ? ` • ${b.sub_category}` : ''} • {b.city}
-            {b.country ? `, ${b.country}` : ''}
+            {b.category} • {b.city}, {b.country}
           </p>
         </div>
-
-        <div className="text-turquoise font-semibold text-sm mt-3 sm:mt-0 text-center sm:text-right">
+        <div className="text-turquoise font-semibold text-sm">
           ⭐ {b.avg_rating ?? '—'}
         </div>
       </div>
