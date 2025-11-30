@@ -55,7 +55,7 @@ const LoadingPage = () => {
                 lineHeight: '1.5',
               }}
             >
-              IranConnect is here to take care of everything for you, so you can relax and focus on what truly matters.
+              <span style={{ color: '#00b5ad' }}>IranConnect</span> is here to take care of everything for you, so you can relax and focus on what truly matters.
             </p>
           </div>
 
@@ -87,4 +87,3 @@ const LoadingPage = () => {
 };
 
 export default LoadingPage;
-
