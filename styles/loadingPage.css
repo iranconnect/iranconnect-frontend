@@ -1,24 +1,27 @@
-@keyframes fadeInLogo {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+/* انیمیشن ورود لوگو */
+@keyframes scaleIn {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
 }
 
+/* انیمیشن متن خوشامدگویی */
 @keyframes fadeInText {
   0% { opacity: 0; }
   100% { opacity: 1; }
 }
 
-.loading-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background-color: #000;
+/* انیمیشن نقاط */
+@keyframes glowing {
+  0% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.7); }
+  50% { box-shadow: 0 0 20px rgba(255, 255, 255, 1); }
+  100% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.7); }
 }
 
-.welcome-text {
-  font-family: Arial, sans-serif;
-  font-size: 20px;
-  color: white;
-  animation: fadeInText 2s ease-in-out;
+/* استایل‌های نئومورفیک */
+.logo-container {
+  background: #2f2f2f;
+  border-radius: 15px;
+  box-shadow:  6px 6px 15px rgba(0, 0, 0, 0.2), -6px -6px 15px rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  display: inline-block;
 }
