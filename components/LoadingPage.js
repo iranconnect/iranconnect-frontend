@@ -6,7 +6,6 @@ const LoadingPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // تغییر صفحه بعد از ۱۰ ثانیه یا با کلیک کاربر
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -16,7 +15,6 @@ const LoadingPage = () => {
     return () => clearTimeout(timer); // تمیز کردن تایمر
   }, []);
 
-  // تغییر صفحه با کلیک
   const handleClick = () => {
     setIsLoading(false);
     router.push('/');
@@ -29,7 +27,7 @@ const LoadingPage = () => {
       style={{
         position: 'relative',
         height: '100vh',
-        backgroundColor: 'white', // بک‌گراند تاریک
+        backgroundColor: '#000', // بک‌گراند تاریک
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
@@ -51,7 +49,7 @@ const LoadingPage = () => {
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               zIndex: 1,
-              filter: 'brightness(0.6)', // تاریک کردن نقشه
+              filter: 'brightness(0.5)', // تاریک کردن نقشه
             }}
           ></div>
 
@@ -77,6 +75,7 @@ const LoadingPage = () => {
               transform: 'translate(-50%, -50%)',
               zIndex: 3,
               textAlign: 'center',
+              animation: 'fadeInLogo 2s ease-out', // انیمیشن برای لوگو
             }}
           >
             <img
@@ -86,7 +85,7 @@ const LoadingPage = () => {
                 width: '50%',
                 maxWidth: '300px',
                 marginBottom: '30px',
-                animation: 'scaleIn 2s ease-out', // انیمیشن scale-in
+                animation: 'scaleIn 2s ease-out', // انیمیشن scale-in برای لوگو
               }}
             />
             <div
@@ -95,7 +94,7 @@ const LoadingPage = () => {
                 color: 'white',
                 fontSize: '22px',
                 fontWeight: 'bold',
-                animation: 'fadeInText 2s ease-in-out',
+                animation: 'fadeInText 3s ease-in-out', // انیمیشن برای متن
               }}
             >
               <p>Connecting Iranians Around the World</p>
