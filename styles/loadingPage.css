@@ -1,27 +1,60 @@
-/* انیمیشن ورود لوگو */
+/* انیمیشن برای ورود متن */
+@keyframes fadeInText {
+  0% { opacity: 0; transform: translateX(-50px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* انیمیشن برای ورود لوگو */
 @keyframes scaleIn {
   0% { transform: scale(0); }
   100% { transform: scale(1); }
 }
 
-/* انیمیشن متن خوشامدگویی */
-@keyframes fadeInText {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+/* استایل‌های صفحه لودینگ */
+.loading-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #18224B; /* پس‌زمینه سرمه‌ای */
+  overflow: hidden;
+  position: relative;
 }
 
-/* انیمیشن نقاط */
-@keyframes glowing {
-  0% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.7); }
-  50% { box-shadow: 0 0 20px rgba(255, 255, 255, 1); }
-  100% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.7); }
+/* استایل برای متن سمت چپ */
+.left-text p {
+  color: white;
+  font-size: 24px;
+  font-weight: normal;
+  line-height: 1.5;
+  animation: fadeInText 2s ease-in-out;
 }
 
-/* استایل‌های نئومورفیک */
-.logo-container {
-  background: #2f2f2f;
-  border-radius: 15px;
-  box-shadow:  6px 6px 15px rgba(0, 0, 0, 0.2), -6px -6px 15px rgba(255, 255, 255, 0.1);
-  padding: 20px;
-  display: inline-block;
+/* استایل برای لوگو موشن */
+.right-logo img {
+  width: 50%;
+  max-width: 300px;
+  animation: scaleIn 2s ease-out;
+}
+
+/* ریسپانسیو برای موبایل */
+@media (max-width: 768px) {
+  .left-text {
+    max-width: 90%;
+    text-align: center;
+    position: relative;
+  }
+
+  .right-logo {
+    position: relative;
+    margin-top: 20px;
+  }
+
+  .left-text p {
+    font-size: 18px;
+  }
+
+  .right-logo img {
+    max-width: 200px;
+  }
 }
