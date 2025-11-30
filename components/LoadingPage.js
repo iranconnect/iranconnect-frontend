@@ -29,7 +29,7 @@ const LoadingPage = () => {
       style={{
         position: 'relative',
         height: '100vh',
-        backgroundColor: '#000', // بک‌گراند تاریک
+        backgroundColor: 'white', // بک‌گراند تاریک
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
