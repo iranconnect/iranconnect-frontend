@@ -25,14 +25,12 @@ const LoadingPage = () => {
       onClick={handleClick}
       className="loading-page"
       style={{
-        position: 'relative',
+        display: 'grid',
+        placeItems: 'center',  // قرار دادن محتوا در وسط صفحه
         height: '100vh',
         backgroundColor: '#18224B', // پس‌زمینه سرمه‌ای
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
         overflow: 'hidden',
-        flexDirection: 'column', // نمایش المان‌ها به صورت ستونی در موبایل
+        gridTemplateColumns: '1fr 1fr', // دو ستون برای دسکتاپ
       }}
     >
       {isLoading && (
@@ -41,8 +39,6 @@ const LoadingPage = () => {
           <div
             className="left-text"
             style={{
-              position: 'absolute',
-              left: '5%',
               zIndex: 3,
               textAlign: 'left',
               maxWidth: '45%',
@@ -64,10 +60,8 @@ const LoadingPage = () => {
           <div
             className="right-logo"
             style={{
-              position: 'absolute',
-              right: '5%',
               zIndex: 2,
-              textAlign: 'right',
+              textAlign: 'center',
               animation: 'scaleIn 2s ease-out',
             }}
           >
@@ -88,3 +82,4 @@ const LoadingPage = () => {
 };
 
 export default LoadingPage;
+
