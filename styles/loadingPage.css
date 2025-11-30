@@ -12,14 +12,12 @@
 
 /* استایل‌های صفحه لودینگ */
 .loading-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: grid;
+  place-items: center;  /* مرکز قرار دادن محتوا */
   height: 100vh;
   background-color: #18224B; /* پس‌زمینه سرمه‌ای */
   overflow: hidden;
-  position: relative;
-  flex-direction: row; /* در دسکتاپ المان‌ها کنار هم قرار می‌گیرند */
+  grid-template-columns: 1fr 1fr; /* تقسیم‌بندی به دو ستون برای دسکتاپ */
 }
 
 /* استایل برای متن سمت چپ */
@@ -41,21 +39,16 @@
 /* ریسپانسیو برای موبایل */
 @media (max-width: 768px) {
   .loading-page {
-    flex-direction: column; /* در موبایل المان‌ها به صورت ستونی نمایش داده می‌شوند */
-    justify-content: center;
-    align-items: center;
+    grid-template-columns: 1fr; /* در موبایل یک ستون */
   }
 
   .left-text {
+    text-align: center; /* متن وسط صفحه */
     max-width: 90%;
-    text-align: center;
-    position: relative;
-    font-size: 18px;
     margin-bottom: 20px;
   }
 
   .right-logo {
-    position: relative;
     margin-top: 20px;
   }
 
