@@ -32,6 +32,7 @@ const LoadingPage = () => {
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
+        flexDirection: 'column', // نمایش المان‌ها به صورت ستونی در موبایل
       }}
     >
       {isLoading && (
@@ -67,6 +68,7 @@ const LoadingPage = () => {
               right: '5%',
               zIndex: 2,
               textAlign: 'right',
+              animation: 'scaleIn 2s ease-out',
             }}
           >
             <img
@@ -76,7 +78,6 @@ const LoadingPage = () => {
                 width: '50%',
                 maxWidth: '300px',
                 marginBottom: '30px',
-                animation: 'scaleIn 2s ease-out',
               }}
             />
           </div>
