@@ -6,14 +6,14 @@ const LoadingPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // تغییر صفحه بعد از 10 ثانیه یا با کلیک کاربر
+  // تغییر صفحه بعد از ۱۰ ثانیه یا با کلیک کاربر
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-      router.push('/'); // به صفحه اصلی هدایت می‌شود
+      router.push('/'); // هدایت به صفحه اصلی
     }, 10000);
 
-    return () => clearTimeout(timer);
+    return () => clearTimeout(timer); // تمیز کردن تایمر
   }, []);
 
   // تغییر صفحه با کلیک
@@ -84,9 +84,9 @@ const LoadingPage = () => {
               alt="Logo Motion"
               style={{
                 width: '50%',
-                maxWidth: '300px', // اندازه مناسب برای موبایل و دسکتاپ
+                maxWidth: '300px',
                 marginBottom: '30px',
-                animation: 'fadeInLogo 3s ease-in-out', // انیمیشن fade-in
+                animation: 'scaleIn 2s ease-out', // انیمیشن scale-in
               }}
             />
             <div
@@ -126,14 +126,16 @@ const CanvasMap = () => {
     const drawPoints = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      points.forEach(point => {
+      // ایجاد انیمیشن برای نقاط
+      points.forEach((point, index) => {
+        const radius = Math.abs(Math.sin(Date.now() / 500 + index) * 5); // تغییر اندازه دایره‌ها برای ایجاد جلوه زنده
         ctx.beginPath();
-        ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, 0.8)`;
         ctx.fill();
       });
 
-      // خطوط اتصال (با انیمیشن)
+      // خطوط متحرک
       for (let i = 0; i < points.length; i++) {
         for (let j = i + 1; j < points.length; j++) {
           ctx.beginPath();
@@ -141,6 +143,7 @@ const CanvasMap = () => {
           ctx.lineTo(points[j].x, points[j].y);
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
           ctx.lineWidth = 1;
+          ctx.setLineDash([5, 10]); // برای خط‌چین
           ctx.stroke();
         }
       }
