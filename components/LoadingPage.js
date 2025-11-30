@@ -1,4 +1,4 @@
-//components/LoadingPage.js
+// /components/LoadingPage.js
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 
@@ -26,26 +26,18 @@ const LoadingPage = () => {
     <div
       onClick={handleClick}
       className="loading-page"
-      style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}
+      style={{
+        position: 'relative',
+        height: '100vh',
+        backgroundColor: '#ffffff',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+      }}
     >
       {isLoading && (
         <>
-          <video
-            autoPlay
-            loop
-            muted
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-            }}
-          >
-            <source src="/path/to/video/copy_2465E3FD-A463-451C-BA84-E3F49FC5F1DA.MOV" type="video/mp4" />
-          </video>
-
           <div
             className="overlay"
             style={{
@@ -54,7 +46,7 @@ const LoadingPage = () => {
               left: 0,
               width: '100%',
               height: '100%',
-              backgroundColor: 'rgba(0, 0, 0, 0.4)', // فیلتر تیره
+              backgroundColor: 'rgba(0, 0, 0, 0.2)', // فیلتر تیره
               zIndex: 1,
             }}
           ></div>
@@ -67,11 +59,15 @@ const LoadingPage = () => {
               transform: 'translate(-50%, -50%)',
               zIndex: 2,
               textAlign: 'center',
+              borderRadius: '20px',
+              padding: '30px',
+              background: 'rgba(255, 255, 255, 0.9)', // نئومورفیک سفید
+              boxShadow: '10px 10px 15px rgba(0, 0, 0, 0.1), -10px -10px 15px rgba(255, 255, 255, 0.8)', // اثر نئومورفیک
             }}
           >
-            {/* لوگو موشن */}
+            {/* لوگو IranConnect */}
             <img
-              src="/path/to/IranConnect Dark.gif"
+              src="/IranConnect Dark.gif"
               alt="Logo Motion"
               style={{
                 width: '50%',
@@ -79,15 +75,16 @@ const LoadingPage = () => {
                 marginBottom: '20px',
               }}
             />
+
             <div
               className="welcome-text"
               style={{
-                color: 'white',
+                color: '#18224B', // رنگ سرمه‌ای برند ایران کانکت
                 fontSize: '18px',
                 animation: 'fadeIn 2s ease-in-out',
               }}
             >
-              <p>خوش آمدید به ایران کانکت!</p>
+              <p>Welcome to IranConnect!</p>
             </div>
           </div>
         </>
