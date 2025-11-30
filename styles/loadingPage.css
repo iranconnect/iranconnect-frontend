@@ -19,6 +19,7 @@
   background-color: #18224B; /* پس‌زمینه سرمه‌ای */
   overflow: hidden;
   position: relative;
+  flex-direction: row; /* در دسکتاپ المان‌ها کنار هم قرار می‌گیرند */
 }
 
 /* استایل برای متن سمت چپ */
@@ -39,11 +40,18 @@
 
 /* ریسپانسیو برای موبایل */
 @media (max-width: 768px) {
+  .loading-page {
+    flex-direction: column; /* در موبایل المان‌ها به صورت ستونی نمایش داده می‌شوند */
+    justify-content: center;
+    align-items: center;
+  }
+
   .left-text {
     max-width: 90%;
     text-align: center;
     position: relative;
     font-size: 18px;
+    margin-bottom: 20px;
   }
 
   .right-logo {
