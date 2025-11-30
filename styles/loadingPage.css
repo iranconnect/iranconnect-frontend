@@ -43,6 +43,7 @@
     max-width: 90%;
     text-align: center;
     position: relative;
+    font-size: 18px;
   }
 
   .right-logo {
@@ -57,4 +58,10 @@
   .right-logo img {
     max-width: 200px;
   }
+}
+
+/* اضافه کردن رنگ فیروزه‌ای برای کلمات خاص */
+.left-text p span {
+  color: #00b5ad; /* رنگ فیروزه‌ای */
+  font-weight: bold;
 }
