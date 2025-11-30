@@ -10,7 +10,7 @@ const LoadingPage = () => {
     const timer = setTimeout(() => {
       setIsLoading(false);
       router.push('/'); // هدایت به صفحه اصلی
-    }, 10000);
+    }, 20000); // 20 ثانیه
 
     return () => clearTimeout(timer); // تمیز کردن تایمر
   }, []);
@@ -27,7 +27,7 @@ const LoadingPage = () => {
       style={{
         position: 'relative',
         height: '100vh',
-        backgroundColor: '#000', // بک‌گراند تاریک
+        backgroundColor: '#18224B', // پس‌زمینه سرمه‌ای مطابق با تم ایران کانکت
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
@@ -36,127 +36,54 @@ const LoadingPage = () => {
     >
       {isLoading && (
         <>
-          {/* لایه نقشه و خطوط اتصال */}
+          {/* متن دلگرم‌کننده سمت چپ */}
           <div
-            className="map-animation"
+            className="left-text"
             style={{
               position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              backgroundImage: 'url(/world-map.svg)', // نقشه دنیا
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              zIndex: 1,
-              filter: 'brightness(0.5)', // تاریک کردن نقشه
-            }}
-          ></div>
-
-          <div
-            className="overlay"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              backgroundColor: 'rgba(0, 0, 0, 0.5)', // فیلتر تیره
-              zIndex: 2,
-            }}
-          ></div>
-
-          {/* لوگو IranConnect */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
+              left: '5%',
               zIndex: 3,
-              textAlign: 'center',
-              animation: 'fadeInLogo 2s ease-out', // انیمیشن برای لوگو
+              textAlign: 'left',
+              maxWidth: '45%',
+              animation: 'fadeInText 2s ease-in-out',
+            }}
+          >
+            <p
+              style={{
+                color: 'white',
+                fontSize: '24px',
+                lineHeight: '1.5',
+              }}
+            >
+              IranConnect is here to take care of everything for you, so you can relax and focus on what truly matters.
+            </p>
+          </div>
+
+          {/* لوگو موشن سمت راست */}
+          <div
+            className="right-logo"
+            style={{
+              position: 'absolute',
+              right: '5%',
+              zIndex: 2,
+              textAlign: 'right',
             }}
           >
             <img
-              src="/IranConnect Dark.gif"
+              src="/IranConnect Dark.gif" // لوگو انیمیشنی
               alt="Logo Motion"
               style={{
                 width: '50%',
                 maxWidth: '300px',
                 marginBottom: '30px',
-                animation: 'scaleIn 2s ease-out', // انیمیشن scale-in برای لوگو
+                animation: 'scaleIn 2s ease-out',
               }}
             />
-            <div
-              className="welcome-text"
-              style={{
-                color: 'white',
-                fontSize: '22px',
-                fontWeight: 'bold',
-                animation: 'fadeInText 3s ease-in-out', // انیمیشن برای متن
-              }}
-            >
-              <p>Connecting Iranians Around the World</p>
-            </div>
           </div>
-
-          {/* نقاط متحرک و خطوط اتصال */}
-          <CanvasMap />
         </>
       )}
     </div>
   );
-};
-
-const CanvasMap = () => {
-  useEffect(() => {
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-
-    const points = [
-      { x: 100, y: 100 }, // نقاط متحرک
-      { x: 300, y: 200 },
-      { x: 400, y: 350 },
-      { x: 600, y: 500 },
-      { x: 800, y: 400 },
-    ];
-
-    const drawPoints = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // ایجاد انیمیشن برای نقاط
-      points.forEach((point, index) => {
-        const radius = Math.abs(Math.sin(Date.now() / 500 + index) * 5); // تغییر اندازه دایره‌ها برای ایجاد جلوه زنده
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, 0.8)`;
-        ctx.fill();
-      });
-
-      // خطوط متحرک
-      for (let i = 0; i < points.length; i++) {
-        for (let j = i + 1; j < points.length; j++) {
-          ctx.beginPath();
-          ctx.moveTo(points[i].x, points[i].y);
-          ctx.lineTo(points[j].x, points[j].y);
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-          ctx.lineWidth = 1;
-          ctx.setLineDash([5, 10]); // برای خط‌چین
-          ctx.stroke();
-        }
-      }
-    };
-
-    const animate = () => {
-      drawPoints();
-      requestAnimationFrame(animate);
-    };
-
-    animate();
-  }, []);
-
-  return <canvas id="canvas" width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0, zIndex: 0 }}></canvas>;
 };
 
 export default LoadingPage;
