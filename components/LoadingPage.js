@@ -10,7 +10,7 @@ const LoadingPage = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-      router.push('/home'); // به صفحه اصلی هدایت می‌شود
+      router.push('/'); // به صفحه اصلی هدایت می‌شود
     }, 10000);
 
     return () => clearTimeout(timer);
@@ -19,7 +19,7 @@ const LoadingPage = () => {
   // تغییر صفحه با کلیک
   const handleClick = () => {
     setIsLoading(false);
-    router.push('/home');
+    router.push('/');
   };
 
   return (
