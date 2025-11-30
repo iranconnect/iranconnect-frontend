@@ -27,7 +27,7 @@ const LoadingPage = () => {
       style={{
         position: 'relative',
         height: '100vh',
-        backgroundColor: '#18224B', // پس‌زمینه سرمه‌ای مطابق با تم ایران کانکت
+        backgroundColor: '#18224B', // پس‌زمینه سرمه‌ای
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
@@ -59,7 +59,7 @@ const LoadingPage = () => {
             </p>
           </div>
 
-          {/* لوگو موشن سمت راست */}
+          {/* لوگو IranConnect */}
           <div
             className="right-logo"
             style={{
