@@ -1,0 +1,19 @@
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.loading-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #ffffff;
+}
+
+.welcome-text {
+  font-family: Arial, sans-serif;
+  font-size: 20px;
+  color: #18224B;
+  animation: fadeIn 2s ease-in-out;
+}
