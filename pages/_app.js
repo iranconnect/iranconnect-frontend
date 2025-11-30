@@ -126,6 +126,11 @@ export default function App({ Component, pageProps }) {
     document.documentElement.setAttribute('data-theme', newTheme);
   }
 
+  // ✅ ریدایرکت به صفحه لودینگ هنگام ورود به سایت
+  useEffect(() => {
+    router.push('/loading'); // ریدایرکت به صفحه لودینگ
+  }, []);
+  
   return (
     <>
       <CookieConsent />
