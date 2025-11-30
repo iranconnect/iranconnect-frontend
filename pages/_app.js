@@ -2,6 +2,8 @@
 import '../styles/globals.css';
 import '../styles/admin.css';
 import '../styles/reactquill.css';
+import '../styles/loadingPage.css';
+
 
 import { useEffect, useState, useRef } from 'react';
 import CookieConsent from '../components/CookieConsent';
