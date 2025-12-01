@@ -5,10 +5,6 @@ import Footer from '../components/Footer';
 import BusinessCard from '../components/BusinessCard';
 import apiClient from '../utils/apiClient.js';
 
-export default function HomeWrapper() {
-  const [showHome, setShowHome] = useState(false);
-
-
 
 /* ============================================================================
    🔵 کامپوننت اصلی Home که همان قبلی است (بدون هیچ تغییری در منطق)
