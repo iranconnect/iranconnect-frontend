@@ -10,7 +10,7 @@ export default function Intro() {
       setTimeout(() => setStep(2), 4000), // پیام خوش‌آمد طولانی‌تر
       setTimeout(() => setStep(3), 6500), // نمایش لوگو از opacity 0→1
       setTimeout(() => setStep(4), 8000), // نمایش جدول دکمه‌ها
-    ];
+    ]; 
     return () => timers.forEach(clearTimeout);
   }, []);
 
