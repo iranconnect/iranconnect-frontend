@@ -8,10 +8,6 @@ import apiClient from '../utils/apiClient.js';
 export default function HomeWrapper() {
   const [showHome, setShowHome] = useState(false);
 
-  if (!showHome) return null; // جلوگیری از نمایش Home قبل از Intro
-
-  return <Home />;
-}
 
 
 /* ============================================================================
