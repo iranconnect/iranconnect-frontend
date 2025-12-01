@@ -1,5 +1,5 @@
 // frontend/pages/_app.js
-import '../styles/globals.css';
+import '../styles/globals_v2.css';
 import '../styles/admin.css';
 import '../styles/reactquill.css';
 // ❌ loadingPage.css دیگر وجود ندارد
