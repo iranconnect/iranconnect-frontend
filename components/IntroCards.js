@@ -7,26 +7,26 @@ export default function IntroCards() {
   const cards = [
     {
       title: "Health & Medicine",
-      videoSrc: "/animation1.mp4",   // همان ترتیب که گفتی
+      videoSrc: "/animation1.gif",   // همان ترتیب که گفتی
       delayClass: "card-1",
       onClick: () => router.push("/?category=doctor&limit=10"),
     },
     {
       title: "Translate & Interpreter",
-      videoSrc: "/animation2.mp4",
+      videoSrc: "/animation2.gif",
       delayClass: "card-2",
       onClick: () =>
         router.push("/?category=language-services&limit=10"),
     },
     {
       title: "Lawyer",
-      videoSrc: "animation3.mp4",
+      videoSrc: "animation3.gif",
       delayClass: "card-3",
       onClick: () => router.push("/?category=lawyer&limit=10"),
     },
     {
       title: "About Us",
-      videoSrc: "animation4.mp4",
+      videoSrc: "animation4.gif",
       delayClass: "card-4",
       onClick: () => router.push("/about"),
     },
@@ -42,13 +42,7 @@ export default function IntroCards() {
         >
           {/* ویدیو یا گیف داخل کارت */}
           <div className="intro-card-media">
-            <video
-              src={card.videoSrc}
-              autoPlay
-              loop
-              muted
-              playsInline
-            />
+            <img src={card.videoSrc} />
           </div>
 
           {/* متن کارت */}
