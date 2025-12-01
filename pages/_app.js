@@ -2,7 +2,7 @@
 import '../styles/globals_v3.css';
 import '../styles/admin.css';
 import '../styles/reactquill.css';
-// ❌ loadingPage.css دیگر وجود ندارد
+
 
 import { useEffect, useState, useRef } from 'react';
 import CookieConsent from '../components/CookieConsent';
