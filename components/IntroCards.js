@@ -5,10 +5,11 @@ export default function IntroCards({ showLogo, showButtons }) {
   const router = useRouter();
 
   const buttons = [
-    { title: "About Us", gif: "/animation/1.gif", onClick: () => router.push("/about") },
-    { title: "Health & Medicine", gif: "/animation/2.gif", onClick: () => router.push("/?category=doctor&limit=10&theme=dark") },
-    { title: "Translator & Interpreter", gif: "/animation/3.gif", onClick: () => router.push("/?category=language-services&limit=10&theme=dark") },
-    { title: "Lawyer", gif: "/animation/4.gif", onClick: () => router.push("/?category=lawyer&limit=10&theme=dark") },
+    { title: "About Us", gif: "/animation/1.gif", onClick: () => router.push("/about?theme=dark") },
+    { title: "Health & Medicine", gif: "/animation/2.gif", onClick: () => router.push("/?theme=dark") },
+    { title: "Translator & Interpreter", gif: "/animation/3.gif", onClick: () => router.push("/?theme=dark") },
+    { title: "Lawyer", gif: "/animation/4.gif", onClick: () => router.push("/?theme=dark") },
+
   ];
 
   return (
