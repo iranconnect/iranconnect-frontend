@@ -1,17 +1,22 @@
-/* ===================================================================
-   INTRO PAGE — FINAL DESKTOP ONLY VERSION (NO MOBILE)
-=================================================================== */
+/* ===============================
+   INTRO PAGE — FINAL CLEAN VERSION
+   Desktop Only — No Mobile
+================================= */
 
-/* صفحه اصلی Intro */
+/* -- Page base -- */
 .intro-master {
   height: 100vh;
   width: 100%;
   background: #18224B;
   position: relative;
   overflow: hidden;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* لوگو در مرکز */
+/* -- Logo animation (center → top-left) -- */
 .intro-logo {
   text-align: center;
   position: absolute;
@@ -34,26 +39,28 @@
   text-transform: uppercase;
 }
 
-/* Zoom-in */
+/* Zoom */
 .zoom-in {
   animation: logoZoom 2s ease forwards;
 }
+
 @keyframes logoZoom {
   0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
   80% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
   100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
-/* انتقال لوگو به بالا چپ */
+/* Move to Top-Left */
 .move-top-left {
   animation: logoMove 2s ease forwards;
 }
+
 @keyframes logoMove {
   0% { top: 50%; left: 50%; transform: translate(-50%, -50%); }
   100% { top: 40px; left: 40px; transform: translate(0,0); }
 }
 
-/* حالت ثابت */
+/* Final static */
 .final-top-left {
   top: 40px;
   left: 40px;
@@ -61,89 +68,116 @@
   transform: translate(0,0);
 }
 
-/* wrapper */
+/* ===============================
+   DESKTOP CARDS (Perfect Layout)
+================================= */
+
 .intro-cards-wrapper {
   width: 100%;
   height: 100%;
 }
 
-/* کارت‌های دسکتاپ در پایین سمت راست */
+/* Align cards horizontally at bottom */
 .intro-cards-desktop {
   position: absolute;
   right: 40px;
   bottom: 8vh;
+
   display: flex;
   align-items: flex-end;
-  gap: clamp(16px, 2vw, 32px);
+  gap: clamp(18px, 2vw, 32px);
 }
 
-/* کارت اصلی */
+/* Main card style */
 .intro-card {
-  width: clamp(160px, 18vw, 280px);
-  height: clamp(180px, 22svh, 260px);
+  width: clamp(200px, 18vw, 300px);
+  height: clamp(380px, 70vh, 620px);
+
   background: #40E0D0;
-  border-radius: 20px;
-  padding: 1.2vw;
+  border-radius: 22px;
+
+  padding: 20px 22px 28px 22px;
+  box-sizing: border-box;
+
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  cursor: pointer;
+  align-items: center;
+
   opacity: 0;
   transform: translateY(40px);
+  cursor: pointer;
 }
 
-/* کارت کوچکتر (۲۰٪ کوچک‌تر) */
-.card-small {
-  height: calc(22vh * 0.8);
-}
-
-/* GIF */
+/* GIF (top graphic) */
 .intro-card-gif {
-  height: clamp(180px, 22svh, 260px);
   width: auto;
+  height: clamp(140px, 38%, 240px);
   object-fit: contain;
-  margin: 0 auto;
   pointer-events: none;
+  margin-top: 6px;
 }
 
-/* Icon */
+/* Icon (middle graphic) */
 .intro-card-icon {
-  height: clamp(180px, 22svh, 260px);
-  width: auto;
+  width: clamp(35px, 13%, 70px);
+  height: auto;
   object-fit: contain;
-  margin: 0 auto;
   pointer-events: none;
+  margin-top: 8px;
 }
 
-/* عنوان کارت */
+/* Title */
 .intro-card-title {
-  font-size: clamp(14px, 1.4vw, 20px);
+  font-size: clamp(15px, 1.3vw, 20px);
   font-weight: 700;
-  text-align: left;
+  text-align: center;
   color: #0A1D37;
+
+  height: 40px; /* ensures perfect alignment */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* انیمیشن کارت‌ها */
+/* ===============================
+   ANIMATIONS
+================================= */
+
 .slide-up {
   animation: slideUpCards 0.85s ease forwards;
 }
+
 @keyframes slideUpCards {
   from { opacity: 0; transform: translateY(40px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.card-1 { animation-delay: 0.2s; }
-.card-2 { animation-delay: 0.9s; }
+.card-1 { animation-delay: .2s; }
+.card-2 { animation-delay: .9s; }
 .card-3 { animation-delay: 1.6s; }
 .card-4 { animation-delay: 2.3s; }
 
-/* ===================================================================
-   IMPORTANT — REMOVE MOBILE COMPLETELY
-=================================================================== */
+/* ===============================
+   SPECIAL — FIRST CARD (About Us)
+================================= */
 
-.intro-cards-mobile {
-  display: none !important;
+.intro-first-card {
+  justify-content: center !important;
+  gap: 18px;
 }
-.intro-card-mobile {
-  display: none !important;
+
+.intro-first-card .intro-card-gif {
+  height: 150px !important;
+  margin-top: 0 !important;
+}
+
+.intro-first-card .intro-card-icon {
+  display: none;
+}
+
+.intro-first-card .intro-card-title {
+  font-size: 22px !important;
+  font-weight: 800;
+  letter-spacing: 0.05em;
 }
