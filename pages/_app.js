@@ -2,7 +2,7 @@
 import '../styles/globals_v3.css';
 import '../styles/admin.css';
 import '../styles/reactquill.css';
-
+import "../styles/intro.css";
 
 import { useEffect, useState, useRef } from 'react';
 import CookieConsent from '../components/CookieConsent';
