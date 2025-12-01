@@ -5,7 +5,17 @@ import Footer from '../components/Footer';
 import BusinessCard from '../components/BusinessCard';
 import apiClient from '../utils/apiClient.js';
 
+export default function HomeWrapper() {
+  const [showHome, setShowHome] = useState(false);
 
+  useEffect(() => {
+    setShowHome(true);
+  }, []);
+
+  if (!showHome) return null; // جلوگیری از نمایش Home قبل از Intro
+
+  return <Home />;
+}
 /* ============================================================================
    🔵 کامپوننت اصلی Home که همان قبلی است (بدون هیچ تغییری در منطق)
    ============================================================================ */
