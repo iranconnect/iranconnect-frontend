@@ -216,80 +216,56 @@ iframe[src*="google.com/recaptcha/"] {
   letter-spacing: 0.12em;
 }
 
-/* ===== کارت‌ها ===== */
-
-.intro-cards-wrapper {
-  position: absolute;
-  bottom: 8%;
-  left: 8%;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-/* خود کارت */
+/* کارت‌ها */
 .intro-card {
-  width: 260px;
+  width: 300px;
   padding: 14px 16px;
   background: #ffffff;
-  border-radius: 14px;
+  border-radius: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
   opacity: 0;
-  transform: translateY(80px); /* از پایین شروع می‌کند */
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transform: translateY(40px);
+  transition: transform 0.4s ease, box-shadow 0.3s ease;
 }
 
 .intro-card:hover {
-  transform: translateY(0) scale(1.03);
+  transform: translateY(0) scale(1.02);
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.25);
 }
 
-/* مدیا داخل کارت (ویدیو / گیف) */
-.intro-card-media video,
-.intro-card-media img {
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
-  object-fit: cover;
+/* آیکون سمت چپ */
+.intro-card-icon img {
+  width: 36px;
+  height: 36px;
 }
 
 /* متن کارت */
 .intro-card-text p {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 600;
   color: #18224B;
-  font-weight: 500;
+  white-space: nowrap;
 }
 
-/* ===== انیمیشن‌ها ===== */
-
-/* fade-in برای متن خوشامد */
-@keyframes fadeInIntro {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-.fade-in {
-  animation: fadeInIntro 2s forwards;
+/* گیف سمت راست */
+.intro-card-media img {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  object-fit: cover;
 }
 
-/* scale-in برای لوگو */
-@keyframes scaleInIntro {
-  from { opacity: 0; transform: scale(0.7); }
-  to   { opacity: 1; transform: scale(1); }
-}
-.scale-in {
-  animation: scaleInIntro 1.8s forwards;
-}
-
-/* slide-up برای کارت‌ها (از پایین به بالا) */
+/* انیمیشن نرم‌تر */
 @keyframes cardEnterUp {
   from {
     opacity: 0;
-    transform: translateY(80px);
+    transform: translateY(40px);
   }
   to {
     opacity: 1;
@@ -297,37 +273,20 @@ iframe[src*="google.com/recaptcha/"] {
   }
 }
 
-/* کلاس مشترک انیمیشن */
 .slide-up {
-  animation-name: cardEnterUp;
-  animation-fill-mode: forwards;
+  animation: cardEnterUp 0.8s cubic-bezier(0.26, 0.18, 0.25, 1) forwards;
 }
 
-/* تأخیر برای هر کارت تا کل حرکت حدود ۵ ثانیه شود */
-.card-1 { animation-duration: 0.9s; animation-delay: 0.2s; }
-.card-2 { animation-duration: 0.9s; animation-delay: 1.1s; }
-.card-3 { animation-duration: 0.9s; animation-delay: 2.0s; }
-.card-4 { animation-duration: 0.9s; animation-delay: 2.9s; }
+/* تاخیر کارت‌ها */
+.card-1 { animation-delay: 0.3s; }
+.card-2 { animation-delay: 0.9s; }
+.card-3 { animation-delay: 1.5s; }
+.card-4 { animation-delay: 2.1s; }
 
-/* ===== ریسپانسیو موبایل ===== */
+/* ریسپانسیو */
 @media (max-width: 768px) {
-  .intro-cards-wrapper {
-    position: static;
-    margin-top: 40px;
-    align-items: center;
-  }
-
   .intro-card {
-    width: 80%;
-  }
-
-  .intro-logo h1 {
-    font-size: 22px;
-  }
-
-  .intro-welcome {
-    font-size: 20px;
-    text-align: center;
-    padding: 0 20px;
+    width: 90%;
+    margin: 0 auto;
   }
 }
