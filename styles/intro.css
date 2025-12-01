@@ -4,7 +4,7 @@
 .intro-master {
   height: 100vh;
   width: 100%;
-  background: #18224B;
+  background: #18224B; /* سرمه‌ای ایران‌کانکت */
   position: relative;
   overflow: hidden;
 }
@@ -119,8 +119,8 @@
 .btn-gif {
   width: 100%;
   height: auto;
-  max-height: 65%;
   object-fit: contain;
+  max-height: 60%;
   pointer-events: none;
 }
 
@@ -128,7 +128,8 @@
   font-size: 26px;
   font-weight: 800;
   color: #0A1D37;
-  text-align: left;
+  text-align: center;
+  margin-top: 10px;
 }
 
 /* ============================
@@ -147,4 +148,107 @@
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(40px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================
+   MOBILE AND TABLET ADJUSTMENTS
+============================ */
+
+/* General grid for mobile (1 column) */
+@media (max-width: 768px) {
+  .intro-grid-wrapper {
+    width: 100%;
+    height: auto;
+    margin-top: 0;
+    margin-bottom: 0;
+    display: block;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: 20px;
+  }
+
+  .logo-space {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  /* Button style for mobile */
+  .grid-btn {
+    width: 100%;
+    height: auto;
+    padding: 16px;
+    background: #40E0D0;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    opacity: 0;
+    transform: translateY(40px);
+    text-align: center;
+  }
+
+  .btn-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0A1D37;
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  .btn-gif {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    max-height: 60%;
+  }
+
+  /* Scroll load effect */
+  .grid-btn.show-btn {
+    animation: slideUpBtn 1s ease forwards;
+  }
+
+  /* Add opacity for mobile when loading buttons */
+  .show-btn {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Space between button titles and bottom */
+  .btn-title {
+    margin-bottom: 30px;
+  }
+}
+
+/* Tablet view adjustments */
+@media (max-width: 1024px) {
+  .intro-grid-wrapper {
+    width: 90%;
+    height: auto;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 40px;
+    margin-bottom: 40px;
+  }
+
+  .grid-btn {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .btn-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+
+  /* Adjusting button sizes */
+  .btn-gif {
+    max-height: 60%;
+  }
 }
