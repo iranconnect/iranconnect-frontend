@@ -293,7 +293,7 @@ iframe[src*="google.com/recaptcha/"] {
 }
 
 /* ===================================================================
-   DESKTOP — CARDS (RIGHT SIDE)
+   DESKTOP — DYNAMIC CARDS (100% Responsive / Viewport-based)
 =================================================================== */
 
 .intro-cards-wrapper {
@@ -301,76 +301,72 @@ iframe[src*="google.com/recaptcha/"] {
   height: 100%;
 }
 
-/* ردیف کارت‌ها — تراز شده از پایین */
+/* Bottom-aligned dynamic layout */
 .intro-cards-desktop {
   position: absolute;
   right: 40px;
-  bottom: 60px;
+  bottom: 8vh; /* کمی فاصله از پایین بر اساس صفحه */
   display: flex;
   flex-direction: row;
-  gap: 24px;
-  align-items: flex-end; /* ⭐ کارت‌ها از پایین تراز شوند */
+  align-items: flex-end;
+  gap: clamp(16px, 2vw, 32px); /* فاصله داینامیک */
 }
 
+/* Main Cards — 22vh height */
 .intro-card {
-  width: 220px;
-  height: 220px;
+  width: clamp(160px, 18vw, 280px); /* متناسب با عرض صفحه */
+  height: 22vh;
   background: #40E0D0;
   border-radius: 20px;
-  padding: 16px;
+  padding: 1.2vw;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
   opacity: 0;
   transform: translateY(40px);
-  z-index: 10;
 }
 
-/* کارت اول کوچک‌تر */
+/* First card — 20% smaller: 22vh → 17.6vh */
 .card-small {
-  height: 176px;
+  height: calc(22vh * 0.8);
 }
 
-.intro-card-top {
-  display: flex;
-  justify-content: center;
-}
-
+/* GIF Dynamic Sizing */
 .intro-card-gif {
-  width: 82px;
-  height: 82px;
-  border-radius: 12px;
-  object-fit: cover;
+  height: 35%;
+  width: auto;
+  max-height: 90px;
+  margin: 0 auto;
+  object-fit: contain;
   pointer-events: none;
 }
 
-.intro-card-middle {
-  display: flex;
-  justify-content: center;
-}
-
+/* Icon Dynamic Sizing */
 .intro-card-icon {
-  width: 36px;
-  height: 36px;
+  width: auto;
+  height: 18%;
+  max-height: 48px;
+  margin: 0 auto;
   pointer-events: none;
 }
 
+/* Title Dynamic Font */
 .intro-card-title {
   text-align: center;
-  font-size: 16px;
   font-weight: 700;
   color: #0A1D37;
+  font-size: clamp(14px, 1.4vw, 20px);
 }
 
-/* انیمیشن کارت‌ها */
+/* Animations */
 .slide-up {
   animation: slideUpCards 0.8s ease forwards;
 }
 
 @keyframes slideUpCards {
   from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .card-1 { animation-delay: 0.2s; }
