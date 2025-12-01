@@ -84,7 +84,7 @@ html, body, #__next {
 
 /* === Inputs & buttons === */
 .input-default {
-  background: #e9eef6; /* ✅ هماهنگ با فرم Login در حالت روشن */
+  background: #e9eef6;
   border: 1px solid var(--border);
   padding: 10px 12px;
   border-radius: 10px;
@@ -92,14 +92,13 @@ html, body, #__next {
   transition: background 0.3s, color 0.3s, border 0.3s;
 }
 
-/* ✅ حالت تیره مثل فرم Login */
+/* Dark mode input */
 [data-theme='dark'] .input-default {
-  background-color: #e9eef6 !important; /* سفید مایل به آبی */
-  color: #000000 !important; /* متن مشکی */
-  border-color: #b0c4de !important; /* آبی ملایم */
+  background-color: #e9eef6 !important; 
+  color: #000000 !important; 
+  border-color: #b0c4de !important;
 }
 
-/* placeholder در حالت تیره */
 [data-theme='dark'] .input-default::placeholder {
   color: #666666 !important;
 }
@@ -107,7 +106,7 @@ html, body, #__next {
 /* === Buttons === */
 .btn-primary {
   background: linear-gradient(90deg, #40E0D0, #27b3a3);
-  color: #0A1D37; /* navy text */
+  color: #0A1D37;
   padding: 12px 16px;
   border-radius: 10px;
   font-weight: 600;
@@ -124,11 +123,6 @@ html, body, #__next {
 .btn-primary:active {
   transform: scale(0.98);
   box-shadow: 0 4px 12px rgba(64, 224, 208, 0.2);
-}
-[data-theme='dark'] .btn-primary {
-  background: linear-gradient(90deg, #40E0D0, #27b3a3);
-  color: #0A1D37;
-  box-shadow: 0 8px 20px rgba(64, 224, 208, 0.15);
 }
 
 .btn-ghost {
@@ -153,15 +147,14 @@ html, body, #__next {
   .biz-logo { width: 56px; height: 56px; }
 }
 
-/* ────────────────────────────────
+/* ─────────────────────────────────────────
    🧭 Unified Admin Content Layout
-   ──────────────────────────────── */
+────────────────────────────────────────── */
 .admin-main {
   padding: 2rem 2.5rem;
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -179,48 +172,42 @@ html, body, #__next {
   margin-top: 1rem;
 }
 
-/* رفع تداخل کپچا در موبایل */
+/* رفع تداخل کپچا */
 iframe[src*="google.com/recaptcha/"] {
   z-index: 9999 !important;
   position: relative !important;
 }
 
-/* ===== Intro base layout (اگر قبلاً گذاشتی، همین رو جایگزین کن) ===== */
-.intro-container {
-  height: 100vh;
-  width: 100%;
-  background: #18224B; /* سرمه‌ای ایران‌کانکت */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
+/* 🚨 بسیار مهم — پاک‌سازی کامل نسخه‌های قدیمی Intro 🚨 */
+
+/* حذف نسخه‌های قبلی که باعث مشکل بودند */
+.intro-container,
+.intro-cards-area,
+.intro-cards-mobile-old,
+.intro-card-old,
+.intro-card-mobile-old,
+.mobile-scroll,
+.old-intro-logo,
+.intro-cards-desktop-old {
+  display: none !important;
 }
 
-/* متن خوشامد */
-.intro-welcome {
-  color: #ffffff;
-  font-size: 26px;
-  font-weight: 500;
+/* جلوگیری از Override شدن اندازه لوگو */
+.old-intro-logo img,
+.intro-logo img.old {
+  all: unset !important;
 }
 
-/* لوگو و نام IRANCONNECT */
-.intro-logo img {
-  width: 140px;
-  margin-bottom: 12px;
-}
-.intro-logo h1 {
-  color: #ffffff;
-  font-size: 28px;
-  letter-spacing: 0.12em;
+/* جلوگیری از Override شدن تراز متن */
+.old-intro-logo h1 {
+  all: unset !important;
 }
 
 /* ===================================================================
-   INTRO PAGE — CANVA STYLE
+   INTRO PAGE — CANVA STYLE (FINAL CLEAN VERSION)
 =================================================================== */
 
-/* INTRO PAGE -------------------------------- */
+/* صفحه اصلی Intro */
 .intro-master {
   height: 100vh;
   width: 100%;
@@ -232,7 +219,7 @@ iframe[src*="google.com/recaptcha/"] {
   align-items: center;
 }
 
-/* Welcome text */
+/* متن Welcome */
 .intro-welcome {
   color: #ffffff;
   font-size: 28px;
@@ -250,17 +237,21 @@ iframe[src*="google.com/recaptcha/"] {
   to { opacity: 1; }
 }
 
-/* LOGO ------------------------------------------------ */
+/* ---------------------------------------------------------------
+   LOGO — Center → Zoom → Move to Top Left
+---------------------------------------------------------------- */
 .intro-logo {
   text-align: center;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  z-index: 20;
 }
 
 .intro-logo img {
   width: 120px;
+  pointer-events: none;
 }
 
 .intro-logo h1 {
@@ -268,42 +259,49 @@ iframe[src*="google.com/recaptcha/"] {
   font-weight: 700;
   letter-spacing: 0.12em;
   margin-top: 10px;
+  text-transform: uppercase;
 }
 
-/* Zoom animation */
+/* مرحله ۲ — Zoom-in */
 .zoom-in {
   animation: zoomIn 2s ease forwards;
 }
 
 @keyframes zoomIn {
-  0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-  80%  { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(1); }
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  80% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
-/* Move to top-left */
+/* مرحله ۳ — انتقال نرم به بالا چپ */
 .move-top-left {
   animation: moveLogo 2s ease forwards;
 }
 
 @keyframes moveLogo {
-  0%   { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+  0% { top: 50%; left: 50%; transform: translate(-50%, -50%); }
   100% { top: 40px; left: 40px; transform: translate(0,0); }
 }
 
+/* مرحله نهایی */
 .final-top-left {
   position: absolute;
   top: 40px;
   left: 40px;
+  transform: translate(0,0);
+  z-index: 20;
 }
 
-/* DESKTOP CARDS -------------------------------------------- */
+/* ===================================================================
+   DESKTOP — CARDS (RIGHT SIDE)
+=================================================================== */
+
 .intro-cards-wrapper {
   width: 100%;
   height: 100%;
 }
 
-/* 4 cards row — bottom aligned */
+/* ردیف کارت‌ها — تراز شده از پایین */
 .intro-cards-desktop {
   position: absolute;
   right: 40px;
@@ -311,10 +309,9 @@ iframe[src*="google.com/recaptcha/"] {
   display: flex;
   flex-direction: row;
   gap: 24px;
-  align-items: flex-end; /* ⭐ bottom alignment */
+  align-items: flex-end; /* ⭐ کارت‌ها از پایین تراز شوند */
 }
 
-/* Default card */
 .intro-card {
   width: 220px;
   height: 220px;
@@ -327,32 +324,36 @@ iframe[src*="google.com/recaptcha/"] {
   cursor: pointer;
   opacity: 0;
   transform: translateY(40px);
+  z-index: 10;
 }
 
-/* Smaller first card */
+/* کارت اول کوچک‌تر */
 .card-small {
   height: 176px;
 }
 
-/* Internal structure */
 .intro-card-top {
   display: flex;
   justify-content: center;
 }
+
 .intro-card-gif {
   width: 82px;
   height: 82px;
   border-radius: 12px;
   object-fit: cover;
+  pointer-events: none;
 }
 
 .intro-card-middle {
   display: flex;
   justify-content: center;
 }
+
 .intro-card-icon {
   width: 36px;
   height: 36px;
+  pointer-events: none;
 }
 
 .intro-card-title {
@@ -362,13 +363,14 @@ iframe[src*="google.com/recaptcha/"] {
   color: #0A1D37;
 }
 
-/* Animations timing */
+/* انیمیشن کارت‌ها */
 .slide-up {
   animation: slideUpCards 0.8s ease forwards;
 }
+
 @keyframes slideUpCards {
   from { opacity: 0; transform: translateY(40px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .card-1 { animation-delay: 0.2s; }
@@ -376,11 +378,17 @@ iframe[src*="google.com/recaptcha/"] {
 .card-3 { animation-delay: 1.6s; }
 .card-4 { animation-delay: 2.3s; }
 
-/* MOBILE VERSION -------------------------------------------- */
+/* ===================================================================
+   MOBILE — CARDS (VERTICAL STACK)
+=================================================================== */
+
 @media (max-width: 850px) {
 
-  .intro-cards-desktop { display: none; }
+  .intro-cards-desktop {
+    display: none;
+  }
 
+  /* لوگو در موبایل وسط می‌ماند */
   .final-top-left,
   .move-top-left {
     top: 20px;
@@ -389,7 +397,7 @@ iframe[src*="google.com/recaptcha/"] {
   }
 
   .intro-logo img { width: 90px; }
-  .intro-logo h1 { font-size: 20px; }
+  .intro-logo h1 { font-size: 20px; margin-top: 6px; }
 
   .intro-cards-mobile {
     position: absolute;
@@ -399,13 +407,13 @@ iframe[src*="google.com/recaptcha/"] {
     flex-direction: column;
     gap: 18px;
     align-items: center;
-    padding-bottom: 60px;
+    padding-bottom: 80px;
   }
 
   .intro-card-mobile {
     width: 90%;
-    background: #40E0D0;
     height: 260px;
+    background: #40E0D0;
     border-radius: 20px;
     padding: 20px;
     text-align: center;
@@ -423,7 +431,7 @@ iframe[src*="google.com/recaptcha/"] {
   .intro-card-mobile-icon {
     width: 42px;
     height: 42px;
-    margin: 10px auto;
+    margin: 14px auto;
   }
 
   .intro-card-mobile-title {
