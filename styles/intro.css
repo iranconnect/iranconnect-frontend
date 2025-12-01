@@ -1,183 +1,49 @@
 /* ===============================
-   INTRO PAGE — FINAL CLEAN VERSION
-   Desktop Only — No Mobile
+   VERTICAL INTRO BUTTONS
 ================================= */
 
-/* -- Page base -- */
-.intro-master {
-  height: 100vh;
-  width: 100%;
-  background: #18224B;
-  position: relative;
-  overflow: hidden;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* -- Logo animation (center → top-left) -- */
-.intro-logo {
-  text-align: center;
+.intro-buttons-container {
   position: absolute;
-  top: 50%;
+  top: 55%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 50;
-}
-
-.intro-logo img {
-  width: 120px;
-  pointer-events: none;
-}
-
-.intro-logo h1 {
-  color: #fff;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  margin-top: 10px;
-  text-transform: uppercase;
-}
-
-/* Zoom */
-.zoom-in {
-  animation: logoZoom 2s ease forwards;
-}
-
-@keyframes logoZoom {
-  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-  80% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-}
-
-/* Move to Top-Left */
-.move-top-left {
-  animation: logoMove 2s ease forwards;
-}
-
-@keyframes logoMove {
-  0% { top: 50%; left: 50%; transform: translate(-50%, -50%); }
-  100% { top: 40px; left: 40px; transform: translate(0,0); }
-}
-
-/* Final static */
-.final-top-left {
-  top: 40px;
-  left: 40px;
-  position: absolute;
-  transform: translate(0,0);
-}
-
-/* ===============================
-   DESKTOP CARDS (Perfect Layout)
-================================= */
-
-.intro-cards-wrapper {
-  width: 100%;
-  height: 100%;
-}
-
-/* Align cards horizontally at bottom */
-.intro-cards-desktop {
-  position: absolute;
-  right: 40px;
-  bottom: 8vh;
-
-  display: flex;
-  align-items: flex-end;
-  gap: clamp(18px, 2vw, 32px);
-}
-
-/* Main card style */
-.intro-card {
-  width: clamp(200px, 18vw, 300px);
-  height: clamp(380px, 70vh, 620px);
-
-  background: #40E0D0;
-  border-radius: 22px;
-
-  padding: 20px 22px 28px 22px;
-  box-sizing: border-box;
 
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
+  gap: 18px;
+
+  width: 100%;
+  max-width: 340px;
+  z-index: 20;
+}
+
+.intro-vertical-btn {
+  width: 100%;
+  padding: 18px 22px;
+
+  background: #40E0D0;
+  color: #0A1D37;
+
+  border: none;
+  border-radius: 16px;
+
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
 
   opacity: 0;
   transform: translateY(40px);
-  cursor: pointer;
+
+  transition: background 0.25s ease, transform 0.25s ease;
 }
 
-/* GIF (top graphic) */
-.intro-card-gif {
-  width: auto;
-  height: clamp(140px, 38%, 240px);
-  object-fit: contain;
-  pointer-events: none;
-  margin-top: 6px;
+.intro-vertical-btn:hover {
+  background: #3ad5c7;
+  transform: translateY(0) scale(1.03);
 }
 
-/* Icon (middle graphic) */
-.intro-card-icon {
-  width: clamp(35px, 13%, 70px);
-  height: auto;
-  object-fit: contain;
-  pointer-events: none;
-  margin-top: 8px;
-}
-
-/* Title */
-.intro-card-title {
-  font-size: clamp(15px, 1.3vw, 20px);
-  font-weight: 700;
-  text-align: center;
-  color: #0A1D37;
-
-  height: 40px; /* ensures perfect alignment */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ===============================
-   ANIMATIONS
-================================= */
-
-.slide-up {
-  animation: slideUpCards 0.85s ease forwards;
-}
-
-@keyframes slideUpCards {
-  from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
+/* Same animation delays you already had */
 .card-1 { animation-delay: .2s; }
 .card-2 { animation-delay: .9s; }
 .card-3 { animation-delay: 1.6s; }
 .card-4 { animation-delay: 2.3s; }
-
-/* ===============================
-   SPECIAL — FIRST CARD (About Us)
-================================= */
-
-.intro-first-card {
-  justify-content: center !important;
-  gap: 18px;
-}
-
-.intro-first-card .intro-card-gif {
-  height: 150px !important;
-  margin-top: 0 !important;
-}
-
-.intro-first-card .intro-card-icon {
-  display: none;
-}
-
-.intro-first-card .intro-card-title {
-  font-size: 22px !important;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-}
