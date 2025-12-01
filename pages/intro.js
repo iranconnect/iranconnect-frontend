@@ -6,10 +6,17 @@ export default function Intro() {
   const [step, setStep] = useState(1);
 
   useEffect(() => {
-    setTimeout(() => setStep(2), 3500); 
-    setTimeout(() => setStep(3), 6500); 
-    setTimeout(() => setStep(4), 8200); 
+    setTimeout(() => setStep(2), 3500);
+    setTimeout(() => setStep(3), 6500);
+    setTimeout(() => setStep(4), 8200);
   }, []);
+
+  // ⭐ یک لوگو، با کلاس داینامیک
+  const logoClass =
+    step === 1 ? "hidden"
+    : step === 2 ? "intro-logo zoom-in"
+    : step === 3 ? "intro-logo move-top-left"
+    : "intro-logo final-top-left";
 
   return (
     <div className="intro-master">
@@ -21,31 +28,15 @@ export default function Intro() {
         </p>
       )}
 
-      {/* مرحله ۲ — لوگو Zoom-in */}
-      {step === 2 && (
-        <div className="intro-logo zoom-in">
+      {/* لوگو ثابت — فقط استایل تغییر می‌کند */}
+      {step >= 2 && (
+        <div className={logoClass}>
           <img src="/IranConnect Dark.gif" alt="IranConnect" />
           <h1>IRANCONNECT</h1>
         </div>
       )}
 
-      {/* مرحله ۳ — انتقال لوگو */}
-      {step === 3 && (
-        <div className="intro-logo move-top-left">
-          <img src="/IranConnect Dark.gif" alt="IranConnect" />
-          <h1>IRANCONNECT</h1>
-        </div>
-      )}
-
-      {/* حالت نهایی لوگو */}
-      {step === 4 && (
-        <div className="intro-logo final-top-left">
-          <img src="/IranConnect Dark.gif" alt="IranConnect" />
-          <h1>IRANCONNECT</h1>
-        </div>
-      )}
-
-      {/* کارت‌ها */}
+      {/* مرحله نهایی — نمایش کارت‌ها */}
       {step === 4 && <IntroCards />}
     </div>
   );
