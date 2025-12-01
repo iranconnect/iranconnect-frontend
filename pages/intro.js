@@ -22,7 +22,7 @@ export default function Intro() {
   // مدیریت کلیک روی دکمه‌ها برای هدایت به صفحه هوم یا About Us
   const handleButtonClick = (title) => {
     if (title !== "About Us") {
-      router.push("/index?theme=dark");  // ریدایرکت به صفحه هوم
+      router.push("/search?theme=dark");  // ریدایرکت به صفحه هوم
     } else {
       router.push("/about?theme=dark");  // ریدایرکت به صفحه "About Us"
     }
