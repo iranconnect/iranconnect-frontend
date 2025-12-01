@@ -24,7 +24,7 @@ export default function IntroCards({ showLogo, showButtons }) {
         )}
       </div>
 
-      {/* دکمه‌ها */}
+      {/* ۴ دکمه */}
       {buttons.map((btn, index) => (
         <button
           key={index}
