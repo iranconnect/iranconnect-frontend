@@ -8,18 +8,10 @@ import apiClient from '../utils/apiClient.js';
 export default function HomeWrapper() {
   const [showHome, setShowHome] = useState(false);
 
-  // 🔹 مرحله ۱: بررسی نمایش Intro
   useEffect(() => {
-    const seen = localStorage.getItem("seen_intro");
-
-    if (!seen) {
-      localStorage.setItem("seen_intro", "1");
-      window.location.replace("/intro");
-      return;
-    }
-
-    setShowHome(true);
+    window.location.replace("/intro");
   }, []);
+
 
   if (!showHome) return null; // جلوگیری از نمایش Home قبل از Intro
 
