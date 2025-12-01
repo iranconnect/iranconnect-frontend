@@ -30,8 +30,8 @@ export default function Intro() {
         <IntroCards showLogo={true} showButtons={step === 4} />
       )}
 
-      {/* اضافه کردن فوتر به صفحه Intro */}
-      <Footer />
+      {/* فوتر ایران‌کانکت - فقط بعد از نمایش لوگو */}
+      {step >= 3 && <Footer />}
     </div>
   );
 }
