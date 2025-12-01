@@ -6,12 +6,17 @@ export default function Intro() {
   const [step, setStep] = useState(1);
 
   useEffect(() => {
-    setTimeout(() => setStep(2), 3500);
-    setTimeout(() => setStep(3), 6500);
-    setTimeout(() => setStep(4), 8200);
+    // مرحله‌بندی انیمیشن‌ها
+    const timers = [
+      setTimeout(() => setStep(2), 3500),  // Zoom-in
+      setTimeout(() => setStep(3), 6500),  // Move logo
+      setTimeout(() => setStep(4), 8200),  // Show cards
+    ];
+
+    return () => timers.forEach(clearTimeout);
   }, []);
 
-  // ⭐ یک لوگو، با کلاس داینامیک
+  // کلاس داینامیک لوگو
   const logoClass =
     step === 1 ? "hidden"
     : step === 2 ? "intro-logo zoom-in"
@@ -28,7 +33,7 @@ export default function Intro() {
         </p>
       )}
 
-      {/* لوگو ثابت — فقط استایل تغییر می‌کند */}
+      {/* مرحله ۲، ۳، ۴ — یک لوگوی واحد با کلاس داینامیک */}
       {step >= 2 && (
         <div className={logoClass}>
           <img src="/IranConnect Dark.gif" alt="IranConnect" />
@@ -36,8 +41,9 @@ export default function Intro() {
         </div>
       )}
 
-      {/* مرحله نهایی — نمایش کارت‌ها */}
+      {/* مرحله ۴ — نمایش کارت‌ها */}
       {step === 4 && <IntroCards />}
+      
     </div>
   );
 }
