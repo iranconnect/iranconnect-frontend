@@ -7,26 +7,29 @@ export default function IntroCards() {
   const cards = [
     {
       title: "Health & Medicine",
-      videoSrc: "/animation1.gif",   // همان ترتیب که گفتی
+      gif: "/animation1.gif",
+      icon: "/icons/health.svg",
       delayClass: "card-1",
       onClick: () => router.push("/?category=doctor&limit=10"),
     },
     {
       title: "Translate & Interpreter",
-      videoSrc: "/animation2.gif",
+      gif: "/animation2.gif",
+      icon: "/icons/translate.svg",
       delayClass: "card-2",
-      onClick: () =>
-        router.push("/?category=language-services&limit=10"),
+      onClick: () => router.push("/?category=language-services&limit=10"),
     },
     {
       title: "Lawyer",
-      videoSrc: "animation3.gif",
+      gif: "/animation3.gif",
+      icon: "/icons/lawyer.svg",
       delayClass: "card-3",
       onClick: () => router.push("/?category=lawyer&limit=10"),
     },
     {
       title: "About Us",
-      videoSrc: "animation4.gif",
+      gif: "/animation4.gif",
+      icon: "/icons/about.svg",
       delayClass: "card-4",
       onClick: () => router.push("/about"),
     },
@@ -40,14 +43,19 @@ export default function IntroCards() {
           className={`intro-card slide-up ${card.delayClass}`}
           onClick={card.onClick}
         >
-          {/* ویدیو یا گیف داخل کارت */}
-          <div className="intro-card-media">
-            <img src={card.videoSrc} />
+          {/* آیکون سمت چپ */}
+          <div className="intro-card-icon">
+            <img src={card.icon} alt={card.title} />
           </div>
 
           {/* متن کارت */}
           <div className="intro-card-text">
             <p>{card.title}</p>
+          </div>
+
+          {/* گیف در سمت راست */}
+          <div className="intro-card-media">
+            <img src={card.gif} alt={card.title} />
           </div>
         </div>
       ))}
