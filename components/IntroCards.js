@@ -1,12 +1,14 @@
 // frontend/components/IntroCards.js
 import { useRouter } from "next/router";
 
-export default function IntroCards({ showLogo, showButtons, onButtonClick }) {
+export default function IntroCards({ showLogo, showButtons }) {
+  const router = useRouter();
+
   const buttons = [
-    { title: "About Us", gif: "/animation/1.gif" },
-    { title: "Health & Medicine", gif: "/animation/2.gif" },
-    { title: "Translator & Interpreter", gif: "/animation/3.gif" },
-    { title: "Lawyer", gif: "/animation/4.gif" },
+    { title: "About Us", gif: "/animation/1.gif", onClick: () => router.push("/about?theme=dark") },
+    { title: "Health & Medicine", gif: "/animation/2.gif", onClick: () => router.push("/search?theme=dark") },  {/* اصلاح مسیر */}
+    { title: "Translator & Interpreter", gif: "/animation/3.gif", onClick: () => router.push("/search?theme=dark") }, {/* اصلاح مسیر */}
+    { title: "Lawyer", gif: "/animation/4.gif", onClick: () => router.push("/search?theme=dark") }, {/* اصلاح مسیر */}
   ];
 
   return (
@@ -21,12 +23,12 @@ export default function IntroCards({ showLogo, showButtons, onButtonClick }) {
         )}
       </div>
 
-      {/* دکمه‌ها */}
+      {/* ۴ دکمه */}
       {buttons.map((btn, index) => (
         <button
           key={index}
           className={`grid-btn btn-${index + 1} ${showButtons ? "show-btn" : ""}`}
-          onClick={() => onButtonClick(btn.title)} // فراخوانی تابع برای ریدایرکت
+          onClick={btn.onClick}
         >
           <img className="btn-gif" src={btn.gif} alt={btn.title} />
           <span className="btn-title">{btn.title}</span>
