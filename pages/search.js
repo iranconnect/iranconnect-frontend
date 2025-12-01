@@ -14,7 +14,7 @@ export default function HomeWrapper() {
 
   if (!showHome) return null; // جلوگیری از نمایش Home قبل از Intro
 
-  return <Home /search>;
+  return <search />;
 }
 /* ============================================================================
    🔵 کامپوننت اصلی Home که همان قبلی است (بدون هیچ تغییری در منطق)
