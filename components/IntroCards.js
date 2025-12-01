@@ -9,7 +9,6 @@ export default function IntroCards({ showLogo, showButtons }) {
     { title: "Health & Medicine", gif: "/animation/2.gif", onClick: () => router.push("/?theme=dark") },
     { title: "Translator & Interpreter", gif: "/animation/3.gif", onClick: () => router.push("/?theme=dark") },
     { title: "Lawyer", gif: "/animation/4.gif", onClick: () => router.push("/?theme=dark") },
-
   ];
 
   return (
