@@ -31,7 +31,7 @@ export default function Intro() {
       {/* مرحله ۲ — لوگو */}
       {showLogo && (
         <div className="intro-logo scale-in">
-          <img src="/logo-dark.png" alt="IranConnect Logo" />
+          <img src="/IranConnect Dark.gif" alt="IranConnect Logo" />
           <h1>IRANCONNECT</h1>
         </div>
       )}
