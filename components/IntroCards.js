@@ -1,40 +1,38 @@
 // frontend/components/IntroCards.js
 import { useRouter } from "next/router";
 
-export default function IntroCards({ logoReady }) {
+export default function IntroCards({ logoClass }) {
   const router = useRouter();
 
-  const buttons = [
-    { title: "About Us", onClick: () => router.push("/about") },
-    { title: "Health & Medicine", onClick: () => router.push("/?category=doctor&limit=10") },
-    { title: "Translator & Interpreter", onClick: () => router.push("/?category=language-services&limit=10") },
-    { title: "Lawyer", onClick: () => router.push("/?category=lawyer&limit=10") },
-  ];
-
   return (
-    <div className={`intro-grid-wrapper ${logoReady ? "show-grid" : ""}`}>
-      
-      {/* ستون ۱ — ردیف ۱: فضای لوگو */}
-      <div className="grid-cell logo-space"></div>
+    <div className="intro-grid-wrapper show-grid">
+
+      {/* ستون ۱ — ردیف ۱ (لوگو) */}
+      <div className="logo-space">
+        <div className={logoClass}>
+          <img src="/IranConnect Dark.gif" alt="IranConnect" />
+          <h1>IRANCONNECT</h1>
+        </div>
+      </div>
 
       {/* ستون ۱ — ردیف ۲ */}
-      <button className="grid-btn btn-1 slide-up" onClick={buttons[0].onClick}>
-        {buttons[0].title}
+      <button className="grid-btn btn-1 slide-up" onClick={() => router.push("/about")}>
+        <span className="btn-title">About Us</span>
       </button>
 
-      {/* ستون ۲ — تک سلولی */}
-      <button className="grid-btn btn-2 slide-up" onClick={buttons[1].onClick}>
-        {buttons[1].title}
+      {/* ستون ۲ */}
+      <button className="grid-btn btn-2 slide-up" onClick={() => router.push("/?category=doctor&limit=10")}>
+        <span className="btn-title">Health & Medicine</span>
       </button>
 
       {/* ستون ۳ */}
-      <button className="grid-btn btn-3 slide-up" onClick={buttons[2].onClick}>
-        {buttons[2].title}
+      <button className="grid-btn btn-3 slide-up" onClick={() => router.push("/?category=language-services&limit=10")}>
+        <span className="btn-title">Translator & Interpreter</span>
       </button>
 
       {/* ستون ۴ */}
-      <button className="grid-btn btn-4 slide-up" onClick={buttons[3].onClick}>
-        {buttons[3].title}
+      <button className="grid-btn btn-4 slide-up" onClick={() => router.push("/?category=lawyer&limit=10")}>
+        <span className="btn-title">Lawyer</span>
       </button>
 
     </div>
