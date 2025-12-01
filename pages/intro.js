@@ -1,6 +1,8 @@
 // frontend/pages/intro.js
 import { useEffect, useState } from "react";
 import IntroCards from "../components/IntroCards";
+import "../styles/intro.css";
+
 
 export default function Intro() {
   const [step, setStep] = useState(1);
