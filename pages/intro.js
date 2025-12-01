@@ -1,3 +1,4 @@
+//frontend/pages/intro.js
 import { useEffect, useState } from "react";
 import IntroCards from "../components/IntroCards";
 
@@ -6,20 +7,12 @@ export default function Intro() {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setStep(2), 2000),  // fade-in welcome
-      setTimeout(() => setStep(3), 4500),  // zoom-in logo
-      setTimeout(() => setStep(4), 7100),  // move logo to top-left
-      setTimeout(() => setStep(5), 9000),  // show grid/buttons
+      setTimeout(() => setStep(2), 4000), // پیام خوش‌آمد طولانی‌تر
+      setTimeout(() => setStep(3), 6500), // نمایش لوگو از opacity 0→1
+      setTimeout(() => setStep(4), 8000), // نمایش جدول دکمه‌ها
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
-
-  const logoClass =
-    step === 1 ? "hidden"
-    : step === 2 ? "intro-logo zoom-in"
-    : step === 3 ? "intro-logo zoom-in"
-    : step === 4 ? "intro-logo move-top-left"
-    : "intro-logo final-top-left";
 
   return (
     <div className="intro-master">
@@ -31,8 +24,11 @@ export default function Intro() {
         </p>
       )}
 
-      {/* مرحله نهایی: نمایش جدول + لوگو در سلول */}
-      {step === 5 && <IntroCards logoClass={logoClass} />}
+      {/* مرحله لوگو + جدول */}
+      {step >= 3 && (
+        <IntroCards showLogo={true} showButtons={step === 4} />
+      )}
+
     </div>
   );
 }
