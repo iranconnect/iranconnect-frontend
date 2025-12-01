@@ -1,11 +1,36 @@
 // frontend/pages/index.js
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import BusinessCard from '../components/BusinessCard';
 import apiClient from '../utils/apiClient.js';
 
-export default function Home() {
+export default function HomeWrapper() {
+  const [showHome, setShowHome] = useState(false);
+
+  // 🔹 مرحله ۱: بررسی نمایش Intro
+  useEffect(() => {
+    const seen = localStorage.getItem("seen_intro");
+
+    if (!seen) {
+      localStorage.setItem("seen_intro", "1");
+      window.location.replace("/intro");
+      return;
+    }
+
+    setShowHome(true);
+  }, []);
+
+  if (!showHome) return null; // جلوگیری از نمایش Home قبل از Intro
+
+  return <Home />;
+}
+
+
+/* ============================================================================
+   🔵 کامپوننت اصلی Home که همان قبلی است (بدون هیچ تغییری در منطق)
+   ============================================================================ */
+function Home() {
   const [q, setQ] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
@@ -19,6 +44,17 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [theme, setTheme] = useState('light');
+
+  // 🔹 دریافت پارامترهای فیلتر از IntroCards (مانند ?category=doctor)
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const cat = url.searchParams.get("category");
+
+    if (cat) {
+      setCategory(cat);
+      fetchList(cat);
+    }
+  }, []);
 
   useEffect(() => {
     fetchCountries();
@@ -116,12 +152,13 @@ export default function Home() {
     }
   }
 
-  async function fetchList() {
+  async function fetchList(forceCategory = null) {
     setLoading(true);
 
     try {
       const params = { limit: 10 };
-      if (country) params.country = country;
+      if (forceCategory) params.category = forceCategory;
+      else if (country) params.country = country;
       if (city) params.city = city;
       if (category) params.category = category;
       if (subcategory) params.subcategory = subcategory;
