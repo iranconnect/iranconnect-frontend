@@ -108,12 +108,29 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-
   padding: 18px 20px;
 
   opacity: 0;
   transform: translateY(40px);
   overflow: hidden;
+  pointer-events: none; /* Disable interaction until loaded */
+}
+
+/* When the button is ready to show */
+.grid-btn.show-btn {
+  animation: slideUpBtn 1s ease forwards;
+  pointer-events: auto; /* Enable interaction after loading */
+}
+
+@keyframes slideUpBtn {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .btn-gif {
