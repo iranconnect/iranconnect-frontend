@@ -4,18 +4,29 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import BusinessCard from '../components/BusinessCard';
 import apiClient from '../utils/apiClient.js';
+import { useRouter } from 'next/router';
 
 export default function HomeWrapper() {
   const [showHome, setShowHome] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    setShowHome(true);
-  }, []);
+    // بررسی اینکه آیا کاربر وارد صفحه اینترو شده است یا نه
+    const hasVisitedIntro = localStorage.getItem("hasVisitedIntro");
+
+    if (!hasVisitedIntro) {
+      // اگر کاربر وارد صفحه اینترو نشده است، به صفحه اینترو ریدایرکت می‌کنیم
+      router.push("/intro");
+    } else {
+      setShowHome(true);  // اگر کاربر وارد صفحه اینترو شده است، صفحه هوم را نمایش بده
+    }
+  }, [router]);
 
   if (!showHome) return null; // جلوگیری از نمایش Home قبل از Intro
 
-  return <search />;
+  return <Home />;
 }
+
 /* ============================================================================
    🔵 کامپوننت اصلی Home که همان قبلی است (بدون هیچ تغییری در منطق)
    ============================================================================ */
