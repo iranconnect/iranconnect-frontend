@@ -1,4 +1,3 @@
-// frontend/pages/intro.js
 import { useEffect, useState } from "react";
 import IntroCards from "../components/IntroCards";
 
@@ -7,10 +6,10 @@ export default function Intro() {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setStep(2), 2000), // fade-out welcome
-      setTimeout(() => setStep(3), 4500), // zoom-in
-      setTimeout(() => setStep(4), 7100), // move-top-left
-      setTimeout(() => setStep(5), 9000), // show grid buttons
+      setTimeout(() => setStep(2), 2000),  // fade-in welcome
+      setTimeout(() => setStep(3), 4500),  // zoom-in logo
+      setTimeout(() => setStep(4), 7100),  // move logo to top-left
+      setTimeout(() => setStep(5), 9000),  // show grid/buttons
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
@@ -32,17 +31,8 @@ export default function Intro() {
         </p>
       )}
 
-      {/* لوگو موشن */}
-      {step >= 2 && (
-        <div className={logoClass}>
-          <img src="/IranConnect Dark.gif" alt="IranConnect" />
-          <h1>IRANCONNECT</h1>
-        </div>
-      )}
-
-      {/* مرحله نهایی: نمایش جدول دکمه‌ها */}
-      {step === 5 && <IntroCards logoReady={true} />}
-
+      {/* مرحله نهایی: نمایش جدول + لوگو در سلول */}
+      {step === 5 && <IntroCards logoClass={logoClass} />}
     </div>
   );
 }
