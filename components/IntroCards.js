@@ -44,12 +44,6 @@ export default function IntroCards() {
         {cards.map((card, index) => (
           <div
             key={index}
-            className={`intro-card slide-up ${card.delay} ${index === 0 ? "intro-first-card" : ""}`}
-            onClick={card.onClick}
-          >
-
-          <div
-            key={index}
             className={`intro-card slide-up ${card.delay} ${
               card.small ? "card-small" : ""
             }`}
