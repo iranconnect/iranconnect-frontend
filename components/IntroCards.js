@@ -6,9 +6,9 @@ export default function IntroCards({ showLogo, showButtons }) {
 
   const buttons = [
     { title: "About Us", gif: "/animation/1.gif", onClick: () => router.push("/about") },
-    { title: "Health & Medicine", gif: "/animation/2.gif", onClick: () => router.push("/?category=doctor&limit=10") },
-    { title: "Translator & Interpreter", gif: "/animation/3.gif", onClick: () => router.push("/?category=language-services&limit=10") },
-    { title: "Lawyer", gif: "/animation/4.gif", onClick: () => router.push("/?category=lawyer&limit=10") },
+    { title: "Health & Medicine", gif: "/animation/2.gif", onClick: () => router.push("/?category=doctor&limit=10&theme=dark") },
+    { title: "Translator & Interpreter", gif: "/animation/3.gif", onClick: () => router.push("/?category=language-services&limit=10&theme=dark") },
+    { title: "Lawyer", gif: "/animation/4.gif", onClick: () => router.push("/?category=lawyer&limit=10&theme=dark") },
   ];
 
   return (
@@ -35,6 +35,9 @@ export default function IntroCards({ showLogo, showButtons }) {
           <span className="btn-title">{btn.title}</span>
         </button>
       ))}
+
+      {/* ردیف مخفی برای فضای اضافی */}
+      <div className="hidden-row"></div>
 
     </div>
   );
