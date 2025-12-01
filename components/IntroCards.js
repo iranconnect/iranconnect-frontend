@@ -14,7 +14,7 @@ export default function IntroCards({ showLogo, showButtons }) {
   return (
     <div className="intro-grid-wrapper">
 
-      {/* ستون ۱ — ردیف ۱ → لوگو */}
+      {/* ردیف اول — لوگو */}
       <div className="logo-space">
         {showLogo && (
           <div className="intro-logo fade-in-logo">
@@ -24,11 +24,11 @@ export default function IntroCards({ showLogo, showButtons }) {
         )}
       </div>
 
-      {/* ۴ دکمه */}
+      {/* دکمه‌ها */}
       {buttons.map((btn, index) => (
         <button
           key={index}
-          className={`grid-btn btn-${index + 1} ${showButtons ? "slide-up" : ""}`}
+          className={`grid-btn btn-${index + 1} ${showButtons ? "show-btn" : ""}`}
           onClick={btn.onClick}
         >
           <img className="btn-gif" src={btn.gif} alt={btn.title} />
