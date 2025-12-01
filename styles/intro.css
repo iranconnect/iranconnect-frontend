@@ -160,16 +160,16 @@
    MOBILE AND TABLET ADJUSTMENTS
 ============================ */
 
-/* General grid for mobile (1 column) */
+/* General grid for mobile (1 column, 5 rows) */
 @media (max-width: 768px) {
   .intro-grid-wrapper {
     width: 100%;
     height: auto;
     margin-top: 0;
     margin-bottom: 0;
-    display: block;
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
+    display: grid;
+    grid-template-columns: 1fr; /* یک ستون برای موبایل */
+    grid-template-rows: auto auto auto auto auto; /* ۵ ردیف */
     gap: 20px;
   }
 
