@@ -31,13 +31,6 @@ export default function App({ Component, pageProps }) {
     checkLoginByCookie();
   }, []);
 
-  /* 🚪 ریدایرکت هوشمندانه به intro فقط در صفحه اصلی */
-  useEffect(() => {
-    if (router.pathname === "/") {
-      router.replace("/intro");
-    }
-  }, [router.pathname]);
-
   /* 🚀 Ping هنگام تغییر مسیر */
   useEffect(() => {
     if (!isLoggedIn) return;
