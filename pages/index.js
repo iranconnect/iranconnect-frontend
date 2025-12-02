@@ -5,17 +5,14 @@ import Footer from '../components/Footer';
 import BusinessCard from '../components/BusinessCard';
 import apiClient from '../utils/apiClient.js';
 
-export default function HomeWrapper() {
-  const [showHome, setShowHome] = useState(false);
+export default function IndexRedirect() {
+  const router = useRouter();
 
   useEffect(() => {
-    window.location.replace("/intro");
+    router.replace("/intro");  // همیشه اینتروو
   }, []);
 
-
-  if (!showHome) return null; // جلوگیری از نمایش Home قبل از Intro
-
-  return <Home />;
+  return null;
 }
 
 
