@@ -105,10 +105,10 @@ export default function Header() {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex gap-5 items-center">
           <Link
-            href="/"
+            href="/search"
             className="text-sm text-[var(--text)] hover:text-turquoise transition"
           >
-            Home
+            Search
           </Link>
 
           <Link
