@@ -4,31 +4,13 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import BusinessCard from '../components/BusinessCard';
 import apiClient from '../utils/apiClient.js';
-import { useRouter } from 'next/router';
 
-export default function HomeWrapper() {
-  const [showHome, setShowHome] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    // بررسی اینکه آیا کاربر وارد صفحه اینترو شده است یا نه
-    const hasVisitedIntro = localStorage.getItem("hasVisitedIntro");
-
-    if (!hasVisitedIntro) {
-      // اگر کاربر وارد صفحه اینترو نشده است، به صفحه اینترو ریدایرکت می‌کنیم
-      router.push("/intro");
-    } else {
-      setShowHome(true);  // اگر کاربر وارد صفحه اینترو شده است، صفحه هوم را نمایش بده
-    }
-  }, [router]);
-
-  if (!showHome) return null; // جلوگیری از نمایش Home قبل از Intro
-
+export default function SearchPage() {
   return <Home />;
 }
 
 /* ============================================================================
-   🔵 کامپوننت اصلی Home که همان قبلی است (بدون هیچ تغییری در منطق)
+   🔵 صفحه اصلی سرچ (بدون هیچ تغییر در منطق قبلی)
    ============================================================================ */
 function Home() {
   const [q, setQ] = useState('');
@@ -45,7 +27,7 @@ function Home() {
   const [loadingCities, setLoadingCities] = useState(false);
   const [theme, setTheme] = useState('light');
 
-  // 🔹 دریافت پارامترهای فیلتر از IntroCards (مانند ?category=doctor)
+  // 🔹 فیلتر بر اساس پارامتر URL
   useEffect(() => {
     const url = new URL(window.location.href);
     const cat = url.searchParams.get("category");
@@ -165,7 +147,6 @@ function Home() {
       if (q) params.q = q;
 
       const res = await apiClient.get("/businesses", { params });
-
       setBusinesses(res.data || []);
     } catch (err) {
       console.error(err);
@@ -220,7 +201,7 @@ function Home() {
           paddingRight: '16px',
         }}
       >
-        {/* 🔍 Filters & Search */}
+        {/* Filters */}
         <section style={{ marginBottom: 28 }}>
           <form
             onSubmit={handleSearch}
@@ -294,7 +275,7 @@ function Home() {
           </form>
         </section>
 
-        {/* 🧾 Results */}
+        {/* Results */}
         <section>
           {loading ? (
             <p>Loading...</p>
