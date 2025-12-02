@@ -21,12 +21,15 @@ export default function Intro() {
 
   // مدیریت کلیک روی دکمه‌ها برای هدایت به صفحه هوم یا About Us
   const handleButtonClick = (title) => {
+    localStorage.setItem("hasVisitedIntro", "true");  // 🔥 این خط حیاتی است
+  
     if (title !== "About Us") {
-      router.push("/search?theme=dark");  // ریدایرکت به صفحه هوم
+      router.push("/search?theme=dark");
     } else {
-      router.push("/about?theme=dark");  // ریدایرکت به صفحه "About Us"
+      router.push("/about?theme=dark");
     }
   };
+
 
   return (
     <div className="intro-master">
