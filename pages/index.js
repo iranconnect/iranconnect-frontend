@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import BusinessCard from '../components/BusinessCard';
 import apiClient from '../utils/apiClient.js';
+import { useRouter } from "next/router";
 
 export default function IndexRedirect() {
   const router = useRouter();
