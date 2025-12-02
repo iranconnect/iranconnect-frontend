@@ -298,8 +298,9 @@ export default function Login() {
           lang={lang}
           onClose={(accepted) => {
             setShowConsent(false);
-            if (accepted) window.location.href = "/";
+            if (accepted) window.location.href = "/search";
           }}
+
         />
       )}
     </div>
