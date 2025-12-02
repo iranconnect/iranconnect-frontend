@@ -196,11 +196,11 @@ export default function Header() {
           )}
 
           <Link
-            href="/"
+            href="/search"
             onClick={() => setMenuOpen(false)}
             className="text-[var(--text)] hover:text-turquoise"
           >
-            Home
+            Search
           </Link>
 
           <Link
