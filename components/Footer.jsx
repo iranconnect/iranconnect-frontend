@@ -49,7 +49,7 @@ export default function Footer() {
           <div style={{ maxWidth: 420 }}>
             <h3 style={{ color: '#fff', marginBottom: 8 }}>IranConnect</h3>
             <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, lineHeight: '1.6' }}>
-              Helping Iranians abroad find trusted professionals and connect with their community.
+              Helping Iranians abroad find professionals and connect with their community.
               <br />
               <Link
                 href="/about"
@@ -70,7 +70,7 @@ export default function Footer() {
                 : 'Quick Links'}
             </h4>
             <div className="col flex flex-col gap-1">
-              <Link href="/">Home</Link>
+              <Link href="/search">Search</Link>
               <Link href="/contact">Contact</Link>
               <Link href="/about">About</Link>
               {!isLoggedIn && <Link href="/auth/login">Login</Link>}
