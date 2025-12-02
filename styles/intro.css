@@ -1,11 +1,19 @@
 /* ============================
+   DYNAMIC VIEWPORT HEIGHT FIX
+============================ */
+:root {
+  --vh: 1vh; /* مقدار اولیه */
+}
+
+/* ============================
    PAGE WRAPPER
 ============================ */
 .intro-master {
-  min-height: 100vh;
+  min-height: calc(var(--vh) * 100);
   display: flex;
   flex-direction: column;
   background: #18224B;
+  overflow-x: hidden;
 }
 
 /* فاصله ایمن از فوتر */
@@ -127,10 +135,6 @@
    RESPONSIVE — MOBILE
 ============================ */
 @media (max-width: 768px) {
-  .intro-master {
-    padding-bottom: 200px;
-  }
-
   .intro-grid-wrapper {
     width: 92%;
     margin-top: 40px;
