@@ -4,13 +4,31 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import BusinessCard from '../components/BusinessCard';
 import apiClient from '../utils/apiClient.js';
+import { useRouter } from "next/router";
 
 export default function SearchPage() {
+  const router = useRouter();
+  const [allowed, setAllowed] = useState(false);
+
+  // 🔵 جلوگیری از ورود مستقیم بدون دیدن intro
+  useEffect(() => {
+    const ok = localStorage.getItem("hasVisitedIntro");
+
+    if (!ok) {
+      router.replace("/intro");
+      return;
+    }
+
+    setAllowed(true);
+  }, []);
+
+  if (!allowed) return null;
+
   return <Home />;
 }
 
 /* ============================================================================
-   🔵 صفحه اصلی سرچ (بدون هیچ تغییر در منطق قبلی)
+   🔵 صفحه اصلی سرچ (بدون تغییر منطق)
    ============================================================================ */
 function Home() {
   const [q, setQ] = useState('');
@@ -27,7 +45,7 @@ function Home() {
   const [loadingCities, setLoadingCities] = useState(false);
   const [theme, setTheme] = useState('light');
 
-  // 🔹 فیلتر بر اساس پارامتر URL
+  // 🔹 فیلتر پارامتر URL
   useEffect(() => {
     const url = new URL(window.location.href);
     const cat = url.searchParams.get("category");
@@ -45,14 +63,17 @@ function Home() {
     const current =
       document.documentElement.getAttribute('data-theme') || 'light';
     setTheme(current);
+
     const observer = new MutationObserver(() => {
       const newTheme = document.documentElement.getAttribute('data-theme');
       setTheme(newTheme);
     });
+
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme'],
     });
+
     return () => observer.disconnect();
   }, []);
 
@@ -101,10 +122,7 @@ function Home() {
 
     try {
       const res = await apiClient.get("/businesses/categories", {
-        params: {
-          country: selectedCountry,
-          city: selectedCity,
-        },
+        params: { country: selectedCountry, city: selectedCity },
       });
 
       setCategories(res.data || []);
@@ -121,11 +139,7 @@ function Home() {
 
     try {
       const res = await apiClient.get("/businesses/subcategories", {
-        params: {
-          country: selectedCountry,
-          city: selectedCity,
-          category: selectedCategory,
-        },
+        params: { country: selectedCountry, city: selectedCity, category: selectedCategory },
       });
 
       setSubcategories(res.data || []);
@@ -184,12 +198,7 @@ function Home() {
   const selectClass = 'input-default w-full';
 
   return (
-    <div
-      className="flex flex-col min-h-screen transition-colors"
-      style={{
-        backgroundColor: '#ffffff',
-      }}
-    >
+    <div className="flex flex-col min-h-screen transition-colors" style={{ backgroundColor: '#ffffff' }}>
       <Header />
 
       <main
@@ -266,10 +275,7 @@ function Home() {
             />
 
             {/* Search button */}
-            <button
-              className="btn-primary w-full sm:col-span-1 sm:row-start-2"
-              type="submit"
-            >
+            <button className="btn-primary w-full sm:col-span-1 sm:row-start-2" type="submit">
               Search
             </button>
           </form>
