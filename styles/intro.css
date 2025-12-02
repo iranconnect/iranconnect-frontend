@@ -3,11 +3,14 @@
 ============================ */
 .intro-master {
   min-height: 100vh;
-  width: 100%;
+  display: flex;
+  flex-direction: column;
   background: #18224B;
-  position: relative;
-  overflow-x: hidden;
-  padding-bottom: 120px; /* فاصله مناسب با فوتر */
+}
+
+/* فاصله ایمن از فوتر */
+.intro-bottom-space {
+  height: 60px;
 }
 
 /* ============================
