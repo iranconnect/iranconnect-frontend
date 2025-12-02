@@ -43,7 +43,12 @@ export default function Intro() {
       )}
 
       {/* فوتر ایران‌کانکت - فقط بعد از نمایش لوگو */}
-      {step >= 3 && <Footer />}
+      {step >= 3 && (
+        <>
+          <div className="intro-bottom-space"></div>
+          <Footer />
+        </>
+      )}
     </div>
   );
 }
