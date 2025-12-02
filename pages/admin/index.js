@@ -1,5 +1,6 @@
+//pages/admin/index.js
 import { useEffect, useState } from "react";
-import apiClient from "../../utils/apiClient"; // ✅ axios امن با interceptor
+import apiClient from "../../utils/apiClient";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import Link from "next/link";
@@ -9,30 +10,47 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // 🧭 بررسی توکن و نقش قبل از بارگذاری
+  // 🔐 مرحله ۱: احراز هویت + چک نقش با HttpOnly Cookie
+  const [authChecked, setAuthChecked] = useState(false);
+
   useEffect(() => {
-    const token = localStorage.getItem("iran_token");
-    const role = localStorage.getItem("iran_role");
+    async function checkAccess() {
+      try {
+        // ✔ درخواست امن → فقط با کوکی HttpOnly
+        const me = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
 
-    if (!token) {
-      window.location.href = "/auth/login";
-      return;
+        if (!me.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
+        }
+
+        // ✔ فقط Admin و SuperAdmin
+        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
+          window.location.href = "/";
+          return;
+        }
+
+        setAuthChecked(true);
+        fetchBusinesses();
+      } catch (err) {
+        window.location.href = "/auth/login";
+      }
     }
 
-    if (role !== "admin") {
-      window.location.href = "/";
-      return;
-    }
-
-    fetchBusinesses();
+    checkAccess();
   }, []);
 
-  // 📦 دریافت لیست بیزینس‌ها
+  // 🔍 مرحله ۲: دریافت لیست بیزینس‌ها از بک‌اند ایمن‌شده
   async function fetchBusinesses() {
     setLoading(true);
     setError("");
+
     try {
-      const res = await apiClient.get(`/admin/businesses`);
+      const res = await apiClient.get("/admin/businesses", {
+        withCredentials: true,
+      });
       setList(res.data || []);
     } catch (err) {
       console.error("❌ Error fetching businesses:", err);
@@ -42,16 +60,25 @@ export default function AdminPage() {
     }
   }
 
+  // ⛔ جلوگیری از رندر تا زمانی که دسترسی بررسی شود
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Checking access…
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col">
       <Header />
 
       <main className="container-mobile flex-1 px-4 py-8">
-        {/* عنوان و دکمه بالا */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-lg sm:text-xl font-semibold text-[var(--navy)]">
             Admin Panel
           </h2>
+
           <Link
             href="/admin/new"
             className="px-4 py-2 rounded-lg bg-turquoise text-white font-medium shadow-[4px_4px_10px_#b8e0dd,-4px_-4px_10px_#ffffff] hover:bg-turquoise/90 transition"
@@ -60,7 +87,6 @@ export default function AdminPage() {
           </Link>
         </div>
 
-        {/* وضعیت بارگذاری / خطا */}
         {loading ? (
           <p className="text-gray-500 text-sm mt-4">Loading businesses...</p>
         ) : error ? (
@@ -71,8 +97,8 @@ export default function AdminPage() {
               list.map((b) => (
                 <div
                   key={b.id}
-                  className="p-4 rounded-2xl bg-[var(--card-bg)] border border-[var(--border)] 
-                  shadow-[5px_5px_15px_var(--shadow-dark),-5px_-5px_15px_var(--shadow-light)] 
+                  className="p-4 rounded-2xl bg-[var(--card-bg)] border border-[var(--border)]
+                  shadow-[5px_5px_15px_var(--shadow-dark),-5px_-5px_15px_var(--shadow-light)]
                   flex items-center justify-between hover:shadow-[3px_3px_10px_var(--shadow-dark),-3px_-3px_10px_var(--shadow-light)] transition"
                 >
                   <div className="flex items-center gap-3">
@@ -100,9 +126,7 @@ export default function AdminPage() {
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-sm mt-4">
-                No businesses found.
-              </p>
+              <p className="text-gray-500 text-sm mt-4">No businesses found.</p>
             )}
           </div>
         )}
