@@ -1,35 +1,49 @@
 // frontend/pages/intro.js
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";  // برای استفاده از router.push
-import IntroCards from "../components/IntroCards"; // کامپوننت دکمه‌ها
-import Footer from "../components/Footer"; // فوتر
+import { useRouter } from "next/router";
+import IntroCards from "../components/IntroCards";
+import Footer from "../components/Footer";
 
 export default function Intro() {
   const [step, setStep] = useState(1);
   const router = useRouter();
 
-  // استفاده از useEffect برای تایمرهای مربوط به اینترو
+  /* 🔥 dynamic viewport height برای رفع مشکل فوتر موبایل */
+  useEffect(() => {
+    const setVh = () => {
+      document.documentElement.style.setProperty(
+        "--vh",
+        `${window.innerHeight * 0.01}px`
+      );
+    };
+
+    setVh();
+    window.addEventListener("resize", setVh);
+
+    return () => window.removeEventListener("resize", setVh);
+  }, []);
+
+  /* انیمیشن اینترو */
   useEffect(() => {
     const timers = [
-      setTimeout(() => setStep(2), 4000), // پیام خوش‌آمد طولانی‌تر
-      setTimeout(() => setStep(3), 6500), // نمایش لوگو از opacity 0→1
-      setTimeout(() => setStep(4), 8000), // نمایش جدول دکمه‌ها
+      setTimeout(() => setStep(2), 4000),
+      setTimeout(() => setStep(3), 6500),
+      setTimeout(() => setStep(4), 8000),
     ];
 
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  // مدیریت کلیک روی دکمه‌ها برای هدایت به صفحه هوم یا About Us
+  /* کلیک روی کارت‌ها */
   const handleButtonClick = (title) => {
-    localStorage.setItem("hasVisitedIntro", "true");  // 🔥 این خط حیاتی است
-  
+    localStorage.setItem("hasVisitedIntro", "true");
+
     if (title !== "About Us") {
       router.push("/search?theme=dark");
     } else {
       router.push("/about?theme=dark");
     }
   };
-
 
   return (
     <div className="intro-master">
@@ -40,12 +54,16 @@ export default function Intro() {
         </p>
       )}
 
-      {/* مرحله لوگو + جدول */}
+      {/* مرحله لوگو + دکمه‌ها */}
       {step >= 3 && (
-        <IntroCards showLogo={true} showButtons={step === 4} onButtonClick={handleButtonClick} />
+        <IntroCards
+          showLogo={true}
+          showButtons={step === 4}
+          onButtonClick={handleButtonClick}
+        />
       )}
 
-      {/* فوتر ایران‌کانکت - فقط بعد از نمایش لوگو */}
+      {/* فوتر */}
       {step >= 3 && (
         <>
           <div className="intro-bottom-space"></div>
