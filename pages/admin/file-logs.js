@@ -1,4 +1,4 @@
-//pages/admin/file-logs.js
+// pages/admin/file-logs.js
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -12,7 +12,6 @@ export default function AdminFileLogsPage() {
   const [error, setError] = useState("");
   const [selectedLog, setSelectedLog] = useState(null);
 
-  // کنترل دسترسی Admin/SuperAdmin
   const [authChecked, setAuthChecked] = useState(false);
 
   /* ================================================
@@ -25,15 +24,9 @@ export default function AdminFileLogsPage() {
           withCredentials: true,
         });
 
-        if (!me.data?.ok) {
-          window.location.href = "/auth/login";
-          return;
-        }
-
-        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
-          window.location.href = "/";
-          return;
-        }
+        if (!me.data?.ok) return (window.location.href = "/auth/login");
+        if (me.data.role !== "admin" && me.data.role !== "superadmin")
+          return (window.location.href = "/");
 
         setAuthChecked(true);
         fetchLogs();
@@ -59,11 +52,8 @@ export default function AdminFileLogsPage() {
 
       const res = await apiClient.get("/admin/files/logs", {
         params,
-        headers: {
-          "X-Iranconnect-Admin": "true",
-        },
+        withCredentials: true,   // 🔐 مهم
       });
-
 
       setLogs(res.data || []);
     } catch (err) {
@@ -74,9 +64,6 @@ export default function AdminFileLogsPage() {
     }
   }
 
-  /* ================================================
-     ⛔ Prevent render until auth check
-  ================================================= */
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -137,25 +124,22 @@ export default function AdminFileLogsPage() {
 
             {/* Export Buttons */}
             <div className="flex flex-row flex-wrap gap-3 items-center ml-auto">
-              {/* XLSX */}
               <button
-                onClick={() => 
+                onClick={() =>
                   window.open(
-                    `${process.env.NEXT_PUBLIC_API_BASE}/admin/files/export/xlsx?X-Iranconnect-Admin=true`,
+                    `${process.env.NEXT_PUBLIC_API_BASE}/admin/files/export/xlsx`,
                     "_blank"
                   )
                 }
-
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
                 Export XLSX
               </button>
 
-              {/* PDF */}
               <button
-                onClick={() => 
+                onClick={() =>
                   window.open(
-                    `${process.env.NEXT_PUBLIC_API_BASE}/admin/files/export/pdf?X-Iranconnect-Admin=true`,
+                    `${process.env.NEXT_PUBLIC_API_BASE}/admin/files/export/pdf`,
                     "_blank"
                   )
                 }
