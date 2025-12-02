@@ -108,7 +108,7 @@ export default function Login() {
           setShowConsent(true);
         } else {
           const redirect = new URLSearchParams(window.location.search).get("redirect");
-          window.location.href = redirect || "/";
+          window.location.href = redirect || "/search";
         }
       } else {
         handleFailedLogin();
