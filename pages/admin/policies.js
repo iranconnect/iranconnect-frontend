@@ -76,7 +76,7 @@ export default function PoliciesAdmin() {
   ============================================================= */
   async function fetchPolicies() {
     try {
-      const res = await apiClient.get("/api/admin/policies");
+      const res = await apiClient.get("/admin/policies");
       setPolicies(res.data || []);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to load policies.");
@@ -91,13 +91,13 @@ export default function PoliciesAdmin() {
 
     try {
       if (editingId) {
-        await apiClient.put(`/api/admin/policies/${editingId}`, {
+        await apiClient.put(`/admin/policies/${editingId}`, {
           type,
           lang,
           content,
         });
       } else {
-        await apiClient.post(`/api/admin/policies`, {
+        await apiClient.post(`/admin/policies`, {
           type,
           lang,
           content,
@@ -118,7 +118,7 @@ export default function PoliciesAdmin() {
     if (!confirm("❗ Delete this policy?")) return;
 
     try {
-      await apiClient.delete(`/api/admin/policies/${id}`);
+      await apiClient.delete(`/admin/policies/${id}`);
       fetchPolicies();
     } catch (err) {
       alert(err.response?.data?.error || "Error deleting policy.");
@@ -152,7 +152,7 @@ export default function PoliciesAdmin() {
       setHistoryKey({ type: t, lang: l });
 
       const res = await apiClient.get(
-        `/api/admin/policies/history/${t}/${l}`
+        `/admin/policies/history/${t}/${l}`
       );
 
       setHistoryList(res.data || []);
@@ -167,7 +167,7 @@ export default function PoliciesAdmin() {
   /* 🔄 Restore نسخه قبلی */
   async function restoreVersion(id) {
     try {
-      await apiClient.post(`/api/admin/policies/restore/${id}`);
+      await apiClient.post(`/admin/policies/restore/${id}`);
 
       await fetchPolicies();
       await openHistory(historyKey.type, historyKey.lang);
