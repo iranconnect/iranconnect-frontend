@@ -18,7 +18,8 @@ export default function PoliciesAdmin() {
   const [error, setError] = useState("");
 
   const [theme, setTheme] = useState("light");
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  // ❗️ دیگر تفاوتی بین admin و superadmin نیست
   const [authChecked, setAuthChecked] = useState(false);
 
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -27,7 +28,7 @@ export default function PoliciesAdmin() {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   /* ============================================================
-     🔐 1) احراز هویت و نقش — HttpOnly Cookie
+     🔐 احراز هویت — هر دو نقش admin/superadmin مجاز
   ============================================================= */
   useEffect(() => {
     async function checkAccess() {
@@ -44,25 +45,22 @@ export default function PoliciesAdmin() {
           return;
         }
 
-        setIsSuperAdmin(me.data.role === "superadmin");
         setAuthChecked(true);
         fetchPolicies();
 
+        // Theme listener
         const current =
           document.documentElement.getAttribute("data-theme") || "light";
         setTheme(current);
-
         const observer = new MutationObserver(() => {
           const newTheme =
             document.documentElement.getAttribute("data-theme") || "light";
           setTheme(newTheme);
         });
-
         observer.observe(document.documentElement, {
           attributes: true,
           attributeFilter: ["data-theme"],
         });
-
         return () => observer.disconnect();
       } catch (_) {
         window.location.href = "/auth/login";
@@ -73,7 +71,7 @@ export default function PoliciesAdmin() {
   }, []);
 
   /* ============================================================
-     📄 2) دریافت لیست پالیسی‌ها
+     📄 دریافت پالیسی‌ها (بدون محدودیت نقش)
   ============================================================= */
   async function fetchPolicies() {
     try {
@@ -85,11 +83,9 @@ export default function PoliciesAdmin() {
   }
 
   /* ============================================================
-     💾 3) ذخیره / ویرایش — فقط Superadmin
+     💾 ایجاد یا ویرایش پالیسی — هر دو نقش مجاز
   ============================================================= */
   async function savePolicy() {
-    if (!isSuperAdmin) return;
-
     setLoading(true);
     setError("");
 
@@ -115,7 +111,6 @@ export default function PoliciesAdmin() {
   }
 
   async function deletePolicy(id) {
-    if (!isSuperAdmin) return;
     if (!confirm("Delete this policy?")) return;
 
     try {
@@ -127,8 +122,6 @@ export default function PoliciesAdmin() {
   }
 
   function editPolicy(p) {
-    if (!isSuperAdmin) return;
-
     setEditingId(p.id);
     setType(p.type);
     setLang(p.lang);
@@ -144,9 +137,8 @@ export default function PoliciesAdmin() {
     setContent("");
     setPreview("");
   }
-
   /* ============================================================
-     🕓 4) تاریخچه نسخه‌ها + Restore فقط Superadmin
+     🕓  تاریخچه نسخه‌ها  (admin + superadmin)
   ============================================================= */
   async function openHistory(t = type, l = lang) {
     try {
@@ -163,8 +155,6 @@ export default function PoliciesAdmin() {
   }
 
   async function restoreVersion(id) {
-    if (!isSuperAdmin) return;
-
     try {
       await apiClient.post(`/policies/admin/restore/${id}`);
       await fetchPolicies();
@@ -192,7 +182,7 @@ export default function PoliciesAdmin() {
   };
 
   /* ============================================================
-     🛑 نمایش Loading تا بررسی نقش کامل شود
+     🛑 Render block until role confirmed
   ============================================================= */
   if (!authChecked) {
     return (
@@ -231,132 +221,130 @@ export default function PoliciesAdmin() {
           </p>
         )}
 
-        {/* ===== فرم افزودن / ویرایش فقط برای SuperAdmin ===== */}
-        {isSuperAdmin && (
-          <div
-            className="p-6 rounded-2xl shadow-md mb-8 border"
-            style={{ backgroundColor: cardBg, borderColor }}
-          >
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="flex-1">
-                <label className="block text-sm mb-1" style={{ color: subtleText }}>
-                  Policy Type
-                </label>
-                <select
-                  value={type}
-                  onChange={(e) => {
-                    setType(e.target.value);
-                    setContent("");
-                    setPreview("");
-                  }}
-                  className="border p-2 rounded-md w-full"
-                  style={{
-                    color: textColor,
-                    backgroundColor: inputBg,
-                    borderColor,
-                  }}
-                >
-                  <option value="privacy">Privacy</option>
-                  <option value="terms">Terms</option>
-                  <option value="cookies">Cookies</option>
-                  <option value="cookie_banner">Cookie Banner</option>
-                </select>
-              </div>
-
-              <div className="flex-1">
-                <label className="block text-sm mb-1" style={{ color: subtleText }}>
-                  Language
-                </label>
-                <select
-                  value={lang}
-                  onChange={(e) => setLang(e.target.value)}
-                  className="border p-2 rounded-md w-full"
-                  style={{
-                    color: textColor,
-                    backgroundColor: inputBg,
-                    borderColor,
-                  }}
-                >
-                  <option value="en">English</option>
-                  <option value="fr">Français</option>
-                  <option value="fa">فارسی</option>
-                </select>
-              </div>
-            </div>
-
-            {/* 🔧 Editor */}
-            {type !== "cookie_banner" ? (
-              <div className="grid md:grid-cols-2 gap-6 mt-4">
-                <div>
-                  <h3 className="text-sm font-semibold mb-2">
-                    {editingId ? "✏️ Edit Policy" : "➕ New Policy"}
-                  </h3>
-                  <ReactQuill
-                    theme="snow"
-                    value={content}
-                    onChange={(v) => {
-                      setContent(v);
-                      setPreview(v);
-                    }}
-                    className="rounded-md border"
-                    style={quillStyle}
-                  />
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-semibold mb-2">👁️ Live Preview</h3>
-                  <div
-                    className="border rounded-md p-3 min-h-[200px] prose prose-sm max-w-none"
-                    style={{
-                      color: textColor,
-                      backgroundColor: inputBg,
-                      borderColor,
-                    }}
-                    dangerouslySetInnerHTML={{ __html: preview }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <textarea
-                className="w-full border p-3 rounded-md mt-4"
-                placeholder='{"title":"We use cookies 🍪"}'
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
+        {/* ===== Create / Edit Form ===== */}
+        <div
+          className="p-6 rounded-2xl shadow-md mb-8 border"
+          style={{ backgroundColor: cardBg, borderColor }}
+        >
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1">
+              <label className="block text-sm mb-1" style={{ color: subtleText }}>
+                Policy Type
+              </label>
+              <select
+                value={type}
+                onChange={(e) => {
+                  setType(e.target.value);
+                  setContent("");
+                  setPreview("");
+                }}
+                className="border p-2 rounded-md w-full"
                 style={{
                   color: textColor,
                   backgroundColor: inputBg,
                   borderColor,
                 }}
-              />
-            )}
-
-            {/* Buttons */}
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={savePolicy}
-                disabled={loading}
-                className="px-4 py-2 bg-turquoise text-white rounded-md hover:bg-turquoise/80"
               >
-                {loading
-                  ? "Saving..."
-                  : editingId
-                  ? "💾 Update (New Version)"
-                  : "Add Policy"}
-              </button>
+                <option value="privacy">Privacy</option>
+                <option value="terms">Terms</option>
+                <option value="cookies">Cookies</option>
+                <option value="cookie_banner">Cookie Banner</option>
+              </select>
+            </div>
 
-              {editingId && (
-                <button
-                  onClick={resetForm}
-                  className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-              )}
+            <div className="flex-1">
+              <label className="block text-sm mb-1" style={{ color: subtleText }}>
+                Language
+              </label>
+              <select
+                value={lang}
+                onChange={(e) => setLang(e.target.value)}
+                className="border p-2 rounded-md w-full"
+                style={{
+                  color: textColor,
+                  backgroundColor: inputBg,
+                  borderColor,
+                }}
+              >
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+                <option value="fa">فارسی</option>
+              </select>
             </div>
           </div>
-        )}
 
-        {/* ===== جدول پالیسی‌ها ===== */}
+          {/* ===== Quill Editor or JSON ===== */}
+          {type !== "cookie_banner" ? (
+            <div className="grid md:grid-cols-2 gap-6 mt-4">
+              <div>
+                <h3 className="text-sm font-semibold mb-2">
+                  {editingId ? "✏️ Edit Policy" : "➕ New Policy"}
+                </h3>
+                <ReactQuill
+                  theme="snow"
+                  value={content}
+                  onChange={(v) => {
+                    setContent(v);
+                    setPreview(v);
+                  }}
+                  className="rounded-md border"
+                  style={quillStyle}
+                />
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold mb-2">👁️ Live Preview</h3>
+                <div
+                  className="border rounded-md p-3 min-h-[200px] prose prose-sm max-w-none"
+                  style={{
+                    color: textColor,
+                    backgroundColor: inputBg,
+                    borderColor,
+                  }}
+                  dangerouslySetInnerHTML={{ __html: preview }}
+                />
+              </div>
+            </div>
+          ) : (
+            <textarea
+              className="w-full border p-3 rounded-md mt-4"
+              placeholder='{"title":"We use cookies 🍪"}'
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              style={{
+                color: textColor,
+                backgroundColor: inputBg,
+                borderColor,
+              }}
+            />
+          )}
+
+          {/* ===== Buttons ===== */}
+          <div className="flex gap-3 mt-4">
+            <button
+              onClick={savePolicy}
+              disabled={loading}
+              className="px-4 py-2 bg-turquoise text-white rounded-md hover:bg-turquoise/80"
+            >
+              {loading
+                ? "Saving..."
+                : editingId
+                ? "💾 Update (New Version)"
+                : "Add Policy"}
+            </button>
+
+            {editingId && (
+              <button
+                onClick={resetForm}
+                className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ===== Policies Table ===== */}
         <div
           className="p-6 rounded-2xl shadow-md border"
           style={{ backgroundColor: cardBg, borderColor }}
@@ -392,36 +380,28 @@ export default function PoliciesAdmin() {
                     </td>
 
                     <td className="p-2 text-center">
-                      {isSuperAdmin ? (
-                        <>
-                          <button
-                            onClick={() => editPolicy(p)}
-                            className="text-blue-400 hover:underline mx-1"
-                          >
-                            Edit
-                          </button>
+                      <>
+                        <button
+                          onClick={() => editPolicy(p)}
+                          className="text-blue-400 hover:underline mx-1"
+                        >
+                          Edit
+                        </button>
 
-                          <button
-                            onClick={() => deletePolicy(p.id)}
-                            className="text-red-400 hover:underline mx-1"
-                          >
-                            Delete
-                          </button>
+                        <button
+                          onClick={() => deletePolicy(p.id)}
+                          className="text-red-400 hover:underline mx-1"
+                        >
+                          Delete
+                        </button>
 
-                          <button
-                            onClick={() => openHistory(p.type, p.lang)}
-                            className="text-turquoise hover:underline mx-1"
-                          >
-                            History
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-gray-400 italic">
-                            View only
-                          </span>
-                        </>
-                      )}
+                        <button
+                          onClick={() => openHistory(p.type, p.lang)}
+                          className="text-turquoise hover:underline mx-1"
+                        >
+                          History
+                        </button>
+                      </>
                     </td>
                   </tr>
                 ))}
@@ -442,7 +422,7 @@ export default function PoliciesAdmin() {
           </div>
         </div>
 
-        {/* ===== Modal تاریخچه نسخه‌ها ===== */}
+        {/* ===== History Modal ===== */}
         {historyOpen && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -498,14 +478,12 @@ export default function PoliciesAdmin() {
                           </div>
                         </div>
 
-                        {isSuperAdmin && (
-                          <button
-                            onClick={() => restoreVersion(h.id)}
-                            className="px-3 py-1.5 rounded-md bg-turquoise text-white hover:bg-turquoise/80"
-                          >
-                            🔁 Restore as new version
-                          </button>
-                        )}
+                        <button
+                          onClick={() => restoreVersion(h.id)}
+                          className="px-3 py-1.5 rounded-md bg-turquoise text-white hover:bg-turquoise/80"
+                        >
+                          🔁 Restore as new version
+                        </button>
                       </div>
 
                       {h.type !== "cookie_banner" ? (
@@ -537,6 +515,7 @@ export default function PoliciesAdmin() {
             </div>
           </div>
         )}
+
       </div>
     </AdminLayout>
   );
