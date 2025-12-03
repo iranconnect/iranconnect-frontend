@@ -14,7 +14,7 @@ apiClient.interceptors.request.use(
   (config) => {
     config.withCredentials = true;
     // ⬅️ اضافه کردن هدر امنیتی مخصوص درخواست‌های Admin
-    if (config.url.startsWith("/admin")) {
+    if (config.url.includes("/admin")) {
       config.headers["x-iranconnect-admin"] = "1";
     }
     return config;
