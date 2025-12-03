@@ -33,20 +33,16 @@ export default function PoliciesAdmin() {
       try {
         const me = await apiClient.get("/auth/me", { withCredentials: true });
 
-        if (!me.data?.ok) {
-          window.location.href = "/auth/login";
-          return;
-        }
+        if (!me.data?.ok) return (window.location.href = "/auth/login");
 
         if (me.data.role !== "admin" && me.data.role !== "superadmin") {
-          window.location.href = "/";
-          return;
+          return (window.location.href = "/");
         }
 
         setAuthChecked(true);
         fetchPolicies();
 
-        // Sync theme
+        // Theme sync
         const current =
           document.documentElement.getAttribute("data-theme") || "light";
         setTheme(current);
@@ -63,27 +59,29 @@ export default function PoliciesAdmin() {
         });
 
         return () => observer.disconnect();
-      } catch (_) {
+      } catch (err) {
         window.location.href = "/auth/login";
       }
     }
 
     checkAccess();
   }, []);
-
   /* ============================================================
      📄 دریافت لیست پالیسی‌ها
   ============================================================= */
   async function fetchPolicies() {
     try {
+      // مسیر کاملاً صحیح — نیازی به "/api" نیست
       const res = await apiClient.get("/policies/admin");
       setPolicies(res.data || []);
     } catch (err) {
+      console.error(err);
       setError(err.response?.data?.error || "Failed to load policies.");
     }
   }
+
   /* ============================================================
-     💾 ایجاد / ویرایش پالیسی — admin + superadmin
+     💾 ایجاد / ویرایش پالیسی
   ============================================================= */
   async function savePolicy() {
     setLoading(true);
@@ -114,6 +112,9 @@ export default function PoliciesAdmin() {
     }
   }
 
+  /* ============================================================
+     ❌ حذف پالیسی
+  ============================================================= */
   async function deletePolicy(id) {
     if (!confirm("❗ Delete this policy?")) return;
 
@@ -125,6 +126,9 @@ export default function PoliciesAdmin() {
     }
   }
 
+  /* ============================================================
+     ✏️ ورود به حالت ویرایش
+  ============================================================= */
   function editPolicy(p) {
     setEditingId(p.id);
     setType(p.type);
@@ -164,7 +168,7 @@ export default function PoliciesAdmin() {
     }
   }
 
-  /* 🔄 Restore نسخه قبلی */
+  /* 🔁 Restore نسخه قبلی */
   async function restoreVersion(id) {
     try {
       await apiClient.post(`/policies/admin/restore/${id}`);
@@ -285,7 +289,7 @@ export default function PoliciesAdmin() {
             </div>
           </div>
 
-          {/* ===== Quill ===== */}
+          {/* ===== Quill Editor ===== */}
           {type !== "cookie_banner" ? (
             <div className="grid md:grid-cols-2 gap-6 mt-4">
               <div>
@@ -330,6 +334,7 @@ export default function PoliciesAdmin() {
               }}
             />
           )}
+
           {/* ===== Buttons ===== */}
           <div className="flex gap-3 mt-4">
             <button
@@ -355,7 +360,7 @@ export default function PoliciesAdmin() {
           </div>
         </div>
 
-        {/* ===== جدول پالیسی‌ها ===== */}
+        {/* ===== Policies Table ===== */}
         <div
           className="p-6 rounded-2xl shadow-md border"
           style={{ backgroundColor: cardBg, borderColor }}
@@ -433,7 +438,7 @@ export default function PoliciesAdmin() {
           </div>
         </div>
 
-        {/* ===== Modal تاریخچه ===== */}
+        {/* ===== History Modal ===== */}
         {historyOpen && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -526,7 +531,6 @@ export default function PoliciesAdmin() {
             </div>
           </div>
         )}
-
       </div>
     </AdminLayout>
   );
