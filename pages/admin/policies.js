@@ -18,8 +18,6 @@ export default function PoliciesAdmin() {
   const [error, setError] = useState("");
 
   const [theme, setTheme] = useState("light");
-
-  // ❗️ دیگر تفاوتی بین admin و superadmin نیست
   const [authChecked, setAuthChecked] = useState(false);
 
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -28,7 +26,7 @@ export default function PoliciesAdmin() {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   /* ============================================================
-     🔐 احراز هویت — هر دو نقش admin/superadmin مجاز
+     🔐 احراز هویت — فقط admin + superadmin
   ============================================================= */
   useEffect(() => {
     async function checkAccess() {
@@ -48,19 +46,22 @@ export default function PoliciesAdmin() {
         setAuthChecked(true);
         fetchPolicies();
 
-        // Theme listener
+        // Sync theme
         const current =
           document.documentElement.getAttribute("data-theme") || "light";
         setTheme(current);
+
         const observer = new MutationObserver(() => {
           const newTheme =
             document.documentElement.getAttribute("data-theme") || "light";
           setTheme(newTheme);
         });
+
         observer.observe(document.documentElement, {
           attributes: true,
           attributeFilter: ["data-theme"],
         });
+
         return () => observer.disconnect();
       } catch (_) {
         window.location.href = "/auth/login";
@@ -71,19 +72,18 @@ export default function PoliciesAdmin() {
   }, []);
 
   /* ============================================================
-     📄 دریافت پالیسی‌ها (بدون محدودیت نقش)
+     📄 دریافت لیست پالیسی‌ها
   ============================================================= */
   async function fetchPolicies() {
     try {
-      const res = await apiClient.get("/admin/policies");
+      const res = await apiClient.get("/api/policies/admin");
       setPolicies(res.data || []);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to load policies.");
     }
   }
-
   /* ============================================================
-     💾 ایجاد یا ویرایش پالیسی — هر دو نقش مجاز
+     💾 ایجاد / ویرایش پالیسی — admin + superadmin
   ============================================================= */
   async function savePolicy() {
     setLoading(true);
@@ -91,13 +91,17 @@ export default function PoliciesAdmin() {
 
     try {
       if (editingId) {
-        await apiClient.put(`/policies/admin/${editingId}`, {
+        await apiClient.put(`/api/policies/admin/${editingId}`, {
           type,
           lang,
           content,
         });
       } else {
-        await apiClient.post(`/policies/admin`, { type, lang, content });
+        await apiClient.post(`/api/policies/admin`, {
+          type,
+          lang,
+          content,
+        });
       }
 
       alert("✅ Policy saved successfully.");
@@ -111,10 +115,10 @@ export default function PoliciesAdmin() {
   }
 
   async function deletePolicy(id) {
-    if (!confirm("Delete this policy?")) return;
+    if (!confirm("❗ Delete this policy?")) return;
 
     try {
-      await apiClient.delete(`/policies/admin/${id}`);
+      await apiClient.delete(`/api/policies/admin/${id}`);
       fetchPolicies();
     } catch (err) {
       alert(err.response?.data?.error || "Error deleting policy.");
@@ -127,6 +131,7 @@ export default function PoliciesAdmin() {
     setLang(p.lang);
     setContent(p.content);
     setPreview(p.content);
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -137,14 +142,19 @@ export default function PoliciesAdmin() {
     setContent("");
     setPreview("");
   }
+
   /* ============================================================
-     🕓  تاریخچه نسخه‌ها  (admin + superadmin)
+     🕓 تاریخچه نسخه‌ها
   ============================================================= */
   async function openHistory(t = type, l = lang) {
     try {
       setHistoryLoading(true);
       setHistoryKey({ type: t, lang: l });
-      const res = await apiClient.get(`/policies/admin/history/${t}/${l}`);
+
+      const res = await apiClient.get(
+        `/api/policies/admin/history/${t}/${l}`
+      );
+
       setHistoryList(res.data || []);
       setHistoryOpen(true);
     } catch (err) {
@@ -154,17 +164,19 @@ export default function PoliciesAdmin() {
     }
   }
 
+  /* 🔄 Restore نسخه قبلی */
   async function restoreVersion(id) {
     try {
-      await apiClient.post(`/policies/admin/restore/${id}`);
+      await apiClient.post(`/api/policies/admin/restore/${id}`);
+
       await fetchPolicies();
       await openHistory(historyKey.type, historyKey.lang);
+
       alert("✅ Restored as new version successfully.");
     } catch (err) {
       alert(err.response?.data?.error || "Error restoring version.");
     }
   }
-
   /* ============================================================
      🎨 Theme Styles
   ============================================================= */
@@ -221,7 +233,7 @@ export default function PoliciesAdmin() {
           </p>
         )}
 
-        {/* ===== Create / Edit Form ===== */}
+        {/* ===== Create/Edit Form ===== */}
         <div
           className="p-6 rounded-2xl shadow-md mb-8 border"
           style={{ backgroundColor: cardBg, borderColor }}
@@ -273,7 +285,7 @@ export default function PoliciesAdmin() {
             </div>
           </div>
 
-          {/* ===== Quill Editor or JSON ===== */}
+          {/* ===== Quill ===== */}
           {type !== "cookie_banner" ? (
             <div className="grid md:grid-cols-2 gap-6 mt-4">
               <div>
@@ -318,7 +330,6 @@ export default function PoliciesAdmin() {
               }}
             />
           )}
-
           {/* ===== Buttons ===== */}
           <div className="flex gap-3 mt-4">
             <button
@@ -344,7 +355,7 @@ export default function PoliciesAdmin() {
           </div>
         </div>
 
-        {/* ===== Policies Table ===== */}
+        {/* ===== جدول پالیسی‌ها ===== */}
         <div
           className="p-6 rounded-2xl shadow-md border"
           style={{ backgroundColor: cardBg, borderColor }}
@@ -422,7 +433,7 @@ export default function PoliciesAdmin() {
           </div>
         </div>
 
-        {/* ===== History Modal ===== */}
+        {/* ===== Modal تاریخچه ===== */}
         {historyOpen && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
