@@ -75,7 +75,7 @@ export default function PoliciesAdmin() {
   ============================================================= */
   async function fetchPolicies() {
     try {
-      const res = await apiClient.get("/policies/admin");
+      const res = await apiClient.get("/admin/policies");
       setPolicies(res.data || []);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to load policies.");
