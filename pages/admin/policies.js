@@ -1,7 +1,7 @@
-//pages/admin/policies.js
+// frontend/pages/admin/policies.js
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import apiClient from "../../utils/apiClient"; // ✅ axios امن با JWT و interceptor
+import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 import "react-quill/dist/quill.snow.css";
 
@@ -17,69 +17,97 @@ export default function PoliciesAdmin() {
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
 
-  // 🌙 Theme-aware
   const [theme, setTheme] = useState("light");
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // 🕓 History modal
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyList, setHistoryList] = useState([]);
   const [historyKey, setHistoryKey] = useState({ type: "privacy", lang: "en" });
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  // 🧭 بررسی نقش admin قبل از mount
+  /* ============================================================
+     🔐 1) احراز هویت و نقش — HttpOnly Cookie
+  ============================================================= */
   useEffect(() => {
-    const token = localStorage.getItem("iran_token");
-    const role = localStorage.getItem("iran_role");
+    async function checkAccess() {
+      try {
+        const me = await apiClient.get("/auth/me", { withCredentials: true });
 
-    if (!token) {
-      window.location.href = "/auth/login";
-      return;
+        if (!me.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
+        }
+
+        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
+          window.location.href = "/";
+          return;
+        }
+
+        setIsSuperAdmin(me.data.role === "superadmin");
+        setAuthChecked(true);
+        fetchPolicies();
+
+        const current =
+          document.documentElement.getAttribute("data-theme") || "light";
+        setTheme(current);
+
+        const observer = new MutationObserver(() => {
+          const newTheme =
+            document.documentElement.getAttribute("data-theme") || "light";
+          setTheme(newTheme);
+        });
+
+        observer.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["data-theme"],
+        });
+
+        return () => observer.disconnect();
+      } catch (_) {
+        window.location.href = "/auth/login";
+      }
     }
-    if (role !== "admin" && role !== 'superadmin') {
-      window.location.href = "/";
-      return;
-    }
 
-    fetchPolicies();
-
-    // 🎨 sync theme
-    const current = document.documentElement.getAttribute("data-theme") || "light";
-    setTheme(current);
-    const observer = new MutationObserver(() => {
-      const newTheme = document.documentElement.getAttribute("data-theme") || "light";
-      setTheme(newTheme);
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-
-    return () => observer.disconnect();
+    checkAccess();
   }, []);
 
-  // 📄 دریافت فهرست پالیسی‌ها
+  /* ============================================================
+     📄 2) دریافت لیست پالیسی‌ها
+  ============================================================= */
   async function fetchPolicies() {
     try {
-      const res = await apiClient.get(`/policies/admin`);
+      const res = await apiClient.get("/policies/admin");
       setPolicies(res.data || []);
     } catch (err) {
-      console.error("❌ Error fetching policies:", err);
       setError(err.response?.data?.error || "Failed to load policies.");
     }
   }
 
-  // 💾 ذخیره یا ویرایش پالیسی
+  /* ============================================================
+     💾 3) ذخیره / ویرایش — فقط Superadmin
+  ============================================================= */
   async function savePolicy() {
+    if (!isSuperAdmin) return;
+
     setLoading(true);
     setError("");
+
     try {
       if (editingId) {
-        await apiClient.put(`/policies/admin/${editingId}`, { type, lang, content });
+        await apiClient.put(`/policies/admin/${editingId}`, {
+          type,
+          lang,
+          content,
+        });
       } else {
         await apiClient.post(`/policies/admin`, { type, lang, content });
       }
+
       alert("✅ Policy saved successfully.");
       resetForm();
       await fetchPolicies();
     } catch (err) {
-      console.error(err);
       setError(err.response?.data?.error || "Error saving policy.");
     } finally {
       setLoading(false);
@@ -87,7 +115,9 @@ export default function PoliciesAdmin() {
   }
 
   async function deletePolicy(id) {
+    if (!isSuperAdmin) return;
     if (!confirm("Delete this policy?")) return;
+
     try {
       await apiClient.delete(`/policies/admin/${id}`);
       fetchPolicies();
@@ -97,6 +127,8 @@ export default function PoliciesAdmin() {
   }
 
   function editPolicy(p) {
+    if (!isSuperAdmin) return;
+
     setEditingId(p.id);
     setType(p.type);
     setLang(p.lang);
@@ -113,7 +145,9 @@ export default function PoliciesAdmin() {
     setPreview("");
   }
 
-  // 🕓 نمایش تاریخچه نسخه‌ها
+  /* ============================================================
+     🕓 4) تاریخچه نسخه‌ها + Restore فقط Superadmin
+  ============================================================= */
   async function openHistory(t = type, l = lang) {
     try {
       setHistoryLoading(true);
@@ -129,6 +163,8 @@ export default function PoliciesAdmin() {
   }
 
   async function restoreVersion(id) {
+    if (!isSuperAdmin) return;
+
     try {
       await apiClient.post(`/policies/admin/restore/${id}`);
       await fetchPolicies();
@@ -139,7 +175,9 @@ export default function PoliciesAdmin() {
     }
   }
 
-  // 🎨 رنگ‌ها
+  /* ============================================================
+     🎨 Theme Styles
+  ============================================================= */
   const textColor = theme === "dark" ? "#fff" : "#0a1a44";
   const cardBg = theme === "dark" ? "#0f172a" : "var(--card-bg)";
   const borderColor = theme === "dark" ? "#334155" : "var(--border)";
@@ -153,15 +191,35 @@ export default function PoliciesAdmin() {
     fontSize: "15px",
   };
 
+  /* ============================================================
+     🛑 نمایش Loading تا بررسی نقش کامل شود
+  ============================================================= */
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Checking access…
+      </div>
+    );
+  }
+
+  /* ============================================================
+     🎨 UI
+  ============================================================= */
   return (
     <AdminLayout>
       <div className="p-6" style={{ color: textColor }}>
+        {/* ===== Header ===== */}
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-semibold">🧾 Policy Manager</h1>
+
           <button
             onClick={() => openHistory(type, lang)}
             className="px-3 py-2 rounded-md border"
-            style={{ backgroundColor: inputBg, borderColor, color: textColor }}
+            style={{
+              backgroundColor: inputBg,
+              borderColor,
+              color: textColor,
+            }}
           >
             🕓 View History ({type} / {lang})
           </button>
@@ -173,107 +231,145 @@ export default function PoliciesAdmin() {
           </p>
         )}
 
-        {/* === فرم ویرایش / افزودن === */}
-        <div className="p-6 rounded-2xl shadow-md mb-8 border" style={{ backgroundColor: cardBg, borderColor }}>
-          <div className="flex flex-col md:flex-row gap-3">
-            <div className="flex-1">
-              <label className="block text-sm mb-1" style={{ color: subtleText }}>
-                Policy Type
-              </label>
-              <select
-                value={type}
-                onChange={(e) => {
-                  setType(e.target.value);
-                  setContent("");
-                  setPreview("");
-                }}
-                className="border p-2 rounded-md w-full"
-                style={{ color: textColor, backgroundColor: inputBg, borderColor }}
-              >
-                <option value="privacy">Privacy</option>
-                <option value="terms">Terms</option>
-                <option value="cookies">Cookies</option>
-                <option value="cookie_banner">Cookie Banner</option>
-              </select>
-            </div>
-
-            <div className="flex-1">
-              <label className="block text-sm mb-1" style={{ color: subtleText }}>
-                Language
-              </label>
-              <select
-                value={lang}
-                onChange={(e) => setLang(e.target.value)}
-                className="border p-2 rounded-md w-full"
-                style={{ color: textColor, backgroundColor: inputBg, borderColor }}
-              >
-                <option value="en">English</option>
-                <option value="fr">Français</option>
-                <option value="fa">فارسی</option>
-              </select>
-            </div>
-          </div>
-
-          {/* ✅ ادیتور یا JSON */}
-          {type !== "cookie_banner" ? (
-            <div className="grid md:grid-cols-2 gap-6 mt-4">
-              <div>
-                <h3 className="text-sm font-semibold mb-2">
-                  {editingId ? "✏️ Edit Policy" : "➕ New Policy"}
-                </h3>
-                <ReactQuill
-                  theme="snow"
-                  value={content}
-                  onChange={(v) => {
-                    setContent(v);
-                    setPreview(v);
+        {/* ===== فرم افزودن / ویرایش فقط برای SuperAdmin ===== */}
+        {isSuperAdmin && (
+          <div
+            className="p-6 rounded-2xl shadow-md mb-8 border"
+            style={{ backgroundColor: cardBg, borderColor }}
+          >
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="flex-1">
+                <label className="block text-sm mb-1" style={{ color: subtleText }}>
+                  Policy Type
+                </label>
+                <select
+                  value={type}
+                  onChange={(e) => {
+                    setType(e.target.value);
+                    setContent("");
+                    setPreview("");
                   }}
-                  className="rounded-md border"
-                  style={quillStyle}
-                />
+                  className="border p-2 rounded-md w-full"
+                  style={{
+                    color: textColor,
+                    backgroundColor: inputBg,
+                    borderColor,
+                  }}
+                >
+                  <option value="privacy">Privacy</option>
+                  <option value="terms">Terms</option>
+                  <option value="cookies">Cookies</option>
+                  <option value="cookie_banner">Cookie Banner</option>
+                </select>
               </div>
-              <div>
-                <h3 className="text-sm font-semibold mb-2">👁️ Live Preview</h3>
-                <div
-                  className="border rounded-md p-3 min-h-[200px] prose prose-sm max-w-none"
-                  style={{ color: textColor, backgroundColor: inputBg, borderColor }}
-                  dangerouslySetInnerHTML={{ __html: preview }}
-                />
+
+              <div className="flex-1">
+                <label className="block text-sm mb-1" style={{ color: subtleText }}>
+                  Language
+                </label>
+                <select
+                  value={lang}
+                  onChange={(e) => setLang(e.target.value)}
+                  className="border p-2 rounded-md w-full"
+                  style={{
+                    color: textColor,
+                    backgroundColor: inputBg,
+                    borderColor,
+                  }}
+                >
+                  <option value="en">English</option>
+                  <option value="fr">Français</option>
+                  <option value="fa">فارسی</option>
+                </select>
               </div>
             </div>
-          ) : (
-            <textarea
-              className="w-full border p-3 rounded-md mt-4"
-              placeholder='{"title":"We use cookies 🍪"}'
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              style={{ color: textColor, backgroundColor: inputBg, borderColor }}
-            />
-          )}
 
-          {/* دکمه‌ها */}
-          <div className="flex gap-3 mt-4">
-            <button
-              onClick={savePolicy}
-              disabled={loading}
-              className="px-4 py-2 bg-turquoise text-white rounded-md hover:bg-turquoise/80"
-            >
-              {loading ? "Saving..." : editingId ? "💾 Update (New Version)" : "Add Policy"}
-            </button>
-            {editingId && (
-              <button onClick={resetForm} className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400">
-                Cancel
-              </button>
+            {/* 🔧 Editor */}
+            {type !== "cookie_banner" ? (
+              <div className="grid md:grid-cols-2 gap-6 mt-4">
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">
+                    {editingId ? "✏️ Edit Policy" : "➕ New Policy"}
+                  </h3>
+                  <ReactQuill
+                    theme="snow"
+                    value={content}
+                    onChange={(v) => {
+                      setContent(v);
+                      setPreview(v);
+                    }}
+                    className="rounded-md border"
+                    style={quillStyle}
+                  />
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">👁️ Live Preview</h3>
+                  <div
+                    className="border rounded-md p-3 min-h-[200px] prose prose-sm max-w-none"
+                    style={{
+                      color: textColor,
+                      backgroundColor: inputBg,
+                      borderColor,
+                    }}
+                    dangerouslySetInnerHTML={{ __html: preview }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <textarea
+                className="w-full border p-3 rounded-md mt-4"
+                placeholder='{"title":"We use cookies 🍪"}'
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                style={{
+                  color: textColor,
+                  backgroundColor: inputBg,
+                  borderColor,
+                }}
+              />
             )}
-          </div>
-        </div>
 
-        {/* === جدول پالیسی‌ها === */}
-        <div className="p-6 rounded-2xl shadow-md border" style={{ backgroundColor: cardBg, borderColor }}>
+            {/* Buttons */}
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={savePolicy}
+                disabled={loading}
+                className="px-4 py-2 bg-turquoise text-white rounded-md hover:bg-turquoise/80"
+              >
+                {loading
+                  ? "Saving..."
+                  : editingId
+                  ? "💾 Update (New Version)"
+                  : "Add Policy"}
+              </button>
+
+              {editingId && (
+                <button
+                  onClick={resetForm}
+                  className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ===== جدول پالیسی‌ها ===== */}
+        <div
+          className="p-6 rounded-2xl shadow-md border"
+          style={{ backgroundColor: cardBg, borderColor }}
+        >
           <h2 className="text-lg font-semibold mb-3">📋 Existing Policies</h2>
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm border rounded-lg overflow-hidden">
-              <thead style={{ backgroundColor: theme === "dark" ? "#1e293b" : "#f5f7fa" }}>
+              <thead
+                style={{
+                  backgroundColor: theme === "dark" ? "#1e293b" : "#f5f7fa",
+                }}
+              >
                 <tr>
                   <th className="p-2 text-left">Type</th>
                   <th className="p-2 text-left">Lang</th>
@@ -283,6 +379,7 @@ export default function PoliciesAdmin() {
                   <th className="p-2 text-center">Actions</th>
                 </tr>
               </thead>
+
               <tbody>
                 {policies.map((p) => (
                   <tr key={p.id} className="border-t" style={{ borderColor }}>
@@ -290,23 +387,52 @@ export default function PoliciesAdmin() {
                     <td className="p-2">{p.lang}</td>
                     <td className="p-2">{p.version}</td>
                     <td className="p-2">{p.created_by_email || "—"}</td>
-                    <td className="p-2">{new Date(p.created_at).toLocaleString()}</td>
+                    <td className="p-2">
+                      {new Date(p.created_at).toLocaleString()}
+                    </td>
+
                     <td className="p-2 text-center">
-                      <button onClick={() => editPolicy(p)} className="text-blue-400 hover:underline mx-1">
-                        Edit
-                      </button>
-                      <button onClick={() => deletePolicy(p.id)} className="text-red-400 hover:underline mx-1">
-                        Delete
-                      </button>
-                      <button onClick={() => openHistory(p.type, p.lang)} className="text-turquoise hover:underline mx-1">
-                        History
-                      </button>
+                      {isSuperAdmin ? (
+                        <>
+                          <button
+                            onClick={() => editPolicy(p)}
+                            className="text-blue-400 hover:underline mx-1"
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            onClick={() => deletePolicy(p.id)}
+                            className="text-red-400 hover:underline mx-1"
+                          >
+                            Delete
+                          </button>
+
+                          <button
+                            onClick={() => openHistory(p.type, p.lang)}
+                            className="text-turquoise hover:underline mx-1"
+                          >
+                            History
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-gray-400 italic">
+                            View only
+                          </span>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
+
                 {policies.length === 0 && (
                   <tr>
-                    <td colSpan="6" className="p-4 text-center" style={{ color: subtleText }}>
+                    <td
+                      colSpan="6"
+                      className="p-4 text-center"
+                      style={{ color: subtleText }}
+                    >
                       No policies yet.
                     </td>
                   </tr>
@@ -316,7 +442,7 @@ export default function PoliciesAdmin() {
           </div>
         </div>
 
-        {/* 🕓 Modal تاریخچه نسخه‌ها */}
+        {/* ===== Modal تاریخچه نسخه‌ها ===== */}
         {historyOpen && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -327,41 +453,69 @@ export default function PoliciesAdmin() {
               style={{ backgroundColor: cardBg, borderColor }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex justify-between items-center px-5 py-3 border-b" style={{ borderColor }}>
+              <div
+                className="flex justify-between items-center px-5 py-3 border-b"
+                style={{ borderColor }}
+              >
                 <h3 className="text-lg font-semibold">
                   History — {historyKey.type} / {historyKey.lang}
                 </h3>
+
                 <button
                   onClick={() => setHistoryOpen(false)}
                   className="px-3 py-1.5 rounded-md border"
-                  style={{ color: textColor, backgroundColor: inputBg, borderColor }}
+                  style={{
+                    color: textColor,
+                    backgroundColor: inputBg,
+                    borderColor,
+                  }}
                 >
                   ✕ Close
                 </button>
               </div>
+
               <div className="p-5 overflow-y-auto max-h-[75vh]">
                 {historyLoading ? (
                   <div style={{ color: subtleText }}>Loading history…</div>
                 ) : historyList.length > 0 ? (
                   historyList.map((h) => (
-                    <div key={h.id} className="rounded-xl border p-4 mb-3" style={{ borderColor }}>
+                    <div
+                      key={h.id}
+                      className="rounded-xl border p-4 mb-3"
+                      style={{ borderColor }}
+                    >
                       <div className="flex justify-between items-center mb-2">
                         <div className="text-sm" style={{ color: subtleText }}>
-                          <div><b>Version:</b> {h.version}</div>
-                          <div><b>Created by:</b> {h.created_by_email || "—"}</div>
-                          <div><b>Date:</b> {new Date(h.created_at).toLocaleString()}</div>
+                          <div>
+                            <b>Version:</b> {h.version}
+                          </div>
+                          <div>
+                            <b>Created by:</b> {h.created_by_email || "—"}
+                          </div>
+                          <div>
+                            <b>Date:</b>{" "}
+                            {new Date(h.created_at).toLocaleString()}
+                          </div>
                         </div>
-                        <button
-                          onClick={() => restoreVersion(h.id)}
-                          className="px-3 py-1.5 rounded-md bg-turquoise text-white hover:bg-turquoise/80"
-                        >
-                          🔁 Restore as new version
-                        </button>
+
+                        {isSuperAdmin && (
+                          <button
+                            onClick={() => restoreVersion(h.id)}
+                            className="px-3 py-1.5 rounded-md bg-turquoise text-white hover:bg-turquoise/80"
+                          >
+                            🔁 Restore as new version
+                          </button>
+                        )}
                       </div>
+
                       {h.type !== "cookie_banner" ? (
                         <div
                           className="border rounded-md p-3 prose prose-sm max-w-none"
-                          style={{ borderColor, backgroundColor: inputBg, color: textColor }}
+                          style={{
+                            borderColor,
+                            backgroundColor: inputBg,
+                            color: textColor,
+                          }}
                           dangerouslySetInnerHTML={{ __html: h.content }}
                         />
                       ) : (
