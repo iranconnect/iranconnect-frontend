@@ -58,9 +58,11 @@ export default function AdminLoginAttemptsPage() {
       if (blockedOnly) params.blocked = "true";
       if (email) params.email = email;
 
-      const res = await apiClient.get("/admin/login-attempts/all", {
+      const res = await apiClient.get("/api/admin/login-attempts/all", {
         params,
-        withCredentials: true,
+        headers: {
+          "X-Iranconnect-Admin": "1"
+        },
       });
 
       setLogs(res.data?.data || []);
