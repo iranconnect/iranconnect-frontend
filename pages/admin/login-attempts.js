@@ -22,7 +22,9 @@ export default function AdminLoginAttemptsPage() {
   useEffect(() => {
     async function checkAccess() {
       try {
-        const me = await apiClient.get("/auth/me", { withCredentials: true });
+        const me = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
 
         if (!me.data?.ok) {
           window.location.href = "/auth/login";
@@ -35,7 +37,6 @@ export default function AdminLoginAttemptsPage() {
         }
 
         setAuthChecked(true);
-        fetchLogs();
       } catch (err) {
         window.location.href = "/auth/login";
       }
@@ -45,41 +46,51 @@ export default function AdminLoginAttemptsPage() {
   }, []);
 
   /* ============================================================
-     📥 2) دریافت لاگ‌های ورود
+     🔄 2) وقتی authChecked = true شد → لاگ‌ها را بگیر
+  ============================================================= */
+  useEffect(() => {
+    if (authChecked) {
+      fetchLogs();
+    }
+  }, [authChecked]);
+
+  /* ============================================================
+     📥 3) دریافت لاگ‌های ورود
   ============================================================= */
   async function fetchLogs() {
     if (!authChecked) return;
-  
+
     setLoading(true);
     setError("");
-  
+
     try {
       const params = {};
       if (status) params.status = status;
       if (blockedOnly) params.blocked = "true";
       if (email) params.email = email;
-  
-  
+
       const res = await apiClient.get("/admin/login-attempts/all", {
         params,
         withCredentials: true,
+        headers: { "X-Iranconnect-Admin": "1" },
       });
-  
+
       setLogs(res.data?.data || []);
     } catch (err) {
       console.error("❌ Fetch login attempts error:", err);
-  
+
       const msg =
         err.response?.data?.error ||
         "Failed to load login attempts.";
-  
+
       setError(msg);
     } finally {
       setLoading(false);
     }
   }
+
   /* ============================================================
-     📤 3) Export امن بدون تریگر XSS
+     📤 4) Export امن بدون خطر XSS
   ============================================================= */
   function handleExport(type) {
     const url = `${process.env.NEXT_PUBLIC_API_BASE}/admin/login-attempts/export/${type}`;
