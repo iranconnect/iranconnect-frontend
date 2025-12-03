@@ -49,31 +49,35 @@ export default function AdminLoginAttemptsPage() {
   ============================================================= */
   async function fetchLogs() {
     if (!authChecked) return;
+  
     setLoading(true);
     setError("");
-
+  
     try {
       const params = {};
       if (status) params.status = status;
       if (blockedOnly) params.blocked = "true";
       if (email) params.email = email;
-
-      const res = await apiClient.get("/api/admin/login-attempts/all", {
+  
+  
+      const res = await apiClient.get("/admin/login-attempts/all", {
         params,
-        headers: {
-          "X-Iranconnect-Admin": "1"
-        },
+        withCredentials: true,
       });
-
+  
       setLogs(res.data?.data || []);
     } catch (err) {
       console.error("❌ Fetch login attempts error:", err);
-      setError(err.response?.data?.error || "Failed to load login logs.");
+  
+      const msg =
+        err.response?.data?.error ||
+        "Failed to load login attempts.";
+  
+      setError(msg);
     } finally {
       setLoading(false);
     }
   }
-
   /* ============================================================
      📤 3) Export امن بدون تریگر XSS
   ============================================================= */
