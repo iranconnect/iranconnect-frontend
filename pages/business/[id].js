@@ -61,11 +61,11 @@ export default function Detail() {
         setMessage("You must be logged in to rate.");
         return;
       }
-
+  
       await apiClient.post(`/businesses/${id}/ratings`, { score: rating });
-
+  
       setMessage("✅ Rating submitted");
-
+  
       const refreshed = await apiClient.get(`/businesses/${id}`);
       setBiz(refreshed.data);
     } catch (e) {
