@@ -45,31 +45,33 @@ export default function ConsentModal({ userId, lang, onClose }) {
   const submitConsent = async () => {
     if (!checked) return alert("Please confirm agreement first.");
     setLoading(true);
-
+  
     try {
-      // فقط با کوکی HttpOnly (بدون token)
-      const res = await apiClient.post("/auth/agree-terms", {});
-
-      // موفقیت
+      const res = await apiClient.put("/users/consent", {
+        consent_type: "all_policies",
+        version: "v1",
+        choice: "accepted",
+      });
+  
       onClose(true);
-
     } catch (err) {
       console.error("Consent save error:", err);
-
+  
       const status = err.response?.status;
       const msg = err.response?.data?.error;
-
+  
       if (status === 401 || status === 403 || msg?.toLowerCase()?.includes("expired")) {
         alert("⚠️ Session expired. Please log in again.");
         window.location.href = "/auth/login";
         return;
       }
-
+  
       alert("Error saving consent. Please try again.");
     }
-
+  
     setLoading(false);
   };
+
 
   return (
     <div
