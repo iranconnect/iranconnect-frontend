@@ -76,14 +76,21 @@ export default function ContactPage() {
     }
 
     try {
-      const res = await apiClient.post('/contact', {
-        name,
-        email,
-        subjectType,
-        customSubject,
-        message,
-        recaptchaToken: captchaToken,
-      });
+      const res = await apiClient.post(
+        '/contact',
+        {
+          name,
+          email,
+          subjectType,
+          customSubject,
+          message,
+          recaptchaToken: captchaToken,
+        },
+        {
+          headers: { "x-iranconnect-contact": "1" }
+        }
+      );
+
 
       if (res.data?.success) {
         setSuccess(res.data.message || '✅ Your message was sent successfully!');
