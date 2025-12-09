@@ -110,9 +110,7 @@ export default function ChangePasswordPage() {
       
           window.location.href = "/auth/login";
         }, 2500);
-      }
-
-
+    
       } else {
         setMsg(res.data.error || "Error changing password.");
       }
