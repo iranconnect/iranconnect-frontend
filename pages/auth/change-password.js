@@ -25,30 +25,40 @@ export default function ChangePassword() {
   const [captchaToken, setCaptchaToken] = useState(null);
 
   /* 🔍 توکن را از بک‌اند چک می‌کنیم */
-  useEffect(() => {
-    if (!token) return;
+useEffect(() => {
+  if (!token) return;
 
-    async function validate() {
-      try {
-        const res = await apiClient.get(`/auth/validate-reset/${token}`, {
-          withCredentials: true,
-        });
+  async function validate() {
+    try {
+      const res = await apiClient.get(`/auth/validate-reset/${token}`, {
+        withCredentials: true,
+      });
 
-        if (res.data.valid) {
-          setMsg("");
-          setMsgType("success");
-        } else {
-          setMsg(res.data.error || "Invalid or expired link.");
-          setMsgType("error");
-        }
-      } catch (err) {
-        setMsg(err.response?.data?.error || "Invalid or expired link.");
+      // اگر لینک نامعتبر است
+      if (!res.data.valid) {
+        setMsg(res.data.error || "Invalid or expired link.");
         setMsgType("error");
+        return;
       }
-    }
 
-    validate();
-  }, [token]);
+      // اگر فقط IP/UA متفاوت بود → بلاک نکن!
+      if (res.data.suspicious) {
+        console.warn("⚠ Reset from different IP or device.");
+      }
+
+      // لینک معتبر است
+      setMsg("");
+      setMsgType("success");
+
+    } catch (err) {
+      setMsg(err.response?.data?.error || "Invalid or expired link.");
+      setMsgType("error");
+    }
+  }
+
+  validate();
+}, [token]);
+
 
   /* 🎨 تم */
   useEffect(() => {
