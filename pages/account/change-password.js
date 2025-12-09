@@ -104,12 +104,18 @@ export default function ChangePasswordPage() {
           try {
             await apiClient.post("/auth/logout");
           } catch (e) {}
-      
-          // 🟢 جلوگیری از نمایش پیام امنیتی اشتباه
+        
+          // 🟢 پاکسازی کامل پیام‌های logout قبلی
           localStorage.removeItem("auth_forced_logout_reason");
-      
+          localStorage.removeItem("forced_logout");
+          localStorage.removeItem("session_invalidated");
+          
+          // 🟢 مهم‌ترین مورد → Login دقیقا این را می‌خواند
+          sessionStorage.removeItem("iran_auto_logout_msg");
+          
           window.location.href = "/auth/login";
         }, 2500);
+
     
       } else {
         setMsg(res.data.error || "Error changing password.");
