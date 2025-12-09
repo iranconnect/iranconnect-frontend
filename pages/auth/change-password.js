@@ -105,7 +105,7 @@ useEffect(() => {
     try {
       const res = await apiClient.post(
         "/auth/reset",
-        { token, password, confirmPassword, captchaToken },
+        { token, password, confirmPassword, recaptchaToken: captchaToken },
         { withCredentials: true }
       );
 
