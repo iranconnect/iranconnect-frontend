@@ -99,14 +99,19 @@ export default function ChangePasswordPage() {
 
       if (res.data.success) {
         setMsg("✅ " + res.data.message);
-
-        // 🧩 لاگ‌اوت امن فقط با API — بدون localStorage
+      
         setTimeout(async () => {
           try {
-            await apiClient.post("/auth/logout"); // کوکی HttpOnly پاک می‌شود
+            await apiClient.post("/auth/logout");
           } catch (e) {}
+      
+          // 🟢 جلوگیری از نمایش پیام امنیتی اشتباه
+          localStorage.removeItem("auth_forced_logout_reason");
+      
           window.location.href = "/auth/login";
         }, 2500);
+      }
+
 
       } else {
         setMsg(res.data.error || "Error changing password.");
