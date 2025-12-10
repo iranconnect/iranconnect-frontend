@@ -26,6 +26,33 @@ export default function Login() {
 
   const captchaRef = useRef(null);
 
+  /* ───────────── ♻️ Reset CAPTCHA on page load ───────────── */
+  useEffect(() => {
+    setShowCaptcha(false);
+    setCaptchaToken(null);
+  
+    // اگر کپچا هنوز mount نشده است، reset نکن
+    if (captchaRef.current) {
+      setTimeout(() => {
+        captchaRef.current.reset();
+      }, 100);
+    }
+  }, []);
+
+  /* ───────────── ♻️ Reset when CAPTCHA becomes visible ───────────── */
+  useEffect(() => {
+    if (!showCaptcha) return;
+  
+    setCaptchaToken(null);
+  
+    if (captchaRef.current) {
+      setTimeout(() => {
+        captchaRef.current.reset();
+      }, 100);
+    }
+  }, [showCaptcha]);
+
+
   /* ───────────── 📌 پیام امنیتی ورود هم‌زمان ───────────── */
   useEffect(() => {
     const msg = sessionStorage.getItem("iran_auto_logout_msg");
@@ -69,14 +96,14 @@ export default function Login() {
       if (showCaptcha && !captchaToken) {
         setMsg("⚠️ Please complete the reCAPTCHA verification.");
       
-        // ⭐ کپچا ریست شود تا کاربر بتواند دوباره تیک بزند
-        captchaRef.current?.reset();
-        setCaptchaToken(null);
+        if (captchaRef.current) {
+          captchaRef.current.reset();
+        }
       
+        setCaptchaToken(null);
         setLoading(false);
         return;
       }
-
 
       const payload = { email, password };
       if (showCaptcha && captchaToken) {
@@ -108,7 +135,8 @@ export default function Login() {
 
       // ✅ ورود موفق
       if (res.data.message?.toLowerCase().includes("successful")) {
-        setMsg(res.data.message || "Login successful ✅");
+
+        setMsg(""); 
         setUserId(res.data.user_id);
         
         captchaRef.current?.reset();
@@ -171,9 +199,8 @@ export default function Login() {
     setLoginAttempts((prev) => {
       const next = prev + 1;
   
-      // اگر کپچا فعال است، بعد از هر خطا ریست شود
-      if (showCaptcha) {
-        captchaRef.current?.reset();
+      if (showCaptcha && captchaRef.current) {
+        captchaRef.current.reset();
         setCaptchaToken(null);
       }
   
@@ -181,6 +208,7 @@ export default function Login() {
       return next;
     });
   }
+
 
 
   /* ───────────── 🧩 رابط کاربری ───────────── */
