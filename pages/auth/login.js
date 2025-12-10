@@ -1,10 +1,11 @@
 //frontend/pages/auth/login.js
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import apiClient from "../../utils/apiClient";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import ConsentModal from "../../components/ConsentModal";
 import ReCAPTCHA from "react-google-recaptcha"; // 🧩 اضافه شد
+
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -23,6 +24,7 @@ export default function Login() {
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
 
+  const captchaRef = useRef(null);
 
   /* ───────────── 📌 پیام امنیتی ورود هم‌زمان ───────────── */
   useEffect(() => {
@@ -66,9 +68,15 @@ export default function Login() {
     try {
       if (showCaptcha && !captchaToken) {
         setMsg("⚠️ Please complete the reCAPTCHA verification.");
+      
+        // ⭐ کپچا ریست شود تا کاربر بتواند دوباره تیک بزند
+        captchaRef.current?.reset();
+        setCaptchaToken(null);
+      
         setLoading(false);
         return;
       }
+
 
       const payload = { email, password };
       if (showCaptcha && captchaToken) {
@@ -102,6 +110,10 @@ export default function Login() {
       if (res.data.message?.toLowerCase().includes("successful")) {
         setMsg(res.data.message || "Login successful ✅");
         setUserId(res.data.user_id);
+        
+        captchaRef.current?.reset();
+        setCaptchaToken(null);
+        setShowCaptcha(false);
 
         const allAccepted = res.data.all_consents_accepted;
         if (!allAccepted) {
@@ -158,10 +170,18 @@ export default function Login() {
   function handleFailedLogin() {
     setLoginAttempts((prev) => {
       const next = prev + 1;
+  
+      // اگر کپچا فعال است، بعد از هر خطا ریست شود
+      if (showCaptcha) {
+        captchaRef.current?.reset();
+        setCaptchaToken(null);
+      }
+  
       if (next >= 3) setShowCaptcha(true);
       return next;
     });
   }
+
 
   /* ───────────── 🧩 رابط کاربری ───────────── */
   return (
@@ -236,15 +256,22 @@ export default function Login() {
             {showCaptcha && (
               <div className="flex justify-center my-3">
                 <ReCAPTCHA
+                  ref={captchaRef}
                   sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
                   onChange={(token) => setCaptchaToken(token)}
                   onExpired={() => {
                     setCaptchaToken(null);
                     setMsg("⚠️ reCAPTCHA expired. Please verify again.");
+            
+                    // 👇 گوگل را مجبور می‌کند ویجت را از حالت قفل خارج کند
+                    setTimeout(() => {
+                      captchaRef.current?.reset();
+                    }, 200);
                   }}
                 />
               </div>
             )}
+
 
             <button
               type="submit"
