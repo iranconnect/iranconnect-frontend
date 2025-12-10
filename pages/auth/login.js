@@ -1,81 +1,56 @@
-//frontend/pages/auth/login.js
+// frontend/pages/auth/login.js
 import { useState, useEffect, useRef } from "react";
 import apiClient from "../../utils/apiClient";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import ConsentModal from "../../components/ConsentModal";
-import ReCAPTCHA from "react-google-recaptcha"; // 🧩 اضافه شد
-
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [msg, setMsg] = useState("");
   const [securityMsg, setSecurityMsg] = useState("");
   const [loading, setLoading] = useState(false);
+
   const [theme, setTheme] = useState("light");
   const [lang, setLang] = useState("en");
+
   const [showConsent, setShowConsent] = useState(false);
   const [userId, setUserId] = useState(null);
-  const [msgType, setMsgType] = useState("info");
 
-  // ⚙️ reCAPTCHA logic
-  const [loginAttempts, setLoginAttempts] = useState(0);
+  // ⚙️ CAPTCHA FLAGS
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
 
   const captchaRef = useRef(null);
 
-  /* ───────────── ♻️ Reset CAPTCHA on page load ───────────── */
+  /* ───────────────────────────────────────────────
+     🔵 1) Load auto-logout message
+  ─────────────────────────────────────────────── */
   useEffect(() => {
-    setShowCaptcha(false);
-    setCaptchaToken(null);
-  
-    // اگر کپچا هنوز mount نشده است، reset نکن
-    if (captchaRef.current) {
-      setTimeout(() => {
-        captchaRef.current.reset();
-      }, 100);
-    }
-  }, []);
-
-  /* ───────────── ♻️ Reset when CAPTCHA becomes visible ───────────── */
-  useEffect(() => {
-    if (!showCaptcha) return;
-  
-    setCaptchaToken(null);
-  
-    if (captchaRef.current) {
-      setTimeout(() => {
-        captchaRef.current.reset();
-      }, 100);
-    }
-  }, [showCaptcha]);
-
-
-  /* ───────────── 📌 پیام امنیتی ورود هم‌زمان ───────────── */
-  useEffect(() => {
-    const msg = sessionStorage.getItem("iran_auto_logout_msg");
-    if (msg) {
-      setSecurityMsg(msg);
+    const saved = sessionStorage.getItem("iran_auto_logout_msg");
+    if (saved) {
+      setSecurityMsg(saved);
       sessionStorage.removeItem("iran_auto_logout_msg");
     }
   }, []);
 
-
-  /* ───────────── 🎨 مدیریت تم و زبان ───────────── */
+  /* ───────────────────────────────────────────────
+     🔵 2) Theme & Language watcher
+  ─────────────────────────────────────────────── */
   useEffect(() => {
     const currentTheme =
       document.documentElement.getAttribute("data-theme") || "light";
     setTheme(currentTheme);
 
-    const initialLang =
-      document.documentElement.getAttribute("lang") || "en";
-    setLang(initialLang); // ❗️ دیگر از localStorage خوانده نمی‌شود
+    const initialLang = document.documentElement.getAttribute("lang") || "en";
+    setLang(initialLang);
 
     const observer = new MutationObserver(() => {
-      const newTheme = document.documentElement.getAttribute("data-theme");
-      setTheme(newTheme);
+      const updated = document.documentElement.getAttribute("data-theme");
+      setTheme(updated);
     });
 
     observer.observe(document.documentElement, {
@@ -86,132 +61,144 @@ export default function Login() {
     return () => observer.disconnect();
   }, []);
 
-  /* ───────────── 🔑 ارسال فرم لاگین ───────────── */
+  /* ───────────────────────────────────────────────
+     🔵 3) Real-time CAPTCHA Sync with Backend
+  ─────────────────────────────────────────────── */
+  async function syncCaptchaStatus(typedEmail) {
+    if (!typedEmail || typedEmail.length < 3) {
+      setShowCaptcha(false);
+      return;
+    }
+
+    try {
+      const res = await apiClient.get(
+        `/auth/login-status?email=${encodeURIComponent(typedEmail)}`
+      );
+
+      if (res.data.blocked) {
+        setMsg("Your account is suspended. Contact support.");
+        return;
+      }
+
+      const required = res.data.captcha_required === true;
+
+      if (required !== showCaptcha) {
+        setShowCaptcha(required);
+        setCaptchaToken(null);
+
+        if (required) {
+          setTimeout(() => captchaRef.current?.reset(), 150);
+        }
+      }
+    } catch (err) {
+      console.warn("login-status sync failed:", err?.message);
+    }
+  }
+
+  // وقتی کاربر ایمیل تایپ می‌کند → Sync انجام بده
+  useEffect(() => {
+    if (!email) return;
+    const t = setTimeout(() => syncCaptchaStatus(email), 300);
+    return () => clearTimeout(t);
+  }, [email]);
+
+  /* ───────────────────────────────────────────────
+     🔵 4) Reset CAPTCHA on visibility change
+  ─────────────────────────────────────────────── */
+  useEffect(() => {
+    if (!showCaptcha) return;
+    setCaptchaToken(null);
+
+    setTimeout(() => {
+      captchaRef.current?.reset();
+    }, 150);
+  }, [showCaptcha]);
+
+  /* ───────────────────────────────────────────────
+     🔵 5) SUBMIT Login
+  ─────────────────────────────────────────────── */
   async function submit(e) {
     e.preventDefault();
     setLoading(true);
     setMsg("");
 
     try {
+      // اگر بک‌اند نیاز به کپچا دارد → بدون کپچا لاگین نکن
       if (showCaptcha && !captchaToken) {
         setMsg("⚠️ Please complete the reCAPTCHA verification.");
-      
-        if (captchaRef.current) {
-          captchaRef.current.reset();
-        }
-      
+        captchaRef.current?.reset();
         setCaptchaToken(null);
         setLoading(false);
         return;
       }
 
       const payload = { email, password };
-      if (showCaptcha && captchaToken) {
-        payload.recaptchaToken = captchaToken;
-      }
+      if (captchaToken) payload.recaptchaToken = captchaToken;
 
       const res = await apiClient.post(`/auth/login`, payload, {
         withCredentials: true,
       });
 
-      // 🚫 حساب بلاک شده
+      /* 🚫 BLOCKED */
       if (res.data.blocked) {
-        setMsgType("error");
-        setMsg(
-          <>
-            {"Your account has been suspended. Please "}
-            <a
-              href={res.data.contact_url}
-              className="text-turquoise hover:underline font-medium"
-            >
-              contact
-            </a>{" "}
-            our support team for assistance.
-          </>
-        );
+        setMsg("Your account has been suspended. Please contact support.");
         setLoading(false);
         return;
       }
 
-      // ✅ ورود موفق
+      /* ✅ LOGIN SUCCESS */
       if (res.data.message?.toLowerCase().includes("successful")) {
-
-        setMsg(""); 
+        setMsg("");
         setUserId(res.data.user_id);
-        
+
         captchaRef.current?.reset();
         setCaptchaToken(null);
         setShowCaptcha(false);
 
-        const allAccepted = res.data.all_consents_accepted;
-        if (!allAccepted) {
+        if (!res.data.all_consents_accepted) {
           setShowConsent(true);
         } else {
-          const redirect = new URLSearchParams(window.location.search).get("redirect");
+          const redirect = new URLSearchParams(window.location.search).get(
+            "redirect"
+          );
           window.location.href = redirect || "/search";
         }
-      } else {
-        handleFailedLogin();
-        setMsg("Login failed. Please try again.");
+        return;
       }
+
+      /* ❌ Unexpected fail */
+      await syncCaptchaStatus(email);
+      setMsg("Invalid email or password.");
     } catch (err) {
       console.error("Login error:", err);
-      handleFailedLogin();
-
       const data = err.response?.data || {};
 
-      // 🚫 بلاک شده
+      /* 🚫 Blocked user */
       if (data.blocked) {
-        setMsgType("error");
-        setMsg(
-          <>
-            {"Your account has been suspended. Please "}
-            <a
-              href={data.contact_url || "/contact"}
-              className="text-turquoise hover:underline font-medium"
-            >
-              contact
-            </a>{" "}
-            our support team for assistance.
-          </>
-        );
+        setMsg("Your account has been suspended.");
         setLoading(false);
         return;
       }
 
-      // 📌 نیاز به پذیرش قوانین
+      /* 🚫 Requires consent */
       if (data.require_terms_agreement) {
         setUserId(data.user_id);
         setShowConsent(true);
-        setMsg("Please review and accept our policies before continuing.");
+        setMsg("Please review and accept our updated policies.");
+        setLoading(false);
         return;
       }
 
-      setMsg(data.message || data.error || "Invalid credentials");
-      setLoading(false);
+      setMsg(data.error || "Login failed.");
+      syncCaptchaStatus(email);
     }
 
     setLoading(false);
   }
 
-  /* ───────────── ⚙️ مدیریت تلاش‌های ناموفق ───────────── */
-  function handleFailedLogin() {
-    setLoginAttempts((prev) => {
-      const next = prev + 1;
-  
-      if (showCaptcha && captchaRef.current) {
-        captchaRef.current.reset();
-        setCaptchaToken(null);
-      }
-  
-      if (next >= 3) setShowCaptcha(true);
-      return next;
-    });
-  }
-
-
-
-  /* ───────────── 🧩 رابط کاربری ───────────── */
+  /* ───────────────────────────────────────────────
+     🔵 6) UI Rendering
+  ─────────────────────────────────────────────── */
   return (
     <div
       style={{
@@ -244,15 +231,14 @@ export default function Login() {
                 : "rgba(0,0,0,0.05)",
             boxShadow:
               theme === "dark"
-                ? "10px 10px 25px rgba(0,0,0,0.4), -10px -10px 25px rgba(255,255,255,0.05)"
-                : "6px 6px 15px rgba(0,0,0,0.1), -6px -6px 15px rgba(255,255,255,0.4)",
+                ? "10px 10px 25px rgba(0,0,0,0.4)"
+                : "6px 6px 15px rgba(0,0,0,0.1)",
           }}
         >
           <h2 className="text-2xl font-semibold text-center mb-6">
             Welcome Back 👋
           </h2>
 
-          {/* ⚠️ پیام امنیتی + دکمه Reset Password (Mobile Optimized) */}
           {securityMsg && (
             <div
               className="mb-4"
@@ -260,8 +246,6 @@ export default function Login() {
             />
           )}
 
-
-          {/* 🔐 فرم ورود */}
           <form onSubmit={submit} className="space-y-4">
             <input
               type="email"
@@ -269,7 +253,7 @@ export default function Login() {
               placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 rounded-lg border border-gray-300 bg-[#f5f7fa] text-gray-900 shadow-inner focus:outline-none focus:ring-2 focus:ring-turquoise"
+              className="w-full p-3 rounded-lg border bg-[#f5f7fa] text-gray-900 focus:ring-2 focus:ring-turquoise"
             />
 
             <input
@@ -278,7 +262,7 @@ export default function Login() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 rounded-lg border border-gray-300 bg-[#f5f7fa] text-gray-900 shadow-inner focus:outline-none focus:ring-2 focus:ring-turquoise"
+              className="w-full p-3 rounded-lg border bg-[#f5f7fa] text-gray-900 focus:ring-2 focus:ring-turquoise"
             />
 
             {showCaptcha && (
@@ -289,24 +273,19 @@ export default function Login() {
                   onChange={(token) => setCaptchaToken(token)}
                   onExpired={() => {
                     setCaptchaToken(null);
-                    setMsg("⚠️ reCAPTCHA expired. Please verify again.");
-            
-                    // 👇 گوگل را مجبور می‌کند ویجت را از حالت قفل خارج کند
-                    setTimeout(() => {
-                      captchaRef.current?.reset();
-                    }, 200);
+                    setMsg("⚠️ reCAPTCHA expired. Please try again.");
+                    captchaRef.current?.reset();
                   }}
                 />
               </div>
             )}
 
-
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-turquoise text-navy py-2 rounded-lg font-medium shadow-md hover:bg-turquoise/90 transition-all duration-200"
+              className="w-full bg-turquoise text-navy py-2 rounded-lg shadow-md hover:bg-turquoise/90"
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? "Logging in…" : "Login"}
             </button>
           </form>
 
@@ -319,25 +298,16 @@ export default function Login() {
             </p>
           )}
 
-          <div
-            className="mt-6 text-center text-sm"
-            style={{ color: theme === "dark" ? "#cbd5e1" : "#555" }}
-          >
+          <div className="mt-6 text-center text-sm">
             <p>
               Forgot your password?{" "}
-              <a
-                href="/auth/forgot"
-                className="text-turquoise font-medium hover:underline"
-              >
+              <a href="/auth/forgot" className="text-turquoise font-medium">
                 Recover it here
               </a>
             </p>
             <p className="mt-2">
               Don’t have an account?{" "}
-              <a
-                href="/auth/register"
-                className="text-turquoise font-medium hover:underline"
-              >
+              <a href="/auth/register" className="text-turquoise font-medium">
                 Sign up
               </a>
             </p>
@@ -355,7 +325,6 @@ export default function Login() {
             setShowConsent(false);
             if (accepted) window.location.href = "/search";
           }}
-
         />
       )}
     </div>
