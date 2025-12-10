@@ -9,6 +9,7 @@ import CookieConsent from '../components/CookieConsent';
 import AutoLogoutModal from '../components/AutoLogoutModal';
 import apiClient from '../utils/apiClient';
 import { useRouter } from 'next/router';
+import Script from "next/script";
 
 export default function App({ Component, pageProps }) {
   const [theme, setTheme] = useState('light');
@@ -114,6 +115,12 @@ export default function App({ Component, pageProps }) {
 
   return (
     <>
+
+      <Script
+        src="https://www.google.com/recaptcha/api.js"
+        strategy="afterInteractive"
+      />
+          
       <CookieConsent />
 
       {isLoggedIn && (
@@ -123,7 +130,7 @@ export default function App({ Component, pageProps }) {
           onLogout={handleLogout}
         />
       )}
-
+        
       <Component
         {...pageProps}
         toggleTheme={toggleTheme}
