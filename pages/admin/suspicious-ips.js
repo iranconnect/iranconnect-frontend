@@ -159,6 +159,7 @@ export default function AdminSuspiciousIPsPage() {
               <option value="payload_injection">Payload Injection</option>
               <option value="burst">Burst</option>
               <option value="user_agent_anomaly">User-Agent Anomaly</option>
+              <option value="rate_limit">Rate Limit</option>
             </select>
 
             <select
@@ -399,6 +400,13 @@ export default function AdminSuspiciousIPsPage() {
                   <td>Instant</td>
                   <td>High</td>
                   <td>Immediate block</td>
+                </tr>
+                <tr>
+                  <td>Rate Limit</td>
+                  <td>200 requests</td>
+                  <td>15 minutes</td>
+                  <td>Medium</td>
+                  <td>No (logging only)</td>
                 </tr>
               </tbody>
             </table>
