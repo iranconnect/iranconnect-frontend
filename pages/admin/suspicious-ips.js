@@ -32,7 +32,22 @@ export default function AdminSuspiciousIPsPage() {
 
   const base = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
 
+  const [securityConfig, setSecurityConfig] = useState(null);
+
+  async function fetchConfig() {
+    try {
+      const res = await apiClient.get("/admin/security-config", {
+        headers: { "X-Iranconnect-Admin": "1" }
+      });
+      setSecurityConfig(res.data);
+    } catch (err) {
+      console.error("Failed to load security config:", err);
+    }
+  }
+
+  
   useEffect(() => {
+    fetchConfig();
     // بار اول صفحه، صفحه ۱ را می‌گیریم
     fetchSuspiciousIPs(1);
   }, []);
@@ -107,11 +122,18 @@ export default function AdminSuspiciousIPsPage() {
                   🔐 Suspicious IP Detection Overview
                 </h3>
 
+                <p className="text-xs opacity-80 leading-relaxed mt-2">
+                  <strong>Note:</strong> Account <em>lockout</em> applies to user accounts 
+                  (based on failed login attempts), while <em>IP blocking</em> applies to 
+                  network behavior (such as brute force, scans, injections, etc.).
+                </p>
+                
                 <p className="text-xs opacity-80 leading-relaxed">
                   IranConnect automatically detects and blocks abusive or suspicious IP
                   addresses based on behavior thresholds. Review the summary below, or
                   click the button for full technical rules.
                 </p>
+
 
                 <ul className="mt-3 space-y-1 text-xs opacity-90">
                   <li>• <strong>Brute Force:</strong> 9 attempts / 10 min → block</li>
@@ -120,6 +142,9 @@ export default function AdminSuspiciousIPsPage() {
                   <li>• <strong>Payload Injection:</strong> 2 attempts → block</li>
                   <li>• <strong>Burst Traffic:</strong> 30 req / 10 sec → block</li>
                   <li>• <strong>User-Agent Anomaly:</strong> instantly blocked</li>
+                  <li>• <strong>Rate Limit:</strong> 200 req / 15 min → logged only</li>
+                  <li>• <strong>Account Lockout:</strong> {securityConfig?.account_lockout?.MAX_FAILED || 10} failed logins → lockout</li>
+
                 </ul>
               </div>
 
@@ -324,6 +349,7 @@ export default function AdminSuspiciousIPsPage() {
               ipRecord={selectedIP}
               onClose={() => setSelectedIP(null)}
               currentUserRole={currentUserRole}
+              securityConfig={securityConfig}
             />
           )}
         </section>
