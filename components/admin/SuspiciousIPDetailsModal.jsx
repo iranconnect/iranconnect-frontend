@@ -7,6 +7,7 @@ export default function SuspiciousIPDetailsModal({
   onClose,
   currentUserRole,
   refreshList,
+  securityConfig,
 }) {
   const [incidents, setIncidents] = useState([]);
   const [details, setDetails] = useState(null);
@@ -187,6 +188,22 @@ export default function SuspiciousIPDetailsModal({
                         </td>
                       </tr>
                     )}
+                    <tr>
+                      <td>Account Lockout (User-Level)</td>
+                      <td>{securityConfig?.account_lockout?.MAX_FAILED || 10} failed attempts</td>
+                      <td>{securityConfig?.account_lockout?.LOCK_MINUTES || 15} minutes</td>
+                      <td>Medium</td>
+                      <td>No (user only)</td>
+                    </tr>
+                    
+                    <tr>
+                      <td>Permanent Account Block</td>
+                      <td>{securityConfig?.account_lockout?.MAX_BLOCK || 20} failed attempts</td>
+                      <td>—</td>
+                      <td>High</td>
+                      <td>Yes (user permanently blocked)</td>
+                    </tr>
+
                   </tbody>
                 </table>
               </div>
