@@ -18,10 +18,11 @@ export default function AdminSuspiciousIPsPage() {
 
   const [selectedIP, setSelectedIP] = useState(null);
 
-  // ⚠️ این state بعداً با JWT پر می‌شود، فعلاً نگهش می‌داریم
-  const [currentUserRole, setCurrentUserRole] = useState("admin");
+  // ✅ role comes from /auth/me (HttpOnly cookie)
+  const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // 🔢 صفحه‌بندی
+  // 🔢 Pagination
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -30,14 +31,47 @@ export default function AdminSuspiciousIPsPage() {
     totalPages: 1,
   });
 
-  const base = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
-
   const [securityConfig, setSecurityConfig] = useState(null);
 
+  /* ============================================================
+     🔐 Secure Admin Auth Check (HttpOnly Cookie + /auth/me)
+  ============================================================ */
+  useEffect(() => {
+    let mounted = true;
+
+    async function verifyAccess() {
+      try {
+        const me = await apiClient.get("/auth/me", { withCredentials: true });
+
+        if (!mounted) return;
+
+        const role = me.data?.role;
+        if (role !== "admin" && role !== "superadmin") {
+          window.location.href = "/";
+          return;
+        }
+
+        setCurrentUserRole(role);
+        setAuthChecked(true);
+      } catch (err) {
+        window.location.href = "/auth/login";
+      }
+    }
+
+    verifyAccess();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  /* ============================================================
+     🔐 Load Security Config (admin-only endpoint)
+  ============================================================ */
   async function fetchConfig() {
     try {
       const res = await apiClient.get("/admin/security-config", {
-        headers: { "X-Iranconnect-Admin": "1" }
+        withCredentials: true,
       });
       setSecurityConfig(res.data);
     } catch (err) {
@@ -45,23 +79,22 @@ export default function AdminSuspiciousIPsPage() {
     }
   }
 
-  
-  useEffect(() => {
-    fetchConfig();
-    // بار اول صفحه، صفحه ۱ را می‌گیریم
-    fetchSuspiciousIPs(1);
-  }, []);
-
+  /* ============================================================
+     📥 Load Suspicious IPs
+  ============================================================ */
   async function fetchSuspiciousIPs(newPage = page) {
     setLoading(true);
     try {
       const params = {
         ...filters,
         page: newPage,
-        pageSize: 10, // همیشه ۱۰ رکورد در هر صفحه
+        pageSize: 10,
       };
 
-      const res = await apiClient.get("/admin/suspicious-ips", { params });
+      const res = await apiClient.get("/admin/suspicious-ips", {
+        params,
+        withCredentials: true,
+      });
 
       setIps(res.data?.data || []);
       setPagination(
@@ -80,14 +113,15 @@ export default function AdminSuspiciousIPsPage() {
     }
   }
 
-  function handleExport(format) {
-    const token = localStorage.getItem("iran_token");
-    const base = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
-    window.open(
-      `${process.env.NEXT_PUBLIC_API_BASE}/admin/suspicious-ips/export/${format}?token=${token}`,
-      "_blank"
-    );
-  }
+  /* ============================================================
+     ✅ Initial loads AFTER auth check
+  ============================================================ */
+  useEffect(() => {
+    if (!authChecked) return;
+    fetchConfig();
+    fetchSuspiciousIPs(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authChecked]);
 
   function handleSearch() {
     fetchSuspiciousIPs(1);
@@ -108,6 +142,54 @@ export default function AdminSuspiciousIPsPage() {
     fetchSuspiciousIPs(newPage);
   }
 
+  /* ============================================================
+     📤 Export (secure)
+     - NO token in URL
+     - Download via Blob with credentials (HttpOnly cookie)
+  ============================================================ */
+  async function handleExport(format) {
+    try {
+      const res = await apiClient.get(`/admin/suspicious-ips/export/${format}`, {
+        responseType: "blob",
+        withCredentials: true,
+      });
+
+      const contentType = res.headers?.["content-type"] || "";
+      const ext = format === "xlsx" ? "xlsx" : "pdf";
+
+      // Try to extract filename from content-disposition
+      const disposition = res.headers?.["content-disposition"] || "";
+      const match = disposition.match(/filename="?([^"]+)"?/i);
+      const filename = match?.[1] || `suspicious-ips.${ext}`;
+
+      const blob = new Blob([res.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Export failed. Please try again.");
+    }
+  }
+
+  /* ============================================================
+     🛑 Block render until auth confirmed
+  ============================================================ */
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Checking access…
+      </div>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="admin-container">
@@ -116,24 +198,22 @@ export default function AdminSuspiciousIPsPage() {
 
           <div className="admin-card mb-6 p-4 border border-white/10 rounded-xl bg-gradient-to-br from-[#0b1b33] to-[#0f2447] shadow-lg">
             <div className="flex items-center justify-between">
-
               <div>
                 <h3 className="text-lg font-semibold text-turquoise mb-1">
                   🔐 Suspicious IP Detection Overview
                 </h3>
 
                 <p className="text-xs opacity-80 leading-relaxed mt-2">
-                  <strong>Note:</strong> Account <em>lockout</em> applies to user accounts 
-                  (based on failed login attempts), while <em>IP blocking</em> applies to 
+                  <strong>Note:</strong> Account <em>lockout</em> applies to user accounts
+                  (based on failed login attempts), while <em>IP blocking</em> applies to
                   network behavior (such as brute force, scans, injections, etc.).
                 </p>
-                
+
                 <p className="text-xs opacity-80 leading-relaxed">
                   IranConnect automatically detects and blocks abusive or suspicious IP
                   addresses based on behavior thresholds. Review the summary below, or
                   click the button for full technical rules.
                 </p>
-
 
                 <ul className="mt-3 space-y-1 text-xs opacity-90">
                   <li>• <strong>Brute Force:</strong> 9 attempts / 10 min → block</li>
@@ -143,8 +223,10 @@ export default function AdminSuspiciousIPsPage() {
                   <li>• <strong>Burst Traffic:</strong> 30 req / 10 sec → block</li>
                   <li>• <strong>User-Agent Anomaly:</strong> instantly blocked</li>
                   <li>• <strong>Rate Limit:</strong> 200 req / 15 min → logged only</li>
-                  <li>• <strong>Account Lockout:</strong> {securityConfig?.account_lockout?.MAX_FAILED || 10} failed logins → lockout</li>
-
+                  <li>
+                    • <strong>Account Lockout:</strong>{" "}
+                    {securityConfig?.account_lockout?.MAX_FAILED || 10} failed logins → lockout
+                  </li>
                 </ul>
               </div>
 
@@ -154,10 +236,8 @@ export default function AdminSuspiciousIPsPage() {
               >
                 View Full Rules
               </button>
-
             </div>
           </div>
-
 
           {/* Filters */}
           <div className="flex flex-wrap gap-3 mb-6 items-center">
@@ -165,17 +245,13 @@ export default function AdminSuspiciousIPsPage() {
               className="admin-input w-48"
               placeholder="Filter by IP"
               value={filters.ip}
-              onChange={(e) =>
-                setFilters({ ...filters, ip: e.target.value })
-              }
+              onChange={(e) => setFilters({ ...filters, ip: e.target.value })}
             />
 
             <select
               className="admin-input w-40"
               value={filters.type}
-              onChange={(e) =>
-                setFilters({ ...filters, type: e.target.value })
-              }
+              onChange={(e) => setFilters({ ...filters, type: e.target.value })}
             >
               <option value="">All Types</option>
               <option value="brute_force">Brute Force</option>
@@ -220,6 +296,7 @@ export default function AdminSuspiciousIPsPage() {
             >
               Search
             </button>
+
             <button
               onClick={handleClear}
               className="admin-btn admin-btn-secondary px-4 py-2 text-sm font-medium"
@@ -260,20 +337,17 @@ export default function AdminSuspiciousIPsPage() {
                       <th>Action</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {ips.length ? (
                       ips.map((ip) => (
                         <tr key={ip.ip_address}>
-                          <td className="truncate max-w-[150px]">
-                            {ip.ip_address}
-                          </td>
+                          <td className="truncate max-w-[150px]">{ip.ip_address}</td>
 
-                          {/* 👇 انواع رفتار مشکوک (unique) با "/" */}
                           <td className="truncate max-w-[150px]">
                             {ip.suspicious_types?.join(" / ")}
                           </td>
 
-                          {/* 👇 severity-level فقط اولین یا مجموعه */}
                           <td className="truncate max-w-[100px]">
                             {ip.severity_levels?.join(" / ")}
                           </td>
@@ -286,14 +360,13 @@ export default function AdminSuspiciousIPsPage() {
                               : "Not Blocked"}
                           </td>
 
-                          {/* 👇 مجموع تلاش‌ها */}
-                          <td className="truncate max-w-[70px]">
-                            {ip.total_attempts}
-                          </td>
+                          <td className="truncate max-w-[70px]">{ip.total_attempts}</td>
 
                           <td className="text-right">
                             <button
-                              onClick={() => setSelectedIP({ ip_address: ip.ip_address })}
+                              onClick={() =>
+                                setSelectedIP({ ip_address: ip.ip_address })
+                              }
                               className="admin-btn admin-btn-secondary text-xs px-3 py-1"
                             >
                               View
@@ -303,10 +376,7 @@ export default function AdminSuspiciousIPsPage() {
                       ))
                     ) : (
                       <tr>
-                        <td
-                          colSpan="6"
-                          className="text-center opacity-70 p-4"
-                        >
+                        <td colSpan="6" className="text-center opacity-70 p-4">
                           No record found.
                         </td>
                       </tr>
@@ -319,11 +389,10 @@ export default function AdminSuspiciousIPsPage() {
                 <div>
                   Page {pagination.page} of {pagination.totalPages}{" "}
                   {pagination.total > 0 && (
-                    <span className="opacity-70">
-                      ({pagination.total} records)
-                    </span>
+                    <span className="opacity-70">({pagination.total} records)</span>
                   )}
                 </div>
+
                 <div className="flex gap-2">
                   <button
                     className="admin-btn admin-btn-secondary px-3 py-1"
@@ -354,10 +423,10 @@ export default function AdminSuspiciousIPsPage() {
           )}
         </section>
       </div>
+
       {showRules && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50">
           <div className="admin-card w-full max-w-2xl p-6 relative">
-
             <button
               onClick={() => setShowRules(false)}
               className="absolute right-4 top-3 text-turquoise text-lg font-bold"
@@ -436,11 +505,9 @@ export default function AdminSuspiciousIPsPage() {
                 </tr>
               </tbody>
             </table>
-
           </div>
         </div>
       )}
-    
     </AdminLayout>
   );
 }
