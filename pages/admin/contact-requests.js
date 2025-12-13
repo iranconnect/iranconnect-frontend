@@ -63,7 +63,6 @@ export default function ContactRequestsPage() {
 
     try {
       const params = {};
-
       if (searchName) params.name = searchName;
       if (searchEmail) params.email = searchEmail;
       if (searchSubject) params.subject = searchSubject;
@@ -95,6 +94,43 @@ export default function ContactRequestsPage() {
     setFilterStatus("");
     setFilterDate("");
     fetchRequests();
+  }
+
+  /* ============================================================
+     📥 Secure Export (SuperAdmin only – Cookie based)
+  ============================================================ */
+  async function exportContactRequests(type) {
+    try {
+      const res = await apiClient.get(
+        `/admin/contact-requests/export/${type}`,
+        {
+          withCredentials: true,
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([res.data]);
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download =
+        type === "xlsx"
+          ? "IranConnect_Contact_Requests.xlsx"
+          : "IranConnect_Contact_Requests.pdf";
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("❌ Export failed:", err);
+      alert(
+        err.response?.data?.error ||
+          "You are not authorized to export this file."
+      );
+    }
   }
 
   /* ============================================================
@@ -184,31 +220,17 @@ export default function ContactRequestsPage() {
               Clear
             </button>
 
-            {/* Export */}
+            {/* Export (SECURE) */}
             <div className="flex flex-row gap-3 ml-auto">
               <button
-                onClick={() =>
-                  window.open(
-                    `${
-                      process.env.NEXT_PUBLIC_API_BASE
-                    }/admin/contact-requests/export/xlsx?X-Iranconnect-Admin=true`,
-                    "_blank"
-                  )
-                }
+                onClick={() => exportContactRequests("xlsx")}
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
                 Export XLSX
               </button>
 
               <button
-                onClick={() =>
-                  window.open(
-                    `${
-                      process.env.NEXT_PUBLIC_API_BASE
-                    }/admin/contact-requests/export/pdf?X-Iranconnect-Admin=true`,
-                    "_blank"
-                  )
-                }
+                onClick={() => exportContactRequests("pdf")}
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
                 Export PDF
@@ -249,15 +271,12 @@ export default function ContactRequestsPage() {
                       <td className="p-3 capitalize">
                         {r.subject_type.replace(/_/g, " ")}
                       </td>
-
                       <td className="p-3 text-center">
                         {r.status === "handled" ? "✅ Handled" : "🕓 Pending"}
                       </td>
-
                       <td className="p-3">
                         {new Date(r.created_at).toLocaleDateString()}
                       </td>
-
                       <td className="p-3 text-center">
                         <button
                           onClick={() => setSelectedRequest(r)}
