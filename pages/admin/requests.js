@@ -1,3 +1,4 @@
+//pages/admin/requests.js
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -17,82 +18,126 @@ export default function AdminBusinessRequestsPage() {
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
 
-  // 🧭 بررسی نقش admin
+  const [authChecked, setAuthChecked] = useState(false);
+
+  /* ============================================================
+     🔐 Secure Auth Check — admin / superadmin only
+  ============================================================ */
   useEffect(() => {
-    const token = localStorage.getItem("iran_token");
-    const role = localStorage.getItem("iran_role");
+    let mounted = true;
 
-    if (!token) {
-      window.location.href = "/auth/login";
-      return;
+    async function checkAccess() {
+      try {
+        const me = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
+
+        if (!me.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
+        }
+
+        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
+          window.location.href = "/";
+          return;
+        }
+
+        if (mounted) {
+          setAuthChecked(true);
+          fetchRequests(1);
+        }
+      } catch {
+        window.location.href = "/auth/login";
+      }
     }
-    if (role !== "admin" && role !== 'superadmin') {
-      window.location.href = "/";
-      return;
-    }
 
-    fetchRequests(1);
-  }, [statusFilter, typeFilter]);
+    checkAccess();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-  // 📦 دریافت درخواست‌ها
+  /* ============================================================
+     📦 Fetch requests (secure)
+  ============================================================ */
   async function fetchRequests(p = 1) {
+    if (!authChecked) return;
+
     setLoading(true);
     setError("");
+
     try {
       const params = {
         page: p,
         limit,
-        status: statusFilter,
-        type: typeFilter,
+        status: statusFilter || undefined,
+        type: typeFilter || undefined,
         q: searchTerm.trim() || undefined,
       };
-      const res = await apiClient.get(`/admin/requests`, { params });
-      setRequests(res.data.rows || []);
-      setTotal(res.data.total || 0);
-      setPage(res.data.page || 1);
+
+      const res = await apiClient.get("/admin/requests", {
+        params,
+        withCredentials: true,
+      });
+
+      setRequests(res.data?.rows || []);
+      setTotal(res.data?.total || 0);
+      setPage(res.data?.page || 1);
     } catch (err) {
       console.error("❌ Error fetching requests:", err);
-      setError(err.response?.data?.error || "Failed to load requests.");
+      setError(
+        err.response?.data?.error || "Failed to load requests."
+      );
       setRequests([]);
     } finally {
       setLoading(false);
     }
   }
 
-  // 📤 خروجی XLSX
-  async function handleExportXLSX() {
+  /* ============================================================
+     📤 Export XLSX / PDF (cookie-based)
+  ============================================================ */
+  async function handleExport(type) {
     try {
-      const res = await apiClient.get(`/admin/requests/export/xlsx`, {
-        responseType: "blob",
-      });
+      const res = await apiClient.get(
+        `/admin/requests/export/${type}`,
+        {
+          responseType: "blob",
+          withCredentials: true,
+        }
+      );
+
       const url = window.URL.createObjectURL(res.data);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "IranConnect_Requests_Report.xlsx";
+      a.download =
+        type === "xlsx"
+          ? "IranConnect_Requests_Report.xlsx"
+          : "IranConnect_Requests_Report.pdf";
+
+      document.body.appendChild(a);
       a.click();
+      a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err) {
-      alert("Error exporting XLSX file.");
+    } catch {
+      alert("Error exporting file.");
     }
   }
 
-  // 🧾 خروجی PDF
-  async function handleExportPDF() {
-    try {
-      const res = await apiClient.get(`/admin/requests/export/pdf`, {
-        responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(res.data);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "IranConnect_Requests_Report.pdf";
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      alert("Error exporting PDF file.");
-    }
+  /* ============================================================
+     🛑 Block render until auth confirmed
+  ============================================================ */
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Checking access…
+      </div>
+    );
   }
 
+  /* ============================================================
+     🎨 UI
+  ============================================================ */
   return (
     <AdminLayout>
       <div className="admin-container">
@@ -101,18 +146,16 @@ export default function AdminBusinessRequestsPage() {
             🧾 Business Requests (New / Update / Delete)
           </h2>
 
-          {/* پیام خطا */}
           {error && (
             <p className="text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm">
               {error}
             </p>
           )}
 
-          {/* 🔎 فیلتر و جستجو */}
+          {/* Filters */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              setPage(1);
               fetchRequests(1);
             }}
             className="flex flex-wrap items-center gap-3 mb-6"
@@ -157,7 +200,6 @@ export default function AdminBusinessRequestsPage() {
                 setSearchTerm("");
                 setTypeFilter("");
                 setStatusFilter("");
-                setPage(1);
                 fetchRequests(1);
               }}
               className="admin-btn admin-btn-secondary text-sm px-4 py-2"
@@ -165,29 +207,28 @@ export default function AdminBusinessRequestsPage() {
               Clear
             </button>
 
-            {/* 📤 Export */}
-            <div className="flex flex-row flex-wrap gap-3 items-center ml-auto">
+            <div className="flex gap-3 ml-auto">
               <button
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
-                onClick={handleExportXLSX}
                 type="button"
+                onClick={() => handleExport("xlsx")}
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
               >
                 Export XLSX
               </button>
               <button
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
-                onClick={handleExportPDF}
                 type="button"
+                onClick={() => handleExport("pdf")}
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
               >
                 Export PDF
               </button>
             </div>
           </form>
 
-          {/* جدول */}
+          {/* Table */}
           {loading ? (
             <p className="admin-muted">Loading...</p>
-          ) : !Array.isArray(requests) || requests.length === 0 ? (
+          ) : requests.length === 0 ? (
             <p className="admin-muted">No matching requests found.</p>
           ) : (
             <>
@@ -208,21 +249,20 @@ export default function AdminBusinessRequestsPage() {
                   <tbody>
                     {requests.map((r) => (
                       <tr key={r.id}>
-                        <td className="max-w-[120px] truncate" title={r.business_name}>
+                        <td className="truncate max-w-[120px]">
                           {r.business_name || "—"}
                         </td>
-                        <td className="max-w-[150px] truncate">{r.user_email || "—"}</td>
+                        <td className="truncate max-w-[150px]">
+                          {r.user_email || "—"}
+                        </td>
                         <td className="capitalize">{r.request_type}</td>
                         <td>
-                          <span
-                            className={`px-2 py-1 rounded text-xs font-semibold ${
-                              r.status === "approved"
-                                ? "bg-green-100 text-green-700"
-                                : r.status === "rejected"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-yellow-100 text-yellow-700"
-                            }`}
-                          >
+                          <span className={`px-2 py-1 rounded text-xs font-semibold
+                            ${r.status === "approved"
+                              ? "bg-green-100 text-green-700"
+                              : r.status === "rejected"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"}`}>
                             {r.status}
                           </span>
                         </td>
@@ -246,39 +286,14 @@ export default function AdminBusinessRequestsPage() {
                   </tbody>
                 </table>
               </div>
-
-              {/* Pagination */}
-              {total > limit && (
-                <div className="flex justify-center items-center gap-4 mt-6">
-                  <button
-                    disabled={page === 1}
-                    onClick={() => fetchRequests(page - 1)}
-                    className="admin-btn admin-btn-secondary text-sm px-3 py-1 disabled:opacity-40"
-                  >
-                    ← Prev
-                  </button>
-                  <span className="admin-muted">
-                    Page {page} of {Math.ceil(total / limit)}
-                  </span>
-                  <button
-                    disabled={page >= Math.ceil(total / limit)}
-                    onClick={() => fetchRequests(page + 1)}
-                    className="admin-btn admin-btn-secondary text-sm px-3 py-1 disabled:opacity-40"
-                  >
-                    Next →
-                  </button>
-                </div>
-              )}
             </>
           )}
         </div>
       </div>
 
-      {/* مودال جزئیات */}
       {selected && (
         <RequestDetailsModal
           request={selected}
-          token={localStorage.getItem("iran_token")}
           onClose={() => setSelected(null)}
           refresh={() => fetchRequests(page)}
         />
@@ -286,3 +301,4 @@ export default function AdminBusinessRequestsPage() {
     </AdminLayout>
   );
 }
+
