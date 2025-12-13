@@ -14,10 +14,13 @@ export default function AdminFileLogsPage() {
 
   const [authChecked, setAuthChecked] = useState(false);
 
-  /* ================================================
-     🔐 Check access using HttpOnly Cookie
-  ================================================= */
+  /* ============================================================
+     🔐 Secure access check (HttpOnly Cookie)
+     + Hardening against unmount
+  ============================================================ */
   useEffect(() => {
+    let mounted = true;
+
     async function checkAccess() {
       try {
         const me = await apiClient.get("/auth/me", {
@@ -28,19 +31,24 @@ export default function AdminFileLogsPage() {
         if (me.data.role !== "admin" && me.data.role !== "superadmin")
           return (window.location.href = "/");
 
-        setAuthChecked(true);
-        fetchLogs();
-      } catch (err) {
+        if (mounted) {
+          setAuthChecked(true);
+          fetchLogs();
+        }
+      } catch {
         window.location.href = "/auth/login";
       }
     }
 
     checkAccess();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  /* ================================================
-     📂 Fetch file logs
-  ================================================= */
+  /* ============================================================
+     📂 Fetch logs (secure)
+  ============================================================ */
   async function fetchLogs() {
     setLoading(true);
     setError("");
@@ -52,7 +60,7 @@ export default function AdminFileLogsPage() {
 
       const res = await apiClient.get("/admin/files/logs", {
         params,
-        withCredentials: true,   // 🔐 مهم
+        withCredentials: true,
       });
 
       setLogs(res.data || []);
@@ -64,6 +72,40 @@ export default function AdminFileLogsPage() {
     }
   }
 
+  /* ============================================================
+     📥 Secure Export (Admin/SuperAdmin – Cookie based)
+  ============================================================ */
+  async function exportFileLogs(type) {
+    try {
+      const res = await apiClient.get(`/admin/files/export/${type}`, {
+        withCredentials: true,
+        responseType: "blob",
+      });
+
+      const blob = new Blob([res.data]);
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download =
+        type === "xlsx"
+          ? "IranConnect_File_Logs.xlsx"
+          : "IranConnect_File_Logs.pdf";
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("❌ Export failed:", err);
+      alert(
+        err.response?.data?.error ||
+          "You are not authorized to export this file."
+      );
+    }
+  }
+
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -72,9 +114,9 @@ export default function AdminFileLogsPage() {
     );
   }
 
-  /* ================================================
-     🖼️ UI Render
-  ================================================= */
+  /* ============================================================
+     🖼️ UI
+  ============================================================ */
   return (
     <AdminLayout>
       <div className="admin-container">
@@ -122,28 +164,17 @@ export default function AdminFileLogsPage() {
               Clear
             </button>
 
-            {/* Export Buttons */}
-            <div className="flex flex-row flex-wrap gap-3 items-center ml-auto">
+            {/* Secure Export */}
+            <div className="flex gap-3 ml-auto">
               <button
-                onClick={() =>
-                  window.open(
-                    `${process.env.NEXT_PUBLIC_API_BASE}/admin/files/export/xlsx`,
-                    "_blank"
-                  )
-                }
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
+                onClick={() => exportFileLogs("xlsx")}
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
               >
                 Export XLSX
               </button>
-
               <button
-                onClick={() =>
-                  window.open(
-                    `${process.env.NEXT_PUBLIC_API_BASE}/admin/files/export/pdf`,
-                    "_blank"
-                  )
-                }
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
+                onClick={() => exportFileLogs("pdf")}
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
               >
                 Export PDF
               </button>
@@ -171,15 +202,13 @@ export default function AdminFileLogsPage() {
                     <th>Actions</th>
                   </tr>
                 </thead>
-
                 <tbody>
                   {logs.length ? (
                     logs.map((log) => (
                       <tr key={log.id}>
-                        <td className="p-3">{log.file_name}</td>
-
+                        <td>{log.file_name}</td>
                         <td
-                          className={`p-3 font-medium ${
+                          className={`font-medium ${
                             log.scan_status === "clean"
                               ? "text-green-600"
                               : log.scan_status === "infected"
@@ -189,20 +218,12 @@ export default function AdminFileLogsPage() {
                         >
                           {log.scan_status}
                         </td>
-
-                        <td className="p-3 truncate max-w-[120px]">
-                          {log.upload_source || "—"}
-                        </td>
-
-                        <td className="p-3 truncate max-w-[120px]">
-                          {log.user_email || "—"}
-                        </td>
-
-                        <td className="p-3">
+                        <td>{log.upload_source || "—"}</td>
+                        <td>{log.user_email || "—"}</td>
+                        <td>
                           {new Date(log.scanned_at).toLocaleDateString()}
                         </td>
-
-                        <td className="p-3 text-right">
+                        <td className="text-right">
                           <button
                             onClick={() => setSelectedLog(log)}
                             className="admin-btn admin-btn-secondary text-xs px-3 py-1"
