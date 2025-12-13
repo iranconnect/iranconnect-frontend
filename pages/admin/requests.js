@@ -1,4 +1,4 @@
-//pages/admin/requests.js
+// pages/admin/requests.js
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -18,6 +18,7 @@ export default function AdminBusinessRequestsPage() {
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
 
+  // auth state
   const [authChecked, setAuthChecked] = useState(false);
 
   /* ============================================================
@@ -44,7 +45,6 @@ export default function AdminBusinessRequestsPage() {
 
         if (mounted) {
           setAuthChecked(true);
-          fetchRequests(1);
         }
       } catch {
         window.location.href = "/auth/login";
@@ -52,17 +52,22 @@ export default function AdminBusinessRequestsPage() {
     }
 
     checkAccess();
+
     return () => {
       mounted = false;
     };
   }, []);
 
   /* ============================================================
-     📦 Fetch requests (secure)
+     📦 Fetch requests (runs after auth + on filters change)
   ============================================================ */
-  async function fetchRequests(p = 1) {
+  useEffect(() => {
     if (!authChecked) return;
+    fetchRequests(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authChecked, statusFilter, typeFilter]);
 
+  async function fetchRequests(p = 1) {
     setLoading(true);
     setError("");
 
@@ -82,12 +87,10 @@ export default function AdminBusinessRequestsPage() {
 
       setRequests(res.data?.rows || []);
       setTotal(res.data?.total || 0);
-      setPage(res.data?.page || 1);
+      setPage(res.data?.page || p);
     } catch (err) {
       console.error("❌ Error fetching requests:", err);
-      setError(
-        err.response?.data?.error || "Failed to load requests."
-      );
+      setError(err.response?.data?.error || "Failed to load requests.");
       setRequests([]);
     } finally {
       setLoading(false);
@@ -95,7 +98,7 @@ export default function AdminBusinessRequestsPage() {
   }
 
   /* ============================================================
-     📤 Export XLSX / PDF (cookie-based)
+     📤 Export XLSX / PDF (SuperAdmin only)
   ============================================================ */
   async function handleExport(type) {
     try {
@@ -190,7 +193,10 @@ export default function AdminBusinessRequestsPage() {
               <option value="rejected">Rejected</option>
             </select>
 
-            <button type="submit" className="admin-btn admin-btn-primary text-sm px-5 py-2">
+            <button
+              type="submit"
+              className="admin-btn admin-btn-primary text-sm px-5 py-2"
+            >
               Search
             </button>
 
@@ -231,62 +237,65 @@ export default function AdminBusinessRequestsPage() {
           ) : requests.length === 0 ? (
             <p className="admin-muted">No matching requests found.</p>
           ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="admin-table w-full">
-                  <thead>
-                    <tr>
-                      <th>Business</th>
-                      <th>User</th>
-                      <th>Type</th>
-                      <th>Status</th>
-                      <th>Ticket</th>
-                      <th>Created</th>
-                      <th>Processed</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {requests.map((r) => (
-                      <tr key={r.id}>
-                        <td className="truncate max-w-[120px]">
-                          {r.business_name || "—"}
-                        </td>
-                        <td className="truncate max-w-[150px]">
-                          {r.user_email || "—"}
-                        </td>
-                        <td className="capitalize">{r.request_type}</td>
-                        <td>
-                          <span className={`px-2 py-1 rounded text-xs font-semibold
-                            ${r.status === "approved"
+            <div className="overflow-x-auto">
+              <table className="admin-table w-full">
+                <thead>
+                  <tr>
+                    <th>Business</th>
+                    <th>User</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Ticket</th>
+                    <th>Created</th>
+                    <th>Processed</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests.map((r) => (
+                    <tr key={r.id}>
+                      <td className="truncate max-w-[120px]">
+                        {r.business_name || "—"}
+                      </td>
+                      <td className="truncate max-w-[150px]">
+                        {r.user_email || "—"}
+                      </td>
+                      <td className="capitalize">{r.request_type}</td>
+                      <td>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-semibold ${
+                            r.status === "approved"
                               ? "bg-green-100 text-green-700"
                               : r.status === "rejected"
                               ? "bg-red-100 text-red-700"
-                              : "bg-yellow-100 text-yellow-700"}`}>
-                            {r.status}
-                          </span>
-                        </td>
-                        <td className="font-mono">{r.ticket_code}</td>
-                        <td>{new Date(r.created_at).toLocaleDateString()}</td>
-                        <td>
-                          {r.processed_at
-                            ? new Date(r.processed_at).toLocaleDateString()
-                            : "—"}
-                        </td>
-                        <td>
-                          <button
-                            className="admin-btn admin-btn-secondary text-sm px-3 py-1"
-                            onClick={() => setSelected(r)}
-                          >
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {r.status}
+                        </span>
+                      </td>
+                      <td className="font-mono">{r.ticket_code}</td>
+                      <td>
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </td>
+                      <td>
+                        {r.processed_at
+                          ? new Date(r.processed_at).toLocaleDateString()
+                          : "—"}
+                      </td>
+                      <td>
+                        <button
+                          className="admin-btn admin-btn-secondary text-sm px-3 py-1"
+                          onClick={() => setSelected(r)}
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
@@ -301,4 +310,3 @@ export default function AdminBusinessRequestsPage() {
     </AdminLayout>
   );
 }
-
