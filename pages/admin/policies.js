@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import DOMPurify from "dompurify";
 import "react-quill/dist/quill.snow.css";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
@@ -26,86 +27,122 @@ export default function PoliciesAdmin() {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   /* ============================================================
-     🔐 احراز هویت — فقط admin + superadmin
-  ============================================================= */
+     🔐 Secure Auth Check — admin / superadmin only
+  ============================================================ */
   useEffect(() => {
+    let mounted = true;
+
     async function checkAccess() {
       try {
-        const me = await apiClient.get("/auth/me", { withCredentials: true });
+        const me = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
 
-        if (!me.data?.ok) return (window.location.href = "/auth/login");
-
-        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
-          return (window.location.href = "/");
+        if (!me.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
         }
 
-        setAuthChecked(true);
-        fetchPolicies();
+        if (!["admin", "superadmin"].includes(me.data.role)) {
+          window.location.href = "/";
+          return;
+        }
 
-        // Theme sync
-        const current =
-          document.documentElement.getAttribute("data-theme") || "light";
-        setTheme(current);
-
-        const observer = new MutationObserver(() => {
-          const newTheme =
-            document.documentElement.getAttribute("data-theme") || "light";
-          setTheme(newTheme);
-        });
-
-        observer.observe(document.documentElement, {
-          attributes: true,
-          attributeFilter: ["data-theme"],
-        });
-
-        return () => observer.disconnect();
+        if (mounted) {
+          setAuthChecked(true);
+          fetchPolicies();
+        }
       } catch (err) {
         window.location.href = "/auth/login";
       }
     }
 
     checkAccess();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  /* ============================================================
+     🎨 Theme sync (safe MutationObserver)
+  ============================================================ */
+  useEffect(() => {
+    const updateTheme = () => {
+      setTheme(
+        document.documentElement.getAttribute("data-theme") || "light"
+      );
+    };
+
+    updateTheme();
+
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    return () => observer.disconnect();
   }, []);
   /* ============================================================
-     📄 دریافت لیست پالیسی‌ها
-  ============================================================= */
+     📄 Fetch policies (admin only)
+  ============================================================ */
   async function fetchPolicies() {
     try {
-      // مسیر کاملاً صحیح — نیازی به "/api" نیست
-      const res = await apiClient.get("/policies/admin");
-      setPolicies(res.data || []);
+      const res = await apiClient.get("/policies/admin", {
+        withCredentials: true,
+      });
+      setPolicies(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error(err);
+      console.error("❌ Fetch policies error:", err);
       setError(err.response?.data?.error || "Failed to load policies.");
     }
   }
 
   /* ============================================================
-     💾 ایجاد / ویرایش پالیسی
-  ============================================================= */
+     💾 Create / Update policy (XSS-safe)
+  ============================================================ */
   async function savePolicy() {
+    if (!content || content.trim().length < 10) {
+      setError("Policy content is too short.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
+      // 🛡 sanitize HTML before sending
+      const sanitized = DOMPurify.sanitize(content, {
+        USE_PROFILES: { html: true },
+      });
+
       if (editingId) {
-        await apiClient.put(`/policies/admin/${editingId}`, {
-          type,
-          lang,
-          content,
-        });
+        await apiClient.put(
+          `/policies/admin/${editingId}`,
+          {
+            type,
+            lang,
+            content: sanitized,
+          },
+          { withCredentials: true }
+        );
       } else {
-        await apiClient.post(`/policies/admin`, {
-          type,
-          lang,
-          content,
-        });
+        await apiClient.post(
+          `/policies/admin`,
+          {
+            type,
+            lang,
+            content: sanitized,
+          },
+          { withCredentials: true }
+        );
       }
 
       alert("✅ Policy saved successfully.");
       resetForm();
       await fetchPolicies();
     } catch (err) {
+      console.error("❌ Save policy error:", err);
       setError(err.response?.data?.error || "Error saving policy.");
     } finally {
       setLoading(false);
@@ -113,22 +150,24 @@ export default function PoliciesAdmin() {
   }
 
   /* ============================================================
-     ❌ حذف پالیسی
-  ============================================================= */
+     ❌ Delete policy (confirm + admin)
+  ============================================================ */
   async function deletePolicy(id) {
-    if (!confirm("❗ Delete this policy?")) return;
+    if (!confirm("❗ Are you sure you want to delete this policy?")) return;
 
     try {
-      await apiClient.delete(`/policies/admin/${id}`);
-      fetchPolicies();
+      await apiClient.delete(`/policies/admin/${id}`, {
+        withCredentials: true,
+      });
+      await fetchPolicies();
     } catch (err) {
       alert(err.response?.data?.error || "Error deleting policy.");
     }
   }
 
   /* ============================================================
-     ✏️ ورود به حالت ویرایش
-  ============================================================= */
+     ✏️ Edit policy
+  ============================================================ */
   function editPolicy(p) {
     setEditingId(p.id);
     setType(p.type);
@@ -148,18 +187,19 @@ export default function PoliciesAdmin() {
   }
 
   /* ============================================================
-     🕓 تاریخچه نسخه‌ها
-  ============================================================= */
+     🕓 Load policy history
+  ============================================================ */
   async function openHistory(t = type, l = lang) {
     try {
       setHistoryLoading(true);
       setHistoryKey({ type: t, lang: l });
 
       const res = await apiClient.get(
-        `/policies/admin/history/${t}/${l}`
+        `/policies/admin/history/${t}/${l}`,
+        { withCredentials: true }
       );
 
-      setHistoryList(res.data || []);
+      setHistoryList(Array.isArray(res.data) ? res.data : []);
       setHistoryOpen(true);
     } catch (err) {
       alert(err.response?.data?.error || "Error loading history.");
@@ -168,23 +208,32 @@ export default function PoliciesAdmin() {
     }
   }
 
-  /* 🔁 Restore نسخه قبلی */
+  /* ============================================================
+     🔁 Restore previous version (as new)
+  ============================================================ */
   async function restoreVersion(id) {
+    if (!confirm("Restore this version as a new active policy?")) return;
+
     try {
-      await apiClient.post(`/policies/admin/restore/${id}`);
+      await apiClient.post(
+        `/policies/admin/restore/${id}`,
+        {},
+        { withCredentials: true }
+      );
 
       await fetchPolicies();
       await openHistory(historyKey.type, historyKey.lang);
 
-      alert("✅ Restored as new version successfully.");
+      alert("✅ Version restored successfully.");
     } catch (err) {
       alert(err.response?.data?.error || "Error restoring version.");
     }
   }
+
   /* ============================================================
-     🎨 Theme Styles
-  ============================================================= */
-  const textColor = theme === "dark" ? "#fff" : "#0a1a44";
+     🎨 Theme-based styles
+  ============================================================ */
+  const textColor = theme === "dark" ? "#ffffff" : "#0a1a44";
   const cardBg = theme === "dark" ? "#0f172a" : "var(--card-bg)";
   const borderColor = theme === "dark" ? "#334155" : "var(--border)";
   const inputBg = theme === "dark" ? "#1e293b" : "#ffffff";
@@ -198,8 +247,8 @@ export default function PoliciesAdmin() {
   };
 
   /* ============================================================
-     🛑 Render block until role confirmed
-  ============================================================= */
+     ⛔ Block render until auth confirmed
+  ============================================================ */
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -207,10 +256,9 @@ export default function PoliciesAdmin() {
       </div>
     );
   }
-
   /* ============================================================
      🎨 UI
-  ============================================================= */
+  ============================================================ */
   return (
     <AdminLayout>
       <div className="p-6" style={{ color: textColor }}>
@@ -237,7 +285,7 @@ export default function PoliciesAdmin() {
           </p>
         )}
 
-        {/* ===== Create/Edit Form ===== */}
+        {/* ===== Create / Edit Form ===== */}
         <div
           className="p-6 rounded-2xl shadow-md mb-8 border"
           style={{ backgroundColor: cardBg, borderColor }}
@@ -289,13 +337,14 @@ export default function PoliciesAdmin() {
             </div>
           </div>
 
-          {/* ===== Quill Editor ===== */}
+          {/* ===== Editor / Preview ===== */}
           {type !== "cookie_banner" ? (
             <div className="grid md:grid-cols-2 gap-6 mt-4">
               <div>
                 <h3 className="text-sm font-semibold mb-2">
                   {editingId ? "✏️ Edit Policy" : "➕ New Policy"}
                 </h3>
+
                 <ReactQuill
                   theme="snow"
                   value={content}
@@ -317,7 +366,10 @@ export default function PoliciesAdmin() {
                     backgroundColor: inputBg,
                     borderColor,
                   }}
-                  dangerouslySetInnerHTML={{ __html: preview }}
+                  // 🔐 XSS-safe preview
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(preview),
+                  }}
                 />
               </div>
             </div>
@@ -396,28 +448,26 @@ export default function PoliciesAdmin() {
                     </td>
 
                     <td className="p-2 text-center">
-                      <>
-                        <button
-                          onClick={() => editPolicy(p)}
-                          className="text-blue-400 hover:underline mx-1"
-                        >
-                          Edit
-                        </button>
+                      <button
+                        onClick={() => editPolicy(p)}
+                        className="text-blue-400 hover:underline mx-1"
+                      >
+                        Edit
+                      </button>
 
-                        <button
-                          onClick={() => deletePolicy(p.id)}
-                          className="text-red-400 hover:underline mx-1"
-                        >
-                          Delete
-                        </button>
+                      <button
+                        onClick={() => deletePolicy(p.id)}
+                        className="text-red-400 hover:underline mx-1"
+                      >
+                        Delete
+                      </button>
 
-                        <button
-                          onClick={() => openHistory(p.type, p.lang)}
-                          className="text-turquoise hover:underline mx-1"
-                        >
-                          History
-                        </button>
-                      </>
+                      <button
+                        onClick={() => openHistory(p.type, p.lang)}
+                        className="text-turquoise hover:underline mx-1"
+                      >
+                        History
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -510,7 +560,9 @@ export default function PoliciesAdmin() {
                             backgroundColor: inputBg,
                             color: textColor,
                           }}
-                          dangerouslySetInnerHTML={{ __html: h.content }}
+                          dangerouslySetInnerHTML={{
+                            __html: DOMPurify.sanitize(h.content),
+                          }}
                         />
                       ) : (
                         <div
