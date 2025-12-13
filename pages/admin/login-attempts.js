@@ -1,4 +1,4 @@
-//frontend/pages/admin/login-attempts.js
+// frontend/pages/admin/login-attempts.js
 import { useEffect, useState } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../utils/apiClient";
@@ -9,17 +9,19 @@ export default function AdminLoginAttemptsPage() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [email, setEmail] = useState("");
+  const [blockedOnly, setBlockedOnly] = useState(false);
   const [error, setError] = useState("");
   const [selectedAttempt, setSelectedAttempt] = useState(null);
-  const [blockedOnly, setBlockedOnly] = useState(false);
 
-  // 🔐 جلوگیری از رندر قبل از احراز هویت
   const [authChecked, setAuthChecked] = useState(false);
 
   /* ============================================================
-     🔐 1) بررسی نقش و وضعیت کاربر (با HttpOnly Cookie)
-  ============================================================= */
+     🔐 Secure Auth Check (HttpOnly Cookie)
+     + Hardening against unmount / race conditions
+  ============================================================ */
   useEffect(() => {
+    let mounted = true;
+
     async function checkAccess() {
       try {
         const me = await apiClient.get("/auth/me", {
@@ -36,27 +38,24 @@ export default function AdminLoginAttemptsPage() {
           return;
         }
 
-        setAuthChecked(true);
-      } catch (err) {
+        if (mounted) {
+          setAuthChecked(true);
+          fetchLogs();
+        }
+      } catch {
         window.location.href = "/auth/login";
       }
     }
 
     checkAccess();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   /* ============================================================
-     🔄 2) وقتی authChecked = true شد → لاگ‌ها را بگیر
-  ============================================================= */
-  useEffect(() => {
-    if (authChecked) {
-      fetchLogs();
-    }
-  }, [authChecked]);
-
-  /* ============================================================
-     📥 3) دریافت لاگ‌های ورود
-  ============================================================= */
+     📥 Fetch Login Attempts (Secure)
+  ============================================================ */
   async function fetchLogs() {
     if (!authChecked) return;
 
@@ -66,40 +65,65 @@ export default function AdminLoginAttemptsPage() {
     try {
       const params = {};
       if (status) params.status = status;
-      if (blockedOnly) params.blocked = "true";
       if (email) params.email = email;
+      if (blockedOnly) params.blocked = "true";
 
       const res = await apiClient.get("/admin/login-attempts/all", {
         params,
         withCredentials: true,
-        headers: { "X-Iranconnect-Admin": "1" },
       });
 
       setLogs(res.data?.data || []);
     } catch (err) {
       console.error("❌ Fetch login attempts error:", err);
-
-      const msg =
+      setError(
         err.response?.data?.error ||
-        "Failed to load login attempts.";
-
-      setError(msg);
+          "Failed to load login attempts."
+      );
     } finally {
       setLoading(false);
     }
   }
 
   /* ============================================================
-     📤 4) Export امن بدون خطر XSS
-  ============================================================= */
-  function handleExport(type) {
-    const url = `${process.env.NEXT_PUBLIC_API_BASE}/admin/login-attempts/export/${type}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+     📤 Secure Export (SuperAdmin only – Cookie based)
+  ============================================================ */
+  async function exportLoginAttempts(type) {
+    try {
+      const res = await apiClient.get(
+        `/admin/login-attempts/export/${type}`,
+        {
+          withCredentials: true,
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([res.data]);
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download =
+        type === "xlsx"
+          ? "IranConnect_Login_Attempts.xlsx"
+          : "IranConnect_Login_Attempts.pdf";
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("❌ Export failed:", err);
+      alert(
+        err.response?.data?.error ||
+          "You are not authorized to export this file."
+      );
+    }
   }
 
   /* ============================================================
-     ⛔ نمایش Loading قبل از احراز هویت
-  ============================================================= */
+     ⛔ Prevent render before auth check
+  ============================================================ */
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -110,7 +134,7 @@ export default function AdminLoginAttemptsPage() {
 
   /* ============================================================
      🎨 UI
-  ============================================================= */
+  ============================================================ */
   return (
     <AdminLayout>
       <div className="admin-container">
@@ -139,6 +163,17 @@ export default function AdminLoginAttemptsPage() {
               onChange={(e) => setEmail(e.target.value)}
             />
 
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={blockedOnly}
+                onChange={(e) => setBlockedOnly(e.target.checked)}
+              />
+              <span className="text-sm text-[var(--text)]">
+                Only Blocked Users
+              </span>
+            </label>
+
             <button
               onClick={fetchLogs}
               className="admin-btn admin-btn-primary text-sm px-4 py-2"
@@ -158,28 +193,17 @@ export default function AdminLoginAttemptsPage() {
               Clear
             </button>
 
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={blockedOnly}
-                onChange={(e) => setBlockedOnly(e.target.checked)}
-              />
-              <span className="text-sm text-[var(--text)]">
-                Only Blocked Users
-              </span>
-            </label>
-
-            {/* Export Buttons */}
-            <div className="flex flex-row flex-wrap gap-3 items-center ml-auto">
+            {/* Secure Export */}
+            <div className="flex gap-3 ml-auto">
               <button
-                onClick={() => handleExport("xlsx")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
+                onClick={() => exportLoginAttempts("xlsx")}
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
               >
                 Export XLSX
               </button>
               <button
-                onClick={() => handleExport("pdf")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
+                onClick={() => exportLoginAttempts("pdf")}
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
               >
                 Export PDF
               </button>
@@ -211,13 +235,13 @@ export default function AdminLoginAttemptsPage() {
                   {logs.length ? (
                     logs.map((log) => (
                       <tr key={log.id}>
-                        <td className="p-3 truncate max-w-[180px]">
+                        <td className="truncate max-w-[200px]">
                           {log.email}
                         </td>
-                        <td className="p-3 truncate max-w-[150px]">
+                        <td className="truncate max-w-[150px]">
                           {log.ip_address}
                         </td>
-                        <td className="p-3">
+                        <td>
                           {log.success ? (
                             <span className="text-green-600 font-medium">
                               Success
@@ -228,10 +252,10 @@ export default function AdminLoginAttemptsPage() {
                             </span>
                           )}
                         </td>
-                        <td className="p-3 truncate max-w-[180px]">
+                        <td>
                           {new Date(log.created_at).toLocaleString()}
                         </td>
-                        <td className="p-3 text-right">
+                        <td className="text-right">
                           <button
                             onClick={() => setSelectedAttempt(log)}
                             className="admin-btn admin-btn-secondary text-xs px-3 py-1"
