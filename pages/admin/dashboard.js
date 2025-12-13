@@ -14,9 +14,12 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   const [authChecked, setAuthChecked] = useState(false);
 
   /* ============================================================
-     🔐 Check authentication using HttpOnly Cookie
+     🔐 Secure Auth Check (HttpOnly Cookie)
+     + Hardening against race conditions
   ============================================================ */
   useEffect(() => {
+    let mounted = true;
+
     async function checkAccess() {
       try {
         const me = await apiClient.get("/auth/me", {
@@ -33,20 +36,25 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
           return;
         }
 
-        setAuthChecked(true);
-
-        fetchBusinesses();
-        fetchUsers();
+        if (mounted) {
+          setAuthChecked(true);
+          fetchBusinesses();
+          fetchUsers();
+        }
       } catch (err) {
         window.location.href = "/auth/login";
       }
     }
 
     checkAccess();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   /* ============================================================
-     📦 Fetch Businesses (Secure)
+     📦 Fetch Businesses (Secure + Guarded)
   ============================================================ */
   async function fetchBusinesses() {
     setLoadingBiz(true);
@@ -63,7 +71,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   }
 
   /* ============================================================
-     👥 Fetch Users (Secure)
+     👥 Fetch Users (Secure + Guarded)
   ============================================================ */
   async function fetchUsers() {
     setLoadingUsers(true);
@@ -80,7 +88,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   }
 
   /* ============================================================
-     📊 Compute Statistics
+     📊 Compute Statistics (Memoized)
   ============================================================ */
   const stats = useMemo(() => {
     const totalBusinesses = businesses.length;
@@ -101,7 +109,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   }, [businesses, users]);
 
   /* ============================================================
-     ⛔ Prevent UI before auth is checked
+     ⛔ Prevent UI rendering before auth check
   ============================================================ */
   if (!authChecked) {
     return (
@@ -112,7 +120,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   }
 
   /* ============================================================
-     📋 Reusable Table Component
+     📋 Reusable Secure Table Component
   ============================================================ */
   const Table = ({ title, headers, data, loading }) => (
     <section
@@ -142,7 +150,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
             <tbody>
               {data.map((item, i) => (
                 <tr
-                  key={i}
+                  key={item.id || i}
                   className="border-b border-[var(--border)] hover:bg-[var(--bg)]/40 transition"
                 >
                   {Object.values(item).map((val, j) => (
@@ -166,7 +174,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   );
 
   /* ============================================================
-     🖥️ Render
+     🖥️ Render Dashboard
   ============================================================ */
   return (
     <AdminLayout toggleTheme={toggleTheme} currentTheme={currentTheme}>
@@ -194,6 +202,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
           .sort((a, b) => b.id - a.id)
           .slice(0, 5)
           .map((b) => ({
+            id: b.id,
             Name: b.name,
             Category: b.category,
             Country: b.country,
@@ -210,6 +219,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
             .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
             .slice(0, 5)
             .map((u) => ({
+              id: u.id,
               Email: u.email,
               Role: u.role || "User",
               Verified: u.is_verified ? "✅" : "❌",
