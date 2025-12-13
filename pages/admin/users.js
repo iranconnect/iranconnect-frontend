@@ -1,4 +1,4 @@
-//frontend/pages/admin/users.js
+// frontend/pages/admin/users.js
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -9,29 +9,18 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
-  const [currentAdminEmail, setCurrentAdminEmail] = useState("");
-  const [currentAdminRole, setCurrentAdminRole] = useState("");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("");
   const [filterVerified, setFilterVerified] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
 
+  /* ================================
+     🔐 Initial Load
+     - Auth handled by HttpOnly Cookie
+     - verifyAdminSecure (backend)
+  ================================= */
   useEffect(() => {
-    const token = localStorage.getItem("iran_token");
-    const role = localStorage.getItem("iran_role");
-    const email = localStorage.getItem("iran_email");
-
-    if (!token) {
-      window.location.href = "/auth/login";
-      return;
-    }
-    if (role !== "admin" && role !== "superadmin") {
-      window.location.href = "/";
-      return;
-    }
-
-    setCurrentAdminEmail(email || "");
-    setCurrentAdminRole(role);
     fetchUsers();
   }, []);
 
@@ -39,13 +28,14 @@ export default function UsersPage() {
     setLoading(true);
     setMsg("");
     setError("");
+
     try {
       const params = {};
       if (searchTerm) params.q = searchTerm;
       if (filterRole) params.role = filterRole;
-      if (filterVerified) params.verified = filterVerified;
+      if (filterVerified !== "") params.verified = filterVerified;
 
-      const res = await apiClient.get(`/admin/users`, { params });
+      const res = await apiClient.get("/admin/users", { params });
       setUsers(res.data || []);
     } catch (err) {
       console.error("❌ Fetch users error:", err);
@@ -62,6 +52,13 @@ export default function UsersPage() {
     fetchUsers();
   }
 
+  function handleExport(format) {
+    window.open(
+      `${process.env.NEXT_PUBLIC_API_BASE}/admin/users/export/${format}`,
+      "_blank"
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="admin-container">
@@ -70,7 +67,7 @@ export default function UsersPage() {
             👥 User Management
           </h2>
 
-          {/* فیلدهای جستجو و فیلتر */}
+          {/* 🔍 Filters */}
           <div className="flex flex-wrap gap-3 mb-6 items-center">
             <input
               type="text"
@@ -79,6 +76,7 @@ export default function UsersPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+
             <select
               className="admin-input w-40"
               value={filterRole}
@@ -89,6 +87,7 @@ export default function UsersPage() {
               <option value="admin">Admin</option>
               <option value="superadmin">Super Admin</option>
             </select>
+
             <select
               className="admin-input w-40"
               value={filterVerified}
@@ -98,6 +97,7 @@ export default function UsersPage() {
               <option value="true">Verified</option>
               <option value="false">Not Verified</option>
             </select>
+
             <div className="flex gap-3">
               <button
                 onClick={fetchUsers}
@@ -110,33 +110,20 @@ export default function UsersPage() {
                 className="admin-btn admin-btn-secondary text-sm px-4 py-2"
               >
                 Clear
-              </button>  
+              </button>
             </div>
-            <div className="flex flex-row flex-wrap gap-3 items-center ml-auto">  
-              {/* 📤 Export XLSX */}
+
+            {/* 📤 Export */}
+            <div className="flex gap-3 ml-auto">
               <button
-                onClick={() => {
-                  const token = localStorage.getItem("iran_token");
-                  const url = `${
-                    process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000"
-                  }/admin/users/export/xlsx?token=${token}`;
-                  window.open(url, "_blank");
-                }}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
+                onClick={() => handleExport("xlsx")}
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
               >
                 Export XLSX
               </button>
-
-              {/* 🧾 Export PDF */}
               <button
-                onClick={() => {
-                  const token = localStorage.getItem("iran_token");
-                  const url = `${
-                    process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000"
-                  }/admin/users/export/pdf?token=${token}`;
-                  window.open(url, "_blank");
-                }}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
+                onClick={() => handleExport("pdf")}
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
               >
                 Export PDF
               </button>
@@ -154,6 +141,7 @@ export default function UsersPage() {
             </p>
           )}
 
+          {/* 📋 Table */}
           {loading ? (
             <p className="text-sm opacity-70">Loading users...</p>
           ) : (
@@ -196,6 +184,7 @@ export default function UsersPage() {
                       </td>
                     </tr>
                   ))}
+
                   {!users.length && (
                     <tr>
                       <td colSpan="6" className="text-center opacity-70 p-4">
@@ -210,6 +199,7 @@ export default function UsersPage() {
         </section>
       </div>
 
+      {/* 🔍 User Modal */}
       {selectedUser && (
         <UserDetailsModal
           user={selectedUser}
