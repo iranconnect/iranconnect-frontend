@@ -1,4 +1,4 @@
-//pages/admin/index.js
+// pages/admin/index.js
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
 import Header from "../../components/Header";
@@ -10,13 +10,17 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // 🔐 مرحله ۱: احراز هویت + چک نقش با HttpOnly Cookie
   const [authChecked, setAuthChecked] = useState(false);
 
+  /* ============================================================
+     🔐 Secure Auth Check (HttpOnly Cookie)
+     + Hardening against unmount / race conditions
+  ============================================================ */
   useEffect(() => {
+    let mounted = true;
+
     async function checkAccess() {
       try {
-        // ✔ درخواست امن → فقط با کوکی HttpOnly
         const me = await apiClient.get("/auth/me", {
           withCredentials: true,
         });
@@ -26,23 +30,30 @@ export default function AdminPage() {
           return;
         }
 
-        // ✔ فقط Admin و SuperAdmin
         if (me.data.role !== "admin" && me.data.role !== "superadmin") {
           window.location.href = "/";
           return;
         }
 
-        setAuthChecked(true);
-        fetchBusinesses();
-      } catch (err) {
+        if (mounted) {
+          setAuthChecked(true);
+          fetchBusinesses();
+        }
+      } catch {
         window.location.href = "/auth/login";
       }
     }
 
     checkAccess();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // 🔍 مرحله ۲: دریافت لیست بیزینس‌ها از بک‌اند ایمن‌شده
+  /* ============================================================
+     📦 Fetch Businesses (Secure)
+  ============================================================ */
   async function fetchBusinesses() {
     setLoading(true);
     setError("");
@@ -51,6 +62,7 @@ export default function AdminPage() {
       const res = await apiClient.get("/admin/businesses", {
         withCredentials: true,
       });
+
       setList(res.data || []);
     } catch (err) {
       console.error("❌ Error fetching businesses:", err);
@@ -60,7 +72,9 @@ export default function AdminPage() {
     }
   }
 
-  // ⛔ جلوگیری از رندر تا زمانی که دسترسی بررسی شود
+  /* ============================================================
+     ⛔ Prevent render before auth check
+  ============================================================ */
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -69,6 +83,9 @@ export default function AdminPage() {
     );
   }
 
+  /* ============================================================
+     🎨 UI
+  ============================================================ */
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col">
       <Header />
@@ -104,7 +121,11 @@ export default function AdminPage() {
                   <div className="flex items-center gap-3">
                     <img
                       src={b.logo_url || "/logo.png"}
-                      alt={b.name}
+                      alt={b.name || "Business logo"}
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = "/logo.png";
+                      }}
                       className="w-14 h-14 rounded-lg object-cover"
                     />
                     <div>
