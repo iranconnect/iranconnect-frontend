@@ -1,3 +1,4 @@
+// pages/admin/security-logs.js
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -11,54 +12,98 @@ export default function AdminSecurityLogs() {
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState("");
 
-  // 🧭 بررسی نقش admin
+  const [authChecked, setAuthChecked] = useState(false);
+
+  /* ============================================================
+     🔐 Secure Auth Check — admin / superadmin only
+  ============================================================ */
   useEffect(() => {
-    const token = localStorage.getItem("iran_token");
-    const role = localStorage.getItem("iran_role");
+    let mounted = true;
 
-    if (!token) {
-      window.location.href = "/auth/login";
-      return;
-    }
-    if (role !== "admin" && role !== 'superadmin') {
-      window.location.href = "/";
-      return;
+    async function checkAccess() {
+      try {
+        const me = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
+
+        if (!me.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
+        }
+
+        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
+          window.location.href = "/";
+          return;
+        }
+
+        if (mounted) {
+          setAuthChecked(true);
+        }
+      } catch {
+        window.location.href = "/auth/login";
+      }
     }
 
+    checkAccess();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  /* ============================================================
+     📦 Fetch logs — after auth + when filter changes
+  ============================================================ */
+  useEffect(() => {
+    if (!authChecked) return;
     fetchLogs();
-  }, [filter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authChecked, filter]);
 
-  // 🟢 دریافت لاگ‌ها
   async function fetchLogs() {
     setLoading(true);
     setError("");
+
     try {
-      const res = await apiClient.get(`/admin/security-logs`, {
+      const res = await apiClient.get("/admin/security-logs", {
         params: { status: filter || undefined },
+        withCredentials: true,
       });
-      setLogs(res.data || []);
-      setFilteredLogs(res.data || []);
+
+      const data = Array.isArray(res.data) ? res.data : [];
+      setLogs(data);
+      setFilteredLogs(data);
     } catch (err) {
       console.error("❌ Error loading logs:", err);
       setError(err.response?.data?.error || "Failed to load security logs.");
+      setLogs([]);
+      setFilteredLogs([]);
     } finally {
       setLoading(false);
     }
   }
 
-  // 🔍 جستجو
+  /* ============================================================
+     🔍 Client-side search
+  ============================================================ */
   useEffect(() => {
     let list = logs;
-    if (search)
+
+    if (search) {
+      const q = search.toLowerCase();
       list = list.filter((l) =>
-        l.email?.toLowerCase().includes(search.toLowerCase())
+        l.email?.toLowerCase().includes(q)
       );
+    }
+
     setFilteredLogs(list);
   }, [search, logs]);
 
-  // 📤 خروجی CSV
+  /* ============================================================
+     📤 Export CSV
+  ============================================================ */
   function exportToCSV() {
     if (!filteredLogs.length) return;
+
     const headers = [
       "Email",
       "Status",
@@ -68,6 +113,7 @@ export default function AdminSecurityLogs() {
       "Used At",
       "Created At",
     ];
+
     const rows = filteredLogs.map((l) => [
       l.email,
       l.status,
@@ -77,7 +123,10 @@ export default function AdminSecurityLogs() {
       l.used_at ? new Date(l.used_at).toISOString() : "",
       new Date(l.created_at).toISOString(),
     ]);
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+
+    const csv =
+      [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -85,6 +134,20 @@ export default function AdminSecurityLogs() {
     a.click();
   }
 
+  /* ============================================================
+     🛑 Block render until auth confirmed
+  ============================================================ */
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Checking access…
+      </div>
+    );
+  }
+
+  /* ============================================================
+     🎨 UI
+  ============================================================ */
   return (
     <AdminLayout>
       <div className="admin-container">
@@ -100,14 +163,13 @@ export default function AdminSecurityLogs() {
             </button>
           </div>
 
-          {/* پیام خطا */}
           {error && (
             <p className="text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm">
               {error}
             </p>
           )}
 
-          {/* 🔹 فیلتر و جستجو */}
+          {/* Filters */}
           <div className="flex flex-wrap items-center gap-3 mb-5">
             <select
               value={filter}
@@ -130,12 +192,15 @@ export default function AdminSecurityLogs() {
               className="admin-input w-60"
             />
 
-            <button className="admin-btn admin-btn-secondary" onClick={fetchLogs}>
+            <button
+              className="admin-btn admin-btn-secondary"
+              onClick={fetchLogs}
+            >
               Refresh
             </button>
           </div>
 
-          {/* 🔹 جدول داده‌ها */}
+          {/* Table */}
           {loading ? (
             <p className="admin-muted">Loading...</p>
           ) : filteredLogs.length === 0 ? (
@@ -147,7 +212,7 @@ export default function AdminSecurityLogs() {
                   <tr>
                     <th>Email</th>
                     <th>Status</th>
-                    <th>IP Address</th>
+                    <th>IP</th>
                     <th>Expires</th>
                     <th>Used</th>
                     <th>Created</th>
@@ -162,23 +227,7 @@ export default function AdminSecurityLogs() {
                       className="cursor-pointer"
                     >
                       <td>{log.email}</td>
-                      <td className="capitalize">
-                        <span
-                          className={`px-2 py-1 rounded-lg text-xs font-semibold ${
-                            log.status === "sent"
-                              ? "bg-green-100 text-green-700"
-                              : log.status === "failed"
-                              ? "bg-red-100 text-red-700"
-                              : log.status === "expired"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : log.status === "used"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {log.status}
-                        </span>
-                      </td>
+                      <td className="capitalize">{log.status}</td>
                       <td>{log.ip_address || "—"}</td>
                       <td>
                         {log.expires_at
@@ -190,7 +239,9 @@ export default function AdminSecurityLogs() {
                           ? new Date(log.used_at).toLocaleString()
                           : "—"}
                       </td>
-                      <td>{new Date(log.created_at).toLocaleString()}</td>
+                      <td>
+                        {new Date(log.created_at).toLocaleString()}
+                      </td>
                       <td className="text-right">
                         <button
                           onClick={(e) => {
@@ -210,7 +261,7 @@ export default function AdminSecurityLogs() {
           )}
         </div>
 
-        {/* 🔹 مودال جزئیات */}
+        {/* Modal */}
         {selected && (
           <div
             className="fixed inset-0 bg-black/40 flex justify-center items-center z-50"
@@ -225,9 +276,9 @@ export default function AdminSecurityLogs() {
               </h3>
               <div className="space-y-2 text-sm">
                 <p><strong>Email:</strong> {selected.email}</p>
-                <p><strong>Status:</strong> <span className="capitalize">{selected.status}</span></p>
+                <p><strong>Status:</strong> {selected.status}</p>
                 <p><strong>IP:</strong> {selected.ip_address || "—"}</p>
-                <p><strong>User Agent:</strong> <span className="opacity-70">{selected.user_agent || "—"}</span></p>
+                <p><strong>User Agent:</strong> {selected.user_agent || "—"}</p>
                 <p><strong>Expires:</strong> {selected.expires_at ? new Date(selected.expires_at).toLocaleString() : "—"}</p>
                 <p><strong>Used:</strong> {selected.used_at ? new Date(selected.used_at).toLocaleString() : "—"}</p>
                 <p><strong>Created:</strong> {new Date(selected.created_at).toLocaleString()}</p>
