@@ -18,11 +18,10 @@ export default function AdminSuspiciousIPsPage() {
 
   const [selectedIP, setSelectedIP] = useState(null);
 
-  // ✅ role comes from /auth/me (HttpOnly cookie)
-  const [currentUserRole, setCurrentUserRole] = useState(null);
-  const [authChecked, setAuthChecked] = useState(false);
+  // نقش از JWT (در صورت نیاز به کنترل UI)
+  const [currentUserRole] = useState("admin");
 
-  // 🔢 Pagination
+  // Pagination
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -31,57 +30,10 @@ export default function AdminSuspiciousIPsPage() {
     totalPages: 1,
   });
 
-  const [securityConfig, setSecurityConfig] = useState(null);
-
-  /* ============================================================
-     🔐 Secure Admin Auth Check (HttpOnly Cookie + /auth/me)
-  ============================================================ */
   useEffect(() => {
-    let mounted = true;
-
-    async function verifyAccess() {
-      try {
-        const me = await apiClient.get("/auth/me", { withCredentials: true });
-
-        if (!mounted) return;
-
-        const role = me.data?.role;
-        if (role !== "admin" && role !== "superadmin") {
-          window.location.href = "/";
-          return;
-        }
-
-        setCurrentUserRole(role);
-        setAuthChecked(true);
-      } catch (err) {
-        window.location.href = "/auth/login";
-      }
-    }
-
-    verifyAccess();
-
-    return () => {
-      mounted = false;
-    };
+    fetchSuspiciousIPs(1);
   }, []);
 
-  /* ============================================================
-     🔐 Load Security Config (admin-only endpoint)
-  ============================================================ */
-  async function fetchConfig() {
-    try {
-      const res = await apiClient.get("/admin/security-config", {
-        withCredentials: true,
-      });
-      setSecurityConfig(res.data);
-    } catch (err) {
-      console.error("Failed to load security config:", err);
-    }
-  }
-
-  /* ============================================================
-     📥 Load Suspicious IPs
-  ============================================================ */
   async function fetchSuspiciousIPs(newPage = page) {
     setLoading(true);
     try {
@@ -91,17 +43,14 @@ export default function AdminSuspiciousIPsPage() {
         pageSize: 10,
       };
 
-      const res = await apiClient.get("/admin/suspicious-ips", {
-        params,
-        withCredentials: true,
-      });
+      const res = await apiClient.get("/admin/suspicious-ips", { params });
 
       setIps(res.data?.data || []);
       setPagination(
         res.data?.pagination || {
           page: newPage,
           pageSize: 10,
-          total: (res.data?.data || []).length,
+          total: 0,
           totalPages: 1,
         }
       );
@@ -112,16 +61,6 @@ export default function AdminSuspiciousIPsPage() {
       setLoading(false);
     }
   }
-
-  /* ============================================================
-     ✅ Initial loads AFTER auth check
-  ============================================================ */
-  useEffect(() => {
-    if (!authChecked) return;
-    fetchConfig();
-    fetchSuspiciousIPs(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authChecked]);
 
   function handleSearch() {
     fetchSuspiciousIPs(1);
@@ -135,58 +74,17 @@ export default function AdminSuspiciousIPsPage() {
   function goToPage(newPage) {
     if (
       newPage < 1 ||
-      newPage > (pagination.totalPages || 1) ||
+      newPage > pagination.totalPages ||
       newPage === page
     )
       return;
     fetchSuspiciousIPs(newPage);
   }
 
-  /* ============================================================
-     📤 Export (secure)
-     - NO token in URL
-     - Download via Blob with credentials (HttpOnly cookie)
-  ============================================================ */
-  async function handleExport(format) {
-    try {
-      const res = await apiClient.get(`/admin/suspicious-ips/export/${format}`, {
-        responseType: "blob",
-        withCredentials: true,
-      });
-
-      const contentType = res.headers?.["content-type"] || "";
-      const ext = format === "xlsx" ? "xlsx" : "pdf";
-
-      // Try to extract filename from content-disposition
-      const disposition = res.headers?.["content-disposition"] || "";
-      const match = disposition.match(/filename="?([^"]+)"?/i);
-      const filename = match?.[1] || `suspicious-ips.${ext}`;
-
-      const blob = new Blob([res.data], { type: contentType });
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Export failed:", err);
-      alert("Export failed. Please try again.");
-    }
-  }
-
-  /* ============================================================
-     🛑 Block render until auth confirmed
-  ============================================================ */
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking access…
-      </div>
+  function handleExport(format) {
+    window.open(
+      `${process.env.NEXT_PUBLIC_API_BASE}/admin/suspicious-ips/export/${format}`,
+      "_blank"
     );
   }
 
@@ -196,43 +94,38 @@ export default function AdminSuspiciousIPsPage() {
         <section className="admin-section">
           <h2 className="admin-title mb-5">🚨 Suspicious IP Addresses</h2>
 
-          <div className="admin-card mb-6 p-4 border border-white/10 rounded-xl bg-gradient-to-br from-[#0b1b33] to-[#0f2447] shadow-lg">
+          {/* Overview Card */}
+          <div className="admin-card mb-6 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-turquoise mb-1">
+                <h3 className="text-lg font-semibold text-turquoise mb-2">
                   🔐 Suspicious IP Detection Overview
                 </h3>
 
-                <p className="text-xs opacity-80 leading-relaxed mt-2">
-                  <strong>Note:</strong> Account <em>lockout</em> applies to user accounts
-                  (based on failed login attempts), while <em>IP blocking</em> applies to
-                  network behavior (such as brute force, scans, injections, etc.).
-                </p>
-
                 <p className="text-xs opacity-80 leading-relaxed">
-                  IranConnect automatically detects and blocks abusive or suspicious IP
-                  addresses based on behavior thresholds. Review the summary below, or
-                  click the button for full technical rules.
+                  IranConnect automatically detects abusive or suspicious IP
+                  behavior. Account lockout applies to user accounts, while IP
+                  blocking applies to network-level behavior.
                 </p>
 
                 <ul className="mt-3 space-y-1 text-xs opacity-90">
-                  <li>• <strong>Brute Force:</strong> 9 attempts / 10 min → block</li>
-                  <li>• <strong>404 Scan:</strong> 15 attempts / 5 min → block</li>
-                  <li>• <strong>Sensitive Paths:</strong> 3 attempts → block</li>
-                  <li>• <strong>Payload Injection:</strong> 2 attempts → block</li>
-                  <li>• <strong>Burst Traffic:</strong> 30 req / 10 sec → block</li>
-                  <li>• <strong>User-Agent Anomaly:</strong> instantly blocked</li>
-                  <li>• <strong>Rate Limit:</strong> 200 req / 15 min → logged only</li>
+                  <li>• Brute Force: 9 attempts / 10 min → block</li>
+                  <li>• 404 Scan: 15 attempts / 5 min → block</li>
+                  <li>• Sensitive Paths: 3 attempts → block</li>
+                  <li>• Payload Injection: 2 attempts → block</li>
+                  <li>• Burst Traffic: 30 req / 10 sec → block</li>
+                  <li>• User-Agent Anomaly: instant block</li>
+                  <li>• Rate Limit: 200 req / 15 min → log only</li>
                   <li>
-                    • <strong>Account Lockout:</strong>{" "}
-                    {securityConfig?.account_lockout?.MAX_FAILED || 10} failed logins → lockout
+                    • Account Lockout: 10 failed logins within 15 minutes →
+                    temporary lock
                   </li>
                 </ul>
               </div>
 
               <button
                 onClick={() => setShowRules(true)}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm whitespace-nowrap ml-4"
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
               >
                 View Full Rules
               </button>
@@ -245,13 +138,17 @@ export default function AdminSuspiciousIPsPage() {
               className="admin-input w-48"
               placeholder="Filter by IP"
               value={filters.ip}
-              onChange={(e) => setFilters({ ...filters, ip: e.target.value })}
+              onChange={(e) =>
+                setFilters({ ...filters, ip: e.target.value })
+              }
             />
 
             <select
               className="admin-input w-40"
               value={filters.type}
-              onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+              onChange={(e) =>
+                setFilters({ ...filters, type: e.target.value })
+              }
             >
               <option value="">All Types</option>
               <option value="brute_force">Brute Force</option>
@@ -292,28 +189,27 @@ export default function AdminSuspiciousIPsPage() {
 
             <button
               onClick={handleSearch}
-              className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
+              className="admin-btn admin-btn-primary px-4 py-2 text-sm"
             >
               Search
             </button>
-
             <button
               onClick={handleClear}
-              className="admin-btn admin-btn-secondary px-4 py-2 text-sm font-medium"
+              className="admin-btn admin-btn-secondary px-4 py-2 text-sm"
             >
               Clear
             </button>
 
-            <div className="flex flex-row gap-2 ml-auto">
+            <div className="flex gap-2 ml-auto">
               <button
                 onClick={() => handleExport("xlsx")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
               >
                 Export XLSX
               </button>
               <button
                 onClick={() => handleExport("pdf")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
               >
                 Export PDF
               </button>
@@ -337,35 +233,27 @@ export default function AdminSuspiciousIPsPage() {
                       <th>Action</th>
                     </tr>
                   </thead>
-
                   <tbody>
                     {ips.length ? (
                       ips.map((ip) => (
                         <tr key={ip.ip_address}>
-                          <td className="truncate max-w-[150px]">{ip.ip_address}</td>
-
-                          <td className="truncate max-w-[150px]">
-                            {ip.suspicious_types?.join(" / ")}
-                          </td>
-
-                          <td className="truncate max-w-[100px]">
-                            {ip.severity_levels?.join(" / ")}
-                          </td>
-
-                          <td className="truncate max-w-[100px]">
+                          <td>{ip.ip_address}</td>
+                          <td>{ip.suspicious_types?.join(" / ")}</td>
+                          <td>{ip.severity_levels?.join(" / ")}</td>
+                          <td>
                             {ip.block_status === "blocked"
                               ? "Blocked"
                               : ip.block_status === "unblocked"
                               ? "Unblocked"
                               : "Not Blocked"}
                           </td>
-
-                          <td className="truncate max-w-[70px]">{ip.total_attempts}</td>
-
+                          <td>{ip.total_attempts}</td>
                           <td className="text-right">
                             <button
                               onClick={() =>
-                                setSelectedIP({ ip_address: ip.ip_address })
+                                setSelectedIP({
+                                  ip_address: ip.ip_address,
+                                })
                               }
                               className="admin-btn admin-btn-secondary text-xs px-3 py-1"
                             >
@@ -389,10 +277,11 @@ export default function AdminSuspiciousIPsPage() {
                 <div>
                   Page {pagination.page} of {pagination.totalPages}{" "}
                   {pagination.total > 0 && (
-                    <span className="opacity-70">({pagination.total} records)</span>
+                    <span className="opacity-70">
+                      ({pagination.total} records)
+                    </span>
                   )}
                 </div>
-
                 <div className="flex gap-2">
                   <button
                     className="admin-btn admin-btn-secondary px-3 py-1"
@@ -404,7 +293,7 @@ export default function AdminSuspiciousIPsPage() {
                   <button
                     className="admin-btn admin-btn-secondary px-3 py-1"
                     onClick={() => goToPage(page + 1)}
-                    disabled={page >= (pagination.totalPages || 1)}
+                    disabled={page >= pagination.totalPages}
                   >
                     Next ▶
                   </button>
@@ -418,14 +307,14 @@ export default function AdminSuspiciousIPsPage() {
               ipRecord={selectedIP}
               onClose={() => setSelectedIP(null)}
               currentUserRole={currentUserRole}
-              securityConfig={securityConfig}
             />
           )}
         </section>
       </div>
 
+      {/* Rules Modal */}
       {showRules && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
           <div className="admin-card w-full max-w-2xl p-6 relative">
             <button
               onClick={() => setShowRules(false)}
@@ -437,11 +326,6 @@ export default function AdminSuspiciousIPsPage() {
             <h2 className="text-xl font-semibold text-center text-turquoise mb-4">
               🔐 IranConnect Security Rules
             </h2>
-
-            <p className="text-sm opacity-80 mb-4 text-center">
-              The following thresholds define how suspicious behavior is detected and
-              when automatic blocking is triggered.
-            </p>
 
             <table className="admin-table text-sm">
               <thead>
@@ -469,9 +353,9 @@ export default function AdminSuspiciousIPsPage() {
                   <td>Yes</td>
                 </tr>
                 <tr>
-                  <td>Sensitive Path Access</td>
+                  <td>Sensitive Path</td>
                   <td>3 attempts</td>
-                  <td>10 minutes</td>
+                  <td>—</td>
                   <td>Medium</td>
                   <td>Yes</td>
                 </tr>
@@ -494,14 +378,14 @@ export default function AdminSuspiciousIPsPage() {
                   <td>1 attempt</td>
                   <td>Instant</td>
                   <td>High</td>
-                  <td>Immediate block</td>
+                  <td>Immediate</td>
                 </tr>
                 <tr>
                   <td>Rate Limit</td>
                   <td>200 requests</td>
                   <td>15 minutes</td>
                   <td>Medium</td>
-                  <td>No (logging only)</td>
+                  <td>No</td>
                 </tr>
               </tbody>
             </table>
