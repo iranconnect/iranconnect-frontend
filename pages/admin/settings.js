@@ -1,5 +1,5 @@
 // pages/admin/settings.js
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 
@@ -9,51 +9,58 @@ export default function SettingsPage() {
     new: "",
     confirm: "",
   });
-
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState("user");
 
-  // 🛡️ شمارنده خطا برای جلوگیری از brute-force سمت کلاینت
-  const errorCountRef = useRef(0);
+  const [role, setRole] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  /* =====================================================
-     🔐 بررسی دسترسی ادمین (UX-level)
-  ===================================================== */
+  /* ============================================================
+     🔐 Secure Admin Auth Check (HttpOnly Cookie + /auth/me)
+  ============================================================ */
   useEffect(() => {
-    const token = localStorage.getItem("iran_token");
-    const userRole = localStorage.getItem("iran_role");
+    let mounted = true;
 
-    if (!token) {
-      window.location.href = "/auth/login";
-      return;
+    async function verifyAccess() {
+      try {
+        const res = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
+
+        if (!mounted) return;
+
+        if (
+          res.data.role !== "admin" &&
+          res.data.role !== "superadmin"
+        ) {
+          window.location.href = "/";
+          return;
+        }
+
+        setRole(res.data.role);
+        setAuthChecked(true);
+      } catch (err) {
+        window.location.href = "/auth/login";
+      }
     }
 
-    if (!["admin", "superadmin"].includes(userRole)) {
-      window.location.href = "/";
-      return;
-    }
-
-    setRole(userRole);
+    verifyAccess();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  /* =====================================================
-     🔐 تغییر رمز عبور
-  ===================================================== */
+  /* ============================================================
+     🔐 Change Password (secure backend)
+  ============================================================ */
   async function handlePasswordChange(e) {
     e.preventDefault();
     setMsg("");
     setError("");
 
     const { current, new: newPass, confirm } = passwords;
-
-    // ⛔ جلوگیری از brute-force سمت کلاینت
-    if (errorCountRef.current >= 3) {
-      setError("Too many failed attempts. Please refresh the page and try again.");
-      return;
-    }
 
     if (!current || !newPass || !confirm) {
       setError("Please fill in all fields.");
@@ -62,11 +69,9 @@ export default function SettingsPage() {
 
     if (newPass !== confirm) {
       setError("New passwords do not match.");
-      errorCountRef.current += 1;
       return;
     }
 
-    // 🔐 Regex قوی (هماهنگ با استاندارد امنیتی)
     const strongRegex =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|:;"'<>,.?/~`]).{8,}$/;
 
@@ -74,38 +79,49 @@ export default function SettingsPage() {
       setError(
         "Password must include uppercase, lowercase, number, and special character (min 8 chars)."
       );
-      errorCountRef.current += 1;
       return;
     }
 
     try {
       setLoading(true);
 
-      await apiClient.post(`/admin/change-password`, {
-        currentPassword: current,
-        newPassword: newPass,
-      });
+      await apiClient.post(
+        "/admin/change-password",
+        {
+          currentPassword: current,
+          newPassword: newPass,
+        },
+        {
+          withCredentials: true,
+        }
+      );
 
-      setMsg("✅ Password updated successfully. You will be logged out.");
+      setMsg("✅ Password updated successfully. Please log in again.");
       setPasswords({ current: "", new: "", confirm: "" });
-      errorCountRef.current = 0;
-
-      // 🔒 Logout اجباری بعد از تغییر رمز
-      setTimeout(() => {
-        localStorage.removeItem("iran_token");
-        localStorage.removeItem("iran_role");
-        window.location.href = "/auth/login";
-      }, 1500);
-
     } catch (err) {
-      console.error("❌ Password change error:", err);
-      errorCountRef.current += 1;
-      setError(err.response?.data?.error || "Failed to update password.");
+      setError(
+        err.response?.data?.error ||
+          "Failed to update password. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   }
 
+  /* ============================================================
+     🛑 Block render until auth confirmed
+  ============================================================ */
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Checking access…
+      </div>
+    );
+  }
+
+  /* ============================================================
+     🎨 UI
+  ============================================================ */
   return (
     <AdminLayout>
       <div className="admin-container">
@@ -113,77 +129,62 @@ export default function SettingsPage() {
           ⚙️ Settings
         </h2>
 
-        {/* ================== Change Password ================== */}
+        {/* === Change Password === */}
         <section
-          className="mb-8 p-5 rounded-2xl border border-[var(--border)]
-          bg-[var(--card-bg)] text-[var(--text)]
+          className="mb-8 p-5 rounded-2xl border border-[var(--border)] 
+          bg-[var(--card-bg)] text-[var(--text)] 
           shadow-[5px_5px_15px_var(--shadow-dark),
           -5px_-5px_15px_var(--shadow-light)] transition"
         >
           <h3 className="text-base font-medium mb-3">🔐 Change Password</h3>
 
           <form onSubmit={handlePasswordChange} className="space-y-3">
-            {/* Current password */}
-            <div className="relative">
-              <input
-                type={showCurrentPassword ? "text" : "password"}
-                placeholder="Current password"
-                value={passwords.current}
-                autoComplete="current-password"
-                onChange={(e) =>
-                  setPasswords({ ...passwords, current: e.target.value })
-                }
-                className="w-full p-3 border border-[var(--border)] rounded
-                bg-[var(--bg)] text-[var(--text)] pr-10
-                focus:outline-none focus:ring-2 focus:ring-turquoise transition"
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-3 text-gray-500 hover:text-turquoise"
-                title={showCurrentPassword ? "Hide password" : "Show password"}
-              >
-                {showCurrentPassword ? "🙈" : "👁️"}
-              </button>
-            </div>
+            {["current", "new", "confirm"].map((field) => (
+              <div key={field} className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder={
+                    field === "current"
+                      ? "Current password"
+                      : field === "new"
+                      ? "New password"
+                      : "Confirm new password"
+                  }
+                  value={passwords[field]}
+                  onChange={(e) =>
+                    setPasswords({
+                      ...passwords,
+                      [field]: e.target.value,
+                    })
+                  }
+                  className="w-full p-3 border border-[var(--border)] rounded 
+                  bg-[var(--bg)] text-[var(--text)] pr-10 
+                  focus:outline-none focus:ring-2 focus:ring-turquoise transition"
+                />
 
-            {/* New password */}
-            <input
-              type="password"
-              placeholder="New password"
-              value={passwords.new}
-              autoComplete="new-password"
-              onChange={(e) =>
-                setPasswords({ ...passwords, new: e.target.value })
-              }
-              className="w-full p-3 border border-[var(--border)] rounded
-              bg-[var(--bg)] text-[var(--text)]
-              focus:outline-none focus:ring-2 focus:ring-turquoise transition"
-            />
+                {field === "current" && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-gray-500 hover:text-turquoise"
+                    title={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? "🙈" : "👁️"}
+                  </button>
+                )}
+              </div>
+            ))}
 
-            {/* Confirm password */}
-            <input
-              type="password"
-              placeholder="Confirm new password"
-              value={passwords.confirm}
-              autoComplete="new-password"
-              onChange={(e) =>
-                setPasswords({ ...passwords, confirm: e.target.value })
-              }
-              className="w-full p-3 border border-[var(--border)] rounded
-              bg-[var(--bg)] text-[var(--text)]
-              focus:outline-none focus:ring-2 focus:ring-turquoise transition"
-            />
-
-            <p className="text-xs text-gray-500 mt-1">
-              Password must contain uppercase, lowercase, number, and symbol (min 8 characters).
+            <p className="text-xs text-gray-500">
+              Password must contain uppercase, lowercase, numbers, and symbols —
+              minimum 8 characters.
             </p>
 
             <button
               type="submit"
               disabled={loading}
-              className="mt-3 px-4 py-2 bg-turquoise text-navy font-medium rounded
-              shadow hover:bg-turquoise/90 transition
+              className="mt-3 px-4 py-2 bg-turquoise text-navy font-medium rounded 
+              shadow hover:bg-turquoise/90 transition 
               disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading ? "Updating..." : "Update Password"}
@@ -202,10 +203,10 @@ export default function SettingsPage() {
           </form>
         </section>
 
-        {/* ================== System Info ================== */}
+        {/* === System Info === */}
         <section
-          className="p-5 rounded-2xl border border-[var(--border)]
-          bg-[var(--card-bg)] text-[var(--text)]
+          className="p-5 rounded-2xl border border-[var(--border)] 
+          bg-[var(--card-bg)] text-[var(--text)] 
           shadow-[5px_5px_15px_var(--shadow-dark),
           -5px_-5px_15px_var(--shadow-light)] transition"
         >
