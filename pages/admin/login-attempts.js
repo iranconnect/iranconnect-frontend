@@ -17,7 +17,6 @@ export default function AdminLoginAttemptsPage() {
 
   /* ============================================================
      🔐 Secure Auth Check (HttpOnly Cookie)
-     + Hardening against unmount / race conditions
   ============================================================ */
   useEffect(() => {
     let mounted = true;
@@ -39,8 +38,7 @@ export default function AdminLoginAttemptsPage() {
         }
 
         if (mounted) {
-          setAuthChecked(true);
-          fetchLogs();
+          setAuthChecked(true); // ⬅️ فقط ست می‌کنیم
         }
       } catch {
         window.location.href = "/auth/login";
@@ -48,17 +46,23 @@ export default function AdminLoginAttemptsPage() {
     }
 
     checkAccess();
+
     return () => {
       mounted = false;
     };
   }, []);
 
   /* ============================================================
-     📥 Fetch Login Attempts (Secure)
+     📥 Fetch Login Attempts
+     🔥 FIX: fetch فقط بعد از authChecked = true
   ============================================================ */
-  async function fetchLogs() {
-    if (!authChecked) return;
+  useEffect(() => {
+    if (authChecked) {
+      fetchLogs();
+    }
+  }, [authChecked]);
 
+  async function fetchLogs() {
     setLoading(true);
     setError("");
 
@@ -86,7 +90,7 @@ export default function AdminLoginAttemptsPage() {
   }
 
   /* ============================================================
-     📤 Secure Export (SuperAdmin only – Cookie based)
+     📤 Secure Export (SuperAdmin only)
   ============================================================ */
   async function exportLoginAttempts(type) {
     try {
@@ -193,7 +197,7 @@ export default function AdminLoginAttemptsPage() {
               Clear
             </button>
 
-            {/* Secure Export */}
+            {/* Export */}
             <div className="flex gap-3 ml-auto">
               <button
                 onClick={() => exportLoginAttempts("xlsx")}
