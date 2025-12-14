@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { RotateCw } from "lucide-react";
 import apiClient from "../../utils/apiClient"; // ✅ مسیر صحیح
 
 export default function UpdateBusinessRequest() {
@@ -26,29 +25,9 @@ export default function UpdateBusinessRequest() {
   const [buildingImage, setBuildingImage] = useState(null);
   const [confirm, setConfirm] = useState(false);
   const [theme, setTheme] = useState("light");
-  const [humanQ, setHumanQ] = useState("");
-  const [humanA, setHumanA] = useState("");
-  const [correctAnswer, setCorrectAnswer] = useState(null);
   const [msg, setMsg] = useState("");
   const [ticket, setTicket] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
-
-  /* 🧠 کپچا انسانی */
-  useEffect(() => {
-    const a = Math.floor(Math.random() * 9) + 1;
-    const b = Math.floor(Math.random() * 9) + 1;
-    setHumanQ(`${a} + ${b} = ?`);
-    setCorrectAnswer(a + b);
-  }, []);
-
-  const refreshCaptcha = () => {
-    const a = Math.floor(Math.random() * 9) + 1;
-    const b = Math.floor(Math.random() * 9) + 1;
-    setHumanQ(`${a} + ${b} = ?`);
-    setCorrectAnswer(a + b);
-  };
 
   /* 🎨 تم سایت */
   useEffect(() => {
@@ -124,9 +103,6 @@ export default function UpdateBusinessRequest() {
     if (!confirm)
       return setMsg("Please confirm that the information is accurate.");
 
-    if (humanA.trim() !== String(correctAnswer))
-      return setMsg("Human verification failed.");
-
     setLoading(true);
 
     try {
@@ -167,7 +143,6 @@ export default function UpdateBusinessRequest() {
       setErrors({});
       setBuildingImage(null);
       setConfirm(false);
-      refreshCaptcha();
 
     } catch (err) {
       console.error(err);
@@ -268,25 +243,6 @@ export default function UpdateBusinessRequest() {
               />
               I confirm that the information entered above is accurate.
             </label>
-
-            <div className="flex items-center justify-between">
-              <label className="font-medium text-sm">{humanQ}</label>
-              <button
-                type="button"
-                onClick={refreshCaptcha}
-                className="p-2 rounded-full hover:bg-turquoise/10 transition-all"
-              >
-                <RotateCw size={18} className="text-turquoise" />
-              </button>
-            </div>
-
-            <input
-              type="text"
-              value={humanA}
-              onChange={(e) => setHumanA(e.target.value)}
-              className={inputClass}
-              placeholder="Enter your answer"
-            />
 
             <button
               type="submit"
