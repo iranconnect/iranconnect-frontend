@@ -1,81 +1,113 @@
 //frontend/components/ConsentModal.js
 import { useState, useEffect } from "react";
-import axios from "axios";
 import apiClient from "../utils/apiClient";
 
-export default function ConsentModal({ userId, lang, onClose }) {
+export default function ConsentModal({ userId, lang = "en", onClose }) {
   const [checked, setChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [theme, setTheme] = useState("light");
 
-  // 🎨 هماهنگی خودکار با تم فعلی سایت (Light / Dark)
+  /* ----------------------------------------------------
+     🎨 Sync with global theme (light / dark)
+  ---------------------------------------------------- */
   useEffect(() => {
     const currentTheme =
       document.documentElement.getAttribute("data-theme") || "light";
     setTheme(currentTheme);
 
     const observer = new MutationObserver(() => {
-      const newTheme = document.documentElement.getAttribute("data-theme");
+      const newTheme =
+        document.documentElement.getAttribute("data-theme") || "light";
       setTheme(newTheme);
     });
+
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["data-theme"],
     });
+
     return () => observer.disconnect();
   }, []);
 
+  /* ----------------------------------------------------
+     🌍 Texts (safe fallback)
+  ---------------------------------------------------- */
   const texts = {
     en: {
       title: "Before continuing",
       desc: "Please review and accept our Privacy Policy, Terms of Service, and Cookies Policy.",
       agree: "I agree to all the above policies.",
       button: "Accept & Continue",
+      error: "Please confirm agreement first.",
     },
     fa: {
       title: "پیش از ادامه",
       desc: "لطفاً سیاست‌های حریم خصوصی، شرایط استفاده و سیاست کوکی‌ها را مطالعه و تأیید کنید.",
       agree: "تمام سیاست‌های فوق را مطالعه کرده و می‌پذیرم.",
       button: "تأیید و ادامه",
+      error: "لطفاً ابتدا قوانین را تأیید کنید.",
     },
   };
+
   const t = texts[lang] || texts.en;
 
-  // 🧩 ارسال رضایت کاربر (بدون استفاده از localStorage)
+  /* ----------------------------------------------------
+     🧩 Submit user consent (HttpOnly session)
+  ---------------------------------------------------- */
   const submitConsent = async () => {
-    if (!checked) return alert("Please confirm agreement first.");
+    if (!checked || loading) {
+      alert(t.error);
+      return;
+    }
+
     setLoading(true);
-  
+
     try {
-      const res = await apiClient.put("/users/consent", {
-        consent_type: "all_policies",
-        version: "v1",
-        choice: "accepted",
-      });
-  
+      await apiClient.put(
+        "/users/consent",
+        {
+          consent_type: "all_policies",
+          version: "v1", // 🔐 should match backend policy version
+          choice: "accepted",
+        },
+        { withCredentials: true }
+      );
+
+      // 🔒 Consent is mandatory → close only on success
       onClose(true);
     } catch (err) {
-      console.error("Consent save error:", err);
-  
+      console.error("❌ Consent save error:", err);
+
       const status = err.response?.status;
-      const msg = err.response?.data?.error;
-  
-      if (status === 401 || status === 403 || msg?.toLowerCase()?.includes("expired")) {
+      const msg = err.response?.data?.error || "";
+
+      if (
+        status === 401 ||
+        status === 403 ||
+        msg.toLowerCase().includes("expired")
+      ) {
         alert("⚠️ Session expired. Please log in again.");
         window.location.href = "/auth/login";
         return;
       }
-  
-      alert("Error saving consent. Please try again.");
+
+      alert("❌ Error saving consent. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  
-    setLoading(false);
   };
 
+  /* ----------------------------------------------------
+     🚫 Prevent accidental close (legal requirement)
+  ---------------------------------------------------- */
+  const blockClose = (e) => {
+    e.stopPropagation();
+  };
 
   return (
     <div
       className="fixed inset-0 flex items-center justify-center z-50"
+      onClick={blockClose}
       style={{
         background:
           theme === "dark"
@@ -85,32 +117,21 @@ export default function ConsentModal({ userId, lang, onClose }) {
       }}
     >
       <div
-        className="rounded-2xl shadow-xl p-8 w-full max-w-md text-center transition-all duration-300 border"
+        className="rounded-2xl shadow-xl p-8 w-full max-w-md text-center border transition-all"
+        onClick={blockClose}
         style={{
           background: theme === "dark" ? "var(--card-bg)" : "var(--bg)",
           color: "var(--text)",
           borderColor: "var(--border)",
-          boxShadow:
-            theme === "dark"
-              ? "10px 10px 25px rgba(0,0,0,0.6), -10px -10px 25px rgba(255,255,255,0.05)"
-              : "6px 6px 15px rgba(0,0,0,0.1), -6px -6px 15px rgba(255,255,255,0.4)",
         }}
       >
-        {/* عنوان و توضیحات */}
+        {/* Title */}
         <h2 className="text-2xl font-semibold mb-4">{t.title}</h2>
-        <p
-          className="text-sm mb-4"
-          style={{
-            color:
-              theme === "dark"
-                ? "rgba(255,255,255,0.85)"
-                : "rgba(10,29,55,0.85)",
-          }}
-        >
-          {t.desc}
-        </p>
 
-        {/* لینک‌های قوانین */}
+        {/* Description */}
+        <p className="text-sm mb-4 opacity-90">{t.desc}</p>
+
+        {/* Legal Links */}
         <div className="text-sm mb-4 space-x-1">
           <a
             href="/privacy-policy"
@@ -140,13 +161,8 @@ export default function ConsentModal({ userId, lang, onClose }) {
           </a>
         </div>
 
-        {/* تیک تایید قوانین */}
-        <label
-          className="block text-sm mb-4"
-          style={{
-            color: theme === "dark" ? "#e9f1f1" : "var(--text)",
-          }}
-        >
+        {/* Checkbox */}
+        <label className="block text-sm mb-4 cursor-pointer">
           <input
             type="checkbox"
             checked={checked}
@@ -156,15 +172,14 @@ export default function ConsentModal({ userId, lang, onClose }) {
           {t.agree}
         </label>
 
-        {/* دکمه ارسال */}
+        {/* Submit */}
         <button
           onClick={submitConsent}
           disabled={!checked || loading}
-          className="py-2 px-6 rounded-lg font-medium shadow hover:bg-turquoise/90 transition"
+          className="py-2 px-6 rounded-lg font-medium transition bg-turquoise text-navy"
           style={{
-            background: "var(--turquoise)",
-            color: "var(--navy)",
             opacity: !checked || loading ? 0.6 : 1,
+            pointerEvents: loading ? "none" : "auto",
           }}
         >
           {loading ? "..." : t.button}
@@ -173,3 +188,4 @@ export default function ConsentModal({ userId, lang, onClose }) {
     </div>
   );
 }
+
