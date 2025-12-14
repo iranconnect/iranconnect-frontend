@@ -13,7 +13,7 @@ export default function ClaimBusinessWidget({ businessId }) {
   const [description, setDescription] = useState("");
   const [document, setDocument] = useState(null);
 
-  const [confirmed, setConfirmed] = useState(false); // ✅ تایید صحت اطلاعات
+  const [confirmed, setConfirmed] = useState(false);
   const [claimToken, setClaimToken] = useState("");
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,13 +21,15 @@ export default function ClaimBusinessWidget({ businessId }) {
   const texts = {
     en: {
       title: "Claim this business",
-      desc: "If you are the owner or an authorized representative, please complete the form below.",
+      desc: "If you are the owner of this business, please complete the form below.",
       name: "Full name",
       email: "Business email",
       phone: "Business phone (with country code)",
       role: "Your role",
       descLabel: "Additional information",
       file: "Proof of ownership (PDF, JPG, PNG)",
+      fileHelp: `Please upload an official document that proves you are the legal owner of this business.
+This may include registration certificates, incorporation documents, or other legal records clearly showing ownership.`,
       confirm: "I confirm that the information above is accurate.",
       submit: "Submit claim",
       success: "✅ Your claim was successfully submitted.",
@@ -37,13 +39,15 @@ export default function ClaimBusinessWidget({ businessId }) {
     },
     fr: {
       title: "Revendiquer cette entreprise",
-      desc: "Si vous êtes le propriétaire ou un représentant autorisé, veuillez compléter le formulaire.",
+      desc: "Si vous êtes le propriétaire de cette entreprise, veuillez compléter le formulaire.",
       name: "Nom complet",
       email: "Email professionnel",
       phone: "Téléphone professionnel",
       role: "Votre rôle",
       descLabel: "Informations complémentaires",
       file: "Preuve de propriété (PDF, JPG, PNG)",
+      fileHelp: `Veuillez télécharger un document officiel prouvant que vous êtes le propriétaire légal de cette entreprise.
+Cela peut inclure des documents d’enregistrement ou tout document légal attestant la propriété.`,
       confirm: "Je confirme que les informations ci-dessus sont exactes.",
       submit: "Soumettre la demande",
       success: "✅ Votre demande a été envoyée avec succès.",
@@ -53,13 +57,15 @@ export default function ClaimBusinessWidget({ businessId }) {
     },
     fa: {
       title: "درخواست مالکیت کسب‌وکار",
-      desc: "اگر مالک یا نماینده قانونی هستید، فرم زیر را تکمیل کنید.",
+      desc: "اگر مالک این کسب‌وکار هستید، لطفاً فرم زیر را تکمیل کنید.",
       name: "نام و نام خانوادگی",
       email: "ایمیل کسب‌وکار",
       phone: "شماره تماس",
       role: "نقش شما",
       descLabel: "توضیحات تکمیلی",
       file: "مدرک مالکیت (PDF، JPG، PNG)",
+      fileHelp: `لطفاً یک مدرک رسمی که نشان دهد شما مالک قانونی این کسب‌وکار هستید بارگذاری کنید.
+این مدرک می‌تواند شامل گواهی ثبت، اسناد تأسیس یا سایر مدارک قانونی مالکیت باشد.`,
       confirm: "اینجانب تأیید می‌کنم اطلاعات وارد شده صحیح است.",
       submit: "ارسال درخواست",
       success: "✅ درخواست شما با موفقیت ثبت شد.",
@@ -72,7 +78,7 @@ export default function ClaimBusinessWidget({ businessId }) {
   const t = texts[lang];
 
   async function handleSubmit() {
-    if (!confirmed) {
+    if (!confirmed || role !== "owner") {
       setMsg(t.error);
       return;
     }
@@ -156,14 +162,15 @@ export default function ClaimBusinessWidget({ businessId }) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
             />
+
+            {/* 🔒 Role selection — Owner only (explicit) */}
             <select
               className="input-default"
               value={role}
               onChange={(e) => setRole(e.target.value)}
             >
               <option value="">-- {t.role} --</option>
-              <option value="owner">Owner</option>
-              <option value="manager">Manager</option>
+              <option value="owner">Owner (Business Owner)</option>
             </select>
 
             <textarea
@@ -174,13 +181,18 @@ export default function ClaimBusinessWidget({ businessId }) {
               onChange={(e) => setDescription(e.target.value)}
             />
 
+            {/* 📄 Ownership document guidance */}
+            <div className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3">
+              {t.fileHelp}
+            </div>
+
             <input
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
               onChange={(e) => setDocument(e.target.files[0])}
             />
 
-            {/* ✅ تایید صحت اطلاعات */}
+            {/* ✅ Confirmation */}
             <label className="flex items-center gap-2 text-sm mt-2">
               <input
                 type="checkbox"
@@ -192,7 +204,14 @@ export default function ClaimBusinessWidget({ businessId }) {
 
             <button
               onClick={handleSubmit}
-              disabled={loading || !confirmed || !email || !phone}
+              disabled={
+                loading ||
+                !confirmed ||
+                !email ||
+                !phone ||
+                !fullName ||
+                role !== "owner"
+              }
               className="btn-primary mt-2 disabled:opacity-60"
             >
               {loading ? "..." : t.submit}
