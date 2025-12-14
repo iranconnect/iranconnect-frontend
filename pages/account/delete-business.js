@@ -1,7 +1,6 @@
 /*frontend/pages/account/delete-business.js*/
 'use client';
 import { useEffect, useState } from "react";
-import axios from "axios";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import apiClient from "../../utils/apiClient";   // ✅ مسیر صحیح اصلاح شد
@@ -94,7 +93,6 @@ export default function DeleteBusinessRequest() {
       setCustomReason("");
       setDescription("");
       setErrors({});
-      setConfirm(false);
     } catch (err) {
       console.error(err);
       setMsg(err.response?.data?.error || "Error submitting request.");
