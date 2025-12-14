@@ -1,6 +1,6 @@
 /*frontend/pages/account/change-password.js*/
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, RotateCw } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import apiClient from "../../utils/apiClient";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
@@ -9,9 +9,6 @@ export default function ChangePasswordPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [captchaQuestion, setCaptchaQuestion] = useState("");
-  const [captchaExpected, setCaptchaExpected] = useState("");
-  const [captchaAnswer, setCaptchaAnswer] = useState("");
   const [strength, setStrength] = useState({ label: "", color: "" });
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,25 +18,6 @@ export default function ChangePasswordPage() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-
-  // 🧮 Captcha Generator
-  const generateCaptcha = () => {
-    const num1 = Math.floor(Math.random() * 10) + 1;
-    const num2 = Math.floor(Math.random() * 10) + 1;
-    const ops = ["+", "-", "*"];
-    const op = ops[Math.floor(Math.random() * ops.length)];
-    let res;
-    switch (op) {
-      case "+": res = num1 + num2; break;
-      case "-": res = num1 - num2; break;
-      case "*": res = num1 * num2; break;
-    }
-    setCaptchaQuestion(`What is ${num1} ${op} ${num2}?`);
-    setCaptchaExpected(res.toString());
-    setCaptchaAnswer("");
-  };
-
-  useEffect(() => generateCaptcha(), []);
 
   // 🌓 Theme Observer
   useEffect(() => {
@@ -91,8 +69,6 @@ export default function ChangePasswordPage() {
       const res = await apiClient.post("/auth/change-password", {
         currentPassword,
         newPassword,
-        captchaAnswer,
-        captchaExpected,
       });
 
       // ⛔ اگر توکن سمت سرور منقضی باشد apiClient خودش logout می‌کند
@@ -125,7 +101,6 @@ export default function ChangePasswordPage() {
       setMsg(err.response?.data?.error || "Error changing password.");
     }
     setLoading(false);
-    generateCaptcha();
   }
 
   const inputTextColor = "#0A1D37";
@@ -226,29 +201,7 @@ export default function ChangePasswordPage() {
               </button>
             </div>
 
-            {/* Captcha */}
-            <div className="flex items-center justify-between text-sm">
-              <span>{captchaQuestion}</span>
-              <button
-                type="button"
-                onClick={generateCaptcha}
-                title="New question"
-                className="p-2 rounded-full hover:bg-turquoise/10"
-              >
-                <RotateCw size={16} className="text-turquoise" />
-              </button>
-            </div>
-
-            <input
-              type="text"
-              placeholder="Answer"
-              value={captchaAnswer}
-              onChange={(e) => setCaptchaAnswer(e.target.value)}
-              required
-              style={{ color: inputTextColor }}
-              className="w-full p-3 rounded-lg border bg-[#f5f7fa] shadow-inner focus:ring-2 focus:ring-turquoise"
-            />
-
+            
             <button
               type="submit"
               disabled={loading}
