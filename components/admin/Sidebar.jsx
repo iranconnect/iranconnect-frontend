@@ -20,9 +20,8 @@ const groupedNav = [
     items: [
       { href: "/admin/businesses", label: "All Businesses" },
       { href: "/admin/add", label: "Add New" },
-      { href: "/admin/claims", label: "Claims" },
+      { href: "/admin/claims", label: "Claim Requests" },
       { href: "/admin/requests", label: "Requests" },
-      { href: "/admin/contact-requests", label: "Contact Requests" },
     ],
   },
   {
@@ -31,6 +30,7 @@ const groupedNav = [
     items: [
       { href: "/admin/users", label: "Manage Users" },
       { href: "/admin/consents", label: "User Consents" },
+      { href: "/admin/contact-requests", label: "Contact Requests" },
     ],
   },
   {
@@ -45,8 +45,8 @@ const groupedNav = [
     label: "Security",
     icon: "🛡️",
     items: [
-      { href: "/admin/security-logs", label: "Security Logs" },
-      { href: "/admin/file-logs", label: "File Logs" },
+      { href: "/admin/security-logs", label: "Forgot Password Logs" },
+      { href: "/admin/file-logs", label: "File uploaded Logs" },
       { href: "/admin/login-attempts", label: "Login Logs" },
       {
         label: "Suspicious IPs",
@@ -65,20 +65,40 @@ const groupedNav = [
 ];
 
 export default function Sidebar() {
-  const { pathname } = useRouter();
+  const router = useRouter();
+  const { pathname } = router;
+
   const [theme, setTheme] = useState("light");
   const [openGroup, setOpenGroup] = useState(null);
   const [openSubGroup, setOpenSubGroup] = useState(null);
 
   const [unblockedCount, setUnblockedCount] = useState(0);
-  const [hasSuspiciousIPs, setHasSuspiciousIPs] = useState(false);
+
+  // ✅ کلید per-admin (per-browser-tab/session) برای اینکه بعد از دیدن صفحه suspicious پاک بشه
+  const SEEN_KEY = "iranconnect_seen_suspicious_ips";
 
   /* --------------------------------------------------------
      🔍 Fetch suspicious IP count using HttpOnly session
+     ✅ فقط اگر کاربر هنوز صفحه suspicious-ips رو ندیده باشد
   ---------------------------------------------------------*/
   useEffect(() => {
-    fetchSuspiciousCount();
+    const alreadySeen = sessionStorage.getItem(SEEN_KEY) === "true";
+    if (!alreadySeen) {
+      fetchSuspiciousCount();
+    }
   }, []);
+
+  /* --------------------------------------------------------
+     ✅ وقتی وارد صفحه suspicious-ips شدیم:
+     - badge برای همین ادمین (همین session) پاک شود
+     - و دیگر در این session نمایش داده نشود
+  ---------------------------------------------------------*/
+  useEffect(() => {
+    if (pathname.startsWith("/admin/suspicious-ips")) {
+      sessionStorage.setItem(SEEN_KEY, "true");
+      setUnblockedCount(0);
+    }
+  }, [pathname]);
 
   async function fetchSuspiciousCount() {
     try {
@@ -89,9 +109,15 @@ export default function Sidebar() {
 
       const count = res.data?.count || 0;
       setUnblockedCount(count);
-      setHasSuspiciousIPs(count > 0);
     } catch (err) {
+      // اگر سشن نامعتبر بود، ریدایرکت امن
+      const status = err.response?.status;
+      if (status === 401 || status === 403 || status === 440) {
+        router.replace("/auth/login");
+        return;
+      }
       console.warn("Failed to fetch suspicious IP count:", err);
+      setUnblockedCount(0);
     }
   }
 
@@ -133,11 +159,15 @@ export default function Sidebar() {
     >
       {/* Header */}
       <div className="px-6 py-6 border-b border-[var(--border)] flex items-center gap-4">
-        <img
-          src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
-          alt="IranConnect Logo"
-          className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-lg transition-all duration-300"
-        />
+        {/* ✅ تغییر ۱: لوگو لینک شود به صفحه اینترو */}
+        <Link href="/" className="shrink-0">
+          <img
+            src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
+            alt="IranConnect Logo"
+            className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-lg transition-all duration-300 cursor-pointer"
+          />
+        </Link>
+
         <div className="font-semibold text-[var(--color-text)] text-xl md:text-2xl tracking-wide">
           Admin
         </div>
@@ -158,10 +188,11 @@ export default function Sidebar() {
                 <span>{group.icon}</span>
                 <span>{group.label}</span>
 
-                {/* Red badge for suspicious IPs */}
+                {/* ✅ badge فقط اگر هنوز صفحه suspicious دیده نشده باشد */}
                 {group.label === "Security" &&
                   openGroup !== "Security" &&
-                  unblockedCount > 0 && (
+                  unblockedCount > 0 &&
+                  !pathname.startsWith("/admin/suspicious-ips") && (
                     <span className="ml-2 text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full">
                       {unblockedCount}
                     </span>
@@ -177,7 +208,8 @@ export default function Sidebar() {
               <div className="ml-6 mt-2 border-l border-[var(--border)] pl-2">
                 {group.items.map((item) => {
                   const active = pathname.startsWith(item.href);
-                  const isSuspiciousGroup = item.href === "/admin/suspicious-ips";
+                  const isSuspiciousGroup =
+                    item.href === "/admin/suspicious-ips";
 
                   if (item.children) {
                     const isOpen = openSubGroup === item.label;
@@ -197,8 +229,10 @@ export default function Sidebar() {
                           >
                             <span>{item.label}</span>
 
+                            {/* ✅ badge داخل خود Suspicious IPs فقط اگر هنوز دیده نشده */}
                             {item.href === "/admin/suspicious-ips" &&
-                              unblockedCount > 0 && (
+                              unblockedCount > 0 &&
+                              !pathname.startsWith("/admin/suspicious-ips") && (
                                 <span className="ml-2 text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full">
                                   {unblockedCount}
                                 </span>
@@ -210,6 +244,7 @@ export default function Sidebar() {
                               setOpenSubGroup(isOpen ? null : item.label)
                             }
                             className="text-xs px-2 py-1"
+                            type="button"
                           >
                             {isOpen ? "▲" : "▼"}
                           </button>
@@ -218,7 +253,9 @@ export default function Sidebar() {
                         {isOpen && (
                           <div className="ml-4 mt-1 border-l border-[var(--border)] pl-2">
                             {item.children.map((child) => {
-                              const childActive = pathname.startsWith(child.href);
+                              const childActive = pathname.startsWith(
+                                child.href
+                              );
                               return (
                                 <Link
                                   key={child.href}
@@ -252,11 +289,14 @@ export default function Sidebar() {
                       <span className="flex items-center justify-between">
                         <span>{item.label}</span>
 
-                        {isSuspiciousGroup && unblockedCount > 0 && (
-                          <span className="ml-2 text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full">
-                            {unblockedCount}
-                          </span>
-                        )}
+                        {/* ✅ badge کنار آیتم اصلی Suspicious IPs */}
+                        {isSuspiciousGroup &&
+                          unblockedCount > 0 &&
+                          !pathname.startsWith("/admin/suspicious-ips") && (
+                            <span className="ml-2 text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full">
+                              {unblockedCount}
+                            </span>
+                          )}
                       </span>
                     </Link>
                   );
