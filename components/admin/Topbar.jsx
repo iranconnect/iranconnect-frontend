@@ -1,44 +1,51 @@
 // frontend/components/admin/Topbar.jsx
 
 import { useRouter } from "next/router";
+import { useState, useCallback } from "react";
 import apiClient from "../../utils/apiClient";
 
 export default function Topbar({ toggleTheme, currentTheme }) {
   const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   /* ----------------------------------------------------
-     🔐 Logout با سیستم جدید HttpOnly Cookie
+     🔐 Secure Logout (HttpOnly Cookie Based)
   ------------------------------------------------------*/
-  async function handleLogout() {
-    try {
-      await apiClient.post(
-        "/auth/logout",
-        {},
-        { withCredentials: true }
-      );
+  const handleLogout = useCallback(async () => {
+    if (loggingOut) return;
 
-      // مسیر خروج
-      router.push("/auth/login");
+    setLoggingOut(true);
+
+    try {
+      // Best-effort logout (session invalidation handled server-side)
+      await apiClient.post("/auth/logout", {}, { withCredentials: true });
     } catch (err) {
-      console.error("Logout error:", err);
-      router.push("/auth/login");
+      // خطا لاگ می‌شود اما مانع خروج کاربر نمی‌شود
+      console.warn("Logout request failed:", err?.message);
+    } finally {
+      // 🔴 همیشه خروج انجام می‌شود
+      router.replace("/auth/login");
     }
-  }
+  }, [loggingOut, router]);
 
   return (
     <div className="bg-[var(--bg)] border-b border-[var(--border)] sticky top-0 z-40 shadow-[3px_3px_6px_var(--shadow-dark),-3px_-3px_6px_var(--shadow-light)] transition">
       <div className="px-4 md:px-6 py-4 flex items-center justify-between">
         
-        {/* عنوان صفحه */}
+        {/* Page Title */}
         <div>
-          <h1 className="text-lg font-semibold text-[var(--text)]">Dashboard</h1>
-          <p className="text-sm text-gray-500">Manage IranConnect data</p>
+          <h1 className="text-lg font-semibold text-[var(--text)]">
+            Dashboard
+          </h1>
+          <p className="text-sm text-gray-500">
+            Manage IranConnect data
+          </p>
         </div>
 
-        {/* دکمه‌ها */}
+        {/* Actions */}
         <div className="flex items-center gap-3">
           
-          {/* 🔘 تغییر تم */}
+          {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
             className="px-4 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text)] shadow-[4px_4px_10px_var(--shadow-dark),-4px_-4px_10px_var(--shadow-light)] hover:scale-[1.03] transition"
@@ -46,12 +53,19 @@ export default function Topbar({ toggleTheme, currentTheme }) {
             {currentTheme === "light" ? "🌙 Dark" : "☀️ Light"}
           </button>
 
-          {/* 🔐 Logout */}
+          {/* Logout */}
           <button
             onClick={handleLogout}
-            className="px-4 py-2 text-sm rounded-lg bg-turquoise text-white shadow-[4px_4px_10px_#b8e0dd,-4px_-4px_10px_#ffffff] hover:bg-turquoise/90 transition"
+            disabled={loggingOut}
+            className={`px-4 py-2 text-sm rounded-lg text-white transition
+              ${
+                loggingOut
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-turquoise hover:bg-turquoise/90 shadow-[4px_4px_10px_#b8e0dd,-4px_-4px_10px_#ffffff]"
+              }
+            `}
           >
-            Logout
+            {loggingOut ? "Logging out…" : "Logout"}
           </button>
         </div>
 
