@@ -1,4 +1,5 @@
 //frontend/components/admin/FileLogDetailsModal.jsx
+'use client';
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient.js";
 
@@ -6,26 +7,61 @@ export default function FileLogDetailsModal({ log, onClose }) {
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  /* ---------------------------------------------------------
+     ⌨️ Close modal with ESC
+  --------------------------------------------------------- */
+  useEffect(() => {
+    const handler = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  /* ---------------------------------------------------------
+     📦 Load log details
+  --------------------------------------------------------- */
   useEffect(() => {
     if (log?.id) fetchDetails();
   }, [log]);
 
   async function fetchDetails() {
     setLoading(true);
+
     try {
-      const res = await apiClient.get(`/admin/files/logs?id=${log.id}`);
-      setDetails(res.data[0] || log);
+      const res = await apiClient.get(
+        `/admin/files/logs?id=${encodeURIComponent(log.id)}`,
+        {
+          withCredentials: true,
+          headers: {
+            "x-iranconnect-admin": "true",
+          },
+        }
+      );
+
+      setDetails(res.data?.[0] || log);
     } catch (err) {
-      console.error("❌ Error fetching file log:", err);
+      console.error("❌ Error fetching file log details:", err);
+      // fallback to initial log to avoid empty UI
       setDetails(log);
     } finally {
       setLoading(false);
     }
   }
 
+  if (!log) return null;
+
+  /* ---------------------------------------------------------
+     🖼 UI
+  --------------------------------------------------------- */
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="admin-card max-w-2xl w-full relative overflow-y-auto max-h-[90vh]">
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="admin-card max-w-2xl w-full relative overflow-y-auto max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close */}
         <button
           onClick={onClose}
           className="absolute top-3 right-4 text-turquoise text-lg font-bold"
@@ -42,35 +78,42 @@ export default function FileLogDetailsModal({ log, onClose }) {
         ) : (
           <div className="space-y-3 text-sm">
             <div>
-              <strong>File Name:</strong> {details.file_name}
+              <strong>File Name:</strong> {details?.file_name || "—"}
             </div>
             <div>
-              <strong>Mime Type:</strong> {details.mime_type}
+              <strong>Mime Type:</strong> {details?.mime_type || "—"}
             </div>
             <div>
-              <strong>Status:</strong> {details.scan_status}
+              <strong>Status:</strong> {details?.scan_status || "—"}
             </div>
             <div>
-              <strong>Upload Source:</strong> {details.upload_source}
+              <strong>Upload Source:</strong> {details?.upload_source || "—"}
             </div>
             <div>
-              <strong>User:</strong> {details.user_email || "—"}
+              <strong>User:</strong> {details?.user_email || "—"}
             </div>
             <div>
               <strong>Size:</strong>{" "}
-              {details.file_size ? (details.file_size / 1024).toFixed(1) + " KB" : "—"}
+              {details?.file_size
+                ? (details.file_size / 1024).toFixed(1) + " KB"
+                : "—"}
             </div>
             <div>
-              <strong>IP Address:</strong> {details.ip_address || "—"}
+              <strong>IP Address:</strong> {details?.ip_address || "—"}
             </div>
             <div>
               <strong>Scanned At:</strong>{" "}
-              {new Date(details.scanned_at).toLocaleString()}
+              {details?.scanned_at
+                ? new Date(details.scanned_at).toLocaleString()
+                : "—"}
             </div>
-            {details.error_message && (
+
+            {details?.error_message && (
               <div>
                 <strong>Error Message:</strong>{" "}
-                <span className="text-red-500">{details.error_message}</span>
+                <span className="text-red-500">
+                  {details.error_message}
+                </span>
               </div>
             )}
           </div>
