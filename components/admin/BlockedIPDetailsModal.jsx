@@ -10,39 +10,28 @@ export default function BlockedIPDetailsModal({
   const [details, setDetails] = useState(null);
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [showNoteInput, setShowNoteInput] = useState(true);
 
-  // -----------------------------------------------------------
-  // Load user role from JWT
-  // -----------------------------------------------------------
-  useEffect(() => {
-    const token = localStorage.getItem("iran_token");
-    if (token) {
-      try {
-        const decoded = JSON.parse(atob(token.split(".")[1]));
-        setRole(decoded.role);
-      } catch {}
-    }
-  }, []);
-
-  // -----------------------------------------------------------
-  // Load full details from backend
-  // -----------------------------------------------------------
+  /* -----------------------------------------------------------
+     📦 Load full details from backend (role-aware)
+  ----------------------------------------------------------- */
   useEffect(() => {
     if (ipRecord?.ip_address) fetchDetails();
   }, [ipRecord]);
 
   async function fetchDetails() {
+    setLoading(true);
+
     try {
       const res = await apiClient.get(
-        `/admin/blocked-ips/details/${ipRecord.ip_address}`
+        `/admin/blocked-ips/details/${ipRecord.ip_address}`,
+        { withCredentials: true }
       );
 
       setDetails(res.data);
 
-      // اگر قبلاً آنبلاک شده → نوت لازم نیست
+      // اگر قبلاً unblock شده → نوت لازم نیست
       if (res.data.status === "unblocked") {
         setShowNoteInput(false);
       }
@@ -54,16 +43,16 @@ export default function BlockedIPDetailsModal({
     }
   }
 
-  // -----------------------------------------------------------
-  // Unblock Action (Superadmin Only)
-  // -----------------------------------------------------------
+  /* -----------------------------------------------------------
+     🔓 Unblock Action (UI guard فقط – enforce اصلی بک‌اند)
+  ----------------------------------------------------------- */
   async function handleUnblock() {
     if (!note.trim()) {
       alert("⚠️ Admin note (reason) is required.");
       return;
     }
 
-    if (role !== "superadmin") {
+    if (details.current_admin_role !== "superadmin") {
       alert("Only superadmin can unblock IPs.");
       return;
     }
@@ -71,10 +60,14 @@ export default function BlockedIPDetailsModal({
     setActionLoading(true);
 
     try {
-      await apiClient.post("/admin/blocked-ips/unblock", {
-        ip_address: ipRecord.ip_address,
-        reason: note,
-      });
+      await apiClient.post(
+        "/admin/blocked-ips/unblock",
+        {
+          ip_address: details.ip_address,
+          reason: note,
+        },
+        { withCredentials: true }
+      );
 
       alert("🟢 IP successfully unblocked.");
 
@@ -93,14 +86,13 @@ export default function BlockedIPDetailsModal({
 
   if (!ipRecord) return null;
 
-  // -----------------------------------------------------------
-  // UI Rendering
-  // -----------------------------------------------------------
+  /* -----------------------------------------------------------
+     🖥️ UI
+  ----------------------------------------------------------- */
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="admin-card max-w-xl w-full relative p-6">
 
-        {/* Close */}
         <button
           onClick={onClose}
           className="absolute top-3 right-4 text-turquoise text-lg font-bold"
@@ -117,7 +109,6 @@ export default function BlockedIPDetailsModal({
         ) : details ? (
           <div className="space-y-3 text-sm">
 
-            {/* Core Info */}
             <div><strong>IP Address:</strong> {details.ip_address}</div>
 
             <div>
@@ -140,10 +131,9 @@ export default function BlockedIPDetailsModal({
               <strong>Blocked By:</strong>{" "}
               {details.automatic
                 ? "🤖 Automatic system"
-                : (details.blocked_by_email || "—")}
+                : details.blocked_by_email || "—"}
             </div>
 
-            {/* If unblocked, show extra info */}
             {details.unblocked_at && (
               <>
                 <div>
@@ -164,36 +154,35 @@ export default function BlockedIPDetailsModal({
               </>
             )}
 
-            {/* Unblock note input */}
-            {showNoteInput && role === "superadmin" && details.status === "blocked" && (
-              <textarea
-                placeholder="Unblock reason (required)"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="admin-input w-full mt-2"
-                rows={3}
-              />
-            )}
-
-            {/* Action */}
-            <div className="flex justify-end mt-4">
-
-              {role === "superadmin" && details.status === "blocked" && (
-                <button
-                  className="admin-btn admin-btn-primary px-4 py-2 text-sm"
-                  onClick={handleUnblock}
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? "Processing..." : "Unblock IP"}
-                </button>
+            {showNoteInput &&
+              details.current_admin_role === "superadmin" &&
+              details.status === "blocked" && (
+                <textarea
+                  placeholder="Unblock reason (required)"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  className="admin-input w-full mt-2"
+                  rows={3}
+                />
               )}
+
+            <div className="flex justify-end mt-4">
+              {details.current_admin_role === "superadmin" &&
+                details.status === "blocked" && (
+                  <button
+                    className="admin-btn admin-btn-primary px-4 py-2 text-sm"
+                    onClick={handleUnblock}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? "Processing..." : "Unblock IP"}
+                  </button>
+                )}
 
               {details.status === "unblocked" && (
                 <span className="text-green-500 font-medium">
                   Already Unblocked
                 </span>
               )}
-
             </div>
 
           </div>
