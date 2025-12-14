@@ -1,12 +1,16 @@
-//frontend/components/admin/UserDetailsModal.jsx
-import { useEffect, useState } from "react";
+// frontend/components/admin/UserDetailsModal.jsx
+import { useEffect, useState, useCallback, useRef } from "react";
 import apiClient from "../../utils/apiClient";
 
 export default function UserDetailsModal({ user, onClose }) {
+  const mountedRef = useRef(true);
+
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [forbidden, setForbidden] = useState(false);
+
+  const [currentRole, setCurrentRole] = useState("");
 
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailBody, setEmailBody] = useState("");
@@ -14,40 +18,57 @@ export default function UserDetailsModal({ user, onClose }) {
   const [sendingEmail, setSendingEmail] = useState(false);
 
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
-  const [currentRole, setCurrentRole] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
 
-  /* 🔐 دریافت نقش کاربر جاری از /auth/me */
+  /* ----------------------------------------------------
+     🧹 Prevent state update after unmount
+  ---------------------------------------------------- */
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  /* ----------------------------------------------------
+     🔐 Fetch current admin role
+  ---------------------------------------------------- */
   useEffect(() => {
     async function fetchRole() {
       try {
-        const res = await apiClient.get("/auth/me", { withCredentials: true });
-        if (res.data?.role) {
-          setCurrentRole(res.data.role);
+        const res = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
+        if (mountedRef.current) {
+          setCurrentRole(res.data?.role || "");
         }
-      } catch (err) {
-        console.warn("⚠️ Could not fetch user role", err);
-        setCurrentRole(""); // fallback
+      } catch {
+        // fallback: least privilege
+        if (mountedRef.current) setCurrentRole("");
       }
     }
     fetchRole();
   }, []);
 
-  /* 🧩 دریافت جزئیات کاربر */
+  /* ----------------------------------------------------
+     🧩 Fetch user details
+  ---------------------------------------------------- */
   useEffect(() => {
-    if (user?.id) fetchDetails();
+    if (!user?.id) return;
+    fetchDetails();
   }, [user]);
 
-  async function fetchDetails() {
+  const fetchDetails = useCallback(async () => {
     setLoading(true);
     setForbidden(false);
+    setErrorMsg("");
 
     try {
       const res = await apiClient.get(`/admin/users/${user.id}`, {
         withCredentials: true,
       });
-      setDetails(res.data);
+      if (mountedRef.current) setDetails(res.data);
     } catch (err) {
-      console.error("❌ Error fetching user details:", err);
+      if (!mountedRef.current) return;
 
       if (err.response?.status === 403) {
         setForbidden(true);
@@ -55,15 +76,19 @@ export default function UserDetailsModal({ user, onClose }) {
       } else {
         setErrorMsg("Failed to load user details.");
       }
-
       setDetails(null);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
-  }
+  }, [user]);
 
-  /* 🔒 بلاک / آنبلاک کاربر */
-  async function toggleBlock() {
+  /* ----------------------------------------------------
+     🔒 Block / Unblock User
+  ---------------------------------------------------- */
+  const toggleBlock = useCallback(async () => {
+    if (actionLoading || forbidden) return;
+
+    setActionLoading(true);
     try {
       await apiClient.patch(
         `/admin/users/${user.id}/block`,
@@ -76,76 +101,82 @@ export default function UserDetailsModal({ user, onClose }) {
         {
           action_type: details.is_blocked ? "UNBLOCK_USER" : "BLOCK_USER",
           target_user_id: user.id,
-          description: `${details.is_blocked ? "Unblocked" : "Blocked"} user ${
-            user.email
-          }`,
+          description: `${details.is_blocked ? "Unblocked" : "Blocked"} user ${user.email}`,
         },
         { withCredentials: true }
       );
 
+      alert(`✅ User ${details.is_blocked ? "unblocked" : "blocked"} successfully`);
       fetchDetails();
-      alert(
-        `✅ User ${details.is_blocked ? "unblocked" : "blocked"} successfully`
-      );
     } catch (err) {
       if (err.response?.status === 403) {
-        alert("⛔ You are not authorized to perform this action.");
         setForbidden(true);
+        alert("⛔ Not authorized.");
       } else {
         alert("❌ Failed to update user status");
       }
-      console.error(err);
-    }
-  }
-  /* 👑 تغییر نقش (فقط سوپرادمین) */
-  async function handleRoleChange(newRole) {
-    if (currentRole !== "superadmin") {
-      alert("⛔ Only Super Admins can change user roles.");
-      return;
-    }
-
-    try {
-      await apiClient.patch(
-        `/admin/users/${user.id}/role`,
-        { role: newRole },
-        { withCredentials: true }
-      );
-
-      await apiClient.post(
-        `/admin/users/logs`,
-        {
-          action_type: "CHANGE_ROLE",
-          target_user_id: user.id,
-          description: `Changed role of ${user.email} to ${newRole}`,
-        },
-        { withCredentials: true }
-      );
-
-      alert(`✅ Role changed to ${newRole}`);
-      fetchDetails();
-    } catch (err) {
-      if (err.response?.status === 403) {
-        alert("⛔ You are not authorized to perform this action.");
-        setForbidden(true);
-      } else {
-        alert("❌ Failed to change role");
-      }
-      console.error(err);
     } finally {
-      setRoleMenuOpen(false);
+      if (mountedRef.current) setActionLoading(false);
     }
-  }
+  }, [actionLoading, forbidden, details, user, fetchDetails]);
+  /* ----------------------------------------------------
+     👑 Change Role (SuperAdmin Only)
+  ---------------------------------------------------- */
+  const handleRoleChange = useCallback(
+    async (newRole) => {
+      if (currentRole !== "superadmin" || actionLoading || forbidden) {
+        alert("⛔ Only Super Admins can change roles.");
+        return;
+      }
 
-  /* 🗑 حذف کاربر (فقط سوپرادمین) */
-  async function handleDelete() {
-    if (currentRole !== "superadmin") {
+      setActionLoading(true);
+      try {
+        await apiClient.patch(
+          `/admin/users/${user.id}/role`,
+          { role: newRole },
+          { withCredentials: true }
+        );
+
+        await apiClient.post(
+          `/admin/users/logs`,
+          {
+            action_type: "CHANGE_ROLE",
+            target_user_id: user.id,
+            description: `Changed role of ${user.email} to ${newRole}`,
+          },
+          { withCredentials: true }
+        );
+
+        alert(`✅ Role changed to ${newRole}`);
+        fetchDetails();
+      } catch (err) {
+        if (err.response?.status === 403) {
+          setForbidden(true);
+          alert("⛔ Not authorized.");
+        } else {
+          alert("❌ Failed to change role");
+        }
+      } finally {
+        if (mountedRef.current) setActionLoading(false);
+        setRoleMenuOpen(false);
+      }
+    },
+    [currentRole, actionLoading, forbidden, user, fetchDetails]
+  );
+
+  /* ----------------------------------------------------
+     🗑 Delete User (SuperAdmin Only)
+  ---------------------------------------------------- */
+  const handleDelete = useCallback(async () => {
+    if (currentRole !== "superadmin" || actionLoading || forbidden) {
       alert("⛔ Only Super Admins can delete users.");
       return;
     }
 
     const confirmEmail = prompt(`Type "${user.email}" to confirm deletion:`);
-    if (confirmEmail !== user.email) return alert("Email mismatch — canceled.");
+    if (confirmEmail !== user.email) return;
 
+    setActionLoading(true);
     try {
       await apiClient.delete(`/admin/users/${user.id}`, {
         withCredentials: true,
@@ -165,26 +196,29 @@ export default function UserDetailsModal({ user, onClose }) {
       onClose();
     } catch (err) {
       if (err.response?.status === 403) {
-        alert("⛔ You are not authorized to delete this account.");
         setForbidden(true);
+        alert("⛔ Not authorized.");
       } else {
         alert("❌ Failed to delete user");
       }
-      console.error(err);
+    } finally {
+      if (mountedRef.current) setActionLoading(false);
     }
-  }
+  }, [currentRole, actionLoading, forbidden, user, onClose]);
 
-  /* ✉️ ارسال ایمیل */
+  /* ----------------------------------------------------
+     ✉️ Send Email
+  ---------------------------------------------------- */
   async function handleSendEmail(e) {
     e.preventDefault();
+    if (sendingEmail || forbidden) return;
 
     if (!emailSubject || !emailBody.trim()) {
-      alert("Please enter a subject and message.");
+      alert("Please enter subject and message.");
       return;
     }
 
     setSendingEmail(true);
-
     try {
       await apiClient.post(
         `/admin/users/${user.id}/send-email`,
@@ -200,32 +234,44 @@ export default function UserDetailsModal({ user, onClose }) {
         {
           action_type: "SEND_EMAIL",
           target_user_id: user.id,
-          description: `Sent email to ${user.email} with subject "${emailSubject}"`,
+          description: `Sent email to ${user.email}`,
         },
         { withCredentials: true }
       );
 
-      alert("✅ Email sent successfully!");
-      setEmailBody("");
-      setEmailSubject("");
+      alert("✅ Email sent successfully");
       setEmailModalOpen(false);
+      setEmailSubject("");
+      setEmailBody("");
     } catch (err) {
       if (err.response?.status === 403) {
-        alert("⛔ You are not authorized to send email to this user.");
         setForbidden(true);
+        alert("⛔ Not authorized.");
       } else {
         alert("❌ Failed to send email");
       }
-      console.error(err);
     } finally {
-      setSendingEmail(false);
+      if (mountedRef.current) setSendingEmail(false);
     }
   }
+
+  /* ----------------------------------------------------
+     🧠 ESC handling (safe)
+  ---------------------------------------------------- */
+  useEffect(() => {
+    const onEsc = (e) => {
+      if (e.key === "Escape") {
+        if (emailModalOpen) setEmailModalOpen(false);
+        else onClose();
+      }
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [emailModalOpen, onClose]);
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="admin-card max-w-2xl w-full relative overflow-y-auto max-h-[90vh]">
-
-        {/* ✖ دکمه بستن */}
         <button
           onClick={onClose}
           className="absolute top-3 right-4 text-turquoise text-lg font-bold"
@@ -233,12 +279,10 @@ export default function UserDetailsModal({ user, onClose }) {
           ✖
         </button>
 
-        {/* عنوان مودال */}
         <h2 className="text-xl font-semibold mb-4 text-center text-turquoise">
           User Details
         </h2>
 
-        {/* وضعیت‌ها */}
         {loading ? (
           <p className="text-center text-gray-400">Loading...</p>
         ) : errorMsg ? (
@@ -246,141 +290,81 @@ export default function UserDetailsModal({ user, onClose }) {
         ) : !details ? (
           <p className="text-center text-gray-400">User not found.</p>
         ) : (
-          <div className="space-y-4 text-sm">
-
-            {/* جزئیات کاربر */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-              <div>
-                <span className="font-medium text-turquoise">Email:</span>
-                <p className="opacity-80">{details.email}</p>
-              </div>
-              <div>
-                <span className="font-medium text-turquoise">Role:</span>
-                <p className="opacity-80 capitalize">{details.role}</p>
-              </div>
-              <div>
-                <span className="font-medium text-turquoise">Verified:</span>
-                <p>{details.is_verified ? "✅ Yes" : "❌ No"}</p>
-              </div>
-              <div>
-                <span className="font-medium text-turquoise">Blocked:</span>
-                <p>{details.is_blocked ? "🚫 Blocked" : "🟢 Active"}</p>
-              </div>
-              <div>
-                <span className="font-medium text-turquoise">Created At:</span>
-                <p>{new Date(details.created_at).toLocaleString()}</p>
-              </div>
-              <div>
-                <span className="font-medium text-turquoise">Last Login:</span>
-                <p>
-                  {details.last_login_at
-                    ? new Date(details.last_login_at).toLocaleString()
-                    : "—"}
-                </p>
-              </div>
-              <div>
-                <span className="font-medium text-turquoise">
-                  Verified Business Claims:
-                </span>
-                <p>{details.business_count ?? 0}</p>
-              </div>
-              <div>
-                <span className="font-medium text-turquoise">Ratings:</span>
-                <p>{details.rating_count ?? 0}</p>
-              </div>
+          <>
+            {/* User Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div><strong>Email:</strong> {details.email}</div>
+              <div><strong>Role:</strong> {details.role}</div>
+              <div><strong>Verified:</strong> {details.is_verified ? "Yes" : "No"}</div>
+              <div><strong>Blocked:</strong> {details.is_blocked ? "Blocked" : "Active"}</div>
+              <div><strong>Created:</strong> {new Date(details.created_at).toLocaleString()}</div>
+              <div><strong>Last Login:</strong> {details.last_login_at ? new Date(details.last_login_at).toLocaleString() : "—"}</div>
             </div>
 
-            {/* 🎛 دکمه‌های مدیریتی */}
-            {!forbidden ? (
+            {!forbidden && (
               <div className="flex flex-wrap gap-3 mt-6 justify-end">
-
-                {/* فقط سوپرادمین */}
                 {currentRole === "superadmin" && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-                      className="admin-btn admin-btn-secondary text-sm"
-                    >
-                      Change Role
-                    </button>
-
-                    {roleMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-40 bg-[var(--card-bg)] border border-[var(--border)] rounded-lg shadow-md z-50">
-                        {["user", "admin", "superadmin"]
-                          .filter((r) => r !== details.role)
-                          .map((r) => (
-                            <button
-                              key={r}
-                              onClick={() => handleRoleChange(r)}
-                              className="block w-full text-left px-3 py-2 hover:bg-[var(--bg)]"
-                            >
-                              {r.charAt(0).toUpperCase() + r.slice(1)}
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    onClick={() => setRoleMenuOpen(!roleMenuOpen)}
+                    className="admin-btn admin-btn-secondary"
+                    disabled={actionLoading}
+                  >
+                    Change Role
+                  </button>
                 )}
 
-                {/* بلاک / آنبلاک */}
                 <button
                   onClick={toggleBlock}
-                  className="admin-btn admin-btn-secondary text-sm"
+                  className="admin-btn admin-btn-secondary"
+                  disabled={actionLoading}
                 >
                   {details.is_blocked ? "Unblock" : "Block"}
                 </button>
 
-                {/* ارسال ایمیل */}
                 <button
                   onClick={() => setEmailModalOpen(true)}
-                  className="admin-btn admin-btn-secondary text-sm"
+                  className="admin-btn admin-btn-secondary"
                 >
                   Send Email
                 </button>
 
-                {/* حذف (فقط سوپرادمین) */}
                 {currentRole === "superadmin" && (
                   <button
                     onClick={handleDelete}
-                    className="admin-btn admin-btn-primary bg-red-600 hover:bg-red-700 text-white text-sm"
+                    className="admin-btn admin-btn-primary bg-red-600 text-white"
+                    disabled={actionLoading}
                   >
                     Delete
                   </button>
                 )}
               </div>
-            ) : (
-              <p className="text-center text-yellow-500 italic mt-4">
-                ⚠️ You are not authorized to perform any action on this account.
-              </p>
             )}
-          </div>
+          </>
         )}
 
-        {/* ✉️ مودال ارسال ایمیل */}
-        {emailModalOpen && details && (
+        {emailModalOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="admin-card max-w-lg w-full relative">
+            <div
+              className="admin-card max-w-lg w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-lg font-semibold mb-3 text-turquoise">
-                Send Email to {details.email}
+                Send Email
               </h3>
-
               <form onSubmit={handleSendEmail} className="space-y-3">
                 <input
-                  type="text"
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
-                  placeholder="Subject"
                   className="admin-input"
+                  placeholder="Subject"
                 />
-
                 <textarea
                   rows="5"
                   value={emailBody}
                   onChange={(e) => setEmailBody(e.target.value)}
-                  placeholder="Message body..."
                   className="admin-input"
+                  placeholder="Message"
                 />
-
                 <div className="flex justify-end gap-3">
                   <button
                     type="button"
@@ -389,11 +373,10 @@ export default function UserDetailsModal({ user, onClose }) {
                   >
                     Cancel
                   </button>
-
                   <button
                     type="submit"
-                    disabled={sendingEmail}
                     className="admin-btn admin-btn-primary"
+                    disabled={sendingEmail}
                   >
                     {sendingEmail ? "Sending..." : "Send"}
                   </button>
@@ -402,7 +385,6 @@ export default function UserDetailsModal({ user, onClose }) {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
