@@ -3,12 +3,34 @@ import { useEffect, useState } from "react";
 import CookieSettingsModal from "./CookieSettingsModal";
 import apiClient from "../utils/apiClient";
 
+/* ───────────────────────────────────────────────
+   🔐 Cookie helpers (first-party technical cookie)
+─────────────────────────────────────────────── */
+const CONSENT_COOKIE = "ic_cookie_consent_uuid";
+
+function getCookie(name) {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(
+    new RegExp("(^| )" + name + "=([^;]+)")
+  );
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
+function setCookie(name, value, days = 365) {
+  const maxAge = days * 24 * 60 * 60;
+  document.cookie = `${name}=${encodeURIComponent(
+    value
+  )}; Max-Age=${maxAge}; Path=/; SameSite=Lax; Secure`;
+}
+
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [lang, setLang] = useState("en");
   const [texts, setTexts] = useState(null);
+  const [loading, setLoading] = useState(false);
 
+  /* 🌍 Detect language */
   useEffect(() => {
     const stored =
       localStorage.getItem("iran_lang") ||
@@ -17,12 +39,12 @@ export default function CookieConsent() {
     setLang(stored);
   }, []);
 
-  // 🔥 مسیر درست شده: cookie_banner
+  /* 📄 Load cookie banner texts */
   useEffect(() => {
     if (!lang) return;
 
     apiClient
-      .get(`/policies/cookie_banner`, {
+      .get("/policies/cookie_banner", {
         params: { lang },
         withCredentials: true,
       })
@@ -37,33 +59,56 @@ export default function CookieConsent() {
       .catch(() => setTexts(null));
   }, [lang]);
 
+  /* 🔍 Show banner only if no consent cookie exists */
   useEffect(() => {
-    const consent = localStorage.getItem("cookieConsent");
-    if (!consent) setVisible(true);
+    const existingConsent = getCookie(CONSENT_COOKIE);
+    if (!existingConsent) setVisible(true);
   }, []);
 
-  const handleChoice = (choice) => {
-    localStorage.setItem("cookieConsent", choice);
-    setVisible(false);
+  /* ✅ Accept / Reject handler */
+  async function handleChoice(choice) {
+    if (loading) return;
+    setLoading(true);
 
-    if (choice === "accepted") {
-      const script = document.createElement("script");
-      script.src =
-        "https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX";
-      script.async = true;
-      document.body.appendChild(script);
+    try {
+      const res = await apiClient.post(
+        "/consents/cookies/anonymous",
+        {
+          choice,
+          version: "v1.0",
+        },
+        { withCredentials: true }
+      );
 
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        window.dataLayer.push(arguments);
+      if (res.data?.consent_uuid) {
+        setCookie(CONSENT_COOKIE, res.data.consent_uuid);
       }
-      gtag("js", new Date());
-      gtag("config", "G-XXXXXXX");
+
+      // Load analytics فقط در صورت Accept
+      if (choice === "accepted") {
+        const script = document.createElement("script");
+        script.src =
+          "https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX";
+        script.async = true;
+        document.body.appendChild(script);
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {
+          window.dataLayer.push(arguments);
+        }
+        gtag("js", new Date());
+        gtag("config", "G-XXXXXXX");
+      }
+
+      setVisible(false);
+    } catch (err) {
+      console.error("❌ Cookie consent error:", err);
+    } finally {
+      setLoading(false);
     }
-  };
+  }
 
   if (!visible || !texts) return null;
-
   const t = texts;
 
   return (
@@ -89,16 +134,20 @@ export default function CookieConsent() {
           <div className="flex gap-2 flex-row">
             <button
               onClick={() => handleChoice("accepted")}
-              className="bg-[#00bfa6] hover:bg-[#00a48f] text-white px-4 py-2 rounded-md text-sm"
+              disabled={loading}
+              className="bg-[#00bfa6] hover:bg-[#00a48f] text-white px-4 py-2 rounded-md text-sm disabled:opacity-60"
             >
               {t.accept}
             </button>
+
             <button
               onClick={() => handleChoice("rejected")}
-              className="bg-gray-200 hover:bg-gray-300 text-[#0a1a44] px-4 py-2 rounded-md text-sm"
+              disabled={loading}
+              className="bg-gray-200 hover:bg-gray-300 text-[#0a1a44] px-4 py-2 rounded-md text-sm disabled:opacity-60"
             >
               {t.reject}
             </button>
+
             <button
               onClick={() => setShowSettings(true)}
               className="underline text-sm text-[#0a1a44]"
@@ -108,7 +157,10 @@ export default function CookieConsent() {
           </div>
         </div>
 
-        <div className="flex justify-center mt-3 gap-2" style={{ direction: "ltr" }}>
+        <div
+          className="flex justify-center mt-3 gap-2"
+          style={{ direction: "ltr" }}
+        >
           {["en", "fr", "fa"].map((l) => (
             <button
               key={l}
