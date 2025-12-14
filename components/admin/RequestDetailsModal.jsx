@@ -1,4 +1,5 @@
 //frontend/components/admin/RequestDetailsModal.jsx
+'use client';
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient.js";
 
@@ -11,6 +12,18 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
   const [showApproveBox, setShowApproveBox] = useState(false);
   const [showRejectBox, setShowRejectBox] = useState(false);
 
+  /* ---------------------------------------------------------
+     ⌨️ Close modal with ESC
+  --------------------------------------------------------- */
+  useEffect(() => {
+    const handler = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  /* ---------------------------------------------------------
+     📦 Load request details
+  --------------------------------------------------------- */
   useEffect(() => {
     if (request?.id) fetchDetails();
   }, [request]);
@@ -18,27 +31,41 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
   async function fetchDetails() {
     setLoading(true);
     try {
-      const res = await apiClient.get(`/admin/requests/${request.id}`);
+      const res = await apiClient.get(
+        `/admin/requests/${request.id}`,
+        {
+          withCredentials: true,
+          headers: { "x-iranconnect-admin": "true" },
+        }
+      );
       setDetails(res.data);
     } catch (err) {
-      console.error("❌ Error fetching details:", err);
+      console.error("❌ Error fetching request details:", err);
       setDetails(null);
     } finally {
       setLoading(false);
     }
   }
 
+  /* ---------------------------------------------------------
+     ✅ Approve / Reject
+  --------------------------------------------------------- */
   async function handleAction(action) {
     if (!note.trim()) {
       setErrorMsg("⚠️ Admin note is required.");
       return;
     }
     setErrorMsg("");
+
     try {
-      await apiClient.put(`/admin/requests/${request.id}/status`, {
-        status: action,
-        admin_note: note,
-      });
+      await apiClient.put(
+        `/admin/requests/${request.id}/status`,
+        { status: action, admin_note: note },
+        {
+          withCredentials: true,
+          headers: { "x-iranconnect-admin": "true" },
+        }
+      );
       refresh();
       onClose();
     } catch (err) {
@@ -47,13 +74,21 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
     }
   }
 
+  /* ---------------------------------------------------------
+     📎 Secure Download
+  --------------------------------------------------------- */
   async function handleDownload() {
     try {
       setDownloading(true);
       const res = await apiClient.get(
         `/admin/requests/${request.id}/download`,
-        { responseType: "blob" }
+        {
+          responseType: "blob",
+          withCredentials: true,
+          headers: { "x-iranconnect-admin": "true" },
+        }
       );
+
       const url = window.URL.createObjectURL(res.data);
       const a = document.createElement("a");
       a.href = url;
@@ -61,8 +96,8 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (err) {
+      console.error("❌ Download failed:", err);
       alert("❌ Download failed.");
-      console.error(err);
     } finally {
       setDownloading(false);
     }
@@ -88,9 +123,18 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
 
   const isActionable = details?.status === "pending";
 
+  /* ---------------------------------------------------------
+     🖼 UI
+  --------------------------------------------------------- */
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="admin-card max-w-3xl w-full relative overflow-y-auto max-h-[90vh]">
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="admin-card max-w-3xl w-full relative overflow-y-auto max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           onClick={onClose}
           className="absolute top-3 right-4 text-turquoise text-lg font-bold"
@@ -108,12 +152,8 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
           <p className="text-center text-gray-400">Request not found.</p>
         ) : (
           <div className="space-y-4 text-sm">
-            <div>
-              <strong>Ticket:</strong> {details.ticket_code}
-            </div>
-            <div>
-              <strong>Status:</strong> {details.status}
-            </div>
+            <div><strong>Ticket:</strong> {details.ticket_code}</div>
+            <div><strong>Status:</strong> {details.status}</div>
             <div>
               <strong>Created:</strong>{" "}
               {new Date(details.created_at).toLocaleString()}
@@ -130,30 +170,17 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
               {renderPayload(details.payload)}
             </div>
 
-            {details.attachments && details.attachments.length > 0 && (
+            {details.attachments?.length > 0 && (
               <div className="mt-4">
                 <h3 className="font-semibold mb-1">Attachments:</h3>
                 <ul className="list-disc pl-6">
                   {details.attachments.map((f, i) => (
-                    <li key={i}>
-                      <a
-                        href={`${
-                          process.env.NEXT_PUBLIC_API_BASE ||
-                          "http://localhost:5000"
-                        }${f.path}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-turquoise hover:underline"
-                      >
-                        {f.filename}
-                      </a>
-                    </li>
+                    <li key={i}>{f.filename}</li>
                   ))}
                 </ul>
               </div>
             )}
 
-            {/* 📎 دکمه دانلود همیشه در دسترس */}
             <div className="flex justify-end mt-6">
               <button
                 onClick={handleDownload}
@@ -164,66 +191,38 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
               </button>
             </div>
 
-            {/* ✳️ بخش تصمیم ادمین */}
+            {/* ✳️ Admin Decision */}
             {isActionable ? (
               <>
                 {errorMsg && (
                   <p className="text-red-500 text-xs text-center">{errorMsg}</p>
                 )}
+
                 {showApproveBox ? (
-                  <div>
-                    <textarea
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      className="admin-input min-h-[100px]"
-                      placeholder="Enter approval note..."
-                    />
-                    <div className="flex justify-end gap-3 mt-3">
-                      <button
-                        className="admin-btn admin-btn-secondary"
-                        onClick={() => {
-                          setShowApproveBox(false);
-                          setNote("");
-                          setErrorMsg("");
-                        }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        className="admin-btn admin-btn-primary"
-                        onClick={() => handleAction("approved")}
-                      >
-                        Confirm Approve
-                      </button>
-                    </div>
-                  </div>
+                  <DecisionBox
+                    note={note}
+                    setNote={setNote}
+                    onCancel={() => {
+                      setShowApproveBox(false);
+                      setNote("");
+                      setErrorMsg("");
+                    }}
+                    onConfirm={() => handleAction("approved")}
+                    confirmLabel="Confirm Approve"
+                  />
                 ) : showRejectBox ? (
-                  <div>
-                    <textarea
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      className="admin-input min-h-[100px]"
-                      placeholder="Enter rejection reason..."
-                    />
-                    <div className="flex justify-end gap-3 mt-3">
-                      <button
-                        className="admin-btn admin-btn-secondary"
-                        onClick={() => {
-                          setShowRejectBox(false);
-                          setNote("");
-                          setErrorMsg("");
-                        }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        className="admin-btn admin-btn-primary bg-red-600 hover:bg-red-700 text-white"
-                        onClick={() => handleAction("rejected")}
-                      >
-                        Save Decision
-                      </button>
-                    </div>
-                  </div>
+                  <DecisionBox
+                    note={note}
+                    setNote={setNote}
+                    onCancel={() => {
+                      setShowRejectBox(false);
+                      setNote("");
+                      setErrorMsg("");
+                    }}
+                    onConfirm={() => handleAction("rejected")}
+                    confirmLabel="Save Decision"
+                    danger
+                  />
                 ) : (
                   <div className="flex justify-end gap-3 mt-6">
                     <button
@@ -251,9 +250,7 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
               </>
             ) : (
               <div className="text-center mt-6 text-gray-400 text-sm">
-                {details.status === "approved" && (
-                  <p>✅ This request has been approved.</p>
-                )}
+                {details.status === "approved" && <p>✅ This request has been approved.</p>}
                 {details.status === "rejected" && (
                   <div>
                     <p>❌ This request was rejected.</p>
@@ -268,6 +265,33 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   🔁 Shared Decision Box
+--------------------------------------------------------- */
+function DecisionBox({ note, setNote, onCancel, onConfirm, confirmLabel, danger }) {
+  return (
+    <div>
+      <textarea
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        className="admin-input min-h-[100px]"
+        placeholder="Enter admin note..."
+      />
+      <div className="flex justify-end gap-3 mt-3">
+        <button className="admin-btn admin-btn-secondary" onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          className={`admin-btn admin-btn-primary ${danger ? "bg-red-600 hover:bg-red-700 text-white" : ""}`}
+          onClick={onConfirm}
+        >
+          {confirmLabel}
+        </button>
       </div>
     </div>
   );
