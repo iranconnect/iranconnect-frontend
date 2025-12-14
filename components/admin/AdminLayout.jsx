@@ -1,55 +1,64 @@
 // frontend/components/admin/AdminLayout.jsx
-
-import Sidebar from "./Sidebar";
-import Topbar from "./Topbar";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Sidebar from "./Sidebar";
+import Topbar from "./Topbar";
 import apiClient from "../../utils/apiClient.js";
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const [theme, setTheme] = useState("light");
-  const [loading, setLoading] = useState(true);         // ← برای Loading Screen
-  const [authorized, setAuthorized] = useState(false);  // ← نقش admin/superadmin
+  const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
 
   /* -------------------------------------------------------
-     🟦 1) بررسی سشن با /auth/me (سیستم جدید HttpOnly)
+     🟦 1) بررسی سشن و نقش (HttpOnly Cookie)
   ---------------------------------------------------------*/
   useEffect(() => {
-    checkSession();
-  }, []);
+    let mounted = true;
 
-  async function checkSession() {
-    try {
-      const res = await apiClient.get("/auth/me", {
-        withCredentials: true,
-      });
+    async function checkSession() {
+      try {
+        const res = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
 
-      if (!res?.data?.role) {
-        router.push("/auth/login");
-        return;
+        if (!mounted) return;
+
+        const role = res?.data?.role;
+
+        if (!role) {
+          router.replace("/auth/login");
+          return;
+        }
+
+        if (role !== "admin" && role !== "superadmin") {
+          router.replace("/");
+          return;
+        }
+
+        setAuthorized(true);
+      } catch (err) {
+        router.replace("/auth/login");
+      } finally {
+        if (mounted) setLoading(false);
       }
-
-      if (res.data.role !== "admin" && res.data.role !== "superadmin") {
-        router.push("/");
-        return;
-      }
-
-      setAuthorized(true);
-    } catch (err) {
-      router.push("/auth/login");
-    } finally {
-      setLoading(false);
     }
-  }
+
+    checkSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
   /* -------------------------------------------------------
-     🎨 2) مدیریت تم
+     🎨 2) مدیریت تم (Preference فقط – امن)
   ---------------------------------------------------------*/
   useEffect(() => {
-    const saved = localStorage.getItem("iran_theme") || "light";
-    setTheme(saved);
-    document.documentElement.setAttribute("data-theme", saved);
+    const savedTheme = localStorage.getItem("iran_theme") || "light";
+    setTheme(savedTheme);
+    document.documentElement.setAttribute("data-theme", savedTheme);
   }, []);
 
   function toggleTheme() {
@@ -60,18 +69,12 @@ export default function AdminLayout({ children }) {
   }
 
   /* -------------------------------------------------------
-     🎬 3) Loading Screen حرفه‌ای ایران کانکت
+     🎬 3) Loading Screen (جلوگیری از Admin UI flash)
   ---------------------------------------------------------*/
   if (loading) {
     return (
-      <div
-        className="
-        flex items-center justify-center min-h-screen 
-        bg-[var(--bg)] text-[var(--text)]
-      "
-      >
+      <div className="flex items-center justify-center min-h-screen bg-[var(--bg)] text-[var(--text)]">
         <div className="text-center">
-          {/* لوگو بر اساس تم */}
           <img
             src={theme === "dark" ? "/logo-light.png" : "/logo-dark.png"}
             alt="IranConnect Logo"
@@ -86,7 +89,6 @@ export default function AdminLayout({ children }) {
             Verifying session, please wait…
           </div>
 
-          {/* اسپیتر ساده */}
           <div className="mt-6 flex justify-center">
             <div className="w-8 h-8 border-4 border-t-transparent border-turquoise rounded-full animate-spin"></div>
           </div>
@@ -96,10 +98,13 @@ export default function AdminLayout({ children }) {
   }
 
   /* -------------------------------------------------------
-     🟢 4) اگر همه چیز OK بود → پنل را نمایش بده
+     ⛔ اگر مجاز نبود → هیچ UI نمایش نده
   ---------------------------------------------------------*/
   if (!authorized) return null;
 
+  /* -------------------------------------------------------
+     🟢 4) پنل ادمین
+  ---------------------------------------------------------*/
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex transition-colors">
       <Sidebar />
@@ -114,3 +119,4 @@ export default function AdminLayout({ children }) {
     </div>
   );
 }
+
