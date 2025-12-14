@@ -1,58 +1,39 @@
 /*frontend/pages/account/index.js*/
 import { useEffect, useState } from "react";
-import axios from "axios";
 import Header from "../../components/Header";
-import apiClient from "../../utils/apiClient"; // ⬅️ مسیر صحیح
+import apiClient from "../../utils/apiClient";
 
 export default function AccountPage() {
   const [user, setUser] = useState(null);
-  const [newPassword, setNewPassword] = useState("");
-  const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(true);
 
+  // 🔐 Fetch authenticated user (HttpOnly cookie)
   useEffect(() => {
-    // واکشی اطلاعات کاربر
     apiClient
       .get("/auth/me")
-      .then((res) => setUser(res.data))
+      .then((res) => {
+        setUser(res.data);
+        setLoading(false);
+      })
       .catch(() => {
-        // حذف ذخایر محلی در صورت وجود (پاکسازی امنیتی)
-        try {
-          localStorage.removeItem("iran_token");
-          localStorage.removeItem("iran_role");
-        } catch (e) {}
-
+        // اگر سشن معتبر نباشد → ریدایرکت
         window.location.href = "/auth/login";
       });
   }, []);
 
-  async function updatePassword(e) {
-    e.preventDefault();
-    setMsg("");
-
+  // 🔐 Secure logout (invalidate server session)
+  async function logout() {
     try {
-      const res = await apiClient.post("/auth/change-password", {
-        newPassword,
-      });
-      setMsg(res.data.message || "Password updated successfully.");
-      setNewPassword("");
-    } catch (err) {
-      console.error(err);
-      setMsg(err.response?.data?.error || "Error updating password.");
+      await apiClient.post("/auth/logout");
+    } catch (e) {
+      // حتی اگر خطا بدهد، ادامه می‌دهیم
     }
-  }
 
-  function logout() {
-    // پاکسازی محلی (حتی اگر دیگر استفاده نمی‌شود)
-    try {
-      localStorage.removeItem("iran_token");
-      localStorage.removeItem("iran_role");
-    } catch (e) {}
-
-    // ریدایرکت به صفحه اصلی — کوکی HttpOnly نیز سمت سرور پاک می‌شود
+    // هیچ localStorage مربوط به auth نداریم
     window.location.href = "/";
   }
 
-  if (!user)
+  if (loading) {
     return (
       <div className="min-h-screen bg-white flex flex-col">
         <Header />
@@ -61,6 +42,7 @@ export default function AccountPage() {
         </main>
       </div>
     );
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -89,24 +71,7 @@ export default function AccountPage() {
             </p>
           </div>
 
-          <form onSubmit={updatePassword} className="space-y-3">
-            <input
-              type="password"
-              placeholder="New password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full p-3 rounded-lg border border-gray-200 shadow-inner focus:outline-none focus:ring-2 focus:ring-turquoise"
-            />
-            <button
-              type="submit"
-              className="w-full bg-turquoise text-white py-2 rounded-lg font-medium shadow-md hover:bg-turquoise/90 transition-all duration-200"
-            >
-              Change Password
-            </button>
-          </form>
-
-          {msg && <p className="text-sm text-center text-gray-700 mt-3">{msg}</p>}
-
+          {/* 🔐 Secure logout */}
           <button
             onClick={logout}
             className="w-full mt-6 border border-gray-300 text-gray-600 py-2 rounded-lg font-medium hover:bg-gray-100 transition-all"
