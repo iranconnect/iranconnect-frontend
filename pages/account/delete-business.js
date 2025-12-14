@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { RotateCw } from "lucide-react";
 import apiClient from "../../utils/apiClient";   // ✅ مسیر صحیح اصلاح شد
 
 export default function DeleteBusinessRequest() {
@@ -16,24 +15,9 @@ export default function DeleteBusinessRequest() {
   const [errors, setErrors] = useState({});
   const [confirm, setConfirm] = useState(false);
   const [theme, setTheme] = useState("light");
-  const [humanQ, setHumanQ] = useState("");
-  const [humanA, setHumanA] = useState("");
-  const [correctAnswer, setCorrectAnswer] = useState(null);
   const [msg, setMsg] = useState("");
   const [ticket, setTicket] = useState("");
   const [loading, setLoading] = useState(false);
-
-  /* کپچا */
-  const generateHumanQuestion = () => {
-    const a = Math.floor(Math.random() * 9) + 1;
-    const b = Math.floor(Math.random() * 9) + 1;
-    setHumanQ(`${a} + ${b} = ?`);
-    setCorrectAnswer(a + b);
-  };
-
-  useEffect(() => generateHumanQuestion(), []);
-
-  const refreshCaptcha = () => generateHumanQuestion();
 
   /* تم سایت */
   useEffect(() => {
@@ -84,7 +68,6 @@ export default function DeleteBusinessRequest() {
     const hasErrors = Object.values(errors).some((e) => e);
     if (hasErrors) return setMsg("⚠️ Please fix validation errors before submitting.");
     if (!confirm) return setMsg("Please confirm that your information is accurate.");
-    if (humanA.trim() !== String(correctAnswer)) return setMsg("Human verification failed.");
     if (!selectedBusiness) return setMsg("Please select a verified business.");
 
     setLoading(true);
@@ -229,26 +212,6 @@ export default function DeleteBusinessRequest() {
               />
               I confirm that the information above is accurate.
             </label>
-
-            {/* Captcha */}
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">{humanQ}</label>
-              <button
-                type="button"
-                onClick={refreshCaptcha}
-                className="p-2 rounded-full hover:bg-turquoise/10 transition-all"
-              >
-                <RotateCw size={18} className="text-turquoise" />
-              </button>
-            </div>
-
-            <input
-              type="text"
-              value={humanA}
-              onChange={(e) => setHumanA(e.target.value)}
-              className={inputClass}
-              placeholder="Enter your answer"
-            />
 
             {/* Submit button */}
             <button
