@@ -188,4 +188,3 @@ export default function ConsentModal({ userId, lang = "en", onClose }) {
     </div>
   );
 }
-
