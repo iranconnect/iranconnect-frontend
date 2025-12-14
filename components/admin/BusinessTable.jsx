@@ -1,4 +1,6 @@
-import Link from 'next/link';
+// components/admin/BusinessTable.jsx
+import Link from "next/link";
+import Image from "next/image";
 
 export default function BusinessTable({ items = [] }) {
   if (!items.length) {
@@ -17,32 +19,40 @@ export default function BusinessTable({ items = [] }) {
             <th className="text-left p-3">Actions</th>
           </tr>
         </thead>
+
         <tbody>
           {items.map((b) => (
             <tr key={b.id} className="border-t">
               <td className="p-3">
                 <div className="flex items-center gap-2">
-                  <img
-                    src={b.logo_url || '/logo.png'}
-                    className="w-8 h-8 rounded object-cover"
-                    alt={b.name}
+                  <Image
+                    src={b.logo_url || "/logo.png"}
+                    width={32}
+                    height={32}
+                    className="rounded object-cover"
+                    alt={b.name || "Business logo"}
                   />
-                  <span className="font-medium text-navy">{b.name}</span>
+                  <span className="font-medium text-navy">
+                    {b.name}
+                  </span>
                 </div>
               </td>
+
               <td className="p-3">{b.category}</td>
               <td className="p-3">{b.city}</td>
-              <td className="p-3">{b.avg_rating ?? '—'}</td>
+              <td className="p-3">{b.avg_rating ?? "—"}</td>
+
               <td className="p-3">
                 <div className="flex gap-2">
                   <Link
-                    href={`/admin/edit/${b.id}`}
+                    href={`/admin/edit/${encodeURIComponent(b.id)}`}
                     className="text-turquoise hover:underline"
                   >
                     Edit
                   </Link>
+
                   <button
-                    className="text-red-600/80 hover:underline"
+                    className="text-red-600/80 hover:underline cursor-not-allowed"
                     disabled
                   >
                     Delete
