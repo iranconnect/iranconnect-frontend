@@ -17,8 +17,6 @@ export default function RequestHistory() {
   const [theme, setTheme] = useState("light");
   const [selectedRequest, setSelectedRequest] = useState(null);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
-
   // 🎨 تم
   useEffect(() => {
     const current =
@@ -57,6 +55,13 @@ export default function RequestHistory() {
       setFilteredRequests(data.slice(0, 5)); // فقط ۵ مورد آخر
     } catch (err) {
       console.error(err);
+
+      // 🔐 اگر سشن معتبر نباشد → خروج
+      if (err.response?.status === 401) {
+        window.location.href = "/auth/login";
+        return;
+      }
+      
       setError("Unable to load requests.");
     }
 
