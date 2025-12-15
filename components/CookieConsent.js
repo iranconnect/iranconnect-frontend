@@ -18,10 +18,15 @@ function getCookie(name) {
 
 function setCookie(name, value, days = 365) {
   const maxAge = days * 24 * 60 * 60;
-  document.cookie = `${name}=${encodeURIComponent(
-    value
-  )}; Max-Age=${maxAge}; Path=/; SameSite=Lax; Secure`;
+
+  document.cookie = `${name}=${encodeURIComponent(value)};
+    Max-Age=${maxAge};
+    Path=/;
+    Domain=.iranconnect.org;
+    SameSite=Lax;
+    Secure`;
 }
+
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
