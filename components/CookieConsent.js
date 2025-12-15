@@ -16,18 +16,6 @@ function getCookie(name) {
   return match ? decodeURIComponent(match[2]) : null;
 }
 
-function setCookie(name, value, days = 365) {
-  const maxAge = days * 24 * 60 * 60;
-
-  document.cookie = `${name}=${encodeURIComponent(value)};
-    Max-Age=${maxAge};
-    Path=/;
-    Domain=.iranconnect.org;
-    SameSite=Lax;
-    Secure`;
-}
-
-
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -98,10 +86,6 @@ export default function CookieConsent() {
         },
         { withCredentials: true }
       );
-
-      if (res.data?.consent_uuid) {
-        setCookie(CONSENT_COOKIE, res.data.consent_uuid);
-      }
 
       // Load analytics فقط در صورت Accept
       if (choice === "accepted") {
