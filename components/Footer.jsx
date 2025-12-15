@@ -77,7 +77,7 @@ export default function Footer() {
               </a>
 
               <a
-                href="https://x.com/iranconnecorg?s=21"
+                href="https://x.com/iranconnectorg?s=21"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="X"
