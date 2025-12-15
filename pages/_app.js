@@ -1,126 +1,146 @@
 // frontend/pages/_app.js
-import '../styles/globals_v3.css';
-import '../styles/admin.css';
-import '../styles/reactquill.css';
+import "../styles/globals_v3.css";
+import "../styles/admin.css";
+import "../styles/reactquill.css";
 import "../styles/intro.css";
 
-import { useEffect, useState, useRef } from 'react';
-import CookieConsent from '../components/CookieConsent';
-import AutoLogoutModal from '../components/AutoLogoutModal';
-import apiClient from '../utils/apiClient';
-import { useRouter } from 'next/router';
+import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/router";
 import Script from "next/script";
 
+import CookieConsent from "../components/CookieConsent";
+import AutoLogoutModal from "../components/AutoLogoutModal";
+import apiClient from "../utils/apiClient";
+
 export default function App({ Component, pageProps }) {
-  const [theme, setTheme] = useState('light');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [inactive, setInactive] = useState(false);
-  const timerRef = useRef(null);
   const router = useRouter();
 
-  /* 🔐 تشخیص ورود کاربر از طریق کوکی HttpOnly */
+  const [theme, setTheme] = useState("light");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [inactive, setInactive] = useState(false);
+
+  const timerRef = useRef(null);
+
+  /* 🔐 Check login via HttpOnly cookie */
   async function checkLoginByCookie() {
     try {
-      const res = await apiClient.get('/auth/me', { withCredentials: true });
+      const res = await apiClient.get("/auth/me", {
+        withCredentials: true,
+      });
       setIsLoggedIn(!!res.data?.ok);
     } catch {
       setIsLoggedIn(false);
     }
   }
 
+  /* Initial auth check */
   useEffect(() => {
     checkLoginByCookie();
   }, []);
 
-  /* 🚀 Ping هنگام تغییر مسیر */
+  /* 🎨 Load theme safely (client only) */
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (typeof window === "undefined") return;
 
-    const handleRouteChange = async () => {
-      try {
-        await apiClient.get('/auth/ping', { withCredentials: true });
-      } catch {}
-    };
-
-    router.events.on('routeChangeStart', handleRouteChange);
-    return () => router.events.off('routeChangeStart', handleRouteChange);
-  }, [isLoggedIn]);
-
-  /* 🎨 Load theme */
-  useEffect(() => {
     try {
-      const saved = localStorage.getItem('iran_theme') || 'light';
-      setTheme(saved);
-      document.documentElement.setAttribute('data-theme', saved);
+      const savedTheme = localStorage.getItem("iran_theme") || "light";
+      setTheme(savedTheme);
+      document.documentElement.setAttribute("data-theme", savedTheme);
     } catch {}
   }, []);
 
-  /* 🕒 Auto Logout Timer */
+  /* 🕒 Auto logout (ONLY protected areas) */
   useEffect(() => {
     if (!isLoggedIn) {
-      clearTimeout(timerRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
       setInactive(false);
       return;
     }
 
+    const isProtected =
+      router.pathname.startsWith("/admin") ||
+      router.pathname.startsWith("/account");
+
+    if (!isProtected) return;
+
     const resetTimer = () => {
-      clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => setInactive(true), 2 * 60 * 1000);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        setInactive(true);
+      }, 2 * 60 * 1000); // 2 minutes
     };
 
-    const events = ['mousemove', 'mousedown', 'keypress', 'touchstart'];
-    events.forEach(e => window.addEventListener(e, resetTimer));
+    const events = ["mousemove", "mousedown", "keypress", "touchstart"];
+    events.forEach((e) => window.addEventListener(e, resetTimer));
+
     resetTimer();
 
     return () => {
-      clearTimeout(timerRef.current);
-      events.forEach(e => window.removeEventListener(e, resetTimer));
+      if (timerRef.current) clearTimeout(timerRef.current);
+      events.forEach((e) => window.removeEventListener(e, resetTimer));
     };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, router.pathname]);
 
-  /* 🔄 Ping session validity */
+  /* 🔄 Session keep-alive (interval-based only) */
   useEffect(() => {
     if (!isLoggedIn) return;
+
     const interval = setInterval(() => {
-      apiClient.get('/auth/ping', { withCredentials: true }).catch(() => {});
-    }, 60000);
+      apiClient
+        .get("/auth/ping", { withCredentials: true })
+        .catch(() => {});
+    }, 60 * 1000);
+
     return () => clearInterval(interval);
   }, [isLoggedIn]);
 
-  /* خروج امن */
+  /* 🔐 Secure logout */
   async function handleLogout() {
     try {
-      await apiClient.post('/auth/logout', {}, { withCredentials: true });
+      await apiClient.post(
+        "/auth/logout",
+        {},
+        { withCredentials: true }
+      );
     } catch {}
 
     setIsLoggedIn(false);
     setInactive(false);
-    router.replace('/auth/login');
+    router.replace("/auth/login");
   }
 
-  /* ادامه حضور */
   function handleStay() {
     setInactive(false);
   }
 
-  /* تغییر تم */
+  /* 🎨 Toggle theme */
   function toggleTheme() {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
+    const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
-    try {
-      localStorage.setItem('iran_theme', newTheme);
-    } catch {}
-    document.documentElement.setAttribute('data-theme', newTheme);
+
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("iran_theme", newTheme);
+      } catch {}
+      document.documentElement.setAttribute("data-theme", newTheme);
+    }
   }
+
+  /* 🧩 Load reCAPTCHA ONLY when needed */
+  const needsCaptcha =
+    router.pathname.startsWith("/auth/login") ||
+    router.pathname.startsWith("/auth/register") ||
+    router.pathname.startsWith("/auth/forgot");
 
   return (
     <>
+      {needsCaptcha && (
+        <Script
+          src="https://www.google.com/recaptcha/api.js"
+          strategy="afterInteractive"
+        />
+      )}
 
-      <Script
-        src="https://www.google.com/recaptcha/api.js"
-        strategy="afterInteractive"
-      />
-          
       <CookieConsent />
 
       {isLoggedIn && (
@@ -130,7 +150,7 @@ export default function App({ Component, pageProps }) {
           onLogout={handleLogout}
         />
       )}
-        
+
       <Component
         {...pageProps}
         toggleTheme={toggleTheme}
