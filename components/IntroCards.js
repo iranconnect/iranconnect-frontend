@@ -1,8 +1,6 @@
 // frontend/components/IntroCards.js
-import { useRouter } from "next/router";
 
 export default function IntroCards({ showLogo, showButtons, onButtonClick }) {
-  const router = useRouter();
 
   const buttons = [
     { title: "About Us", gif: "/animation/1.gif" },
