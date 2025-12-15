@@ -62,7 +62,7 @@ export default function ProfileMenu({ role, hasClaim }) {
       // non-blocking
     }
 
-    window.location.replace('/auth/login');
+    window.location.replace('/search');
   };
 
   return (
