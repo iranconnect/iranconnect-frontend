@@ -1,65 +1,101 @@
-//frontend/components/ProfileMenu.jsx
+// frontend/components/ProfileMenu.jsx
 'use client';
+
 import { useState, useEffect, useRef } from 'react';
 import { User } from 'lucide-react';
-import apiClient from '../utils/apiClient'; // ⚡ درست و ضروری
+import apiClient from '../utils/apiClient';
 
 export default function ProfileMenu({ role, hasClaim }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [email, setEmail] = useState('');
   const menuRef = useRef(null);
 
-  // 🧩 گرفتن ایمیل از کوکی HttpOnly (بدون localStorage)
+  /* ───────────────────────────────────────────────
+     🧩 Fetch user email from HttpOnly cookie
+     (NO localStorage fallback – security critical)
+  ─────────────────────────────────────────────── */
   useEffect(() => {
+    let mounted = true;
+
     async function fetchEmail() {
       try {
-        const res = await apiClient.get('/auth/me', { withCredentials: true });
-        if (res.data?.email) {
+        const res = await apiClient.get('/auth/me', {
+          withCredentials: true,
+        });
+
+        if (mounted && res.data?.email) {
           setEmail(res.data.email);
         }
-      } catch (err) {
-        // هیچ fallback ای به localStorage نباید وجود داشته باشد
-        setEmail('');
+      } catch {
+        if (mounted) setEmail('');
       }
     }
+
     fetchEmail();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // 🧩 بستن منو با کلیک بیرون
+  /* ───────────────────────────────────────────────
+     🧩 Close menu on outside interaction
+     (pointerdown = safer than click)
+  ─────────────────────────────────────────────── */
   useEffect(() => {
-    const handleClickOutside = (e) => {
+    const handleOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuOpen(false);
       }
     };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+
+    document.addEventListener('pointerdown', handleOutside);
+    return () => document.removeEventListener('pointerdown', handleOutside);
   }, []);
 
-  // 🚪 خروج کاربر – فقط API، بدون localStorage
+  /* ───────────────────────────────────────────────
+     🚪 Secure logout (server-side invalidation)
+  ─────────────────────────────────────────────── */
   const logout = async () => {
     try {
       await apiClient.post('/auth/logout', {}, { withCredentials: true });
-    } catch {}
+    } catch {
+      // non-blocking
+    }
+
     window.location.replace('/auth/login');
   };
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* آیکون پروفایل */}
+      {/* Profile Icon */}
       <button
-        onClick={() => setMenuOpen(!menuOpen)}
-        className="flex items-center justify-center w-9 h-9 rounded-full bg-[var(--card-bg)] shadow-[4px_4px_8px_var(--shadow-dark),-4px_-4px_8px_var(--shadow-light)] hover:scale-[1.05] transition"
-        aria-label="Profile Menu"
+        onClick={() => setMenuOpen((v) => !v)}
+        aria-label="Profile menu"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        className="flex items-center justify-center w-9 h-9 rounded-full
+                   bg-[var(--card-bg)]
+                   shadow-[4px_4px_8px_var(--shadow-dark),-4px_-4px_8px_var(--shadow-light)]
+                   hover:scale-[1.05] transition"
       >
         <User size={18} className="text-turquoise" />
       </button>
 
       {menuOpen && (
-        <div className="absolute right-0 mt-3 w-60 rounded-2xl border border-[var(--border)] bg-[var(--bg)] shadow-[6px_6px_14px_var(--shadow-dark),-6px_-6px_14px_var(--shadow-light)] p-3 z-50">
-          {/* ایمیل کاربر */}
-          <p className="text-sm text-[var(--text)] mb-3 truncate">{email}</p>
-          {/* ✅ فقط اگر کاربر بیزینس کلیم داشته باشد */}
+        <div
+          role="menu"
+          className="absolute right-0 mt-3 w-60 rounded-2xl
+                     border border-[var(--border)]
+                     bg-[var(--bg)]
+                     shadow-[6px_6px_14px_var(--shadow-dark),-6px_-6px_14px_var(--shadow-light)]
+                     p-3 z-50"
+        >
+          {/* User email */}
+          <p className="text-sm text-[var(--text)] mb-3 truncate">
+            {email}
+          </p>
+
+          {/* Business features */}
           {hasClaim && (
             <>
               <a
@@ -70,6 +106,7 @@ export default function ProfileMenu({ role, hasClaim }) {
               </a>
 
               <div className="border-t border-[var(--border)] my-2"></div>
+
               <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
                 Business Management
               </p>
@@ -127,4 +164,3 @@ export default function ProfileMenu({ role, hasClaim }) {
     </div>
   );
 }
-
