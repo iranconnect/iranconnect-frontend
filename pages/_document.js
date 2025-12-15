@@ -32,24 +32,54 @@ export default class MyDocument extends Document {
             "
           />
 
-          {/* Content Security Policy (Frontend Layer) */}
+          {/* =============================
+              🔐 Content Security Policy
+              (Google Maps + Cloudinary)
+          ============================== */}
           <meta
             httpEquiv="Content-Security-Policy"
             content="
               default-src 'self';
-              script-src 'self' https://www.google.com https://www.gstatic.com;
-              style-src 'self' 'unsafe-inline';
-              img-src 'self' data: blob: https:;
-              font-src 'self' https:;
-              connect-src 'self' https:;
-              frame-src https://www.google.com;
+
+              script-src
+                'self'
+                https://www.google.com
+                https://www.gstatic.com
+                https://maps.googleapis.com
+                https://maps.gstatic.com;
+
+              style-src
+                'self'
+                'unsafe-inline';
+
+              img-src
+                'self'
+                data:
+                blob:
+                https://maps.googleapis.com
+                https://maps.gstatic.com
+                https://*.googleusercontent.com
+                https://res.cloudinary.com;
+
+              connect-src
+                'self'
+                https://maps.googleapis.com
+                https://api.cloudinary.com;
+
+              frame-src
+                https://www.google.com;
+
+              font-src
+                'self'
+                https:;
+
               base-uri 'self';
               form-action 'self';
               object-src 'none';
             "
           />
 
-          {/* SEO / Accessibility baseline */}
+          {/* Theme */}
           <meta name="theme-color" content="#18224B" />
         </Head>
 
@@ -57,7 +87,6 @@ export default class MyDocument extends Document {
           <Main />
           <NextScript />
 
-          {/* 🛑 Fallback if JS disabled */}
           <noscript>
             <div
               style={{
