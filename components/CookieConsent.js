@@ -52,25 +52,36 @@ export default function CookieConsent() {
       .catch(() => setTexts(null));
   }, [lang]);
 
-  /* 🔍 Show banner only if no consent cookie exists */
+  /* 🔍 Show banner only if no consent cookie exists
+     ✅ FIX: after logout banner must NOT reappear
+  */
   useEffect(() => {
-     async function checkConsent() {
-       const cookie = getCookie(CONSENT_COOKIE);
-   
-       // اگر کوکی هست → قبلاً تصمیم گرفته → بنر نده
-       if (cookie) return;
-   
-       // اگر کوکی نیست → فقط اگر لاگین نیست بنر را نشان بده
-       try {
-         const res = await apiClient.get("/auth/me", { withCredentials: true });
-         if (res.data?.ok) return;
-       } catch {}
-   
-       setVisible(true);
-     }
-   
-     checkConsent();
-   }, []);
+    async function checkConsent() {
+      const consentCookie = getCookie(CONSENT_COOKIE);
+
+      // اگر قبلاً تصمیم گرفته شده → هرگز بنر نشان داده نشود
+      if (consentCookie) return;
+
+      // اگر کوکی نیست، فقط در صورتی بنر را نشان بده
+      // که کاربر لاگین نباشد
+      try {
+        const res = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
+
+        if (res.data?.ok) {
+          // کاربر لاگین است → بنر نده
+          return;
+        }
+      } catch {
+        // لاگین نیست → بنر نشان داده شود
+      }
+
+      setVisible(true);
+    }
+
+    checkConsent();
+  }, []);
 
   /* ✅ Accept / Reject handler */
   async function handleChoice(choice) {
@@ -78,7 +89,7 @@ export default function CookieConsent() {
     setLoading(true);
 
     try {
-      const res = await apiClient.post(
+      await apiClient.post(
         "/consents/cookies/anonymous",
         {
           choice,
