@@ -84,7 +84,7 @@ export default function Header() {
       await apiClient.post('/auth/logout', {}, { withCredentials: true });
     } catch {}
 
-    window.location.href = '/';
+    window.location.href = '/search';
   };
   return (
     <header className="site-header shadow-sm border-b border-[var(--border)] bg-[var(--bg)] transition">
