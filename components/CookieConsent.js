@@ -69,29 +69,20 @@ export default function CookieConsent() {
      async function checkConsent() {
        const cookie = getCookie(CONSENT_COOKIE);
    
-       // اگر کوکی هست → بنر نده
+       // اگر کوکی هست → قبلاً تصمیم گرفته → بنر نده
        if (cookie) return;
    
-       // اگر کاربر لاگین است → backend تصمیم می‌گیرد
+       // اگر کوکی نیست → فقط اگر لاگین نیست بنر را نشان بده
        try {
-         const res = await apiClient.get("/auth/me", {
-           withCredentials: true,
-         });
+         const res = await apiClient.get("/auth/me", { withCredentials: true });
+         if (res.data?.ok) return;
+       } catch {}
    
-         if (res.data?.ok) {
-           return; // لاگین است → بنر نده
-         }
-       } catch {
-         // ignore
-       }
-   
-       // فقط در این حالت بنر را نشان بده
        setVisible(true);
      }
    
      checkConsent();
    }, []);
-
 
   /* ✅ Accept / Reject handler */
   async function handleChoice(choice) {
