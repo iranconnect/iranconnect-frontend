@@ -24,7 +24,7 @@ export default function Topbar({ toggleTheme, currentTheme }) {
       console.warn("Logout request failed:", err?.message);
     } finally {
       // 🔴 همیشه خروج انجام می‌شود
-      router.replace("/auth/login");
+      router.replace("/search");
     }
   }, [loggingOut, router]);
 
