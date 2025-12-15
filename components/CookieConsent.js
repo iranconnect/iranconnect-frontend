@@ -66,9 +66,32 @@ export default function CookieConsent() {
 
   /* 🔍 Show banner only if no consent cookie exists */
   useEffect(() => {
-    const existingConsent = getCookie(CONSENT_COOKIE);
-    if (!existingConsent) setVisible(true);
-  }, []);
+     async function checkConsent() {
+       const cookie = getCookie(CONSENT_COOKIE);
+   
+       // اگر کوکی هست → بنر نده
+       if (cookie) return;
+   
+       // اگر کاربر لاگین است → backend تصمیم می‌گیرد
+       try {
+         const res = await apiClient.get("/auth/me", {
+           withCredentials: true,
+         });
+   
+         if (res.data?.ok) {
+           return; // لاگین است → بنر نده
+         }
+       } catch {
+         // ignore
+       }
+   
+       // فقط در این حالت بنر را نشان بده
+       setVisible(true);
+     }
+   
+     checkConsent();
+   }, []);
+
 
   /* ✅ Accept / Reject handler */
   async function handleChoice(choice) {
