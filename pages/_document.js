@@ -63,6 +63,7 @@ export default class MyDocument extends Document {
 
               connect-src
                 'self'
+                https://api.iranconnect.org
                 https://maps.googleapis.com
                 https://api.cloudinary.com;
 
