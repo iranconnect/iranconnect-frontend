@@ -75,8 +75,6 @@ export default class MyDocument extends Document {
               form-action 'self';
               object-src 'none';
             "
-              .replace(/\s{2,}/g, " ")
-              .trim()
           />
 
           <meta name="theme-color" content="#18224B" />
