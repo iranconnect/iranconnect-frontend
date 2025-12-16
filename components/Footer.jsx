@@ -94,10 +94,14 @@ export default function Footer() {
                 <Send color="#00bfa6" size={22} />
               </a>
 
-              {/* LinkedIn – link later */}
-              <span title="LinkedIn (coming soon)">
-                <Linkedin color="#00bfa6" size={22} opacity={0.6} />
-              </span>
+              <a
+                href="https://www.linkedin.com/in/iranconnect-community-41522039a?trk=contact-info"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="LinkedIn"
+              >
+                <Linkedin color="#00bfa6" size={22} />
+              </a>
             </div>
           </div>
 
