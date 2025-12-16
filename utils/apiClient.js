@@ -29,7 +29,10 @@ function forceLogoutAndRedirect(message) {
     if (message) localStorage.setItem("iran_security_msg", message);
   } catch (_) {}
 
-    window.location.href = "/auth/login";
+    if (typeof window !== "undefined") {
+      window.location.href = "/auth/login";
+}
+
 }
 
 apiClient.interceptors.response.use(
@@ -100,12 +103,35 @@ apiClient.interceptors.response.use(
     )
       forceLogoutAndRedirect("Session invalidated.");
 
+    const PUBLIC_PATHS = [
+      "/",
+      "/search",
+      "/business",
+      "/about",
+      "/contact",
+      "/privacy-policy",
+      "/terms-of-service",
+      "/cookies",
+      "/auth/login",
+      "/auth/register",
+      "/auth/forgot",
+    ];
+    
+    const currentPath =
+      typeof window !== "undefined" ? window.location.pathname : "";
+    
+    const isPublicPage = PUBLIC_PATHS.some(
+      (p) => currentPath === p || currentPath.startsWith(p + "/")
+    );
+    
     if (
+      !isPublicPage &&
       status === 401 &&
       typeof data?.error === "string" &&
       data.error.toLowerCase().includes("expired")
-    )
+    ) {
       forceLogoutAndRedirect("Your session has expired.");
+    }
 
     return Promise.reject(err);
   }
