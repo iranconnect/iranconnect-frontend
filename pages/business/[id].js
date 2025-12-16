@@ -1,6 +1,6 @@
 //frontend/pages/business/[id].js
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import RatingStars from "../../components/RatingStars";
@@ -20,15 +20,18 @@ export default function Detail() {
   const [showImageModal, setShowImageModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  /* --------------------------------------------------
+     🎨 Theme sync
+  -------------------------------------------------- */
   useEffect(() => {
-    const currentTheme =
+    const current =
       document.documentElement.getAttribute("data-theme") || "light";
-    setTheme(currentTheme);
+    setTheme(current);
 
     const observer = new MutationObserver(() => {
-      const newTheme =
-        document.documentElement.getAttribute("data-theme") || "light";
-      setTheme(newTheme);
+      setTheme(
+        document.documentElement.getAttribute("data-theme") || "light"
+      );
     });
 
     observer.observe(document.documentElement, {
@@ -39,13 +42,19 @@ export default function Detail() {
     return () => observer.disconnect();
   }, []);
 
+  /* --------------------------------------------------
+     🔐 Auth status
+  -------------------------------------------------- */
   useEffect(() => {
     apiClient
-      .get("/auth/me")
+      .get("/auth/me", { withCredentials: true })
       .then(() => setIsLoggedIn(true))
       .catch(() => setIsLoggedIn(false));
   }, []);
 
+  /* --------------------------------------------------
+     📦 Fetch business
+  -------------------------------------------------- */
   useEffect(() => {
     if (!id) return;
 
@@ -55,17 +64,24 @@ export default function Detail() {
       .catch(console.error);
   }, [id]);
 
+  /* --------------------------------------------------
+     ⭐ Rating
+  -------------------------------------------------- */
   async function submitRating() {
     try {
       if (!isLoggedIn) {
         setMessage("You must be logged in to rate.");
         return;
       }
-  
-      await apiClient.post(`/businesses/${id}/ratings`, { score: rating });
-  
+
+      await apiClient.post(
+        `/businesses/${id}/ratings`,
+        { score: rating },
+        { withCredentials: true }
+      );
+
       setMessage("✅ Rating submitted");
-  
+
       const refreshed = await apiClient.get(`/businesses/${id}`);
       setBiz(refreshed.data);
     } catch (e) {
@@ -81,25 +97,31 @@ export default function Detail() {
     );
   }
 
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
-  const cdnBase = process.env.NEXT_PUBLIC_CDN_BASE || "http://localhost:5000";
+  /* --------------------------------------------------
+     🖼️ Image resolver (SAFE & FINAL)
+  -------------------------------------------------- */
+  const imgErrored = useRef(false);
 
-  // 📌 1) تعیین URL اصلی تصویر
-  const original = biz.image_url
-    ? (biz.image_url.startsWith("http")
-        ? biz.image_url
-        : `${apiBase.replace('/api','')}${biz.image_url}`)
-    : "/logo.png";
+  const isSafeHttpUrl = (url) => {
+    try {
+      const u = new URL(url);
+      return u.protocol === "http:" || u.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
 
-  // 📌 2) اگر Cloudinary باشد → از CDN استفاده کن
-  let imageSrc = original;
+  let imageSrc = "/logo-light.png"; // ✅ real fallback
 
-  if (original.startsWith("http")) {
-    const filename = original.split("/").pop().split("?")[0];
-    imageSrc = `${cdnBase}/cdn/${filename}?url=${encodeURIComponent(original)}`;
+  if (biz?.image_url && isSafeHttpUrl(biz.image_url)) {
+    imageSrc = biz.image_url;
+  } else if (biz?.logo_url && isSafeHttpUrl(biz.logo_url)) {
+    imageSrc = biz.logo_url;
   }
 
-
+  /* --------------------------------------------------
+     📞 Contact helpers
+  -------------------------------------------------- */
   const phoneWithCode =
     biz?.phone && biz?.country
       ? `+${getCountryCallingCode(biz.country)} ${biz.phone}`
@@ -116,6 +138,9 @@ export default function Detail() {
     ? biz.email.replace("@", " [at] ")
     : null;
 
+  /* --------------------------------------------------
+     🧱 Render
+  -------------------------------------------------- */
   return (
     <div
       style={{
@@ -158,27 +183,28 @@ export default function Detail() {
               alt={biz.name}
               className="w-40 h-40 md:w-48 md:h-48 rounded-xl object-cover border border-gray-300 shadow-md cursor-pointer hover:opacity-90 transition mx-auto md:mx-0"
               onClick={() => setShowImageModal(true)}
+              onError={(e) => {
+                if (imgErrored.current) return;
+                imgErrored.current = true;
+                e.currentTarget.src = "/logo-light.png";
+              }}
             />
 
             <div className="flex-1 flex flex-col items-center md:items-start space-y-3 leading-relaxed">
-              <h1 className="text-2xl font-semibold flex flex-col md:flex-row items-center md:items-center justify-center md:justify-start gap-1 md:gap-2">
-                <span className="order-2 md:order-none">{biz.name}</span>
-                {biz.owner_verified && (
-                  <span className="text-2xl leading-none order-1 md:order-none">🎖️</span>
-                )}
+              <h1 className="text-2xl font-semibold flex flex-col md:flex-row items-center gap-2">
+                <span>{biz.name}</span>
+                {biz.owner_verified && <span>🎖️</span>}
               </h1>
 
               <p
-                className="text-sm text-center md:text-left"
-                style={{
-                  color: theme === "dark" ? "#e2e8f0" : "#555",
-                }}
+                className="text-sm"
+                style={{ color: theme === "dark" ? "#e2e8f0" : "#555" }}
               >
                 {biz.category} • {biz.city}
               </p>
 
               {biz.address && (
-                <p className="text-center md:text-left">
+                <p>
                   📍{" "}
                   {isLoggedIn && googleMapsLink ? (
                     <a
@@ -196,7 +222,7 @@ export default function Detail() {
               )}
 
               {isLoggedIn ? (
-                <div className="text-center md:text-left space-y-3">
+                <div className="space-y-2">
                   {phoneWithCode && <p>📞 {phoneWithCode}</p>}
 
                   {obfuscatedEmail && (
@@ -218,7 +244,7 @@ export default function Detail() {
                         href={biz.website}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-turquoise font-medium hover:underline"
+                        className="text-turquoise hover:underline"
                       >
                         Visit Website
                       </a>
@@ -227,7 +253,7 @@ export default function Detail() {
                 </div>
               ) : (
                 <button
-                  className="btn-primary mt-3 w-full sm:w-auto"
+                  className="btn-primary mt-3"
                   onClick={() =>
                     router.push(`/auth/login?redirect=/business/${id}`)
                   }
@@ -236,30 +262,21 @@ export default function Detail() {
                 </button>
               )}
 
-              <p className="pt-2 text-lg font-medium text-turquoise text-center md:text-left">
+              <p className="pt-2 text-lg font-medium text-turquoise">
                 ⭐ {biz.avg_rating ?? "—"}
               </p>
             </div>
           </div>
 
-          <div
-            className="mt-8 border-t pt-6 text-center md:text-left"
-            style={{
-              borderColor:
-                theme === "dark"
-                  ? "rgba(255,255,255,0.15)"
-                  : "rgba(0,0,0,0.1)",
-            }}
-          >
+          {/* Rating */}
+          <div className="mt-8 border-t pt-6">
             <h3 className="text-lg font-semibold mb-3">Rate this business</h3>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-center md:justify-start gap-3 text-center">
-              <div className="flex justify-center w-full sm:w-auto">
-                <RatingStars value={rating} onChange={setRating} color="#40E0D0" />
-              </div>
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+              <RatingStars value={rating} onChange={setRating} color="#40E0D0" />
 
               <button
-                className="btn-primary w-full sm:w-auto"
+                className="btn-primary"
                 onClick={submitRating}
                 disabled={!rating}
               >
@@ -278,6 +295,7 @@ export default function Detail() {
             )}
           </div>
 
+          {/* Claim */}
           <div className="mt-10 border-t pt-6 text-center">
             {biz.owner_verified ? (
               <div className="text-green-600 font-medium">
@@ -286,20 +304,14 @@ export default function Detail() {
             ) : isLoggedIn ? (
               <ClaimBusinessWidget businessId={id} />
             ) : (
-              <div>
-                <p className="mb-3 text-sm text-white-600">
-                  Are you the owner of this business?
-                </p>
-
-                <button
-                  className="btn-primary w-full sm:w-auto"
-                  onClick={() =>
-                    router.push(`/auth/login?redirect=/business/${id}`)
-                  }
-                >
-                  Claim this business
-                </button>
-              </div>
+              <button
+                className="btn-primary"
+                onClick={() =>
+                  router.push(`/auth/login?redirect=/business/${id}`)
+                }
+              >
+                Claim this business
+              </button>
             )}
           </div>
         </div>
@@ -307,6 +319,7 @@ export default function Detail() {
 
       <Footer />
 
+      {/* Image modal */}
       {showImageModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
@@ -315,7 +328,7 @@ export default function Detail() {
           <div className="relative max-w-3xl w-full px-4">
             <button
               onClick={() => setShowImageModal(false)}
-              className="absolute -top-8 right-2 text-white hover:text-turquoise transition"
+              className="absolute -top-8 right-2 text-white hover:text-turquoise"
             >
               <X size={28} />
             </button>
@@ -332,4 +345,3 @@ export default function Detail() {
     </div>
   );
 }
-
