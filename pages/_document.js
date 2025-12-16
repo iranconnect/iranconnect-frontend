@@ -10,16 +10,13 @@ export default class MyDocument extends Document {
               🔐 Security Meta Headers
           ============================== */}
 
-          {/* جلوگیری از MIME sniffing */}
           <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
 
-          {/* کنترل ارسال referrer */}
           <meta
             name="referrer"
             content="strict-origin-when-cross-origin"
           />
 
-          {/* محدودسازی APIهای مرورگر */}
           <meta
             httpEquiv="Permissions-Policy"
             content="
@@ -34,7 +31,6 @@ export default class MyDocument extends Document {
 
           {/* =============================
               🔐 Content Security Policy
-              (Google Maps + Cloudinary)
           ============================== */}
           <meta
             httpEquiv="Content-Security-Policy"
@@ -56,10 +52,11 @@ export default class MyDocument extends Document {
                 'self'
                 data:
                 blob:
+                https://api.iranconnect.org
+                https://res.cloudinary.com
                 https://maps.googleapis.com
                 https://maps.gstatic.com
-                https://*.googleusercontent.com
-                https://res.cloudinary.com;
+                https://*.googleusercontent.com;
 
               connect-src
                 'self'
@@ -78,9 +75,10 @@ export default class MyDocument extends Document {
               form-action 'self';
               object-src 'none';
             "
+              .replace(/\s{2,}/g, " ")
+              .trim()
           />
 
-          {/* Theme */}
           <meta name="theme-color" content="#18224B" />
         </Head>
 
