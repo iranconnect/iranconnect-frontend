@@ -20,6 +20,9 @@ export default function Detail() {
   const [showImageModal, setShowImageModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // ✅ MUST be here (before any conditional return)
+  const imgErrored = useRef(false);
+
   /* --------------------------------------------------
      🎨 Theme sync
   -------------------------------------------------- */
@@ -89,6 +92,9 @@ export default function Detail() {
     }
   }
 
+  /* --------------------------------------------------
+     ⏳ Loading state (SAFE)
+  -------------------------------------------------- */
   if (!biz) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white text-[#0a1d37]">
@@ -98,10 +104,8 @@ export default function Detail() {
   }
 
   /* --------------------------------------------------
-     🖼️ Image resolver (SAFE & FINAL)
+     🖼️ Image resolver
   -------------------------------------------------- */
-  const imgErrored = useRef(false);
-
   const isSafeHttpUrl = (url) => {
     try {
       const u = new URL(url);
@@ -111,7 +115,7 @@ export default function Detail() {
     }
   };
 
-  let imageSrc = "/logo-light.png"; // ✅ real fallback
+  let imageSrc = "/logo-light.png";
 
   if (biz?.image_url && isSafeHttpUrl(biz.image_url)) {
     imageSrc = biz.image_url;
@@ -132,13 +136,10 @@ export default function Detail() {
       } else {
         phoneWithCode = biz.phone;
       }
-    } catch (err) {
-      // ⛑ fallback امن اگر country معتبر نبود
-      console.warn("Invalid country for phone code:", biz.country);
+    } catch {
       phoneWithCode = biz.phone;
     }
   }
-
 
   const googleMapsLink =
     biz?.lat && biz?.lng
@@ -194,7 +195,7 @@ export default function Detail() {
             <img
               src={imageSrc}
               alt={biz.name}
-              className="w-40 h-40 md:w-48 md:h-48 rounded-xl object-cover border border-gray-300 shadow-md cursor-pointer hover:opacity-90 transition mx-auto md:mx-0"
+              className="w-40 h-40 md:w-48 md:h-48 rounded-xl object-cover border border-gray-300 shadow-md cursor-pointer hover:opacity-90 transition"
               onClick={() => setShowImageModal(true)}
               onError={(e) => {
                 if (imgErrored.current) return;
@@ -203,16 +204,12 @@ export default function Detail() {
               }}
             />
 
-            <div className="flex-1 flex flex-col items-center md:items-start space-y-3 leading-relaxed">
-              <h1 className="text-2xl font-semibold flex flex-col md:flex-row items-center gap-2">
-                <span>{biz.name}</span>
-                {biz.owner_verified && <span>🎖️</span>}
+            <div className="flex-1 space-y-3">
+              <h1 className="text-2xl font-semibold">
+                {biz.name} {biz.owner_verified && "🎖️"}
               </h1>
 
-              <p
-                className="text-sm"
-                style={{ color: theme === "dark" ? "#e2e8f0" : "#555" }}
-              >
+              <p className="text-sm opacity-70">
                 {biz.category} • {biz.city}
               </p>
 
@@ -235,38 +232,13 @@ export default function Detail() {
               )}
 
               {isLoggedIn ? (
-                <div className="space-y-2">
+                <>
                   {phoneWithCode && <p>📞 {phoneWithCode}</p>}
-
-                  {obfuscatedEmail && (
-                    <p>
-                      📧{" "}
-                      <a
-                        href={`mailto:${biz.email}`}
-                        className="text-turquoise hover:underline"
-                      >
-                        {obfuscatedEmail}
-                      </a>
-                    </p>
-                  )}
-
-                  {biz.website && (
-                    <p>
-                      🌐{" "}
-                      <a
-                        href={biz.website}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-turquoise hover:underline"
-                      >
-                        Visit Website
-                      </a>
-                    </p>
-                  )}
-                </div>
+                  {obfuscatedEmail && <p>📧 {obfuscatedEmail}</p>}
+                </>
               ) : (
                 <button
-                  className="btn-primary mt-3"
+                  className="btn-primary"
                   onClick={() =>
                     router.push(`/auth/login?redirect=/business/${id}`)
                   }
@@ -275,7 +247,7 @@ export default function Detail() {
                 </button>
               )}
 
-              <p className="pt-2 text-lg font-medium text-turquoise">
+              <p className="text-lg text-turquoise">
                 ⭐ {biz.avg_rating ?? "—"}
               </p>
             </div>
@@ -283,76 +255,38 @@ export default function Detail() {
 
           {/* Rating */}
           <div className="mt-8 border-t pt-6">
-            <h3 className="text-lg font-semibold mb-3">Rate this business</h3>
-
-            <div className="flex flex-col sm:flex-row gap-3 items-center">
-              <RatingStars value={rating} onChange={setRating} color="#40E0D0" />
-
-              <button
-                className="btn-primary"
-                onClick={submitRating}
-                disabled={!rating}
-              >
-                Submit
-              </button>
-            </div>
-
-            {message && (
-              <p
-                className={`mt-3 text-sm ${
-                  message.includes("✅") ? "text-green-500" : "text-red-400"
-                }`}
-              >
-                {message}
-              </p>
-            )}
+            <RatingStars value={rating} onChange={setRating} />
+            <button
+              className="btn-primary mt-3"
+              onClick={submitRating}
+              disabled={!rating}
+            >
+              Submit
+            </button>
+            {message && <p className="mt-2 text-sm">{message}</p>}
           </div>
 
           {/* Claim */}
           <div className="mt-10 border-t pt-6 text-center">
             {biz.owner_verified ? (
-              <div className="text-green-600 font-medium">
-                🎖️ This business has been verified by its owner.
-              </div>
+              <p className="text-green-600">
+                🎖️ Verified by owner
+              </p>
             ) : isLoggedIn ? (
               <ClaimBusinessWidget businessId={id} />
-            ) : (
-              <button
-                className="btn-primary"
-                onClick={() =>
-                  router.push(`/auth/login?redirect=/business/${id}`)
-                }
-              >
-                Claim this business
-              </button>
-            )}
+            ) : null}
           </div>
         </div>
       </main>
 
       <Footer />
 
-      {/* Image modal */}
       {showImageModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/70 flex items-center justify-center"
           onClick={() => setShowImageModal(false)}
         >
-          <div className="relative max-w-3xl w-full px-4">
-            <button
-              onClick={() => setShowImageModal(false)}
-              className="absolute -top-8 right-2 text-white hover:text-turquoise"
-            >
-              <X size={28} />
-            </button>
-
-            <img
-              src={imageSrc}
-              alt={biz.name}
-              className="rounded-2xl w-full h-auto max-h-[85vh] object-contain shadow-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
+          <img src={imageSrc} className="max-h-[90vh]" />
         </div>
       )}
     </div>
