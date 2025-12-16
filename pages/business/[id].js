@@ -122,10 +122,23 @@ export default function Detail() {
   /* --------------------------------------------------
      📞 Contact helpers
   -------------------------------------------------- */
-  const phoneWithCode =
-    biz?.phone && biz?.country
-      ? `+${getCountryCallingCode(biz.country)} ${biz.phone}`
-      : biz?.phone || "";
+  let phoneWithCode = "";
+
+  if (biz?.phone) {
+    try {
+      if (biz?.country) {
+        const code = getCountryCallingCode(biz.country);
+        phoneWithCode = `+${code} ${biz.phone}`;
+      } else {
+        phoneWithCode = biz.phone;
+      }
+    } catch (err) {
+      // ⛑ fallback امن اگر country معتبر نبود
+      console.warn("Invalid country for phone code:", biz.country);
+      phoneWithCode = biz.phone;
+    }
+  }
+
 
   const googleMapsLink =
     biz?.lat && biz?.lng
