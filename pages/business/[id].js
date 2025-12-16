@@ -20,12 +20,7 @@ export default function Detail() {
   const [showImageModal, setShowImageModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // ✅ MUST be here (before any conditional return)
-  const imgErrored = useRef(false);
-
-  /* --------------------------------------------------
-     🎨 Theme sync
-  -------------------------------------------------- */
+  /* ---------------- THEME ---------------- */
   useEffect(() => {
     const current =
       document.documentElement.getAttribute("data-theme") || "light";
@@ -45,9 +40,7 @@ export default function Detail() {
     return () => observer.disconnect();
   }, []);
 
-  /* --------------------------------------------------
-     🔐 Auth status
-  -------------------------------------------------- */
+  /* ---------------- AUTH ---------------- */
   useEffect(() => {
     apiClient
       .get("/auth/me", { withCredentials: true })
@@ -55,9 +48,7 @@ export default function Detail() {
       .catch(() => setIsLoggedIn(false));
   }, []);
 
-  /* --------------------------------------------------
-     📦 Fetch business
-  -------------------------------------------------- */
+  /* ---------------- FETCH BUSINESS ---------------- */
   useEffect(() => {
     if (!id) return;
 
@@ -67,9 +58,7 @@ export default function Detail() {
       .catch(console.error);
   }, [id]);
 
-  /* --------------------------------------------------
-     ⭐ Rating
-  -------------------------------------------------- */
+  /* ---------------- RATING ---------------- */
   async function submitRating() {
     try {
       if (!isLoggedIn) {
@@ -92,9 +81,6 @@ export default function Detail() {
     }
   }
 
-  /* --------------------------------------------------
-     ⏳ Loading state (SAFE)
-  -------------------------------------------------- */
   if (!biz) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white text-[#0a1d37]">
@@ -103,10 +89,10 @@ export default function Detail() {
     );
   }
 
-  /* --------------------------------------------------
-     🖼️ Image resolver
-  -------------------------------------------------- */
-  const isSafeHttpUrl = (url) => {
+  /* ---------------- IMAGE SAFE ---------------- */
+  const imgErrored = useRef(false);
+
+  const isSafeUrl = (url) => {
     try {
       const u = new URL(url);
       return u.protocol === "http:" || u.protocol === "https:";
@@ -117,22 +103,17 @@ export default function Detail() {
 
   let imageSrc = "/logo-light.png";
 
-  if (biz?.image_url && isSafeHttpUrl(biz.image_url)) {
+  if (biz.image_url && isSafeUrl(biz.image_url)) {
     imageSrc = biz.image_url;
-  } else if (biz?.logo_url && isSafeHttpUrl(biz.logo_url)) {
-    imageSrc = biz.logo_url;
   }
 
-  /* --------------------------------------------------
-     📞 Contact helpers
-  -------------------------------------------------- */
+  /* ---------------- PHONE SAFE ---------------- */
   let phoneWithCode = "";
 
-  if (biz?.phone) {
+  if (biz.phone) {
     try {
-      if (biz?.country) {
-        const code = getCountryCallingCode(biz.country);
-        phoneWithCode = `+${code} ${biz.phone}`;
+      if (biz.country) {
+        phoneWithCode = `+${getCountryCallingCode(biz.country)} ${biz.phone}`;
       } else {
         phoneWithCode = biz.phone;
       }
@@ -142,60 +123,28 @@ export default function Detail() {
   }
 
   const googleMapsLink =
-    biz?.lat && biz?.lng
+    biz.lat && biz.lng
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
           `${biz.address} @${biz.lat},${biz.lng}`
         )}`
       : null;
 
-  const obfuscatedEmail = biz?.email
+  const obfuscatedEmail = biz.email
     ? biz.email.replace("@", " [at] ")
     : null;
 
-  /* --------------------------------------------------
-     🧱 Render
-  -------------------------------------------------- */
+  /* ---------------- RENDER ---------------- */
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100vh",
-        background: "#ffffff",
-        color: theme === "dark" ? "#ffffff" : "#0a1d37",
-      }}
-    >
+    <div className="flex flex-col min-h-screen bg-white">
       <Header />
 
-      <main
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "2rem 1rem",
-        }}
-      >
-        <div
-          className="rounded-2xl p-8 w-full max-w-2xl border transition-all duration-300 text-center md:text-left"
-          style={{
-            background: theme === "dark" ? "#0b2149" : "#ffffff",
-            color: theme === "dark" ? "#ffffff" : "#0a1b2a",
-            borderColor:
-              theme === "dark"
-                ? "rgba(255,255,255,0.1)"
-                : "rgba(0,0,0,0.05)",
-            boxShadow:
-              theme === "dark"
-                ? "10px 10px 25px rgba(0,0,0,0.4), -10px -10px 25px rgba(255,255,255,0.05)"
-                : "6px 6px 15px rgba(0,0,0,0.1), -6px -6px 15px rgba(255,255,255,0.4)",
-          }}
-        >
-          <div className="flex flex-col items-center md:flex-row md:items-start gap-6">
+      <main className="flex-1 flex justify-center px-4 py-10">
+        <div className="w-full max-w-2xl rounded-2xl p-8 shadow-lg bg-white">
+          <div className="flex flex-col md:flex-row gap-6 items-center">
             <img
               src={imageSrc}
               alt={biz.name}
-              className="w-40 h-40 md:w-48 md:h-48 rounded-xl object-cover border border-gray-300 shadow-md cursor-pointer hover:opacity-90 transition"
+              className="w-40 h-40 rounded-xl object-cover cursor-pointer"
               onClick={() => setShowImageModal(true)}
               onError={(e) => {
                 if (imgErrored.current) return;
@@ -204,12 +153,12 @@ export default function Detail() {
               }}
             />
 
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-2 text-center md:text-left">
               <h1 className="text-2xl font-semibold">
                 {biz.name} {biz.owner_verified && "🎖️"}
               </h1>
 
-              <p className="text-sm opacity-70">
+              <p className="text-gray-500">
                 {biz.category} • {biz.city}
               </p>
 
@@ -221,7 +170,7 @@ export default function Detail() {
                       href={googleMapsLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-turquoise hover:underline"
+                      className="text-turquoise"
                     >
                       {biz.address}
                     </a>
@@ -238,7 +187,7 @@ export default function Detail() {
                 </>
               ) : (
                 <button
-                  className="btn-primary"
+                  className="btn-primary mt-3"
                   onClick={() =>
                     router.push(`/auth/login?redirect=/business/${id}`)
                   }
@@ -247,15 +196,15 @@ export default function Detail() {
                 </button>
               )}
 
-              <p className="text-lg text-turquoise">
+              <p className="text-turquoise font-medium">
                 ⭐ {biz.avg_rating ?? "—"}
               </p>
             </div>
           </div>
 
-          {/* Rating */}
+          {/* RATING */}
           <div className="mt-8 border-t pt-6">
-            <RatingStars value={rating} onChange={setRating} />
+            <RatingStars value={rating} onChange={setRating} color="#40E0D0" />
             <button
               className="btn-primary mt-3"
               onClick={submitRating}
@@ -266,27 +215,45 @@ export default function Detail() {
             {message && <p className="mt-2 text-sm">{message}</p>}
           </div>
 
-          {/* Claim */}
+          {/* CLAIM — نسخه درست */}
           <div className="mt-10 border-t pt-6 text-center">
             {biz.owner_verified ? (
               <p className="text-green-600">
-                🎖️ Verified by owner
+                🎖️ This business has been verified by its owner.
               </p>
             ) : isLoggedIn ? (
               <ClaimBusinessWidget businessId={id} />
-            ) : null}
+            ) : (
+              <button
+                className="btn-primary"
+                onClick={() =>
+                  router.push(`/auth/login?redirect=/business/${id}`)
+                }
+              >
+                Claim this business
+              </button>
+            )}
           </div>
         </div>
       </main>
 
       <Footer />
 
+      {/* IMAGE MODAL */}
       {showImageModal && (
         <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center"
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
           onClick={() => setShowImageModal(false)}
         >
-          <img src={imageSrc} className="max-h-[90vh]" />
+          <img
+            src={imageSrc}
+            alt={biz.name}
+            className="max-h-[85vh] rounded-xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button className="absolute top-6 right-6 text-white">
+            <X size={32} />
+          </button>
         </div>
       )}
     </div>
