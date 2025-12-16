@@ -1,20 +1,9 @@
 // frontend/components/BusinessCard.jsx
 import Link from "next/link";
-
-/**
- * 🧩 BusinessCard — IranConnect (Hardened)
- * - Safe image handling
- * - XSS-safe text rendering
- * - CDN guarded
- */
+import { useRef } from "react";
 
 export default function BusinessCard({ b }) {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE || "";
-  const cdnBase = process.env.NEXT_PUBLIC_CDN_BASE || "";
-
-  /* ----------------------------------------------------
-     🔐 Helpers
-  ---------------------------------------------------- */
+  const imgErrored = useRef(false);
 
   const safeText = (val) =>
     typeof val === "string" ? val.slice(0, 200) : "";
@@ -28,33 +17,14 @@ export default function BusinessCard({ b }) {
     }
   };
 
-  /* ----------------------------------------------------
-     🖼️ Resolve image source safely
-  ---------------------------------------------------- */
-
-  let original = "/logo.png";
+  // 🔵 Resolve image
+  let imageSrc = "/logo-light.png"; // ✅ real fallback
 
   if (b?.image_url && isSafeHttpUrl(b.image_url)) {
-    original = b.image_url;
+    imageSrc = b.image_url;
   } else if (b?.logo_url && isSafeHttpUrl(b.logo_url)) {
-    original = b.logo_url;
-  } else if (b?.image_url && b.image_url.startsWith("/")) {
-    original = `${apiBase.replace("/api", "")}${b.image_url}`;
-  } else if (b?.logo_url && b.logo_url.startsWith("/")) {
-    original = `${apiBase.replace("/api", "")}${b.logo_url}`;
+    imageSrc = b.logo_url;
   }
-
-  let imageSrc = original;
-
-  // فقط اگر CDN معتبر داریم و URL امن است
-  if (cdnBase && isSafeHttpUrl(original)) {
-    const filename = original.split("/").pop().split("?")[0];
-    imageSrc = `${cdnBase}/cdn/${filename}?url=${encodeURIComponent(original)}`;
-  }
-
-  /* ----------------------------------------------------
-     🧱 Render
-  ---------------------------------------------------- */
 
   return (
     <Link
@@ -69,7 +39,9 @@ export default function BusinessCard({ b }) {
           loading="lazy"
           decoding="async"
           onError={(e) => {
-            e.currentTarget.src = "/logo.png";
+            if (imgErrored.current) return;
+            imgErrored.current = true;
+            e.currentTarget.src = "/logo-light.png";
           }}
           className="w-24 h-24 rounded-xl object-cover border mb-2 sm:mb-0"
         />
@@ -92,3 +64,4 @@ export default function BusinessCard({ b }) {
     </Link>
   );
 }
+
