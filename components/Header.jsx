@@ -44,13 +44,25 @@ export default function Header() {
 
     /* 🧩 بررسی وضعیت بیزینس کلیم */
     apiClient
-      .get('/business-claims/my', { withCredentials: true })
+      .get('/business-claims/my', {
+        withCredentials: true,
+        validateStatus: (status) => status < 500, // ⬅️ خیلی مهم
+      })
       .then((res) => {
-        if (res.data && res.data.some((c) => c.status === 'verified')) {
+        if (
+          res.status === 200 &&
+          Array.isArray(res.data) &&
+          res.data.some((c) => c.status === 'verified')
+        ) {
           setHasClaim(true);
+        } else {
+          setHasClaim(false);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setHasClaim(false);
+      });
+
 
     /* 🌓 بارگذاری تم */
     const savedTheme =
