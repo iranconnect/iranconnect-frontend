@@ -17,23 +17,27 @@ export default function Header() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const me = await apiClient.get('/auth/me', { withCredentials: true });
-
-        if (me?.data?.ok) {
+        const me = await apiClient.get("/auth/me", {
+          withCredentials: true,
+          // ⬇️ خیلی مهم
+          validateStatus: (status) => status < 500,
+        });
+      
+        if (me?.status === 200 && me.data?.ok) {
           setIsLoggedIn(true);
-          const role = me.data.role || 'user';
-          setIsAdmin(role === 'admin' || role === 'superadmin');
-          setEmail(me.data.email || '');
+          const role = me.data.role || "user";
+          setIsAdmin(role === "admin" || role === "superadmin");
+          setEmail(me.data.email || "");
         } else {
           setIsLoggedIn(false);
           setIsAdmin(false);
-          setEmail('');
+          setEmail("");
         }
-      } catch (err) {
+      } catch {
         setIsLoggedIn(false);
         setIsAdmin(false);
-        setEmail('');
-      }
+        setEmail("");
+      }       
     }
 
     checkAuth();
