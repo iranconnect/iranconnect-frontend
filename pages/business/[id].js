@@ -1,6 +1,6 @@
 //frontend/pages/business/[id].js
 import { useRouter } from "next/router";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import RatingStars from "../../components/RatingStars";
@@ -19,17 +19,22 @@ export default function Detail() {
   const [theme, setTheme] = useState("light");
   const [showImageModal, setShowImageModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  /* ---------------- THEME ---------------- */
+  /* ===============================
+     🌗 Theme watcher (SAFE)
+  =============================== */
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const current =
       document.documentElement.getAttribute("data-theme") || "light";
     setTheme(current);
 
     const observer = new MutationObserver(() => {
-      setTheme(
-        document.documentElement.getAttribute("data-theme") || "light"
-      );
+      const next =
+        document.documentElement.getAttribute("data-theme") || "light";
+      setTheme(next);
     });
 
     observer.observe(document.documentElement, {
@@ -40,25 +45,38 @@ export default function Detail() {
     return () => observer.disconnect();
   }, []);
 
-  /* ---------------- AUTH ---------------- */
+  /* ===============================
+     🔐 Safe auth check (NO redirect)
+  =============================== */
   useEffect(() => {
+    let mounted = true;
+
     apiClient
-      .get("/auth/me", { withCredentials: true })
-      .then(() => setIsLoggedIn(true))
-      .catch(() => setIsLoggedIn(false));
+      .get("/auth/me", { silent: true }) // 👈 بسیار مهم
+      .then(() => mounted && setIsLoggedIn(true))
+      .catch(() => mounted && setIsLoggedIn(false))
+      .finally(() => mounted && setAuthChecked(true));
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  /* ---------------- FETCH BUSINESS ---------------- */
+  /* ===============================
+     🏢 Fetch business
+  =============================== */
   useEffect(() => {
     if (!id) return;
 
     apiClient
       .get(`/businesses/${id}`)
       .then((res) => setBiz(res.data))
-      .catch(console.error);
+      .catch(() => setBiz(null));
   }, [id]);
 
-  /* ---------------- RATING ---------------- */
+  /* ===============================
+     ⭐ Submit rating
+  =============================== */
   async function submitRating() {
     try {
       if (!isLoggedIn) {
@@ -66,11 +84,7 @@ export default function Detail() {
         return;
       }
 
-      await apiClient.post(
-        `/businesses/${id}/ratings`,
-        { score: rating },
-        { withCredentials: true }
-      );
+      await apiClient.post(`/businesses/${id}/ratings`, { score: rating });
 
       setMessage("✅ Rating submitted");
 
@@ -81,7 +95,10 @@ export default function Detail() {
     }
   }
 
-  if (!biz) {
+  /* ===============================
+     ⏳ Loading states
+  =============================== */
+  if (!biz || !authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white text-[#0a1d37]">
         <p>Loading...</p>
@@ -89,76 +106,80 @@ export default function Detail() {
     );
   }
 
-  /* ---------------- IMAGE SAFE ---------------- */
-  const imgErrored = useRef(false);
+  /* ===============================
+     🖼 Image handling
+  =============================== */
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+  const cdnBase = process.env.NEXT_PUBLIC_CDN_BASE || "http://localhost:5000";
 
-  const isSafeUrl = (url) => {
-    try {
-      const u = new URL(url);
-      return u.protocol === "http:" || u.protocol === "https:";
-    } catch {
-      return false;
-    }
-  };
+  const original = biz.image_url
+    ? biz.image_url.startsWith("http")
+      ? biz.image_url
+      : `${apiBase.replace("/api", "")}${biz.image_url}`
+    : "/logo.png";
 
-  let imageSrc = "/logo-light.png";
-
-  if (biz.image_url && isSafeUrl(biz.image_url)) {
-    imageSrc = biz.image_url;
+  let imageSrc = original;
+  if (original.startsWith("http")) {
+    const filename = original.split("/").pop().split("?")[0];
+    imageSrc = `${cdnBase}/cdn/${filename}?url=${encodeURIComponent(original)}`;
   }
 
-  /* ---------------- PHONE SAFE ---------------- */
-  let phoneWithCode = "";
-
-  if (biz.phone) {
-    try {
-      if (biz.country) {
-        phoneWithCode = `+${getCountryCallingCode(biz.country)} ${biz.phone}`;
-      } else {
-        phoneWithCode = biz.phone;
-      }
-    } catch {
-      phoneWithCode = biz.phone;
-    }
-  }
+  const phoneWithCode =
+    biz?.phone && biz?.country
+      ? `+${getCountryCallingCode(biz.country)} ${biz.phone}`
+      : biz?.phone || "";
 
   const googleMapsLink =
-    biz.lat && biz.lng
+    biz?.lat && biz?.lng
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
           `${biz.address} @${biz.lat},${biz.lng}`
         )}`
       : null;
 
-  const obfuscatedEmail = biz.email
+  const obfuscatedEmail = biz?.email
     ? biz.email.replace("@", " [at] ")
     : null;
 
-  /* ---------------- RENDER ---------------- */
+  /* ===============================
+     🧱 UI
+  =============================== */
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div
+      className="flex flex-col min-h-screen"
+      style={{
+        background: "#ffffff",
+        color: theme === "dark" ? "#ffffff" : "#0a1d37",
+      }}
+    >
       <Header />
 
-      <main className="flex-1 flex justify-center px-4 py-10">
-        <div className="w-full max-w-2xl rounded-2xl p-8 shadow-lg bg-white">
-          <div className="flex flex-col md:flex-row gap-6 items-center">
+      <main className="flex-1 flex items-center justify-center px-4 py-10">
+        <div
+          className="rounded-2xl p-8 w-full max-w-2xl border transition-all text-center md:text-left"
+          style={{
+            background: theme === "dark" ? "#0b2149" : "#ffffff",
+            borderColor:
+              theme === "dark"
+                ? "rgba(255,255,255,0.1)"
+                : "rgba(0,0,0,0.05)",
+          }}
+        >
+          {/* --- Header --- */}
+          <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
             <img
               src={imageSrc}
               alt={biz.name}
-              className="w-40 h-40 rounded-xl object-cover cursor-pointer"
+              className="w-44 h-44 rounded-xl object-cover cursor-pointer"
               onClick={() => setShowImageModal(true)}
-              onError={(e) => {
-                if (imgErrored.current) return;
-                imgErrored.current = true;
-                e.currentTarget.src = "/logo-light.png";
-              }}
             />
 
-            <div className="flex-1 space-y-2 text-center md:text-left">
-              <h1 className="text-2xl font-semibold">
-                {biz.name} {biz.owner_verified && "🎖️"}
+            <div className="flex-1 space-y-3">
+              <h1 className="text-2xl font-semibold flex items-center gap-2">
+                {biz.name}
+                {biz.owner_verified && <span>🎖️</span>}
               </h1>
 
-              <p className="text-gray-500">
+              <p className="text-sm opacity-80">
                 {biz.category} • {biz.city}
               </p>
 
@@ -170,7 +191,7 @@ export default function Detail() {
                       href={googleMapsLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-turquoise"
+                      className="text-turquoise hover:underline"
                     >
                       {biz.address}
                     </a>
@@ -183,7 +204,30 @@ export default function Detail() {
               {isLoggedIn ? (
                 <>
                   {phoneWithCode && <p>📞 {phoneWithCode}</p>}
-                  {obfuscatedEmail && <p>📧 {obfuscatedEmail}</p>}
+                  {obfuscatedEmail && (
+                    <p>
+                      📧{" "}
+                      <a
+                        href={`mailto:${biz.email}`}
+                        className="text-turquoise hover:underline"
+                      >
+                        {obfuscatedEmail}
+                      </a>
+                    </p>
+                  )}
+                  {biz.website && (
+                    <p>
+                      🌐{" "}
+                      <a
+                        href={biz.website}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-turquoise hover:underline"
+                      >
+                        Visit Website
+                      </a>
+                    </p>
+                  )}
                 </>
               ) : (
                 <button
@@ -192,34 +236,45 @@ export default function Detail() {
                     router.push(`/auth/login?redirect=/business/${id}`)
                   }
                 >
-                  Login to see contact information
+                  Login to see contact info
                 </button>
               )}
 
-              <p className="text-turquoise font-medium">
+              <p className="text-lg font-medium text-turquoise">
                 ⭐ {biz.avg_rating ?? "—"}
               </p>
             </div>
           </div>
 
-          {/* RATING */}
+          {/* --- Rating --- */}
           <div className="mt-8 border-t pt-6">
-            <RatingStars value={rating} onChange={setRating} color="#40E0D0" />
-            <button
-              className="btn-primary mt-3"
-              onClick={submitRating}
-              disabled={!rating}
-            >
-              Submit
-            </button>
-            {message && <p className="mt-2 text-sm">{message}</p>}
+            <h3 className="font-semibold mb-3">Rate this business</h3>
+
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+              <RatingStars
+                value={rating}
+                onChange={setRating}
+                color="#40E0D0"
+              />
+              <button
+                className="btn-primary"
+                disabled={!rating}
+                onClick={submitRating}
+              >
+                Submit
+              </button>
+            </div>
+
+            {message && (
+              <p className="mt-3 text-sm">{message}</p>
+            )}
           </div>
 
-          {/* CLAIM — نسخه درست */}
+          {/* --- Claim --- */}
           <div className="mt-10 border-t pt-6 text-center">
             {biz.owner_verified ? (
               <p className="text-green-600">
-                🎖️ This business has been verified by its owner.
+                🎖️ Verified by owner
               </p>
             ) : isLoggedIn ? (
               <ClaimBusinessWidget businessId={id} />
@@ -239,21 +294,23 @@ export default function Detail() {
 
       <Footer />
 
-      {/* IMAGE MODAL */}
+      {/* --- Image modal --- */}
       {showImageModal && (
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
           onClick={() => setShowImageModal(false)}
         >
-          <img
-            src={imageSrc}
-            alt={biz.name}
-            className="max-h-[85vh] rounded-xl"
-            onClick={(e) => e.stopPropagation()}
-          />
-          <button className="absolute top-6 right-6 text-white">
-            <X size={32} />
-          </button>
+          <div className="relative max-w-3xl w-full px-4">
+            <button className="absolute -top-8 right-2 text-white">
+              <X size={28} />
+            </button>
+            <img
+              src={imageSrc}
+              alt={biz.name}
+              className="rounded-xl w-full"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         </div>
       )}
     </div>
