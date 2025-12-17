@@ -1,21 +1,21 @@
 // frontend/pages/_document.js
 import Document, { Html, Head, Main, NextScript } from "next/document";
 
+const isStaging = process.env.NEXT_PUBLIC_ENV === "staging";
+
+const API_ORIGIN = isStaging
+  ? "https://iranconnect-backend-staging.onrender.com"
+  : "https://api.iranconnect.org";
+
 export default class MyDocument extends Document {
   render() {
     return (
       <Html lang="en">
         <Head>
-          {/* =============================
-              🔐 Security Meta Headers
-          ============================== */}
 
           <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
 
-          <meta
-            name="referrer"
-            content="strict-origin-when-cross-origin"
-          />
+          <meta name="referrer" content="strict-origin-when-cross-origin" />
 
           <meta
             httpEquiv="Permissions-Policy"
@@ -29,12 +29,9 @@ export default class MyDocument extends Document {
             "
           />
 
-          {/* =============================
-              🔐 Content Security Policy
-          ============================== */}
           <meta
             httpEquiv="Content-Security-Policy"
-            content="
+            content={`
               default-src 'self';
 
               script-src
@@ -52,7 +49,7 @@ export default class MyDocument extends Document {
                 'self'
                 data:
                 blob:
-                https://api.iranconnect.org
+                ${API_ORIGIN}
                 https://res.cloudinary.com
                 https://maps.googleapis.com
                 https://maps.gstatic.com
@@ -60,7 +57,7 @@ export default class MyDocument extends Document {
 
               connect-src
                 'self'
-                https://api.iranconnect.org
+                ${API_ORIGIN}
                 https://maps.googleapis.com
                 https://api.cloudinary.com;
 
@@ -74,7 +71,7 @@ export default class MyDocument extends Document {
               base-uri 'self';
               form-action 'self';
               object-src 'none';
-            "
+            `.replace(/\s{2,}/g, " ").trim()}
           />
 
           <meta name="theme-color" content="#18224B" />
@@ -83,20 +80,6 @@ export default class MyDocument extends Document {
         <body>
           <Main />
           <NextScript />
-
-          <noscript>
-            <div
-              style={{
-                padding: "16px",
-                textAlign: "center",
-                background: "#18224B",
-                color: "#ffffff",
-                fontSize: "14px",
-              }}
-            >
-              IranConnect requires JavaScript to function properly.
-            </div>
-          </noscript>
         </body>
       </Html>
     );
