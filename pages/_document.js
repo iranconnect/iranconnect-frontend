@@ -7,6 +7,12 @@ const API_ORIGIN = isStaging
   ? "https://iranconnect-backend-staging.onrender.com"
   : "https://api.iranconnect.org";
 
+/* =====================================================
+   🔐 Content Security Policy (CSP)
+   - Staging: allows vercel.live tools
+   - Production: strict
+   - GA allowed but executed ONLY after cookie consent
+===================================================== */
 const csp = `
   default-src 'self';
 
@@ -16,6 +22,8 @@ const csp = `
     https://www.gstatic.com
     https://maps.googleapis.com
     https://maps.gstatic.com
+    https://www.googletagmanager.com
+    https://www.google-analytics.com
     ${isStaging ? "https://vercel.live" : ""};
 
   style-src
@@ -37,6 +45,8 @@ const csp = `
     ${API_ORIGIN}
     https://maps.googleapis.com
     https://api.cloudinary.com
+    https://www.google-analytics.com
+    https://stats.g.doubleclick.net
     ${isStaging ? "https://vercel.live" : ""};
 
   frame-src
@@ -59,16 +69,29 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
+          {/* =============================
+              🔐 Security Headers
+          ============================== */}
           <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
-          <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+          <meta
+            name="referrer"
+            content="strict-origin-when-cross-origin"
+          />
 
           <meta
             httpEquiv="Permissions-Policy"
             content="camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
           />
 
-          <meta httpEquiv="Content-Security-Policy" content={csp} />
+          <meta
+            httpEquiv="Content-Security-Policy"
+            content={csp}
+          />
 
+          {/* =============================
+              🎨 Theme
+          ============================== */}
           <meta name="theme-color" content="#18224B" />
         </Head>
 
