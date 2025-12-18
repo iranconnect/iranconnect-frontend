@@ -71,6 +71,8 @@ export default class MyDocument extends Document {
 
               frame-src
                 https://www.google.com;
+                ${isStaging ? "https://vercel.live https://*.vercel.app" : ""};
+
 
               font-src
                 'self'
