@@ -7,88 +7,68 @@ const API_ORIGIN = isStaging
   ? "https://iranconnect-backend-staging.onrender.com"
   : "https://api.iranconnect.org";
 
+const csp = `
+  default-src 'self';
+
+  script-src
+    'self'
+    https://www.google.com
+    https://www.gstatic.com
+    https://maps.googleapis.com
+    https://maps.gstatic.com
+    ${isStaging ? "https://vercel.live" : ""};
+
+  style-src
+    'self'
+    'unsafe-inline';
+
+  img-src
+    'self'
+    data:
+    blob:
+    ${API_ORIGIN}
+    https://res.cloudinary.com
+    https://maps.googleapis.com
+    https://maps.gstatic.com
+    https://*.googleusercontent.com;
+
+  connect-src
+    'self'
+    ${API_ORIGIN}
+    https://maps.googleapis.com
+    https://api.cloudinary.com
+    ${isStaging ? "https://vercel.live" : ""};
+
+  frame-src
+    https://www.google.com
+    ${isStaging ? "https://vercel.live" : ""};
+
+  font-src
+    'self'
+    https:;
+
+  base-uri 'self';
+  form-action 'self';
+  object-src 'none';
+`
+  .replace(/\s{2,}/g, " ")
+  .trim();
+
 export default class MyDocument extends Document {
   render() {
     return (
       <Html lang="en">
         <Head>
-          {/* =============================
-              🔐 Security Headers
-          ============================== */}
-
           <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
-
           <meta name="referrer" content="strict-origin-when-cross-origin" />
 
           <meta
             httpEquiv="Permissions-Policy"
-            content="
-              camera=(),
-              microphone=(),
-              geolocation=(),
-              payment=(),
-              usb=(),
-              interest-cohort=()
-            "
+            content="camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
           />
 
-          {/* =============================
-              🔐 Content Security Policy
-          ============================== */}
-          <meta
-            httpEquiv="Content-Security-Policy"
-            content={`
-              default-src 'self';
+          <meta httpEquiv="Content-Security-Policy" content={csp} />
 
-              script-src
-                'self'
-                https://www.google.com
-                https://www.gstatic.com
-                https://maps.googleapis.com
-                https://maps.gstatic.com
-                ${isStaging ? "https://vercel.live" : ""};
-
-              style-src
-                'self'
-                'unsafe-inline';
-
-              img-src
-                'self'
-                data:
-                blob:
-                ${API_ORIGIN}
-                https://res.cloudinary.com
-                https://maps.googleapis.com
-                https://maps.gstatic.com
-                https://*.googleusercontent.com;
-
-              connect-src
-                'self'
-                ${API_ORIGIN}
-                https://maps.googleapis.com
-                https://api.cloudinary.com
-                ${isStaging ? "https://vercel.live" : ""};
-
-              frame-src
-                https://www.google.com;
-                ${isStaging ? "https://vercel.live https://*.vercel.app" : ""};
-
-
-              font-src
-                'self'
-                https:;
-
-              base-uri 'self';
-              form-action 'self';
-              object-src 'none';
-            `
-              .replace(/\s{2,}/g, " ")
-              .trim()}
-          />
-
-          {/* =============================
-              🎨 Theme
-          ============================== */}
           <meta name="theme-color" content="#18224B" />
         </Head>
 
