@@ -12,6 +12,9 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
+          {/* =============================
+              🔐 Security Headers
+          ============================== */}
 
           <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
 
@@ -29,6 +32,9 @@ export default class MyDocument extends Document {
             "
           />
 
+          {/* =============================
+              🔐 Content Security Policy
+          ============================== */}
           <meta
             httpEquiv="Content-Security-Policy"
             content={`
@@ -39,7 +45,8 @@ export default class MyDocument extends Document {
                 https://www.google.com
                 https://www.gstatic.com
                 https://maps.googleapis.com
-                https://maps.gstatic.com;
+                https://maps.gstatic.com
+                ${isStaging ? "https://vercel.live" : ""};
 
               style-src
                 'self'
@@ -59,7 +66,8 @@ export default class MyDocument extends Document {
                 'self'
                 ${API_ORIGIN}
                 https://maps.googleapis.com
-                https://api.cloudinary.com;
+                https://api.cloudinary.com
+                ${isStaging ? "https://vercel.live" : ""};
 
               frame-src
                 https://www.google.com;
@@ -71,9 +79,14 @@ export default class MyDocument extends Document {
               base-uri 'self';
               form-action 'self';
               object-src 'none';
-            `.replace(/\s{2,}/g, " ").trim()}
+            `
+              .replace(/\s{2,}/g, " ")
+              .trim()}
           />
 
+          {/* =============================
+              🎨 Theme
+          ============================== */}
           <meta name="theme-color" content="#18224B" />
         </Head>
 
