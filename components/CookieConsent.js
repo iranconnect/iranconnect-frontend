@@ -6,7 +6,6 @@ import apiClient from "../utils/apiClient";
 /* ───────────────────────────────────────────────
    🔐 Cookie helpers (first-party technical cookie)
 ─────────────────────────────────────────────── */
-const CONSENT_COOKIE = "ic_cookie_consent_uuid";
 
 function getCookie(name) {
   if (typeof document === "undefined") return null;
@@ -56,30 +55,31 @@ export default function CookieConsent() {
      ✅ FIX: after logout banner must NOT reappear
   */
   useEffect(() => {
+    const DECISION_COOKIE = "ic_cookie_banner_decided";
+
     async function checkConsent() {
-      const consentCookie = getCookie(CONSENT_COOKIE);
-
-      // اگر قبلاً تصمیم گرفته شده → هرگز بنر نشان داده نشود
-      if (consentCookie) return;
-
-      // اگر کوکی نیست، فقط در صورتی بنر را نشان بده
-      // که کاربر لاگین نباشد
+      // ✅ اگر کاربر قبلاً تصمیم گرفته → هرگز بنر نشان داده نشود
+      const decision = getCookie(DECISION_COOKIE);
+      if (decision === "accepted" || decision === "rejected") {
+        return;
+      }
+   
+      // اگر تصمیمی نیست، فقط وقتی لاگین نیست بنر نشان بده
       try {
         const res = await apiClient.get("/auth/me", {
           withCredentials: true,
         });
-
+    
         if (res.data?.ok) {
           // کاربر لاگین است → بنر نده
           return;
         }
       } catch {
-        // لاگین نیست → بنر نشان داده شود
+        // لاگین نیست → بنر مجاز است
       }
-
+   
       setVisible(true);
     }
-
     checkConsent();
   }, []);
 
