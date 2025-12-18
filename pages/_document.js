@@ -46,6 +46,7 @@ const csp = `
     https://maps.googleapis.com
     https://api.cloudinary.com
     https://www.google-analytics.com
+    https://region1.google-analytics.com
     https://stats.g.doubleclick.net
     ${isStaging ? "https://vercel.live" : ""};
 
