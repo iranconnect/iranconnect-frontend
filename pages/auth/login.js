@@ -30,6 +30,16 @@ export default function Login() {
 
   const captchaRef = useRef(null);
 
+  /* ───────────────────────────────────────────────
+     🔵 Load auto-logout message from sessionStorage
+  ─────────────────────────────────────────────── */
+  useEffect(() => {
+    const saved = sessionStorage.getItem("iran_auto_logout_msg");
+    if (saved) {
+      setSecurityMsg(saved);
+      sessionStorage.removeItem("iran_auto_logout_msg");
+    }
+  }, []);
 
 
   /* ───────────────────────────────────────────────
@@ -49,9 +59,7 @@ export default function Login() {
   
       // پاک‌سازی URL برای جلوگیری از تکرار پیام
       router.replace("/auth/login", undefined, { shallow: true });
-    } else {
-      setSecurityMsg("");
-    }
+    } 
   }, [router.isReady, router.query.reason]);
 
 
