@@ -4,7 +4,7 @@ import Document, { Html, Head, Main, NextScript } from "next/document";
 const isStaging = process.env.NEXT_PUBLIC_ENV === "staging";
 
 const API_ORIGIN = isStaging
-  ? "https://iranconnect-backend-staging.onrender.com"
+  ? "https://api-staging.iranconnect.org"
   : "https://api.iranconnect.org";
 
 /* =====================================================
@@ -18,6 +18,7 @@ const csp = `
 
   script-src
     'self'
+    'unsafe-inline'
     https://www.google.com
     https://www.gstatic.com
     https://maps.googleapis.com
@@ -59,7 +60,9 @@ const csp = `
     https:;
 
   base-uri 'self';
-  form-action 'self';
+  form-action 
+    'self'
+    ${API_ORIGIN};
   object-src 'none';
 `
   .replace(/\s{2,}/g, " ")
