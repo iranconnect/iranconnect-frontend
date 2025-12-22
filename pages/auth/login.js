@@ -5,6 +5,8 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import ConsentModal from "../../components/ConsentModal";
 import ReCAPTCHA from "react-google-recaptcha";
+import { useRouter } from "next/router";
+
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -24,18 +26,34 @@ export default function Login() {
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
 
+  const router = useRouter();
+
   const captchaRef = useRef(null);
+
+
 
   /* ───────────────────────────────────────────────
      🔵 1) Load auto-logout message
   ─────────────────────────────────────────────── */
   useEffect(() => {
-    const saved = sessionStorage.getItem("iran_auto_logout_msg");
-    if (saved) {
-      setSecurityMsg(saved);
-      sessionStorage.removeItem("iran_auto_logout_msg");
+    if (!router.isReady) return;
+  
+    if (router.query.reason === "security") {
+      setSecurityMsg(`
+        <div class="p-4 rounded-lg bg-yellow-100 text-yellow-900 border border-yellow-300">
+          <strong>Security notice</strong><br/>
+          You were logged out because we detected a login from another device.
+          If this wasn't you, please reset your password.
+        </div>
+      `);
+  
+      // پاک‌سازی URL برای جلوگیری از تکرار پیام
+      router.replace("/auth/login", undefined, { shallow: true });
+    } else {
+      setSecurityMsg("");
     }
-  }, []);
+  }, [router.isReady, router.query.reason]);
+
 
   /* ───────────────────────────────────────────────
      🔵 2) Theme & Language watcher
