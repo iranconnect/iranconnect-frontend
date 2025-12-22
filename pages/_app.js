@@ -57,11 +57,31 @@ export default function App({ Component, pageProps }) {
       return;
     }
 
-    const isProtected =
-      router.pathname.startsWith("/admin") ||
-      router.pathname.startsWith("/account");
+    useEffect(() => {
+      if (!isLoggedIn) {
+        if (timerRef.current) clearTimeout(timerRef.current);
+        setInactive(false);
+        return;
+      }
+    
+      const resetTimer = () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => {
+          setInactive(true);
+        }, 2 * 60 * 1000);
+      };
+    
+      const events = ["mousemove", "mousedown", "keypress", "touchstart"];
+      events.forEach((e) => window.addEventListener(e, resetTimer));
+    
+      resetTimer();
+    
+      return () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+        events.forEach((e) => window.removeEventListener(e, resetTimer));
+      };
+    }, [isLoggedIn, router.pathname]);
 
-    if (!isProtected) return;
 
     const resetTimer = () => {
       if (timerRef.current) clearTimeout(timerRef.current);
