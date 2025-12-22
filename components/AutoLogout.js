@@ -69,7 +69,7 @@ export default function AutoLogout() {
     } catch {}
 
     cleanup();
-    window.location.href = "/auth/login";
+    window.location.href = "/auth/login?reason=inactive";
   }
 
   /* ----------------------------------------------------
