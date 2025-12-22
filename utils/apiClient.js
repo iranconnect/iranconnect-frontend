@@ -117,7 +117,7 @@ apiClient.interceptors.response.use(
         `;
 
         sessionStorage.setItem("iran_auto_logout_msg", htmlMsg);
-        window.location.href = "/auth/login?forced=1";
+        window.location.href = "/auth/login?reason=security";
       }
 
       return Promise.reject(err);
