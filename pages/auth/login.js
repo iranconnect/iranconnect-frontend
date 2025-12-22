@@ -40,29 +40,7 @@ export default function Login() {
       sessionStorage.removeItem("iran_auto_logout_msg");
     }
   }, []);
-
-
-  /* ───────────────────────────────────────────────
-     🔵 1) Load auto-logout message
-  ─────────────────────────────────────────────── */
-  useEffect(() => {
-    if (!router.isReady) return;
   
-    if (router.query.reason === "security") {
-      setSecurityMsg(`
-        <div class="p-4 rounded-lg bg-yellow-100 text-yellow-900 border border-yellow-300">
-          <strong>Security notice</strong><br/>
-          You were logged out because we detected a login from another device.
-          If this wasn't you, please reset your password.
-        </div>
-      `);
-  
-      // پاک‌سازی URL برای جلوگیری از تکرار پیام
-      router.replace("/auth/login", undefined, { shallow: true });
-    } 
-  }, [router.isReady, router.query.reason]);
-
-
   /* ───────────────────────────────────────────────
      🔵 2) Theme & Language watcher
   ─────────────────────────────────────────────── */
