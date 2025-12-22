@@ -1,38 +1,53 @@
 // frontend/utils/apiClient.js
 import axios from "axios";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE || "https://api.iranconnect.org/api";
+/* =====================================================
+   🌐 API BASE (ENV ONLY — NO FALLBACK)
+===================================================== */
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
+if (!API_BASE) {
+  throw new Error("❌ NEXT_PUBLIC_API_BASE is not defined");
+}
+
+/* =====================================================
+   ⚙️ Axios instance
+===================================================== */
 const apiClient = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true,
+  baseURL: API_BASE, // ⬅️ فقط از ENV
+  withCredentials: true, // ⬅️ الزامی برای HttpOnly cookies
+  timeout: 15000,
 });
 
-// REQUEST INTERCEPTOR
+/* =====================================================
+   📨 REQUEST INTERCEPTOR
+===================================================== */
 apiClient.interceptors.request.use(
   (config) => {
     config.withCredentials = true;
+
     // ⬅️ اضافه کردن هدر امنیتی مخصوص درخواست‌های Admin
-    if (config.url.includes("/admin")) {
+    if (config.url && config.url.includes("/admin")) {
       config.headers["x-iranconnect-admin"] = "1";
     }
+
     return config;
   },
   (err) => Promise.reject(err)
 );
 
-// RESPONSE INTERCEPTOR
+/* =====================================================
+   📥 RESPONSE INTERCEPTOR
+===================================================== */
 function forceLogoutAndRedirect(message) {
   try {
     sessionStorage.clear();
     if (message) localStorage.setItem("iran_security_msg", message);
   } catch (_) {}
 
-    if (typeof window !== "undefined") {
-      window.location.href = "/auth/login";
-}
-
+  if (typeof window !== "undefined") {
+    window.location.href = "/auth/login";
+  }
 }
 
 apiClient.interceptors.response.use(
@@ -42,16 +57,28 @@ apiClient.interceptors.response.use(
 
     const { status, data } = err.response;
 
-    if (status === 423)
+    if (status === 423) {
       forceLogoutAndRedirect("Your account was temporarily locked.");
+    }
 
     // صفحات عمومی احراز هویت که نباید در آن‌ها redirect اجباری انجام شود
-    const authPages = ["/auth/login", "/auth/forgot", "/auth/register", "/auth/change-password", "/", "/about", "/contact", "/privacy-policy", "/terms-of-service", "/cookies" ];
-    
+    const authPages = [
+      "/auth/login",
+      "/auth/forgot",
+      "/auth/register",
+      "/auth/change-password",
+      "/",
+      "/about",
+      "/contact",
+      "/privacy-policy",
+      "/terms-of-service",
+      "/cookies",
+    ];
+
     // --- Auto Logout (Session invalidation: login on another device)
     if (status === 440 && data?.reason === "logged_in_elsewhere") {
       const currentPath = window.location.pathname || "";
-    
+
       // فقط اگر روی صفحات غیر-auth هستیم ریدایرکت کنیم
       if (!authPages.includes(currentPath)) {
         const htmlMsg = `
@@ -69,7 +96,7 @@ apiClient.interceptors.response.use(
             You were logged out because we detected a login from another device.
             If this wasn't you, please reset your password.
           </div>
-    
+
           <a 
             href="/auth/forgot"
             style="
@@ -88,20 +115,20 @@ apiClient.interceptors.response.use(
             Reset password
           </a>
         `;
-    
+
         sessionStorage.setItem("iran_auto_logout_msg", htmlMsg);
         window.location.href = "/auth/login?forced=1";
       }
-    
-      // روی خود صفحات auth فقط خطا را پاس می‌دهیم، بدون redirect
+
       return Promise.reject(err);
     }
 
     if (
       status === 403 &&
       data?.error === "Session invalidated. Please log in again."
-    )
+    ) {
       forceLogoutAndRedirect("Session invalidated.");
+    }
 
     const PUBLIC_PATHS = [
       "/",
@@ -116,14 +143,14 @@ apiClient.interceptors.response.use(
       "/auth/register",
       "/auth/forgot",
     ];
-    
+
     const currentPath =
       typeof window !== "undefined" ? window.location.pathname : "";
-    
+
     const isPublicPage = PUBLIC_PATHS.some(
       (p) => currentPath === p || currentPath.startsWith(p + "/")
     );
-    
+
     if (
       !isPublicPage &&
       status === 401 &&
