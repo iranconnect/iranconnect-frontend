@@ -69,7 +69,9 @@ export default function AutoLogout() {
     } catch {}
 
     cleanup();
-    window.location.href = "/auth/login?reason=inactive";
+    setTimeout(() => {
+      window.location.href = "/auth/login?reason=inactive";
+    }, 0);
   }
 
   /* ----------------------------------------------------
