@@ -1,4 +1,4 @@
-// frontend/utils/apiClient.js
+//utils/apiClient.js
 import axios from "axios";
 
 /* =====================================================
@@ -52,16 +52,24 @@ function forceLogoutAndRedirect(message) {
 
 apiClient.interceptors.response.use(
   (res) => res,
-  (err) => {
+
+  // ✅ فقط این تابع async است (ساختار صحیح axios)
+  async (err) => {
     if (!err.response) return Promise.reject(err);
 
     const { status, data } = err.response;
 
+    /* -------------------------------------------------
+       🔒 IP / Account Locked
+    ------------------------------------------------- */
     if (status === 423) {
       forceLogoutAndRedirect("Your account was temporarily locked.");
+      return Promise.reject(err);
     }
 
-    // صفحات عمومی احراز هویت که نباید در آن‌ها redirect اجباری انجام شود
+    /* -------------------------------------------------
+       🔐 صفحات عمومی احراز هویت
+    ------------------------------------------------- */
     const authPages = [
       "/auth/login",
       "/auth/forgot",
@@ -75,11 +83,12 @@ apiClient.interceptors.response.use(
       "/cookies",
     ];
 
-    // --- Auto Logout (Session invalidation: login on another device)
+    /* -------------------------------------------------
+       🔐 Auto Logout — Concurrent Login Detected
+    ------------------------------------------------- */
     if (status === 440 && data?.reason === "logged_in_elsewhere") {
       const currentPath = window.location.pathname || "";
-    
-      // فقط اگر روی صفحات غیر-auth هستیم
+
       if (!authPages.includes(currentPath)) {
         const htmlMsg = `
           <div style="
@@ -96,7 +105,7 @@ apiClient.interceptors.response.use(
             You were logged out because we detected a login from another device.
             If this wasn't you, please reset your password.
           </div>
-    
+
           <a 
             href="/auth/forgot"
             style="
@@ -115,32 +124,39 @@ apiClient.interceptors.response.use(
             Reset password
           </a>
         `;
-    
+
         try {
-          // ✅ 1) لاگ‌اوت واقعی → پاک شدن HttpOnly cookie
-          await apiClient.post("/auth/logout", {}, { withCredentials: true });
+          // ✅ لاگ‌اوت واقعی → حذف HttpOnly cookie
+          await apiClient.post(
+            "/auth/logout",
+            {},
+            { withCredentials: true }
+          );
         } catch (_) {
-          // حتی اگر logout fail شد، ادامه بده
+          // fail-safe: حتی اگر logout fail شد ادامه بده
         }
-   
-        // ✅ 2) ذخیره پیام امنیتی
+
         sessionStorage.setItem("iran_auto_logout_msg", htmlMsg);
-    
-        // ✅ 3) ریدایرکت به لاگین
         window.location.href = "/auth/login?reason=security";
       }
-    
+
       return Promise.reject(err);
     }
-   
 
+    /* -------------------------------------------------
+       🔒 Session Invalidated (Generic)
+    ------------------------------------------------- */
     if (
       status === 403 &&
       data?.error === "Session invalidated. Please log in again."
     ) {
       forceLogoutAndRedirect("Session invalidated.");
+      return Promise.reject(err);
     }
 
+    /* -------------------------------------------------
+       ⏳ Expired Session
+    ------------------------------------------------- */
     const PUBLIC_PATHS = [
       "/",
       "/search",
