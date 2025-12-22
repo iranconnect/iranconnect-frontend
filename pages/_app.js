@@ -4,12 +4,12 @@ import "../styles/admin.css";
 import "../styles/reactquill.css";
 import "../styles/intro.css";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Script from "next/script";
 
 import CookieConsent from "../components/CookieConsent";
-import AutoLogoutModal from "../components/AutoLogoutModal";
+import AutoLogout from "../components/AutoLogout";
 import apiClient from "../utils/apiClient";
 
 export default function App({ Component, pageProps }) {
@@ -17,9 +17,6 @@ export default function App({ Component, pageProps }) {
 
   const [theme, setTheme] = useState("light");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [inactive, setInactive] = useState(false);
-
-  const timerRef = useRef(null);
 
   /* 🔐 Check login via HttpOnly cookie */
   async function checkLoginByCookie() {
@@ -49,58 +46,6 @@ export default function App({ Component, pageProps }) {
     } catch {}
   }, []);
 
-  /* 🕒 Auto logout (ONLY protected areas) */
-  useEffect(() => {
-    if (!isLoggedIn) {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      setInactive(false);
-      return;
-    }
-
-    useEffect(() => {
-      if (!isLoggedIn) {
-        if (timerRef.current) clearTimeout(timerRef.current);
-        setInactive(false);
-        return;
-      }
-    
-      const resetTimer = () => {
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = setTimeout(() => {
-          setInactive(true);
-        }, 2 * 60 * 1000);
-      };
-    
-      const events = ["mousemove", "mousedown", "keypress", "touchstart"];
-      events.forEach((e) => window.addEventListener(e, resetTimer));
-    
-      resetTimer();
-    
-      return () => {
-        if (timerRef.current) clearTimeout(timerRef.current);
-        events.forEach((e) => window.removeEventListener(e, resetTimer));
-      };
-    }, [isLoggedIn, router.pathname]);
-
-
-    const resetTimer = () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => {
-        setInactive(true);
-      }, 2 * 60 * 1000); // 2 minutes
-    };
-
-    const events = ["mousemove", "mousedown", "keypress", "touchstart"];
-    events.forEach((e) => window.addEventListener(e, resetTimer));
-
-    resetTimer();
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      events.forEach((e) => window.removeEventListener(e, resetTimer));
-    };
-  }, [isLoggedIn, router.pathname]);
-
   /* 🔄 Session keep-alive (interval-based only) */
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -113,25 +58,6 @@ export default function App({ Component, pageProps }) {
 
     return () => clearInterval(interval);
   }, [isLoggedIn]);
-
-  /* 🔐 Secure logout */
-  async function handleLogout() {
-    try {
-      await apiClient.post(
-        "/auth/logout",
-        {},
-        { withCredentials: true }
-      );
-    } catch {}
-
-    setIsLoggedIn(false);
-    setInactive(false);
-    router.replace("/auth/login");
-  }
-
-  function handleStay() {
-    setInactive(false);
-  }
 
   /* 🎨 Toggle theme */
   function toggleTheme() {
@@ -163,13 +89,8 @@ export default function App({ Component, pageProps }) {
 
       <CookieConsent />
 
-      {isLoggedIn && (
-        <AutoLogoutModal
-          visible={inactive}
-          onStay={handleStay}
-          onLogout={handleLogout}
-        />
-      )}
+      {/* ✅ Global AutoLogout – enforced after login */}
+      <AutoLogout />
 
       <Component
         {...pageProps}
