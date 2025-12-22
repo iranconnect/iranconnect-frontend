@@ -69,6 +69,7 @@ export default function AutoLogout() {
     } catch {}
 
     cleanup();
+    window.location.href = "/auth/login";
   }
 
   /* ----------------------------------------------------
