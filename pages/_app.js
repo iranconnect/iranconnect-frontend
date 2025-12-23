@@ -49,15 +49,16 @@ export default function App({ Component, pageProps }) {
   /* 🔄 Session keep-alive (interval-based only) */
   useEffect(() => {
     if (!isLoggedIn) return;
-
+  
+    if (router.query.reason === "security") return;
+  
     const interval = setInterval(() => {
-      apiClient
-        .get("/auth/ping", { withCredentials: true })
-        .catch(() => {});
-    }, 60 * 1000);
-
+      apiClient.get("/auth/ping").catch(() => {});
+    }, 60000);
+  
     return () => clearInterval(interval);
-  }, [isLoggedIn]);
+  }, [isLoggedIn, router.query.reason]);
+
 
   /* 🎨 Toggle theme */
   function toggleTheme() {
