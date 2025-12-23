@@ -17,6 +17,9 @@ export default function App({ Component, pageProps }) {
 
   const [theme, setTheme] = useState("light");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  const isAuthPage = router.pathname.startsWith("/auth");
+
 
   /* 🔐 Check login via HttpOnly cookie */
   async function checkLoginByCookie() {
@@ -91,7 +94,7 @@ export default function App({ Component, pageProps }) {
       <CookieConsent />
 
       {/* ✅ Global AutoLogout – enforced after login */}
-      <AutoLogout />
+      {!isAuthPage && <AutoLogout />}
 
       <Component
         {...pageProps}
