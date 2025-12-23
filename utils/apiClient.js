@@ -30,7 +30,12 @@ let handlingConcurrentLogout = false; // 🔐 anti-loop flag
 
 function forceRedirect(message, reason = "") {
   try {
-    sessionStorage.clear();
+    
+    // پاکسازی امن فقط کلیدهای auth
+    sessionStorage.removeItem("iran_user");
+    sessionStorage.removeItem("iran_role");
+    sessionStorage.removeItem("iran_token");
+
     if (message) {
       sessionStorage.setItem("iran_auto_logout_msg", message);
     }
