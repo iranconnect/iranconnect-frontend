@@ -15,6 +15,9 @@ export default function Header() {
 
   /* 🧩 بررسی وضعیت کاربر با HttpOnly cookie */
   useEffect(() => {
+    if (window.location.pathname.startsWith("/auth")) {
+      return;
+    }
     async function checkAuth() {
       try {
         const me = await apiClient.get("/auth/me", {
