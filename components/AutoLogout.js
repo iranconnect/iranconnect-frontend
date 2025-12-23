@@ -1,5 +1,6 @@
 // frontend/components/AutoLogout.js
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import apiClient from "../utils/apiClient";
 import AutoLogoutModal from "./AutoLogoutModal";
 
@@ -12,6 +13,16 @@ export default function AutoLogout() {
 
   const inactivityTimer = useRef(null);
   const logoutTimer = useRef(null);
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (router.query.reason === "security") {
+      setEnabled(false);
+      cleanup();
+    }
+  }, [router.query.reason]);
+
 
   /* ----------------------------------------------------
      🔐 Check authentication via HttpOnly cookie
