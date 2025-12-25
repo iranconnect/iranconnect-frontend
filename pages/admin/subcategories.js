@@ -1,4 +1,4 @@
-//frontend/pages/admin/subcategories.js
+// frontend/pages/admin/subcategories.js
 import { useEffect, useState } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../utils/apiClient";
@@ -7,7 +7,6 @@ import SubcategoryDetailsModal from "../../components/admin/SubcategoryDetailsMo
 export default function AdminSubcategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("");
   const [selected, setSelected] = useState(null);
 
   const [form, setForm] = useState({
@@ -26,15 +25,11 @@ export default function AdminSubcategoriesPage() {
     apiClient.get("/admin/categories").then((res) => {
       setCategories(res.data.data || []);
     });
+    fetchSubcategories();
   }, []);
 
-  useEffect(() => {
-    fetchSubcategories();
-  }, [selectedCategory]);
-
   async function fetchSubcategories() {
-    const params = selectedCategory ? { category_id: selectedCategory } : {};
-    const res = await apiClient.get("/admin/subcategories", { params });
+    const res = await apiClient.get("/admin/subcategories");
     setSubcategories(res.data.data || []);
   }
 
@@ -68,20 +63,6 @@ export default function AdminSubcategoriesPage() {
 
           {message && <div className="text-green-600 mb-3">{message}</div>}
           {error && <div className="text-red-600 mb-3">{error}</div>}
-
-          {/* Filter */}
-          <select
-            className="admin-input mb-4"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            <option value="">All Categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
 
           {/* Create */}
           <form
