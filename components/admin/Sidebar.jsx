@@ -25,6 +25,16 @@ const groupedNav = [
     ],
   },
   {
+    label: "Catalog",
+    icon: "🗂️",
+    items: [
+      {
+        href: "/admin/categories",
+        label: "Categories",
+      },
+    ],
+  },
+  {
     label: "Users",
     icon: "👥",
     items: [
