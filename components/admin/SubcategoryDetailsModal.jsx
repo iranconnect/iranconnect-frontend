@@ -10,14 +10,21 @@ export default function SubcategoryDetailsModal({
   const [subcategory, setSubcategory] = useState(null);
   const [logs, setLogs] = useState([]);
   const [comment, setComment] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     apiClient
-      .get(`/admin/subcategories/${subcategoryId}/details`)
+      .get(`/admin/subcategories/${subcategoryId}/details`, {
+        headers: {
+          "x-iranconnect-admin": "true",
+        },
+      })
       .then((res) => {
         setSubcategory(res.data.subcategory);
         setLogs(res.data.logs || []);
+      })
+      .catch(() => {
+        setSubcategory(null);
       });
   }, [subcategoryId]);
 
@@ -27,64 +34,68 @@ export default function SubcategoryDetailsModal({
       return;
     }
 
-    if (type === "delete" && !confirm("Delete this subcategory?")) return;
+    if (type === "delete") {
+      const ok = confirm("Are you sure you want to delete this subcategory?");
+      if (!ok) return;
+    }
 
-    setLoading(true);
+    setActionLoading(true);
+
     try {
       await apiClient.post(
         `/admin/subcategories/${subcategoryId}/${type}`,
-        { comment }
+        { comment: comment.trim() },
+        {
+          headers: {
+            "x-iranconnect-admin": "true",
+          },
+        }
       );
+
       onUpdated();
       onClose();
+    } catch (err) {
+      alert(err.response?.data?.error || "Action failed.");
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   }
 
   if (!subcategory) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="admin-card max-w-xl w-full p-6 relative">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="admin-card max-w-xl w-full relative p-6">
 
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-3 text-turquoise text-lg font-bold"
+          className="absolute top-3 right-4 text-turquoise text-lg font-bold"
         >
           ✖
         </button>
 
         {/* Title */}
-        <h3 className="admin-title mb-4 text-center">
+        <h2 className="text-xl font-semibold mb-4 text-center text-turquoise">
           Subcategory Details
-        </h3>
+        </h2>
 
         {/* Details */}
-        <div className="text-sm space-y-2">
-          <div><b>Category:</b> {subcategory.category_name}</div>
-          <div><b>Name:</b> {subcategory.name}</div>
-          <div><b>Slug:</b> {subcategory.slug}</div>
-          <div><b>SEO Title:</b> {subcategory.seo_title}</div>
-          <div><b>SEO Description:</b> {subcategory.seo_description}</div>
-          <div><b>Sort Order:</b> {subcategory.sort_order}</div>
+        <div className="space-y-2 text-sm">
+          <div><strong>Category:</strong> {subcategory.category_name}</div>
+          <div><strong>Name:</strong> {subcategory.name}</div>
+          <div><strong>Slug:</strong> {subcategory.slug}</div>
+          <div><strong>SEO Title:</strong> {subcategory.seo_title}</div>
+          <div><strong>SEO Description:</strong> {subcategory.seo_description}</div>
+          <div><strong>Sort Order:</strong> {subcategory.sort_order}</div>
 
           <div>
-            <b>Status:</b>{" "}
-            {subcategory.is_active ? (
-              <span className="inline-flex items-center gap-1 text-green-400">
-                ● Active
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-red-400">
-                ● Inactive
-              </span>
-            )}
+            <strong>Status:</strong>{" "}
+            {subcategory.is_active ? "🟢 Active" : "🔴 Inactive"}
           </div>
 
           <div>
-            <b>Created:</b>{" "}
+            <strong>Created:</strong>{" "}
             {new Date(subcategory.created_at).toLocaleString()}
           </div>
         </div>
@@ -99,38 +110,44 @@ export default function SubcategoryDetailsModal({
         />
 
         {/* Actions */}
-        <div className="flex justify-between items-center mt-5">
+        <div className="flex justify-between items-center gap-3 mt-5">
+
+          {/* Delete */}
           <button
             onClick={() => action("delete")}
-            className="text-red-400 hover:text-red-300 text-sm flex items-center gap-1"
-            disabled={loading}
+            className="admin-btn admin-btn-danger px-4 py-2 text-sm"
+            disabled={actionLoading}
           >
             🗑 Delete
           </button>
 
+          {/* Activate / Deactivate */}
           <button
             onClick={() =>
               action(subcategory.is_active ? "deactivate" : "activate")
             }
-            className="admin-btn admin-btn-primary"
-            disabled={loading}
+            className="admin-btn admin-btn-primary px-4 py-2 text-sm"
+            disabled={actionLoading}
           >
             {subcategory.is_active ? "Deactivate" : "Activate"}
           </button>
         </div>
 
         {/* Audit log */}
-        <div className="mt-6 border-t pt-4 text-xs">
-          <h4 className="font-semibold mb-2 text-turquoise">
-            Audit log
-          </h4>
-          {logs.map((l) => (
-            <div key={l.id} className="mb-2">
-              <b>{l.action}</b> — {l.performed_by_email}
-              <br />
-              {l.comment}
-            </div>
-          ))}
+        <div className="mt-6 border-t border-white/10 pt-4 text-xs">
+          <h4 className="font-semibold mb-2 text-turquoise">Audit log</h4>
+
+          {logs.length ? (
+            logs.map((l) => (
+              <div key={l.id} className="mb-3">
+                <strong>{l.action}</strong> — {l.performed_by_email || "system"}
+                <br />
+                <span className="opacity-80">{l.comment}</span>
+              </div>
+            ))
+          ) : (
+            <div className="opacity-60">No audit records.</div>
+          )}
         </div>
 
       </div>
