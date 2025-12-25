@@ -7,6 +7,10 @@ import CategoryDetailsModal from "../../components/admin/CategoryDetailsModal";
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -27,22 +31,48 @@ export default function AdminCategoriesPage() {
 
   async function handleCreate(e) {
     e.preventDefault();
-    await apiClient.post("/admin/categories", form);
-    setForm({
-      name: "",
-      slug: "",
-      seo_title: "",
-      seo_description: "",
-      icon: "",
-      comment: "",
-    });
-    fetchCategories();
+  
+    setSubmitting(true);
+    setMessage("");
+    setError("");
+  
+    try {
+      await apiClient.post("/admin/categories", form, {
+        headers: { "x-iranconnect-admin": "true" },
+        withCredentials: true,
+      });
+  
+      setMessage("✅ Category successfully created.");
+  
+      setForm({
+        name: "",
+        slug: "",
+        seo_title: "",
+        seo_description: "",
+        icon: "",
+        comment: "",
+      });
+  
+      await fetchCategories(1);
+    } catch (err) {
+      setError(err.response?.data?.error || "❌ Failed to create category.");
+    } finally {
+      setSubmitting(false);
+    }
   }
+
 
   return (
     <AdminLayout>
       <section className="admin-section">
         <h2 className="admin-title mb-6">📁 Categories</h2>
+        {message && (
+          <div className="mb-4 text-green-600 text-sm font-medium">{message}</div>
+        )}
+        {error && (
+          <div className="mb-4 text-red-600 text-sm font-medium">{error}</div>
+        )}
+
 
         <form
           onSubmit={handleCreate}
@@ -72,7 +102,13 @@ export default function AdminCategoriesPage() {
             value={form.comment}
             onChange={(e)=>setForm({...form,comment:e.target.value})}
           />
-          <button className="admin-btn admin-btn-primary">Add Category</button>
+          <button
+            className="admin-btn admin-btn-primary"
+            disabled={submitting}
+          >
+            {submitting ? "Saving..." : "Add Category"}
+          </button>
+
         </form>
 
         <table className="admin-table">
