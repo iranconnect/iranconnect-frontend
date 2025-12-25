@@ -28,10 +28,8 @@ const groupedNav = [
     label: "Catalog",
     icon: "🗂️",
     items: [
-      {
-        href: "/admin/categories",
-        label: "Categories",
-      },
+      { href: "/admin/categories", label: "Categories" },
+      { href: "/admin/subcategories", label: "Subcategories" },
     ],
   },
   {
