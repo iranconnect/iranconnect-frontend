@@ -8,6 +8,8 @@ export default function AdminSubcategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
 
   const [form, setForm] = useState({
     category_id: "",
@@ -28,10 +30,16 @@ export default function AdminSubcategoriesPage() {
     fetchSubcategories();
   }, []);
 
-  async function fetchSubcategories() {
-    const res = await apiClient.get("/admin/subcategories");
+  async function fetchSubcategories(p = page) {
+    const res = await apiClient.get("/admin/subcategories", {
+      params: { page: p, pageSize: 10 },
+    });
+  
     setSubcategories(res.data.data || []);
+    setPagination(res.data.pagination);
+    setPage(p);
   }
+
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -167,6 +175,31 @@ export default function AdminSubcategoriesPage() {
               ))}
             </tbody>
           </table>
+
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex justify-center gap-2 mt-4">
+              <button
+                className="admin-btn admin-btn-secondary text-xs"
+                disabled={page === 1}
+                onClick={() => fetchSubcategories(page - 1)}
+              >
+                Prev
+              </button>
+          
+              <span className="text-sm">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+          
+              <button
+                className="admin-btn admin-btn-secondary text-xs"
+                disabled={page === pagination.totalPages}
+                onClick={() => fetchSubcategories(page + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+
 
           {selected && (
             <SubcategoryDetailsModal
