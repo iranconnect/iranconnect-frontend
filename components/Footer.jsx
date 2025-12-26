@@ -144,7 +144,7 @@ export default function Footer() {
             color: 'rgba(255,255,255,0.75)',
           }}
         >
-          <p>© {new Date().getFullYear()} IranConnect</p>
+          <p>© {new Date().getFullYear()} IRANCONNECT — All rights reserved</p>
 
           {/* ✅ GDPR-compliant: review settings, not reset */}
           <Link
