@@ -10,6 +10,8 @@ export default function AdminCategoriesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -24,10 +26,16 @@ export default function AdminCategoriesPage() {
     fetchCategories();
   }, []);
 
-  async function fetchCategories() {
-    const res = await apiClient.get("/admin/categories");
+  async function fetchCategories(p = page) {
+    const res = await apiClient.get("/admin/categories", {
+      params: { page: p, pageSize: 10 },
+    });
+  
     setCategories(res.data.data);
+    setPagination(res.data.pagination);
+    setPage(p);
   }
+
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -140,6 +148,30 @@ export default function AdminCategoriesPage() {
             ))}
           </tbody>
         </table>
+
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-4">
+            <button
+              className="admin-btn admin-btn-secondary text-xs"
+              disabled={page === 1}
+              onClick={() => fetchCategories(page - 1)}
+            >
+              Prev
+            </button>
+        
+            <span className="text-sm">
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+        
+            <button
+              className="admin-btn admin-btn-secondary text-xs"
+              disabled={page === pagination.totalPages}
+              onClick={() => fetchCategories(page + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
 
         {selected && (
           <CategoryDetailsModal
