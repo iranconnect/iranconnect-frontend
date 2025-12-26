@@ -24,12 +24,15 @@ export default function AdminSubcategoriesPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    apiClient.get("/admin/categories/all").then((res) => {
+    apiClient.get("/admin/subcategories/all").then((res) => {
       setCategories(res.data.data || []);
+    }).catch(() => {
+      setCategories([]);
     });
   
     fetchSubcategories(1);
   }, []);
+
 
 
   async function fetchSubcategories(p = page) {
