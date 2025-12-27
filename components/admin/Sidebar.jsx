@@ -30,6 +30,7 @@ const groupedNav = [
     items: [
       { href: "/admin/categories", label: "Categories" },
       { href: "/admin/subcategories", label: "Subcategories" },
+      { href: "/admin/services", label: "Services" },
     ],
   },
   {
