@@ -128,11 +128,10 @@ export default function AdminServicesPage() {
               onChange={(e)=>setForm({...form,comment:e.target.value})}
             />
 
-            <div className="md:col-span-3">
-              <button className="admin-btn admin-btn-primary">
-                Add Service
-              </button>
-            </div>
+            <button className="admin-btn admin-btn-primary">
+              Add Service
+            </button>
+
           </form>
 
           <table className="admin-table">
