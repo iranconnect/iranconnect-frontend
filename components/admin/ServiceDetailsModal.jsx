@@ -87,6 +87,13 @@ export default function ServiceDetailsModal({
           <div><strong>Name:</strong> {service.name}</div>
           <div><strong>Slug:</strong> {service.slug}</div>
 
+          <div>
+            <strong>Description:</strong>
+            <div className="opacity-80 whitespace-pre-line">
+              {service.description}
+            </div>
+          </div>
+
           <div><strong>SEO Title:</strong> {service.seo_title}</div>
           <div><strong>SEO Description:</strong> {service.seo_description}</div>
           <div><strong>Sort Order:</strong> {service.sort_order}</div>
