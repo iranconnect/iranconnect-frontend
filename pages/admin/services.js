@@ -128,9 +128,12 @@ export default function AdminServicesPage() {
               onChange={(e)=>setForm({...form,comment:e.target.value})}
             />
 
-            <button className="admin-btn admin-btn-primary">
-              Add Service
-            </button>
+            <div className="md:col-span-3 flex justify-start">
+              <button className="admin-btn admin-btn-primary">
+                Add Service
+              </button>
+            </div>
+
 
           </form>
 
