@@ -15,7 +15,6 @@ export default function AdminServicesPage() {
     subcategory_id: "",
     name: "",
     slug: "",
-    description: "",
     seo_title: "",
     seo_description: "",
     comment: "",
@@ -25,12 +24,18 @@ export default function AdminServicesPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    apiClient.get("/admin/services/subcategories")
-      .then(res => setSubcategories(res.data.data || []))
-      .catch(() => setSubcategories([]));
-
+    apiClient
+      .get("/admin/services/subcategories/all")
+      .then((res) => {
+        setSubcategories(res.data.data || []);
+      })
+      .catch(() => {
+        setSubcategories([]);
+      });
+  
     fetchServices(1);
   }, []);
+
 
   async function fetchServices(p = page) {
     const res = await apiClient.get("/admin/services", {
@@ -98,11 +103,6 @@ export default function AdminServicesPage() {
             <input className="admin-input" placeholder="Slug (optional)"
               value={form.slug}
               onChange={(e)=>setForm({...form,slug:e.target.value})}
-            />
-
-            <textarea className="admin-input" placeholder="Description" required
-              value={form.description}
-              onChange={(e)=>setForm({...form,description:e.target.value})}
             />
 
             <input className="admin-input" placeholder="SEO title" required
