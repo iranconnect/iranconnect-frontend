@@ -159,8 +159,17 @@ export default function AutoLogout() {
       visible={visible}
       onStay={() => {
         setVisible(false);
+      
+        // ✅ CRITICAL FIX: cancel logout countdown
+        if (logoutTimer.current) {
+          clearTimeout(logoutTimer.current);
+          logoutTimer.current = null;
+        }
+      
+        // 🔁 restart inactivity from zero
         resetInactivityTimer();
       }}
+
       onLogout={handleLogout}
     />
   );
