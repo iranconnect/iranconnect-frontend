@@ -39,6 +39,7 @@ export default function AdminServicesPage() {
   }, []);
 
 
+
   async function fetchServices(p = page) {
     const res = await apiClient.get("/admin/services", {
       params: { page: p, pageSize: 10 },
