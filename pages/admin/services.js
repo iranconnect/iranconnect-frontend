@@ -128,7 +128,7 @@ export default function AdminServicesPage() {
             />
 
             <div className="md:col-span-3">
-              <button className="admin-btn admin-btn-primary w-full">
+              <button className="admin-btn admin-btn-primary">
                 Add Service
               </button>
             </div>
