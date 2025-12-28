@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../utils/apiClient";
 import ServiceDetailsModal from "../../components/admin/ServiceDetailsModal";
+import ServiceBulkUploadModal from "../../components/admin/ServiceBulkUploadModal";
+
 
 export default function AdminServicesPage() {
   const [subcategories, setSubcategories] = useState([]);
@@ -10,6 +12,7 @@ export default function AdminServicesPage() {
   const [selected, setSelected] = useState(null);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState(null);
+  const [showBulk, setShowBulk] = useState(false);
 
   const [form, setForm] = useState({
     subcategory_id: "",
@@ -132,6 +135,13 @@ export default function AdminServicesPage() {
               <button className="admin-btn admin-btn-primary">
                 Add Service
               </button>
+              <button
+                className="admin-btn admin-btn-secondary ml-2"
+                onClick={() => setShowBulk(true)}
+              >
+                Bulk Upload
+              </button>
+
             </div>
 
 
@@ -178,6 +188,14 @@ export default function AdminServicesPage() {
           )}
         </section>
       </div>
+      {/* ✅ MODAL BULK UPLOAD — دقیقاً اینجا */}
+      {showBulk && (
+        <ServiceBulkUploadModal
+          subcategories={subcategories}
+          onClose={() => setShowBulk(false)}
+          onSuccess={fetchServices}
+        />
+      )}
     </AdminLayout>
   );
 }
