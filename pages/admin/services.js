@@ -69,14 +69,16 @@ export default function AdminServicesPage() {
     fetchServices(1);
   }, []);
 
-  async function fetchServices(p = page) {
+  async function fetchServices(p = 1) {
     const res = await apiClient.get("/admin/services", {
       params: { page: p, pageSize: 10 },
     });
+  
     setServices(res.data.data || []);
-    setPagination(res.data.pagination);
+    setPagination(res.data.pagination || null);
     setPage(p);
   }
+
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -95,7 +97,7 @@ export default function AdminServicesPage() {
         seo_description: "",
         comment: "",
       });
-      fetchServices();
+      fetchServices(1);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to create service.");
     }
@@ -263,7 +265,7 @@ export default function AdminServicesPage() {
         <ServiceBulkUploadModal
           subcategories={subcategories}
           onClose={() => setShowBulk(false)}
-          onSuccess={fetchServices}
+          onSuccess={() => fetchServices(1)}
         />
       )}
     </AdminLayout>
