@@ -10,22 +10,22 @@ export default function ServiceBulkUploadModal({
 }) {
   const [subcategoryId, setSubcategoryId] = useState("");
   const [services, setServices] = useState([]);
-  const [preview, setPreview] = useState([]);
-  const [validation, setValidation] = useState(null);
-
   const [comment, setComment] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [validating, setValidating] = useState(false);
+
+  const [status, setStatus] = useState("idle"); 
+  // idle | validating | validated | error | importing
+
   const [error, setError] = useState("");
+  const [reportId, setReportId] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   /* -----------------------------------
-     📄 Parse Excel file
+     📄 Parse Excel
   ----------------------------------- */
   function handleFile(e) {
     setError("");
-    setValidation(null);
-    setServices([]);
-    setPreview([]);
+    setReportId(null);
+    setStatus("idle");
 
     const file = e.target.files[0];
     if (!file) return;
@@ -36,53 +36,34 @@ export default function ServiceBulkUploadModal({
     }
 
     const reader = new FileReader();
-
     reader.onload = (evt) => {
       try {
         const data = new Uint8Array(evt.target.result);
         const workbook = XLSX.read(data, { type: "array" });
-
-        if (!workbook.SheetNames.includes("services")) {
-          throw new Error("Missing 'services' sheet in Excel file.");
-        }
-
-        const sheet = workbook.Sheets["services"];
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
         if (!rows.length) {
-          throw new Error("Excel file is empty.");
+          setError("Excel file is empty.");
+          return;
         }
 
         if (rows.length > 500) {
-          throw new Error("Maximum 500 services allowed per upload.");
+          setError("Maximum 500 services allowed per upload.");
+          return;
         }
 
-        const parsed = rows.map((r, i) => {
-          if (!r.name || !r.slug) {
-            throw new Error(`Row ${i + 2}: name and slug are required.`);
-          }
-
-          return {
-            name: String(r.name).trim(),
-            slug: String(r.slug).trim(),
-            description: String(r.description || "").trim(),
-            seo_title: String(r.seo_title || "").trim(),
-            seo_description: String(r.seo_description || "").trim(),
-          };
-        });
+        const parsed = rows.map((r) => ({
+          name: String(r.name || "").trim(),
+          slug: String(r.slug || "").trim(),
+          description: String(r.description || "").trim(),
+          seo_title: String(r.seo_title || "").trim(),
+          seo_description: String(r.seo_description || "").trim(),
+        }));
 
         setServices(parsed);
-
-        setPreview(
-          parsed.map((s, idx) => ({
-            row: idx + 2,
-            ...s,
-            status: "pending",
-            message: "Waiting for validation",
-          }))
-        );
       } catch (err) {
-        setError(err.message || "Failed to parse Excel file.");
+        setError("Failed to read Excel file.");
       }
     };
 
@@ -90,17 +71,23 @@ export default function ServiceBulkUploadModal({
   }
 
   /* -----------------------------------
-     🔍 Backend validation (C4)
+     ✅ VALIDATE
   ----------------------------------- */
-  async function validateBulk() {
+  async function handleValidate() {
     setError("");
-    setValidating(true);
+    setReportId(null);
 
     if (!subcategoryId) {
-      setError("Please select a subcategory before validation.");
-      setValidating(false);
+      setError("Please select a subcategory.");
       return;
     }
+
+    if (!services.length) {
+      setError("No services loaded from Excel.");
+      return;
+    }
+
+    setStatus("validating");
 
     try {
       const res = await apiClient.post(
@@ -111,46 +98,33 @@ export default function ServiceBulkUploadModal({
         }
       );
 
-      const result = res.data;
-      setValidation(result);
-
-      if (!result.valid) {
-        setPreview((prev) =>
-          prev.map((row) => {
-            const err = result.errors.find(
-              (e) => e.row === row.row
-            );
-            return err
-              ? { ...row, status: "error", message: err.message }
-              : { ...row, status: "ok", message: "OK" };
-          })
-        );
+      if (res.data.ok) {
+        setStatus("validated");
       } else {
-        setPreview((prev) =>
-          prev.map((row) => ({
-            ...row,
-            status: "ok",
-            message: "OK",
-          }))
-        );
+        setStatus("error");
+        setReportId(res.data.report_id);
       }
     } catch (err) {
+      setStatus("error");
       setError("Validation failed.");
-    } finally {
-      setValidating(false);
     }
   }
 
   /* -----------------------------------
-     🚀 Submit bulk upload (ONLY if valid)
+     ⬇️ Download validation report
   ----------------------------------- */
-  async function handleSubmit() {
-    setError("");
+  function downloadReport() {
+    if (!reportId) return;
 
-    if (!validation || validation.valid !== true) {
-      setError("Please validate data before importing.");
-      return;
-    }
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/admin/services/bulk/report/${reportId}`;
+    window.open(url, "_blank");
+  }
+
+  /* -----------------------------------
+     🚀 IMPORT
+  ----------------------------------- */
+  async function handleImport() {
+    setError("");
 
     if (!comment.trim()) {
       setError("Bulk import comment is required.");
@@ -158,28 +132,32 @@ export default function ServiceBulkUploadModal({
     }
 
     setLoading(true);
+    setStatus("importing");
 
     try {
       await apiClient.post("/admin/services/bulk", {
         subcategory_id: subcategoryId,
-        comment,
         services,
+        comment,
       });
 
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err.response?.data?.error || "Bulk upload failed.");
+      setError(err.response?.data?.error || "Import failed.");
+      setStatus("validated");
     } finally {
       setLoading(false);
     }
   }
 
+  /* -----------------------------------
+     UI
+  ----------------------------------- */
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-      <div className="admin-card max-w-3xl w-full p-6 relative">
+      <div className="admin-card max-w-lg w-full p-6 relative">
 
-        {/* Close */}
         <button
           onClick={onClose}
           className="absolute top-3 right-4 text-turquoise text-lg font-bold"
@@ -195,7 +173,6 @@ export default function ServiceBulkUploadModal({
           <div className="text-red-600 text-sm mb-3">{error}</div>
         )}
 
-        {/* Subcategory select */}
         <select
           className="admin-input mb-3"
           value={subcategoryId}
@@ -209,7 +186,6 @@ export default function ServiceBulkUploadModal({
           ))}
         </select>
 
-        {/* Excel upload */}
         <input
           type="file"
           accept=".xlsx"
@@ -217,66 +193,53 @@ export default function ServiceBulkUploadModal({
           className="admin-input mb-3"
         />
 
-        {/* Preview Table */}
-        {preview.length > 0 && (
-          <div className="mb-4 max-h-60 overflow-auto border rounded">
-            <table className="admin-table text-xs">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Name</th>
-                  <th>Slug</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {preview.map((p) => (
-                  <tr key={p.row}>
-                    <td>{p.row}</td>
-                    <td>{p.name}</td>
-                    <td>{p.slug}</td>
-                    <td>
-                      {p.status === "ok" && (
-                        <span className="text-green-600">OK</span>
-                      )}
-                      {p.status === "error" && (
-                        <span className="text-red-600">{p.message}</span>
-                      )}
-                      {p.status === "pending" && (
-                        <span className="text-gray-500">Pending</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {services.length > 0 && (
+          <div className="admin-muted text-sm mb-3">
+            {services.length} services loaded
           </div>
         )}
 
-        {/* Comment */}
+        {/* STATUS MESSAGES */}
+        {status === "validated" && (
+          <div className="text-green-600 text-sm mb-3">
+            ✅ Validation successful. Ready to import.
+          </div>
+        )}
+
+        {status === "error" && reportId && (
+          <div className="text-yellow-600 text-sm mb-3">
+            ⚠️ Validation failed.
+            <button
+              onClick={downloadReport}
+              className="underline ml-1"
+            >
+              Download report
+            </button>
+          </div>
+        )}
+
         <textarea
           className="admin-input mb-4"
           rows={3}
           placeholder="Bulk import comment (required)"
           value={comment}
           onChange={(e) => setComment(e.target.value)}
+          disabled={status !== "validated"}
         />
 
-        {/* Actions */}
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-between">
           <button
-            type="button"
             className="admin-btn admin-btn-secondary"
-            disabled={validating || !services.length}
-            onClick={validateBulk}
+            onClick={handleValidate}
+            disabled={status === "validating" || !services.length}
           >
-            {validating ? "Validating…" : "Validate"}
+            {status === "validating" ? "Validating…" : "Validate"}
           </button>
 
           <button
             className="admin-btn admin-btn-primary"
-            disabled={loading || !validation || validation.valid !== true}
-            onClick={handleSubmit}
+            onClick={handleImport}
+            disabled={status !== "validated" || loading}
           >
             {loading ? "Importing…" : "Import Services"}
           </button>
