@@ -5,7 +5,6 @@ import apiClient from "../../utils/apiClient";
 import ServiceDetailsModal from "../../components/admin/ServiceDetailsModal";
 import ServiceBulkUploadModal from "../../components/admin/ServiceBulkUploadModal";
 
-
 export default function AdminServicesPage() {
   const [subcategories, setSubcategories] = useState([]);
   const [services, setServices] = useState([]);
@@ -27,6 +26,14 @@ export default function AdminServicesPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  /* ===============================
+     📥 Download Excel Template
+  =============================== */
+  function downloadTemplate() {
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/admin/services/bulk/template`;
+    window.open(url, "_blank");
+  }
+
   useEffect(() => {
     apiClient
       .get("/admin/services/subcategories/all")
@@ -37,11 +44,9 @@ export default function AdminServicesPage() {
         console.error("Failed to load subcategories:", err);
         setSubcategories([]);
       });
-  
+
     fetchServices(1);
   }, []);
-
-
 
   async function fetchServices(p = page) {
     const res = await apiClient.get("/admin/services", {
@@ -54,7 +59,8 @@ export default function AdminServicesPage() {
 
   async function handleCreate(e) {
     e.preventDefault();
-    setMessage(""); setError("");
+    setMessage("");
+    setError("");
 
     try {
       await apiClient.post("/admin/services", form);
@@ -78,7 +84,19 @@ export default function AdminServicesPage() {
     <AdminLayout>
       <div className="admin-container">
         <section className="admin-section">
-          <h2 className="admin-title mb-6">🛠 Services</h2>
+
+          {/* 🔹 Header with Download Button */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="admin-title">🛠 Services</h2>
+
+            <button
+              type="button"
+              onClick={downloadTemplate}
+              className="admin-btn admin-btn-secondary text-sm"
+            >
+              📥 Download Excel Template
+            </button>
+          </div>
 
           {message && <div className="text-green-600 mb-3">{message}</div>}
           {error && <div className="text-red-600 mb-3">{error}</div>}
@@ -97,54 +115,84 @@ export default function AdminServicesPage() {
             >
               <option value="">Select subcategory</option>
               {subcategories.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
               ))}
             </select>
 
-            <input className="admin-input" placeholder="Name" required
+            <input
+              className="admin-input"
+              placeholder="Name"
+              required
               value={form.name}
-              onChange={(e)=>setForm({...form,name:e.target.value})}
+              onChange={(e) =>
+                setForm({ ...form, name: e.target.value })
+              }
             />
 
-            <input className="admin-input" placeholder="Slug (optional)"
+            <input
+              className="admin-input"
+              placeholder="Slug (optional)"
               value={form.slug}
-              onChange={(e)=>setForm({...form,slug:e.target.value})}
+              onChange={(e) =>
+                setForm({ ...form, slug: e.target.value })
+              }
             />
 
-            <textarea className="admin-input" placeholder="Description" required
+            <textarea
+              className="admin-input"
+              placeholder="Description"
+              required
               value={form.description}
-              onChange={(e)=>setForm({...form,description:e.target.value})}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
             />
 
-            <input className="admin-input" placeholder="SEO title" required
+            <input
+              className="admin-input"
+              placeholder="SEO title"
+              required
               value={form.seo_title}
-              onChange={(e)=>setForm({...form,seo_title:e.target.value})}
+              onChange={(e) =>
+                setForm({ ...form, seo_title: e.target.value })
+              }
             />
 
-            <textarea className="admin-input" placeholder="SEO description" required
+            <textarea
+              className="admin-input"
+              placeholder="SEO description"
+              required
               value={form.seo_description}
-              onChange={(e)=>setForm({...form,seo_description:e.target.value})}
+              onChange={(e) =>
+                setForm({ ...form, seo_description: e.target.value })
+              }
             />
 
-            <textarea className="admin-input" placeholder="Creation comment (required)" required
+            <textarea
+              className="admin-input"
+              placeholder="Creation comment (required)"
+              required
               value={form.comment}
-              onChange={(e)=>setForm({...form,comment:e.target.value})}
+              onChange={(e) =>
+                setForm({ ...form, comment: e.target.value })
+              }
             />
 
             <div className="md:col-span-3 flex justify-start">
               <button className="admin-btn admin-btn-primary">
                 Add Service
               </button>
+
               <button
+                type="button"
                 className="admin-btn admin-btn-secondary ml-2"
                 onClick={() => setShowBulk(true)}
               >
                 Bulk Upload
               </button>
-
             </div>
-
-
           </form>
 
           <table className="admin-table">
@@ -159,7 +207,7 @@ export default function AdminServicesPage() {
               </tr>
             </thead>
             <tbody>
-              {services.map(s => (
+              {services.map((s) => (
                 <tr key={s.id}>
                   <td>{s.category_name}</td>
                   <td>{s.subcategory_name}</td>
@@ -188,7 +236,8 @@ export default function AdminServicesPage() {
           )}
         </section>
       </div>
-      {/* ✅ MODAL BULK UPLOAD — دقیقاً اینجا */}
+
+      {/* ✅ MODAL BULK UPLOAD */}
       {showBulk && (
         <ServiceBulkUploadModal
           subcategories={subcategories}
