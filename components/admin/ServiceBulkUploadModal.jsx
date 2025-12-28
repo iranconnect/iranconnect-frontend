@@ -53,15 +53,34 @@ export default function ServiceBulkUploadModal({
           return;
         }
 
-        const parsed = rows.map((r) => ({
-          name: String(r.name || "").trim(),
-          slug: String(r.slug || "").trim(),
-          description: String(r.description || "").trim(),
-          seo_title: String(r.seo_title || "").trim(),
-          seo_description: String(r.seo_description || "").trim(),
-        }));
-
+        const parsed = rows.map((r, i) => {
+          const obj = {
+            category_slug: String(r.category_slug || "").trim(),
+            subcategory_slug: String(r.subcategory_slug || "").trim(),
+            name: String(r.name || "").trim(),
+            slug: String(r.slug || "").trim(),
+            description: String(r.description || "").trim(),
+            seo_title: String(r.seo_title || "").trim(),
+            seo_description: String(r.seo_description || "").trim(),
+          };
+        
+          if (
+            !obj.category_slug ||
+            !obj.subcategory_slug ||
+            !obj.name ||
+            !obj.slug ||
+            !obj.description ||
+            !obj.seo_title ||
+            !obj.seo_description
+          ) {
+            throw new Error(`Missing required field at row ${i + 2}`);
+          }
+        
+          return obj;
+        });
+        
         setServices(parsed);
+
       } catch (err) {
         setError("Failed to read Excel file.");
       }
@@ -77,11 +96,6 @@ export default function ServiceBulkUploadModal({
     setError("");
     setReportId(null);
 
-    if (!subcategoryId) {
-      setError("Please select a subcategory.");
-      return;
-    }
-
     if (!services.length) {
       setError("No services loaded from Excel.");
       return;
@@ -90,13 +104,11 @@ export default function ServiceBulkUploadModal({
     setStatus("validating");
 
     try {
-      const res = await apiClient.post(
-        "/admin/services/bulk/validate",
-        {
-          subcategory_id: subcategoryId,
+      const res = 
+        await apiClient.post("/admin/services/bulk/validate", {
           services,
-        }
-      );
+      });
+
 
       if (res.data.ok) {
         setStatus("validated");
@@ -136,10 +148,10 @@ export default function ServiceBulkUploadModal({
 
     try {
       await apiClient.post("/admin/services/bulk", {
-        subcategory_id: subcategoryId,
         services,
         comment,
       });
+
 
       onSuccess();
       onClose();
@@ -172,19 +184,6 @@ export default function ServiceBulkUploadModal({
         {error && (
           <div className="text-red-600 text-sm mb-3">{error}</div>
         )}
-
-        <select
-          className="admin-input mb-3"
-          value={subcategoryId}
-          onChange={(e) => setSubcategoryId(e.target.value)}
-        >
-          <option value="">Select subcategory</option>
-          {subcategories.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
 
         <input
           type="file"
