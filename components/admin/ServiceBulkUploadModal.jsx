@@ -224,8 +224,8 @@ export default function ServiceBulkUploadModal({
           placeholder="Bulk import comment (required)"
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          disabled={status !== "validated"}
         />
+
 
         <div className="flex justify-between">
           <button
