@@ -28,7 +28,6 @@ export default function AdminServicesPage() {
 
   /* ===============================
      📥 Download Excel Template
-     (FIXED – secure & production-safe)
   =============================== */
   async function downloadTemplate() {
     try {
@@ -50,7 +49,6 @@ export default function AdminServicesPage() {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Failed to download template:", err);
       alert("Failed to download Excel template.");
     }
   }
@@ -58,13 +56,8 @@ export default function AdminServicesPage() {
   useEffect(() => {
     apiClient
       .get("/admin/services/subcategories/all")
-      .then((res) => {
-        setSubcategories(res.data.data || []);
-      })
-      .catch((err) => {
-        console.error("Failed to load subcategories:", err);
-        setSubcategories([]);
-      });
+      .then((res) => setSubcategories(res.data.data || []))
+      .catch(() => setSubcategories([]));
 
     fetchServices(1);
   }, []);
@@ -73,12 +66,11 @@ export default function AdminServicesPage() {
     const res = await apiClient.get("/admin/services", {
       params: { page: p, pageSize: 10 },
     });
-  
+
     setServices(res.data.data || []);
     setPagination(res.data.pagination || null);
     setPage(p);
   }
-
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -108,7 +100,6 @@ export default function AdminServicesPage() {
       <div className="admin-container">
         <section className="admin-section">
 
-          {/* 🔹 Header with Download Button */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="admin-title">🛠 Services</h2>
 
@@ -124,6 +115,7 @@ export default function AdminServicesPage() {
           {message && <div className="text-green-600 mb-3">{message}</div>}
           {error && <div className="text-red-600 mb-3">{error}</div>}
 
+          {/* CREATE FORM */}
           <form
             onSubmit={handleCreate}
             className="admin-card grid grid-cols-1 md:grid-cols-3 gap-3 mb-6"
@@ -138,76 +130,42 @@ export default function AdminServicesPage() {
             >
               <option value="">Select subcategory</option>
               {subcategories.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
 
-            <input
-              className="admin-input"
-              placeholder="Name"
-              required
+            <input className="admin-input" placeholder="Name" required
               value={form.name}
-              onChange={(e) =>
-                setForm({ ...form, name: e.target.value })
-              }
+              onChange={(e)=>setForm({...form,name:e.target.value})}
             />
 
-            <input
-              className="admin-input"
-              placeholder="Slug (optional)"
+            <input className="admin-input" placeholder="Slug (optional)"
               value={form.slug}
-              onChange={(e) =>
-                setForm({ ...form, slug: e.target.value })
-              }
+              onChange={(e)=>setForm({...form,slug:e.target.value})}
             />
 
-            <textarea
-              className="admin-input"
-              placeholder="Description"
-              required
+            <textarea className="admin-input" placeholder="Description" required
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e)=>setForm({...form,description:e.target.value})}
             />
 
-            <input
-              className="admin-input"
-              placeholder="SEO title"
-              required
+            <input className="admin-input" placeholder="SEO title" required
               value={form.seo_title}
-              onChange={(e) =>
-                setForm({ ...form, seo_title: e.target.value })
-              }
+              onChange={(e)=>setForm({...form,seo_title:e.target.value})}
             />
 
-            <textarea
-              className="admin-input"
-              placeholder="SEO description"
-              required
+            <textarea className="admin-input" placeholder="SEO description" required
               value={form.seo_description}
-              onChange={(e) =>
-                setForm({ ...form, seo_description: e.target.value })
-              }
+              onChange={(e)=>setForm({...form,seo_description:e.target.value})}
             />
 
-            <textarea
-              className="admin-input"
-              placeholder="Creation comment (required)"
-              required
+            <textarea className="admin-input" placeholder="Creation comment (required)" required
               value={form.comment}
-              onChange={(e) =>
-                setForm({ ...form, comment: e.target.value })
-              }
+              onChange={(e)=>setForm({...form,comment:e.target.value})}
             />
 
             <div className="md:col-span-3 flex justify-start">
-              <button className="admin-btn admin-btn-primary">
-                Add Service
-              </button>
-
+              <button className="admin-btn admin-btn-primary">Add Service</button>
               <button
                 type="button"
                 className="admin-btn admin-btn-secondary ml-2"
@@ -218,6 +176,7 @@ export default function AdminServicesPage() {
             </div>
           </form>
 
+          {/* TABLE */}
           <table className="admin-table">
             <thead>
               <tr>
@@ -250,17 +209,41 @@ export default function AdminServicesPage() {
             </tbody>
           </table>
 
+          {/* PAGINATION */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-6">
+              <button
+                className="admin-btn admin-btn-secondary"
+                disabled={page === 1}
+                onClick={() => fetchServices(page - 1)}
+              >
+                ← Previous
+              </button>
+
+              <span className="text-sm text-muted">
+                Page {page} of {pagination.totalPages}
+              </span>
+
+              <button
+                className="admin-btn admin-btn-secondary"
+                disabled={page === pagination.totalPages}
+                onClick={() => fetchServices(page + 1)}
+              >
+                Next →
+              </button>
+            </div>
+          )}
+
           {selected && (
             <ServiceDetailsModal
               serviceId={selected}
               onClose={() => setSelected(null)}
-              onUpdated={fetchServices}
+              onUpdated={() => fetchServices(page)}
             />
           )}
         </section>
       </div>
 
-      {/* ✅ MODAL BULK UPLOAD */}
       {showBulk && (
         <ServiceBulkUploadModal
           subcategories={subcategories}
