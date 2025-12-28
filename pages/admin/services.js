@@ -28,10 +28,31 @@ export default function AdminServicesPage() {
 
   /* ===============================
      📥 Download Excel Template
+     (FIXED – secure & production-safe)
   =============================== */
-  function downloadTemplate() {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/admin/services/bulk/template`;
-    window.open(url, "_blank");
+  async function downloadTemplate() {
+    try {
+      const res = await apiClient.get(
+        "/admin/services/bulk/template",
+        { responseType: "blob" }
+      );
+
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "services_bulk_template.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to download template:", err);
+      alert("Failed to download Excel template.");
+    }
   }
 
   useEffect(() => {
