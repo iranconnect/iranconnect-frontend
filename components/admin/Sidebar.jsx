@@ -31,6 +31,7 @@ const groupedNav = [
       { href: "/admin/categories", label: "Categories" },
       { href: "/admin/subcategories", label: "Subcategories" },
       { href: "/admin/services", label: "Services" },
+      { href: "/admin/tags", label: "Tags" },
     ],
   },
   {
