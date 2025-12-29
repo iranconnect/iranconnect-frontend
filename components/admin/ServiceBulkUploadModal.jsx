@@ -19,6 +19,9 @@ export default function ServiceBulkUploadModal({
   const [reportId, setReportId] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const [validationRows, setValidationRows] = useState(null);
+
+
   /* -----------------------------------
      📄 Parse Excel
   ----------------------------------- */
@@ -44,7 +47,7 @@ export default function ServiceBulkUploadModal({
         const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
         if (!rows.length) {
-          setError("Excel file is empty.");
+          setError("Excel file has no data rows. Please add at least one service.");
           return;
         }
 
@@ -114,7 +117,7 @@ export default function ServiceBulkUploadModal({
         setStatus("validated");
       } else {
         setStatus("error");
-        setReportId(res.data.report_id);
+        setValidationRows(res.data.rows);
       }
     } catch (err) {
       setStatus("error");
@@ -126,11 +129,15 @@ export default function ServiceBulkUploadModal({
      ⬇️ Download validation report
   ----------------------------------- */
   function downloadReport() {
-    if (!reportId) return;
-
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/admin/services/bulk/report/${reportId}`;
-    window.open(url, "_blank");
+    if (!validationRows) return;
+  
+    const ws = XLSX.utils.json_to_sheet(validationRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "validation");
+  
+    XLSX.writeFile(wb, "bulk-validation-report.xlsx");
   }
+
 
   /* -----------------------------------
      🚀 IMPORT
