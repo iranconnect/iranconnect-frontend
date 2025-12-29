@@ -16,10 +16,9 @@ export default function ServiceBulkUploadModal({
   // idle | validating | validated | error | importing
 
   const [error, setError] = useState("");
-  const [reportId, setReportId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const [validationRows, setValidationRows] = useState(null);
+  const [reportRows, setReportRows] = useState([]);
 
 
   /* -----------------------------------
@@ -27,7 +26,7 @@ export default function ServiceBulkUploadModal({
   ----------------------------------- */
   function handleFile(e) {
     setError("");
-    setReportId(null);
+    setReportRows([]);
     setStatus("idle");
 
     const file = e.target.files[0];
@@ -85,7 +84,7 @@ export default function ServiceBulkUploadModal({
         setServices(parsed);
 
       } catch (err) {
-        setError("Failed to read Excel file.");
+        setError(err.message || "Failed to read Excel file.");
       }
     };
 
@@ -97,48 +96,35 @@ export default function ServiceBulkUploadModal({
   ----------------------------------- */
   async function handleValidate() {
     setError("");
-    setReportId(null);
-
+    setReportRows([]);
+    setStatus("validating");
+  
     if (!services.length) {
       setError("No services loaded from Excel.");
+      setStatus("idle");
       return;
     }
-
-    setStatus("validating");
-
+  
     try {
-      const res = 
-        await apiClient.post("/admin/services/bulk/validate", {
-          services,
-      });
-
-
+      const res = await apiClient.post(
+        "/admin/services/bulk/validate",
+        { services }
+      );
+  
       if (res.data.ok) {
         setStatus("validated");
       } else {
         setStatus("error");
-        setValidationRows(res.data.rows);
+        setReportRows(res.data.rows || []);
+        setError("Validation failed. Please review the report below.");
       }
     } catch (err) {
       setStatus("error");
-      setError("Validation failed.");
+      setError("Validation request failed.");
     }
   }
 
-  /* -----------------------------------
-     ⬇️ Download validation report
-  ----------------------------------- */
-  function downloadReport() {
-    if (!validationRows) return;
   
-    const ws = XLSX.utils.json_to_sheet(validationRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "validation");
-  
-    XLSX.writeFile(wb, "bulk-validation-report.xlsx");
-  }
-
-
   /* -----------------------------------
      🚀 IMPORT
   ----------------------------------- */
@@ -212,17 +198,7 @@ export default function ServiceBulkUploadModal({
           </div>
         )}
 
-        {status === "error" && reportId && (
-          <div className="text-yellow-600 text-sm mb-3">
-            ⚠️ Validation failed.
-            <button
-              onClick={downloadReport}
-              className="underline ml-1"
-            >
-              Download report
-            </button>
-          </div>
-        )}
+        
 
         <textarea
           className="admin-input mb-4"
@@ -231,6 +207,17 @@ export default function ServiceBulkUploadModal({
           value={comment}
           onChange={(e) => setComment(e.target.value)}
         />
+
+        {status === "error" && reportRows.length > 0 && (
+          <div className="max-h-40 overflow-auto border rounded p-2 text-sm">
+            {reportRows.map((r, i) => (
+              <div key={i} className="text-red-600">
+                Row {r.row}: {r.reason}
+              </div>
+            ))}
+          </div>
+        )}
+
 
 
         <div className="flex justify-between">
