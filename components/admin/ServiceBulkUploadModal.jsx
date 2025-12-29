@@ -8,7 +8,6 @@ export default function ServiceBulkUploadModal({
   onClose,
   onSuccess,
 }) {
-  const [subcategoryId, setSubcategoryId] = useState("");
   const [services, setServices] = useState([]);
   const [comment, setComment] = useState("");
 
@@ -19,6 +18,8 @@ export default function ServiceBulkUploadModal({
   const [loading, setLoading] = useState(false);
 
   const [reportRows, setReportRows] = useState([]);
+
+  const [preview, setPreview] = useState(null);
 
 
   /* -----------------------------------
@@ -82,6 +83,18 @@ export default function ServiceBulkUploadModal({
         });
         
         setServices(parsed);
+
+        const categories = new Set(parsed.map(s => s.category_slug));
+        const subcategories = new Set(
+          parsed.map(s => `${s.category_slug} / ${s.subcategory_slug}`)
+        );
+        
+        setPreview({
+          services: parsed.length,
+          categories: categories.size,
+          subcategories: subcategories.size,
+        });
+
 
       } catch (err) {
         setError(err.message || "Failed to read Excel file.");
@@ -185,6 +198,12 @@ export default function ServiceBulkUploadModal({
           className="admin-input mb-3"
         />
 
+        <div className="admin-muted text-xs mb-3">
+          Category and Subcategory are read from the Excel file.
+          Each row can belong to a different category or subcategory.
+        </div>
+
+
         {services.length > 0 && (
           <div className="admin-muted text-sm mb-3">
             {services.length} services loaded
@@ -195,6 +214,14 @@ export default function ServiceBulkUploadModal({
         {status === "validated" && (
           <div className="text-green-600 text-sm mb-3">
             ✅ Validation successful. Ready to import.
+          </div>
+        )}
+
+        {preview && (
+          <div className="admin-muted text-sm mb-3">
+            {preview.services} services •{" "}
+            {preview.categories} categories •{" "}
+            {preview.subcategories} subcategories
           </div>
         )}
 
