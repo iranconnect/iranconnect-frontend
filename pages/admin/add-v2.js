@@ -1,6 +1,6 @@
 //pages/admin/add-v2.js
-import AdminLayout from "../../../components/admin/AdminLayout";
-import BusinessWizard from "../../../components/admin/BusinessWizard";
+import AdminLayout from "../../components/admin/AdminLayout";
+import BusinessWizard from "../../components/admin/BusinessWizard";
 
 export default function AddBusinessV2() {
   return (
