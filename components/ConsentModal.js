@@ -59,43 +59,42 @@ export default function ConsentModal({ userId, lang = "en", onClose }) {
       alert(t.error);
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
-      await apiClient.put(
-        "/users/consent",
-        {
-          consent_type: "all_policies",
-          version: "v1", // 🔐 should match backend policy version
-          choice: "accepted",
-        },
+      // ✅ مسیر درست برای auth flow
+      await apiClient.post(
+        "/auth/agree-terms",
+        {},
         { withCredentials: true }
       );
-
-      // 🔒 Consent is mandatory → close only on success
+  
+      // ✅ بعد از صدور JWT نهایی
       onClose(true);
     } catch (err) {
-      console.error("❌ Consent save error:", err);
-
+      console.error("❌ Agree terms error:", err);
+  
       const status = err.response?.status;
       const msg = err.response?.data?.error || "";
-
+  
       if (
         status === 401 ||
         status === 403 ||
+        status === 440 ||
         msg.toLowerCase().includes("expired")
       ) {
         alert("⚠️ Session expired. Please log in again.");
         window.location.href = "/auth/login";
         return;
       }
-
+  
       alert("❌ Error saving consent. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+  
 
   /* ----------------------------------------------------
      🚫 Prevent accidental close (legal requirement)
