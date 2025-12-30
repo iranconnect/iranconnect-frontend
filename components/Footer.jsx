@@ -131,7 +131,29 @@ export default function Footer() {
 
               <Link href="/privacy-policy">Privacy Policy</Link>
               <Link href="/terms-of-service">Terms of Service</Link>
-              <Link href="/cookies">Cookies Policy</Link>
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new Event("open-cookie-settings"));
+                }}
+                style={{
+                  display: 'inline-block',
+                  marginTop: 6,
+                  fontSize: 14,
+                  color: 'rgba(255,255,255,0.85)',
+                  textDecoration: 'underline',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+                onMouseOver={(e) => (e.target.style.color = '#00bfa6')}
+                onMouseOut={(e) =>
+                  (e.target.style.color = 'rgba(255,255,255,0.85)')
+                }
+              >
+                {cookieTexts[lang]}
+              </button>
+
             </div>
           </div>
         </div>
