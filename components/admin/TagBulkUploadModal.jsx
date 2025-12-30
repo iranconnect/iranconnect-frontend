@@ -1,4 +1,4 @@
-//frontend/components/admin/TagBulkUploadModal.jsx
+// frontend/components/admin/TagBulkUploadModal.jsx
 import { useState } from "react";
 import * as XLSX from "xlsx";
 import apiClient from "../../utils/apiClient";
@@ -6,18 +6,26 @@ import apiClient from "../../utils/apiClient";
 export default function TagBulkUploadModal({ onClose, onSuccess }) {
   const [tags, setTags] = useState([]);
   const [comment, setComment] = useState("");
+
   const [status, setStatus] = useState("idle");
+  // idle | validating | validated | error | importing
+
   const [error, setError] = useState("");
   const [reportRows, setReportRows] = useState([]);
 
+  /* -----------------------------------
+     📄 Parse Excel
+  ----------------------------------- */
   function handleFile(e) {
     setError("");
     setReportRows([]);
     setStatus("idle");
 
     const file = e.target.files[0];
-    if (!file || !file.name.endsWith(".xlsx")) {
-      setError("Only .xlsx files are supported.");
+    if (!file) return;
+
+    if (!file.name.endsWith(".xlsx")) {
+      setError("Only .xlsx Excel files are supported.");
       return;
     }
 
@@ -28,52 +36,77 @@ export default function TagBulkUploadModal({ onClose, onSuccess }) {
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-        if (!rows.length || rows.length > 500) {
-          throw new Error("Invalid row count.");
+        if (!rows.length) {
+          setError("Excel file has no data rows.");
+          return;
+        }
+
+        if (rows.length > 500) {
+          setError("Maximum 500 tags allowed per upload.");
+          return;
         }
 
         setTags(rows);
       } catch (err) {
-        setError(err.message);
+        setError(err.message || "Failed to read Excel file.");
       }
     };
+
     reader.readAsArrayBuffer(file);
   }
 
+  /* -----------------------------------
+     ✅ VALIDATE
+  ----------------------------------- */
   async function handleValidate() {
-    setStatus("validating");
     setError("");
     setReportRows([]);
+    setStatus("validating");
+
+    if (!tags.length) {
+      setError("No tags loaded from Excel.");
+      setStatus("idle");
+      return;
+    }
 
     try {
-      const res = await apiClient.post("/admin/tags/bulk/validate", {
-        tags,
-      });
+      const res = await apiClient.post(
+        "/admin/tags/bulk/validate",
+        { tags }
+      );
 
       if (res.data.ok) {
         setStatus("validated");
       } else {
         setStatus("error");
         setReportRows(res.data.rows || []);
+        setError("Validation failed. Please review the report below.");
       }
     } catch {
-      setError("Validation failed.");
       setStatus("error");
+      setError("Validation request failed.");
     }
   }
 
+  /* -----------------------------------
+     🚀 IMPORT
+  ----------------------------------- */
   async function handleImport() {
+    setError("");
+
     if (!comment.trim()) {
       setError("Bulk import comment is required.");
       return;
     }
 
+    setStatus("importing");
+
     try {
-      setStatus("importing");
       await apiClient.post("/admin/tags/bulk", {
         tags,
         comment,
       });
+
       onSuccess();
       onClose();
     } catch (err) {
@@ -82,6 +115,9 @@ export default function TagBulkUploadModal({ onClose, onSuccess }) {
     }
   }
 
+  /* -----------------------------------
+     UI
+  ----------------------------------- */
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
       <div className="admin-card max-w-lg w-full p-6 relative">
@@ -97,7 +133,9 @@ export default function TagBulkUploadModal({ onClose, onSuccess }) {
           Bulk Upload Tags
         </h2>
 
-        {error && <div className="text-red-600 text-sm mb-3">{error}</div>}
+        {error && (
+          <div className="text-red-600 text-sm mb-3">{error}</div>
+        )}
 
         <input
           type="file"
@@ -105,6 +143,19 @@ export default function TagBulkUploadModal({ onClose, onSuccess }) {
           onChange={handleFile}
           className="admin-input mb-3"
         />
+
+        {tags.length > 0 && (
+          <div className="admin-muted text-sm mb-3">
+            {tags.length} tags loaded
+          </div>
+        )}
+
+        {/* STATUS MESSAGES */}
+        {status === "validated" && (
+          <div className="text-green-600 text-sm mb-3">
+            ✅ Validation successful. Ready to import.
+          </div>
+        )}
 
         <textarea
           className="admin-input mb-4"
@@ -128,9 +179,9 @@ export default function TagBulkUploadModal({ onClose, onSuccess }) {
           <button
             className="admin-btn admin-btn-secondary"
             onClick={handleValidate}
-            disabled={!tags.length}
+            disabled={status === "validating" || !tags.length}
           >
-            Validate
+            {status === "validating" ? "Validating…" : "Validate"}
           </button>
 
           <button
@@ -138,7 +189,7 @@ export default function TagBulkUploadModal({ onClose, onSuccess }) {
             onClick={handleImport}
             disabled={status !== "validated"}
           >
-            Import Tags
+            {status === "importing" ? "Importing…" : "Import Tags"}
           </button>
         </div>
       </div>
