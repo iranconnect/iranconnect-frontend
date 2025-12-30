@@ -83,6 +83,21 @@ export default function CookieConsent() {
     checkConsent();
   }, []);
 
+  /* 🔁 Re-open cookie settings from footer (GDPR review) */
+  useEffect(() => {
+    function openFromFooter() {
+      setVisible(true);
+      setShowSettings(true);
+    }
+
+    window.addEventListener("open-cookie-settings", openFromFooter);
+
+    return () => {
+      window.removeEventListener("open-cookie-settings", openFromFooter);
+    };
+  }, []);
+
+
   /* ✅ Accept / Reject handler */
   async function handleChoice(choice) {
     if (loading) return;
