@@ -137,8 +137,17 @@ export default function CookieConsent() {
     }
   }
 
-  if (!visible || !texts) return null;
-  const t = texts;
+  if (!visible) return null;
+  const t =
+    texts ||
+    ({
+      title: "Cookies",
+      desc: "You can manage your cookie preferences.",
+      accept: "Accept",
+      reject: "Reject",
+      manage: "Manage",
+    });
+
 
   return (
     <>
