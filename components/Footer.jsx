@@ -1,4 +1,4 @@
-//components/Footer.jsx
+// components/Footer.jsx
 'use client';
 
 import Link from 'next/link';
@@ -17,7 +17,6 @@ export default function Footer() {
     fa: 'تغییر تنظیمات کوکی‌ها',
   };
 
-  // 🌍 language detection (non-sensitive)
   const lang =
     typeof document !== 'undefined'
       ? document.documentElement.getAttribute('lang') || 'en'
@@ -58,48 +57,19 @@ export default function Footer() {
 
             {/* 🌐 Social Media */}
             <div className="flex gap-4 mt-4">
-              <a
-                href="https://www.instagram.com/iranconnect.0rg?igsh=aWg4eXNzZWwzdHhw&utm_source=qr"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram"
-              >
+              <a href="https://www.instagram.com/iranconnect.0rg" target="_blank" rel="noopener noreferrer">
                 <Instagram color="#00bfa6" size={22} />
               </a>
-
-              <a
-                href="https://www.facebook.com/share/1AgNy5a5pr/?mibextid=wwXIfr"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook"
-              >
+              <a href="https://www.facebook.com/share/1AgNy5a5pr/" target="_blank" rel="noopener noreferrer">
                 <Facebook color="#00bfa6" size={22} />
               </a>
-
-              <a
-                href="https://x.com/iranconnectorg?s=21"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="X"
-              >
+              <a href="https://x.com/iranconnectorg" target="_blank" rel="noopener noreferrer">
                 <Twitter color="#00bfa6" size={22} />
               </a>
-
-              <a
-                href="https://t.me/iranconnectcommunity"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Telegram"
-              >
+              <a href="https://t.me/iranconnectcommunity" target="_blank" rel="noopener noreferrer">
                 <Send color="#00bfa6" size={22} />
               </a>
-
-              <a
-                href="https://www.linkedin.com/in/iranconnect-community-41522039a?trk=contact-info"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="LinkedIn"
-              >
+              <a href="https://www.linkedin.com/in/iranconnect-community-41522039a" target="_blank" rel="noopener noreferrer">
                 <Linkedin color="#00bfa6" size={22} />
               </a>
             </div>
@@ -131,34 +101,12 @@ export default function Footer() {
 
               <Link href="/privacy-policy">Privacy Policy</Link>
               <Link href="/terms-of-service">Terms of Service</Link>
-              <button
-                type="button"
-                onClick={() => {
-                  window.dispatchEvent(new Event("open-cookie-settings"));
-                }}
-                style={{
-                  display: 'inline-block',
-                  marginTop: 6,
-                  fontSize: 14,
-                  color: 'rgba(255,255,255,0.85)',
-                  textDecoration: 'underline',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-                onMouseOver={(e) => (e.target.style.color = '#00bfa6')}
-                onMouseOut={(e) =>
-                  (e.target.style.color = 'rgba(255,255,255,0.85)')
-                }
-              >
-                {cookieTexts[lang]}
-              </button>
-
+              <Link href="/cookies">Cookies Policy</Link>
             </div>
           </div>
         </div>
 
-        {/* 🕓 Copyright + Cookie settings */}
+        {/* 🕓 Copyright + Change cookie settings */}
         <div
           style={{
             marginTop: 32,
@@ -168,15 +116,20 @@ export default function Footer() {
         >
           <p>© {new Date().getFullYear()} IRANCONNECT — All rights reserved</p>
 
-          {/* ✅ GDPR-compliant: review settings, not reset */}
-          <Link
-            href="/cookies"
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new Event('open-cookie-settings'));
+            }}
             style={{
               display: 'inline-block',
               marginTop: 6,
               fontSize: 14,
               color: 'rgba(255,255,255,0.85)',
               textDecoration: 'underline',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
             }}
             onMouseOver={(e) => (e.target.style.color = '#00bfa6')}
             onMouseOut={(e) =>
@@ -184,7 +137,7 @@ export default function Footer() {
             }
           >
             {cookieTexts[lang]}
-          </Link>
+          </button>
         </div>
       </div>
     </footer>
