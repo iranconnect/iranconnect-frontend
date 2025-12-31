@@ -6,6 +6,10 @@ import apiClient from "../utils/apiClient";
 /* ───────────────────────────────────────────────
    🔐 Cookie helpers (first-party technical cookie)
 ─────────────────────────────────────────────── */
+function setDecisionCookie(choice) {
+  document.cookie =
+    `ic_cookie_banner_decided=${choice}; path=/; max-age=31536000; SameSite=Lax`;
+}
 
 function getCookie(name) {
   if (typeof document === "undefined") return null;
@@ -102,17 +106,11 @@ export default function CookieConsent() {
   async function handleChoice(choice) {
     if (loading) return;
     setLoading(true);
-
+   
     try {
-      await apiClient.post(
-        "/consents/cookies/anonymous",
-        {
-          choice,
-          version: "v1.0",
-        },
-        { withCredentials: true }
-      );
-
+      // ✅ ONLY local cookie — NO API — NO DB
+      setDecisionCookie(choice);
+   
       // Load analytics فقط در صورت Accept
       if (choice === "accepted") {
         const script = document.createElement("script");
@@ -120,7 +118,7 @@ export default function CookieConsent() {
           "https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX";
         script.async = true;
         document.body.appendChild(script);
-
+   
         window.dataLayer = window.dataLayer || [];
         function gtag() {
           window.dataLayer.push(arguments);
@@ -128,14 +126,15 @@ export default function CookieConsent() {
         gtag("js", new Date());
         gtag("config", "G-XXXXXXX");
       }
-
+   
       setVisible(false);
     } catch (err) {
-      console.error("❌ Cookie consent error:", err);
+      console.error("❌ Cookie banner error:", err);
     } finally {
       setLoading(false);
     }
   }
+
 
   if (!visible) return null;
   const t =
