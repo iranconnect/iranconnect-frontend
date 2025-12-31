@@ -23,11 +23,12 @@ export default function StepServicesTags({ data, setData, onNext, onBack }) {
 
     setLoadingServices(true);
 
-    apiClient.get("/admin/services", {
-      params: {
-        subcategory_ids: subcategoryIds, // ← Array مستقیم
-      },
-    });
+    apiClient
+      .get("/admin/services", {
+        params: {
+          subcategory_ids: subcategoryIds, 
+        },
+      });
       .then((res) => setServices(res.data?.data || []))
       .catch(() => setServices([]))
       .finally(() => setLoadingServices(false));
