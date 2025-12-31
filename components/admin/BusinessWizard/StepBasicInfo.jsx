@@ -15,8 +15,9 @@ export default function StepBasicInfo({ data, setData, onNext }) {
   const [subcategories, setSubcategories] = useState([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
 
-  const categoryId = data?.category_id || "";
+  const categoryId = Number(data?.category_id) || "";
   const selectedSubcategories = data?.subcategory_ids || [];
+
 
   /* ─────────────────────────────
      Load categories (no pagination)
@@ -111,13 +112,16 @@ export default function StepBasicInfo({ data, setData, onNext }) {
         <select
           className="admin-input"
           value={categoryId}
-          onChange={(e) =>
+          onChange={(e) => {
+            const newCategoryId = Number(e.target.value);
+          
             setData((prev) => ({
               ...prev,
-              category_id: e.target.value,
+              category_id: newCategoryId,
               subcategory_ids: [],
-            }))
-          }
+            }));
+          }}
+
           required
         >
           <option value="">Select category</option>
