@@ -46,11 +46,13 @@ const csp = `
     'self'
     ${API_ORIGIN}
     https://maps.googleapis.com
+    https://places.googleapis.com
     https://api.cloudinary.com
     https://www.google-analytics.com
     https://region1.google-analytics.com
     https://stats.g.doubleclick.net
     ${isStaging ? "https://vercel.live" : ""};
+
 
   frame-src
     https://www.google.com
