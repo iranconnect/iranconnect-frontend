@@ -2,92 +2,104 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../../utils/apiClient";
 
-export default function StepBasicInfo({ formData, setFormData }) {
+export default function StepBasicInfo({ data, setData, onNext }) {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
-  const [services, setServices] = useState([]);
-  const [tags, setTags] = useState([]);
+  const [loadingSubs, setLoadingSubs] = useState(false);
 
-  /* ----------------------------------------------------
-     📥 Load categories
-  ---------------------------------------------------- */
+  const categoryId = data?.category_id || "";
+  const selectedSubcategories = data?.subcategory_ids || [];
+
+  /* ─────────────────────────────
+     Load categories (admin-secure)
+  ───────────────────────────── */
   useEffect(() => {
-    apiClient.get("/categories").then((res) => {
-      setCategories(res.data?.data || []);
-    });
+    apiClient
+      .get("/admin/categories")
+      .then((res) => setCategories(res.data?.data || []))
+      .catch(() => setCategories([]));
   }, []);
 
-  /* ----------------------------------------------------
-     📥 Load subcategories when category changes
-  ---------------------------------------------------- */
+  /* ─────────────────────────────
+     Load subcategories on category
+  ───────────────────────────── */
   useEffect(() => {
-    if (!formData.category_id) return;
+    if (!categoryId) {
+      setSubcategories([]);
+      return;
+    }
 
-    setSubcategories([]);
-    setFormData((prev) => ({
-      ...prev,
-      subcategory_ids: [],
-      service_ids: [],
-    }));
+    setLoadingSubs(true);
 
     apiClient
-      .get("/subcategories", {
-        params: { category_id: formData.category_id },
+      .get("/admin/subcategories", {
+        params: { category_id: categoryId },
       })
-      .then((res) => setSubcategories(res.data?.data || []));
-  }, [formData.category_id]);
+      .then((res) => setSubcategories(res.data?.data || []))
+      .catch(() => setSubcategories([]))
+      .finally(() => setLoadingSubs(false));
+  }, [categoryId]);
 
-  /* ----------------------------------------------------
-     📥 Load services when subcategories change
-  ---------------------------------------------------- */
-  useEffect(() => {
-    if (!formData.subcategory_ids?.length) return;
-
-    apiClient
-      .get("/services", {
-        params: {
-          subcategory_ids: formData.subcategory_ids.join(","),
-        },
-      })
-      .then((res) => setServices(res.data?.data || []));
-  }, [formData.subcategory_ids]);
-
-  /* ----------------------------------------------------
-     📥 Load tags
-  ---------------------------------------------------- */
-  useEffect(() => {
-    apiClient
-      .get("/tags", { params: { type: "business" } })
-      .then((res) => setTags(res.data?.data || []));
-  }, []);
-
-  function toggle(id, list, key) {
-    setFormData((prev) => ({
+  /* ─────────────────────────────
+     Handlers
+  ───────────────────────────── */
+  function handleNameChange(e) {
+    setData((prev) => ({
       ...prev,
-      [key]: list.includes(id)
-        ? list.filter((i) => i !== id)
-        : [...list, id],
+      name: e.target.value,
     }));
   }
 
+  function handleCategoryChange(e) {
+    const value = e.target.value;
+
+    setData((prev) => ({
+      ...prev,
+      category_id: value,
+      subcategory_ids: [], // reset on category change
+    }));
+  }
+
+  function toggleSubcategory(id) {
+    setData((prev) => {
+      const current = prev.subcategory_ids || [];
+      return {
+        ...prev,
+        subcategory_ids: current.includes(id)
+          ? current.filter((x) => x !== id)
+          : [...current, id],
+      };
+    });
+  }
+
+  /* ─────────────────────────────
+     Render
+  ───────────────────────────── */
   return (
-    <>
-      <h3 className="text-sm font-semibold mb-4">
-        🏷️ Business Classification
-      </h3>
+    <div className="admin-section">
+      <h2 className="admin-title mb-4">Basic Business Information</h2>
+
+      {/* Business name */}
+      <div className="mb-5">
+        <label className="block text-sm mb-1">Business name *</label>
+        <input
+          type="text"
+          className="admin-input"
+          value={data?.name || ""}
+          onChange={handleNameChange}
+          placeholder="e.g. Tehran Legal Services"
+          required
+        />
+      </div>
 
       {/* Category */}
-      <div className="mb-6">
-        <label className="block text-sm mb-2">Category *</label>
+      <div className="mb-5">
+        <label className="block text-sm mb-1">Category *</label>
         <select
-          className="admin-input w-80"
-          value={formData.category_id || ""}
-          onChange={(e) =>
-            setFormData((prev) => ({
-              ...prev,
-              category_id: e.target.value,
-            }))
-          }
+          className="admin-input"
+          value={categoryId}
+          onChange={handleCategoryChange}
+          required
         >
           <option value="">Select category</option>
           {categories.map((c) => (
@@ -99,92 +111,48 @@ export default function StepBasicInfo({ formData, setFormData }) {
       </div>
 
       {/* Subcategories */}
-      {subcategories.length > 0 && (
-        <div className="admin-card mb-6">
-          <h4 className="text-sm font-semibold mb-3">
-            Subcategories *
-          </h4>
+      {categoryId && (
+        <div className="mb-6">
+          <label className="block text-sm mb-2">
+            Subcategories (multiple allowed)
+          </label>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {subcategories.map((s) => (
-              <label key={s.id} className="flex gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={
-                    formData.subcategory_ids?.includes(s.id) || false
-                  }
-                  onChange={() =>
-                    toggle(
-                      s.id,
-                      formData.subcategory_ids || [],
-                      "subcategory_ids"
-                    )
-                  }
-                />
-                {s.name}
-              </label>
-            ))}
-          </div>
+          {loadingSubs ? (
+            <p className="text-xs opacity-70">Loading subcategories…</p>
+          ) : subcategories.length === 0 ? (
+            <p className="text-xs opacity-70">
+              No subcategories available.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {subcategories.map((sub) => (
+                <label
+                  key={sub.id}
+                  className="flex items-center gap-2 text-sm cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedSubcategories.includes(sub.id)}
+                    onChange={() => toggleSubcategory(sub.id)}
+                  />
+                  {sub.name}
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Services */}
-      {services.length > 0 && (
-        <div className="admin-card mb-6">
-          <h4 className="text-sm font-semibold mb-3">
-            Services
-          </h4>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {services.map((srv) => (
-              <label key={srv.id} className="flex gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={
-                    formData.service_ids?.includes(srv.id) || false
-                  }
-                  onChange={() =>
-                    toggle(
-                      srv.id,
-                      formData.service_ids || [],
-                      "service_ids"
-                    )
-                  }
-                />
-                {srv.name}
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tags */}
-      {tags.length > 0 && (
-        <div className="admin-card">
-          <h4 className="text-sm font-semibold mb-3">Tags</h4>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {tags.map((t) => (
-              <label key={t.id} className="flex gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={
-                    formData.tag_ids?.includes(t.id) || false
-                  }
-                  onChange={() =>
-                    toggle(
-                      t.id,
-                      formData.tag_ids || [],
-                      "tag_ids"
-                    )
-                  }
-                />
-                {t.name}
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
-    </>
+      {/* Next */}
+      <div className="flex justify-end">
+        <button
+          onClick={onNext}
+          className="admin-btn admin-btn-primary"
+          disabled={!data?.name || !categoryId}
+        >
+          Next
+        </button>
+      </div>
+    </div>
   );
 }
