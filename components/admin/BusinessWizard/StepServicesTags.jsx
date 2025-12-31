@@ -41,10 +41,11 @@ export default function StepServicesTags({ data, setData, onNext, onBack }) {
     setLoadingTags(true);
 
     apiClient
-      .get("/admin/tags")
+      .get("/admin/tags/for-business")
       .then((res) => setTags(res.data?.data || []))
       .catch(() => setTags([]))
       .finally(() => setLoadingTags(false));
+
   }, []);
 
   /* ─────────────────────────────
@@ -99,18 +100,37 @@ export default function StepServicesTags({ data, setData, onNext, onBack }) {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {services.map((s) => (
-              <label
-                key={s.id}
-                className="flex items-center gap-2 text-sm cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedServices.includes(s.id)}
-                  onChange={() => toggleService(s.id)}
-                />
-                {s.name}
-              </label>
+              <div key={s.id} className="text-sm">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedServices.includes(s.id)}
+                    onChange={() => toggleService(s.id)}
+                  />
+            
+                  {/* نام سرویس + Tooltip */}
+                  <span title={s.description}>
+                    {s.name}
+                  </span>
+                </label>
+            
+                {/* 🔹 تگ‌های اختصاصی سرویس */}
+                {s.service_tags?.length > 0 && (
+                  <div className="ml-6 mt-1 flex flex-wrap gap-2">
+                    {s.service_tags.map((tag) => (
+                      <span
+                        key={tag.id}
+                        title={tag.description}
+                        className="text-xs bg-slate-100 px-2 py-0.5 rounded"
+                      >
+                        #{tag.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
+
           </div>
         )}
       </div>
@@ -137,7 +157,9 @@ export default function StepServicesTags({ data, setData, onNext, onBack }) {
                   checked={selectedTags.includes(t.id)}
                   onChange={() => toggleTag(t.id)}
                 />
-                {t.name}
+                <span title={t.seo_description}>
+                  {t.name}
+                </span>
               </label>
             ))}
           </div>
