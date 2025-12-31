@@ -20,6 +20,7 @@ const groupedNav = [
     items: [
       { href: "/admin/businesses", label: "All Businesses" },
       { href: "/admin/add", label: "Add New" },
+      { href: "/admin/add-v2", label: "Add Business (v2)" },
       { href: "/admin/claims", label: "Claim Requests" },
       { href: "/admin/requests", label: "Requests" },
     ],
