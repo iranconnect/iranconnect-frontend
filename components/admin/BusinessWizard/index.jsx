@@ -22,21 +22,33 @@ export default function BusinessWizard() {
 
   const [data, setData] = useState({
     name: "",
+      
     category_id: "",
     subcategory_ids: [],
+
+    legal_name: "",
+    business_type: "",
+    year_established: "",
+    short_description: "",
+    full_description: "",
+  
     services: [],
     tags: [],
+  
     country: "",
     city: "",
     address: "",
     postal_code: "",
     location: "",
+  
     phone: "",
     email: "",
     website: "",
+  
     image: null,
     force_create: false,
   });
+
 
   function next() {
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
