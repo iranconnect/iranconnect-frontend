@@ -79,10 +79,14 @@ export default function StepBasicInfo({ data, setData, onNext }) {
      Render
   ───────────────────────────── */
   return (
-    <div className="admin-card">
-      <h2 className="admin-card-title">
-        Basic Business Information
+    <div className="admin-section">
+      <h2 className="admin-title mb-1">
+        Add New Business (Advanced)
       </h2>
+      <p className="admin-muted mb-6">
+        Step 1 of 4 — Basic Business Information
+      </p>
+
 
       {/* Business display name */}
       <div className="mb-5">
