@@ -25,7 +25,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack }) {
 
     apiClient
       .get("/admin/services", {
-        params: { subcategory_ids: subcategoryIds },
+        params: { subcategory_ids: subcategoryIds.join(",") },
       })
       .then((res) => setServices(res.data?.data || []))
       .catch(() => setServices([]))
