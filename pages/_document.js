@@ -29,7 +29,8 @@ const csp = `
 
   style-src
     'self'
-    'unsafe-inline';
+    'unsafe-inline'
+    https://fonts.googleapis.com;
 
   img-src
     'self'
@@ -57,7 +58,8 @@ const csp = `
 
   font-src
     'self'
-    https:;
+    https://fonts.gstatic.com
+    data:;
 
   base-uri 'self';
   form-action 
