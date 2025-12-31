@@ -1,4 +1,6 @@
 //components/admin/BusinessWizard/StepLocationContact.jsx
+import { useEffect, useRef, useState } from "react";
+
 export default function StepLocationContact({
   data,
   setData,
@@ -20,10 +22,80 @@ export default function StepLocationContact({
   const needsServiceRadius =
     mode === "at_home" || mode === "hybrid";
 
-  const needsContactInfo =
-    mode !== "remote";
+  const needsContactInfo = !!mode;
 
   const canProceed = !!mode;
+
+  const mapRef = useRef(null);
+  const autocompleteRef = useRef(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  
+  async function loadMap() {
+    if (mapLoaded) return;
+    setMapLoaded(true);
+  
+    if (typeof window !== "undefined" && !window.google) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+  
+    const map = new window.google.maps.Map(mapRef.current, {
+      center: { lat: 43.7102, lng: 7.262 },
+      zoom: 13,
+    });
+  
+    const input = document.getElementById("wizard-location-input");
+    const autocomplete = new window.google.maps.places.Autocomplete(input, {
+      fields: ["formatted_address", "geometry"],
+    });
+    
+    autocompleteRef.current = autocomplete;
+    
+    autocomplete.addListener("place_changed", () => {
+      const place = autocomplete.getPlace();
+      if (!place.geometry) return;
+    
+      map.setCenter(place.geometry.location);
+      map.setZoom(15);
+    
+      setField("location", place.formatted_address);
+    });
+  }
+
+  useEffect(() => {
+    return () => {
+      if (autocompleteRef.current) {
+        window.google?.maps?.event?.clearInstanceListeners(
+          autocompleteRef.current
+        );
+        autocompleteRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (mode === "remote") {
+      setData((prev) => ({
+        ...prev,
+        country: "",
+        city: "",
+        address: "",
+        postal_code: "",
+        location: "",
+        service_radius_km: null,
+      }));
+    }
+  }, [mode]);
+
+
+
 
   return (
     <div className="admin-section">
@@ -190,14 +262,25 @@ export default function StepLocationContact({
             <label className="admin-label">
               Business location on map *
             </label>
-
-            {/* این کامپوننت همان نسخه فعلی پروژه است */}
-            <GoogleMapPicker
-              value={data.location}
-              onChange={(loc) =>
-                setField("location", loc)
+        
+            <input
+              id="wizard-location-input"
+              className="admin-input"
+              value={data.location || ""}
+              onChange={(e) =>
+                setField("location", e.target.value)
               }
+              onFocus={loadMap}
+              placeholder="Click to select on Google Map"
+              required
             />
+        
+            {mapLoaded && (
+              <div
+                ref={mapRef}
+                className="mt-3 h-64 w-full rounded-lg border border-[var(--border)]"
+              />
+            )}
           </div>
         </>
       )}
