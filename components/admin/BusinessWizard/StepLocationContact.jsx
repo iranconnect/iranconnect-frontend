@@ -37,7 +37,10 @@ export default function StepLocationContact({
     if (typeof window !== "undefined" && !window.google) {
       await new Promise((resolve, reject) => {
         const script = document.createElement("script");
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&v=beta`;
+        script.src =
+          `https://maps.googleapis.com/maps/api/js` +
+          `?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}` +
+          `&libraries=places&v=beta`;
         script.async = true;
         script.defer = true;
         script.onload = resolve;
@@ -54,20 +57,41 @@ export default function StepLocationContact({
     const autocompleteEl = document.getElementById(
       "wizard-location-autocomplete"
     );
-    
+  
+    if (!autocompleteEl) return;
+  
     autocompleteRef.current = autocompleteEl;
-    
-    autocompleteEl.addEventListener("gmp-placeselect", (event) => {
-      const place = event.place;
-      if (!place.location) return;
-    
-      map.setCenter(place.location);
-      map.setZoom(15);
-    
-      setField("location", place.formattedAddress);
-    });
-
+  
+    autocompleteEl.addEventListener(
+      "gmp-placeselect",
+      (event) => {
+        const place = event.place;
+        if (!place || !place.location) return;
+  
+        map.setCenter(place.location);
+        map.setZoom(15);
+  
+        setField("location", place.formattedAddress || "");
+      },
+      { once: false }
+    );
   }
+
+  useEffect(() => {
+    if (!needsPhysicalAddress) return;
+  
+    const el = document.getElementById("wizard-location-autocomplete");
+    if (!el) return;
+  
+    const handleFocus = () => loadMap();
+  
+    el.addEventListener("focus", handleFocus);
+  
+    return () => {
+      el.removeEventListener("focus", handleFocus);
+    };
+  }, [needsPhysicalAddress]);
+
 
   useEffect(() => {
     return () => {
@@ -266,9 +290,10 @@ export default function StepLocationContact({
             <gmp-place-autocomplete
               id="wizard-location-autocomplete"
               class="admin-input"
+              tabindex="0"
               placeholder="Search business location"
-              onFocus={loadMap}
             ></gmp-place-autocomplete>
+
 
         
             {mapLoaded && (
