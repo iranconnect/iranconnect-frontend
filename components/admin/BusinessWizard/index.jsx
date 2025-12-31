@@ -23,7 +23,7 @@ export default function BusinessWizard() {
   const [data, setData] = useState({
     name: "",
     category_id: "",
-    subcategory_id: "",
+    subcategory_ids: [],
     services: [],
     tags: [],
     country: "",
