@@ -2,6 +2,14 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../../utils/apiClient";
 
+const BUSINESS_TYPES = [
+  { value: "freelancer", label: "Freelancer / Self-employed" },
+  { value: "company", label: "Registered Company" },
+  { value: "clinic", label: "Clinic / Office" },
+  { value: "shop", label: "Physical Shop" },
+  { value: "online", label: "Online Business" },
+];
+
 export default function StepBasicInfo({ data, setData, onNext }) {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
@@ -11,7 +19,7 @@ export default function StepBasicInfo({ data, setData, onNext }) {
   const selectedSubcategories = data?.subcategory_ids || [];
 
   /* ─────────────────────────────
-     Load categories (admin-secure)
+     Load categories (no pagination)
   ───────────────────────────── */
   useEffect(() => {
     apiClient
@@ -20,9 +28,8 @@ export default function StepBasicInfo({ data, setData, onNext }) {
       .catch(() => setCategories([]));
   }, []);
 
-
   /* ─────────────────────────────
-     Load subcategories on category
+     Load subcategories by category
   ───────────────────────────── */
   useEffect(() => {
     if (!categoryId) {
@@ -42,22 +49,12 @@ export default function StepBasicInfo({ data, setData, onNext }) {
   }, [categoryId]);
 
   /* ─────────────────────────────
-     Handlers
+     Generic setter
   ───────────────────────────── */
-  function handleNameChange(e) {
+  function setField(key, value) {
     setData((prev) => ({
       ...prev,
-      name: e.target.value,
-    }));
-  }
-
-  function handleCategoryChange(e) {
-    const value = e.target.value;
-
-    setData((prev) => ({
-      ...prev,
-      category_id: value,
-      subcategory_ids: [], // reset on category change
+      [key]: value,
     }));
   }
 
@@ -73,27 +70,30 @@ export default function StepBasicInfo({ data, setData, onNext }) {
     });
   }
 
+  const canProceed =
+    data?.name?.trim() &&
+    categoryId &&
+    selectedSubcategories.length > 0;
+
   /* ─────────────────────────────
      Render
   ───────────────────────────── */
   return (
-    <div className="admin-section">
-      <h2 className="admin-title mb-1">
-        Add New Business (Advanced)
+    <div className="admin-card">
+      <h2 className="admin-card-title">
+        Basic Business Information
       </h2>
-      <p className="admin-muted mb-6">
-        Step 1 of 4 — Basic Business Information
-      </p>
 
-
-      {/* Business name */}
+      {/* Business display name */}
       <div className="mb-5">
-        <label className="block text-sm mb-1">Business name *</label>
+        <label className="admin-label">
+          Business name *
+        </label>
         <input
           type="text"
           className="admin-input"
           value={data?.name || ""}
-          onChange={handleNameChange}
+          onChange={(e) => setField("name", e.target.value)}
           placeholder="e.g. Tehran Legal Services"
           required
         />
@@ -101,11 +101,19 @@ export default function StepBasicInfo({ data, setData, onNext }) {
 
       {/* Category */}
       <div className="mb-5">
-        <label className="block text-sm mb-1">Category *</label>
+        <label className="admin-label">
+          Business category *
+        </label>
         <select
           className="admin-input"
           value={categoryId}
-          onChange={handleCategoryChange}
+          onChange={(e) =>
+            setData((prev) => ({
+              ...prev,
+              category_id: e.target.value,
+              subcategory_ids: [],
+            }))
+          }
           required
         >
           <option value="">Select category</option>
@@ -120,14 +128,14 @@ export default function StepBasicInfo({ data, setData, onNext }) {
       {/* Subcategories */}
       {categoryId && (
         <div className="mb-6">
-          <label className="block text-sm mb-2">
-            Subcategories (multiple allowed)
+          <label className="admin-label">
+            Subcategories *
           </label>
 
           {loadingSubs ? (
-            <p className="text-xs opacity-70">Loading subcategories…</p>
+            <p className="admin-hint">Loading…</p>
           ) : subcategories.length === 0 ? (
-            <p className="text-xs opacity-70">
+            <p className="admin-hint">
               No subcategories available.
             </p>
           ) : (
@@ -135,7 +143,7 @@ export default function StepBasicInfo({ data, setData, onNext }) {
               {subcategories.map((sub) => (
                 <label
                   key={sub.id}
-                  className="flex items-center gap-2 text-sm cursor-pointer"
+                  className="flex items-center gap-2 text-sm"
                 >
                   <input
                     type="checkbox"
@@ -149,48 +157,91 @@ export default function StepBasicInfo({ data, setData, onNext }) {
           )}
         </div>
       )}
+
       {/* Legal name */}
       <div className="mb-5">
-        <label className="block text-sm mb-1">Legal name</label>
+        <label className="admin-label">
+          Legal name
+        </label>
         <input
+          type="text"
           className="admin-input"
-          value={data.legal_name || ""}
+          value={data?.legal_name || ""}
           onChange={(e) =>
-            setData((d) => ({ ...d, legal_name: e.target.value }))
+            setField("legal_name", e.target.value)
           }
+          placeholder="Registered legal entity name"
         />
       </div>
-      
+
       {/* Business type */}
       <div className="mb-5">
-        <label className="block text-sm mb-1">Business type</label>
+        <label className="admin-label">
+          Business type
+        </label>
         <select
           className="admin-input"
-          value={data.business_type || ""}
+          value={data?.business_type || ""}
           onChange={(e) =>
-            setData((d) => ({ ...d, business_type: e.target.value }))
+            setField("business_type", e.target.value)
           }
         >
           <option value="">Select type</option>
-          <option value="company">Company</option>
-          <option value="individual">Individual</option>
-          <option value="freelancer">Freelancer</option>
+          {BUSINESS_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
         </select>
       </div>
-      
+
+      {/* Year established */}
+      <div className="mb-5">
+        <label className="admin-label">
+          Year established
+        </label>
+        <input
+          type="number"
+          min="1900"
+          max={new Date().getFullYear()}
+          className="admin-input"
+          value={data?.year_established || ""}
+          onChange={(e) =>
+            setField("year_established", e.target.value)
+          }
+        />
+      </div>
+
       {/* Short description */}
       <div className="mb-5">
-        <label className="block text-sm mb-1">
+        <label className="admin-label">
           Short description (SEO)
         </label>
         <textarea
           className="admin-input"
-          maxLength={300}
-          rows={3}
-          value={data.short_description || ""}
+          maxLength={160}
+          rows={2}
+          value={data?.short_description || ""}
           onChange={(e) =>
-            setData((d) => ({ ...d, short_description: e.target.value }))
+            setField("short_description", e.target.value)
           }
+          placeholder="Max 160 characters"
+        />
+      </div>
+
+      {/* Full description */}
+      <div className="mb-6">
+        <label className="admin-label">
+          Full description
+        </label>
+        <textarea
+          className="admin-input"
+          rows={4}
+          value={data?.description || ""}
+          onChange={(e) =>
+            setField("description", e.target.value)
+          }
+          placeholder="Detailed description of services and expertise"
         />
       </div>
 
@@ -199,7 +250,7 @@ export default function StepBasicInfo({ data, setData, onNext }) {
         <button
           onClick={onNext}
           className="admin-btn admin-btn-primary"
-          disabled={!data?.name || !categoryId}
+          disabled={!canProceed}
         >
           Next
         </button>
