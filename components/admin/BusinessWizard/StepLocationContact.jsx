@@ -1,10 +1,29 @@
 //components/admin/BusinessWizard/StepLocationContact.jsx
-export default function StepLocationContact({ data, setData, onNext, onBack }) {
+export default function StepLocationContact({
+  data,
+  setData,
+  onNext,
+  onBack,
+}) {
   function setField(key, value) {
     setData((prev) => ({ ...prev, [key]: value }));
   }
 
-  const canProceed = data.service_mode;
+  const mode = data.service_mode;
+
+  /* ─────────────────────────────
+     Visibility rules (engineering logic)
+  ───────────────────────────── */
+  const needsPhysicalAddress =
+    mode === "on_site" || mode === "hybrid";
+
+  const needsServiceRadius =
+    mode === "at_home" || mode === "hybrid";
+
+  const needsContactInfo =
+    mode !== "remote";
+
+  const canProceed = !!mode;
 
   return (
     <div className="admin-section">
@@ -15,26 +34,40 @@ export default function StepLocationContact({ data, setData, onNext, onBack }) {
         Step 3 of 4 — Location, Availability & Contact
       </p>
 
-      {/* Service mode */}
+      {/* ─────────────────────────────
+         Service mode
+      ───────────────────────────── */}
       <div className="mb-6">
         <label className="admin-label">
           Service mode *
         </label>
         <select
           className="admin-input"
-          value={data.service_mode || ""}
-          onChange={(e) => setField("service_mode", e.target.value)}
+          value={mode || ""}
+          onChange={(e) =>
+            setField("service_mode", e.target.value)
+          }
           required
         >
           <option value="">Select service mode</option>
-          <option value="on_site">On-site (customers visit)</option>
-          <option value="at_home">At customer location</option>
-          <option value="remote">Remote / Online</option>
-          <option value="hybrid">Hybrid</option>
+          <option value="on_site">
+            On-site (customers visit)
+          </option>
+          <option value="at_home">
+            At customer location
+          </option>
+          <option value="remote">
+            Remote / Online
+          </option>
+          <option value="hybrid">
+            Hybrid
+          </option>
         </select>
       </div>
 
-      {/* Availability */}
+      {/* ─────────────────────────────
+         Availability
+      ───────────────────────────── */}
       <div className="mb-6">
         <label className="admin-label">
           Availability type
@@ -42,12 +75,20 @@ export default function StepLocationContact({ data, setData, onNext, onBack }) {
         <select
           className="admin-input"
           value={data.availability_type || ""}
-          onChange={(e) => setField("availability_type", e.target.value)}
+          onChange={(e) =>
+            setField("availability_type", e.target.value)
+          }
         >
           <option value="">Select availability</option>
-          <option value="always_open">Always open</option>
-          <option value="business_hours">Business hours</option>
-          <option value="appointment_only">Appointment only</option>
+          <option value="always_open">
+            Always open
+          </option>
+          <option value="business_hours">
+            Business hours
+          </option>
+          <option value="appointment_only">
+            Appointment only
+          </option>
         </select>
       </div>
 
@@ -59,14 +100,17 @@ export default function StepLocationContact({ data, setData, onNext, onBack }) {
           className="admin-input"
           rows={2}
           value={data.availability_note || ""}
-          onChange={(e) => setField("availability_note", e.target.value)}
+          onChange={(e) =>
+            setField("availability_note", e.target.value)
+          }
           placeholder="e.g. Available weekends, emergency calls accepted"
         />
       </div>
 
-      {/* Service radius */}
-      {(data.service_mode === "at_home" ||
-        data.service_mode === "hybrid") && (
+      {/* ─────────────────────────────
+         Service radius
+      ───────────────────────────── */}
+      {needsServiceRadius && (
         <div className="mb-6">
           <label className="admin-label">
             Service radius (km)
@@ -78,11 +122,137 @@ export default function StepLocationContact({ data, setData, onNext, onBack }) {
             onChange={(e) =>
               setField("service_radius_km", e.target.value)
             }
+            min={0}
           />
         </div>
       )}
 
-      {/* Contact visibility */}
+      {/* ─────────────────────────────
+         Physical address
+      ───────────────────────────── */}
+      {needsPhysicalAddress && (
+        <>
+          <div className="mb-5">
+            <label className="admin-label">
+              Country *
+            </label>
+            <input
+              className="admin-input"
+              value={data.country || ""}
+              onChange={(e) =>
+                setField("country", e.target.value)
+              }
+            />
+          </div>
+
+          <div className="mb-5">
+            <label className="admin-label">
+              City *
+            </label>
+            <input
+              className="admin-input"
+              value={data.city || ""}
+              onChange={(e) =>
+                setField("city", e.target.value)
+              }
+            />
+          </div>
+
+          <div className="mb-5">
+            <label className="admin-label">
+              Address *
+            </label>
+            <textarea
+              className="admin-input"
+              rows={2}
+              value={data.address || ""}
+              onChange={(e) =>
+                setField("address", e.target.value)
+              }
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="admin-label">
+              Postal code
+            </label>
+            <input
+              className="admin-input"
+              value={data.postal_code || ""}
+              onChange={(e) =>
+                setField("postal_code", e.target.value)
+              }
+            />
+          </div>
+
+          {/* Google Map picker – استفاده از کامپوننت فعلی پروژه */}
+          <div className="mb-6">
+            <label className="admin-label">
+              Business location on map *
+            </label>
+
+            {/* این کامپوننت همان نسخه فعلی پروژه است */}
+            <GoogleMapPicker
+              value={data.location}
+              onChange={(loc) =>
+                setField("location", loc)
+              }
+            />
+          </div>
+        </>
+      )}
+
+      {/* ─────────────────────────────
+         Contact info
+      ───────────────────────────── */}
+      {needsContactInfo && (
+        <>
+          <div className="mb-5">
+            <label className="admin-label">
+              Phone
+            </label>
+            <input
+              className="admin-input"
+              value={data.phone || ""}
+              onChange={(e) =>
+                setField("phone", e.target.value)
+              }
+            />
+          </div>
+
+          <div className="mb-5">
+            <label className="admin-label">
+              Email
+            </label>
+            <input
+              type="email"
+              className="admin-input"
+              value={data.email || ""}
+              onChange={(e) =>
+                setField("email", e.target.value)
+              }
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="admin-label">
+              Website
+            </label>
+            <input
+              type="url"
+              className="admin-input"
+              value={data.website || ""}
+              onChange={(e) =>
+                setField("website", e.target.value)
+              }
+            />
+          </div>
+        </>
+      )}
+
+      {/* ─────────────────────────────
+         Contact visibility
+      ───────────────────────────── */}
       <div className="mb-6 flex gap-6">
         <label className="flex items-center gap-2">
           <input
@@ -107,7 +277,9 @@ export default function StepLocationContact({ data, setData, onNext, onBack }) {
         </label>
       </div>
 
-      {/* Social links */}
+      {/* ─────────────────────────────
+         Social links
+      ───────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <input
           className="admin-input"
@@ -151,7 +323,9 @@ export default function StepLocationContact({ data, setData, onNext, onBack }) {
         />
       </div>
 
-      {/* Navigation */}
+      {/* ─────────────────────────────
+         Navigation
+      ───────────────────────────── */}
       <div className="flex justify-between">
         <button
           className="admin-btn admin-btn-secondary"
