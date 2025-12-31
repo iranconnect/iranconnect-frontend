@@ -15,10 +15,11 @@ export default function StepBasicInfo({ data, setData, onNext }) {
   ───────────────────────────── */
   useEffect(() => {
     apiClient
-      .get("/admin/categories")
+      .get("/admin/categories/all")
       .then((res) => setCategories(res.data?.data || []))
       .catch(() => setCategories([]));
   }, []);
+
 
   /* ─────────────────────────────
      Load subcategories on category
@@ -77,7 +78,13 @@ export default function StepBasicInfo({ data, setData, onNext }) {
   ───────────────────────────── */
   return (
     <div className="admin-section">
-      <h2 className="admin-title mb-4">Basic Business Information</h2>
+      <h2 className="admin-title mb-1">
+        Add New Business (Advanced)
+      </h2>
+      <p className="admin-muted mb-6">
+        Step 1 of 4 — Basic Business Information
+      </p>
+
 
       {/* Business name */}
       <div className="mb-5">
@@ -142,6 +149,50 @@ export default function StepBasicInfo({ data, setData, onNext }) {
           )}
         </div>
       )}
+      {/* Legal name */}
+      <div className="mb-5">
+        <label className="block text-sm mb-1">Legal name</label>
+        <input
+          className="admin-input"
+          value={data.legal_name || ""}
+          onChange={(e) =>
+            setData((d) => ({ ...d, legal_name: e.target.value }))
+          }
+        />
+      </div>
+      
+      {/* Business type */}
+      <div className="mb-5">
+        <label className="block text-sm mb-1">Business type</label>
+        <select
+          className="admin-input"
+          value={data.business_type || ""}
+          onChange={(e) =>
+            setData((d) => ({ ...d, business_type: e.target.value }))
+          }
+        >
+          <option value="">Select type</option>
+          <option value="company">Company</option>
+          <option value="individual">Individual</option>
+          <option value="freelancer">Freelancer</option>
+        </select>
+      </div>
+      
+      {/* Short description */}
+      <div className="mb-5">
+        <label className="block text-sm mb-1">
+          Short description (SEO)
+        </label>
+        <textarea
+          className="admin-input"
+          maxLength={300}
+          rows={3}
+          value={data.short_description || ""}
+          onChange={(e) =>
+            setData((d) => ({ ...d, short_description: e.target.value }))
+          }
+        />
+      </div>
 
       {/* Next */}
       <div className="flex justify-end">
