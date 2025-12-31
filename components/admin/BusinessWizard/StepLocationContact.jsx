@@ -37,7 +37,7 @@ export default function StepLocationContact({
     if (typeof window !== "undefined" && !window.google) {
       await new Promise((resolve, reject) => {
         const script = document.createElement("script");
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&v=beta`;
         script.async = true;
         script.defer = true;
         script.onload = resolve;
@@ -51,29 +51,29 @@ export default function StepLocationContact({
       zoom: 13,
     });
   
-    const input = document.getElementById("wizard-location-input");
-    const autocomplete = new window.google.maps.places.Autocomplete(input, {
-      fields: ["formatted_address", "geometry"],
-    });
+    const autocompleteEl = document.getElementById(
+      "wizard-location-autocomplete"
+    );
     
-    autocompleteRef.current = autocomplete;
+    autocompleteRef.current = autocompleteEl;
     
-    autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
-      if (!place.geometry) return;
+    autocompleteEl.addEventListener("gmp-placeselect", (event) => {
+      const place = event.place;
+      if (!place.location) return;
     
-      map.setCenter(place.geometry.location);
+      map.setCenter(place.location);
       map.setZoom(15);
     
-      setField("location", place.formatted_address);
+      setField("location", place.formattedAddress);
     });
+
   }
 
   useEffect(() => {
     return () => {
       if (autocompleteRef.current) {
-        window.google?.maps?.event?.clearInstanceListeners(
-          autocompleteRef.current
+        autocompleteRef.current.replaceWith(
+          autocompleteRef.current.cloneNode(true)
         );
         autocompleteRef.current = null;
       }
@@ -263,17 +263,13 @@ export default function StepLocationContact({
               Business location on map *
             </label>
         
-            <input
-              id="wizard-location-input"
-              className="admin-input"
-              value={data.location || ""}
-              onChange={(e) =>
-                setField("location", e.target.value)
-              }
+            <gmp-place-autocomplete
+              id="wizard-location-autocomplete"
+              class="admin-input"
+              placeholder="Search business location"
               onFocus={loadMap}
-              placeholder="Click to select on Google Map"
-              required
-            />
+            ></gmp-place-autocomplete>
+
         
             {mapLoaded && (
               <div
