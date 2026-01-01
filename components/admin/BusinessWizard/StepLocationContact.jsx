@@ -1,5 +1,6 @@
-//components/admin/BusinessWizard/StepLocationContact.jsx
+// components/admin/BusinessWizard/StepLocationContact.jsx
 import { useEffect, useRef, useState } from "react";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 export default function StepLocationContact({
   data,
@@ -11,11 +12,11 @@ export default function StepLocationContact({
     setData((prev) => ({ ...prev, [key]: value }));
   }
 
+  /* ─────────────────────────────
+     Service mode logic
+  ───────────────────────────── */
   const mode = data.service_mode;
 
-  /* ─────────────────────────────
-     Visibility rules (engineering logic)
-  ───────────────────────────── */
   const needsPhysicalAddress =
     mode === "on_site" || mode === "hybrid";
 
@@ -24,16 +25,50 @@ export default function StepLocationContact({
 
   const needsContactInfo = !!mode;
 
-  const canProceed = !!mode;
-
+  /* ─────────────────────────────
+     Map refs
+  ───────────────────────────── */
   const mapRef = useRef(null);
   const autocompleteRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  
+
+  /* ─────────────────────────────
+     Validation states (Enterprise UX)
+  ───────────────────────────── */
+  const [locationValid, setLocationValid] = useState(false);
+  const [phoneValid, setPhoneValid] = useState(true);
+  const [emailValid, setEmailValid] = useState(true);
+  const [websiteValid, setWebsiteValid] = useState(true);
+
+  /* ─────────────────────────────
+     Validation helpers
+  ───────────────────────────── */
+  function isValidEmail(v) {
+    return !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  }
+
+  function isValidUrl(v) {
+    if (!v) return true;
+    try {
+      new URL(v);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function validatePhone(value) {
+    if (!value) return true;
+    const phone = parsePhoneNumberFromString(value);
+    return phone?.isValid() ?? false;
+  }
+  /* ─────────────────────────────
+     Load Google Map + Autocomplete
+  ───────────────────────────── */
   async function loadMap() {
     if (mapLoaded) return;
     setMapLoaded(true);
-  
+
     if (typeof window !== "undefined" && !window.google) {
       await new Promise((resolve, reject) => {
         const script = document.createElement("script");
@@ -48,51 +83,65 @@ export default function StepLocationContact({
         document.head.appendChild(script);
       });
     }
-  
+
     const map = new window.google.maps.Map(mapRef.current, {
       center: { lat: 43.7102, lng: 7.262 },
       zoom: 13,
     });
-  
-    const autocompleteEl = document.getElementById(
-      "wizard-location-autocomplete"
-    );
-  
-    if (!autocompleteEl) return;
-  
-    autocompleteRef.current = autocompleteEl;
-  
-    autocompleteEl.addEventListener(
-      "gmp-placeselect",
-      (event) => {
-        const place = event.place;
-        if (!place || !place.location) return;
-  
-        map.setCenter(place.location);
-        map.setZoom(15);
-  
-        setField("location", place.formattedAddress || "");
-      },
-      { once: false }
-    );
-  }
 
-  useEffect(() => {
-    if (!needsPhysicalAddress) return;
-  
     const el = document.getElementById("wizard-location-autocomplete");
     if (!el) return;
-  
-    const handleFocus = () => loadMap();
-  
-    el.addEventListener("focus", handleFocus);
-  
-    return () => {
-      el.removeEventListener("focus", handleFocus);
-    };
+
+    autocompleteRef.current = el;
+
+    el.addEventListener("gmp-placeselect", (event) => {
+      const place = event.place;
+      if (!place || !place.location) return;
+
+      const components = place.addressComponents || [];
+
+      const get = (type) =>
+        components.find((c) => c.types.includes(type))?.longText || "";
+
+      map.setCenter(place.location);
+      map.setZoom(15);
+
+      setData((prev) => ({
+        ...prev,
+        location: place.formattedAddress || "",
+        country: get("country"),
+        city:
+          get("locality") ||
+          get("administrative_area_level_2"),
+        postal_code: get("postal_code"),
+        address: [
+          get("route"),
+          get("street_number"),
+        ]
+          .filter(Boolean)
+          .join(" "),
+      }));
+
+      setLocationValid(true);
+    });
+  }
+
+  /* ─────────────────────────────
+     Focus handler for autocomplete
+  ───────────────────────────── */
+  useEffect(() => {
+    if (!needsPhysicalAddress) return;
+
+    const el = document.getElementById("wizard-location-autocomplete");
+    if (!el) return;
+
+    el.addEventListener("focus", loadMap);
+    return () => el.removeEventListener("focus", loadMap);
   }, [needsPhysicalAddress]);
 
-
+  /* ─────────────────────────────
+     Cleanup
+  ───────────────────────────── */
   useEffect(() => {
     return () => {
       if (autocompleteRef.current) {
@@ -104,6 +153,9 @@ export default function StepLocationContact({
     };
   }, []);
 
+  /* ─────────────────────────────
+     Reset on remote mode
+  ───────────────────────────── */
   useEffect(() => {
     if (mode === "remote") {
       setData((prev) => ({
@@ -113,13 +165,16 @@ export default function StepLocationContact({
         address: "",
         postal_code: "",
         location: "",
-        service_radius_km: null,
       }));
+      setLocationValid(false);
     }
   }, [mode]);
-
-
-
+  const canProceed =
+    !!mode &&
+    (!needsPhysicalAddress || locationValid) &&
+    phoneValid &&
+    emailValid &&
+    websiteValid;
 
   return (
     <div className="admin-section">
@@ -130,64 +185,7 @@ export default function StepLocationContact({
         Step 3 of 4 — Location, Availability & Contact
       </p>
 
-      {/* ─────────────────────────────
-         Service mode
-      ───────────────────────────── */}
-      <div className="mb-6">
-        <label className="admin-label">
-          Service mode *
-        </label>
-        <select
-          className="admin-input"
-          value={mode || ""}
-          onChange={(e) =>
-            setField("service_mode", e.target.value)
-          }
-          required
-        >
-          <option value="">Select service mode</option>
-          <option value="on_site">
-            On-site (customers visit)
-          </option>
-          <option value="at_home">
-            At customer location
-          </option>
-          <option value="remote">
-            Remote / Online
-          </option>
-          <option value="hybrid">
-            Hybrid
-          </option>
-        </select>
-      </div>
-
-      {/* ─────────────────────────────
-         Availability
-      ───────────────────────────── */}
-      <div className="mb-6">
-        <label className="admin-label">
-          Availability type
-        </label>
-        <select
-          className="admin-input"
-          value={data.availability_type || ""}
-          onChange={(e) =>
-            setField("availability_type", e.target.value)
-          }
-        >
-          <option value="">Select availability</option>
-          <option value="always_open">
-            Always open
-          </option>
-          <option value="business_hours">
-            Business hours
-          </option>
-          <option value="appointment_only">
-            Appointment only
-          </option>
-        </select>
-      </div>
-
+      {/* Availability note */}
       <div className="mb-6">
         <label className="admin-label">
           Availability note
@@ -199,237 +197,116 @@ export default function StepLocationContact({
           onChange={(e) =>
             setField("availability_note", e.target.value)
           }
-          placeholder="e.g. Available weekends, emergency calls accepted"
         />
       </div>
 
-      {/* ─────────────────────────────
-         Service radius
-      ───────────────────────────── */}
-      {needsServiceRadius && (
+      {/* Location autocomplete */}
+      {needsPhysicalAddress && (
         <div className="mb-6">
           <label className="admin-label">
-            Service radius (km)
+            Business location on map *
+            {locationValid && (
+              <span className="ml-2 text-green-500">✔</span>
+            )}
           </label>
-          <input
-            type="number"
-            className="admin-input"
-            value={data.service_radius_km || ""}
-            onChange={(e) =>
-              setField("service_radius_km", e.target.value)
-            }
-            min={0}
-          />
+
+          <gmp-place-autocomplete
+            id="wizard-location-autocomplete"
+            class="admin-input"
+            placeholder="Search business location"
+          ></gmp-place-autocomplete>
+
+          {!locationValid && (
+            <p className="text-xs text-red-500 mt-1">
+              Please select a location from suggestions
+            </p>
+          )}
+
+          {mapLoaded && (
+            <div
+              ref={mapRef}
+              className="mt-3 h-64 w-full rounded-lg border"
+            />
+          )}
         </div>
       )}
 
-      {/* ─────────────────────────────
-         Physical address
-      ───────────────────────────── */}
+      {/* Read-only address fields */}
       {needsPhysicalAddress && (
         <>
-          <div className="mb-5">
-            <label className="admin-label">
-              Country *
-            </label>
-            <input
-              className="admin-input"
-              value={data.country || ""}
-              onChange={(e) =>
-                setField("country", e.target.value)
-              }
-            />
-          </div>
-
-          <div className="mb-5">
-            <label className="admin-label">
-              City *
-            </label>
-            <input
-              className="admin-input"
-              value={data.city || ""}
-              onChange={(e) =>
-                setField("city", e.target.value)
-              }
-            />
-          </div>
-
-          <div className="mb-5">
-            <label className="admin-label">
-              Address *
-            </label>
-            <textarea
-              className="admin-input"
-              rows={2}
-              value={data.address || ""}
-              onChange={(e) =>
-                setField("address", e.target.value)
-              }
-            />
-          </div>
-
-          <div className="mb-6">
-            <label className="admin-label">
-              Postal code
-            </label>
-            <input
-              className="admin-input"
-              value={data.postal_code || ""}
-              onChange={(e) =>
-                setField("postal_code", e.target.value)
-              }
-            />
-          </div>
-
-          {/* Google Map picker – استفاده از کامپوننت فعلی پروژه */}
-          <div className="mb-6">
-            <label className="admin-label">
-              Business location on map *
-            </label>
-        
-            <gmp-place-autocomplete
-              id="wizard-location-autocomplete"
-              class="admin-input"
-              tabindex="0"
-              placeholder="Search business location"
-            ></gmp-place-autocomplete>
-
-
-        
-            {mapLoaded && (
-              <div
-                ref={mapRef}
-                className="mt-3 h-64 w-full rounded-lg border border-[var(--border)]"
-              />
-            )}
-          </div>
+          <input className="admin-input" value={data.country || ""} readOnly />
+          <input className="admin-input mt-2" value={data.city || ""} readOnly />
+          <input className="admin-input mt-2" value={data.address || ""} readOnly />
+          <input className="admin-input mt-2" value={data.postal_code || ""} readOnly />
         </>
       )}
 
-      {/* ─────────────────────────────
-         Contact info
-      ───────────────────────────── */}
+      {/* Contact */}
       {needsContactInfo && (
         <>
           <div className="mb-5">
             <label className="admin-label">
               Phone
+              {phoneValid && data.phone && (
+                <span className="ml-2 text-green-500">✔</span>
+              )}
             </label>
             <input
-              className="admin-input"
+              className={`admin-input ${
+                !phoneValid ? "border-red-500" : ""
+              }`}
               value={data.phone || ""}
-              onChange={(e) =>
-                setField("phone", e.target.value)
-              }
+              onChange={(e) => {
+                const v = e.target.value;
+                setField("phone", v);
+                setPhoneValid(validatePhone(v));
+              }}
             />
           </div>
 
           <div className="mb-5">
             <label className="admin-label">
               Email
+              {emailValid && data.email && (
+                <span className="ml-2 text-green-500">✔</span>
+              )}
             </label>
             <input
-              type="email"
-              className="admin-input"
+              className={`admin-input ${
+                !emailValid ? "border-red-500" : ""
+              }`}
               value={data.email || ""}
-              onChange={(e) =>
-                setField("email", e.target.value)
-              }
+              onChange={(e) => {
+                const v = e.target.value;
+                setField("email", v);
+                setEmailValid(isValidEmail(v));
+              }}
             />
           </div>
 
           <div className="mb-6">
             <label className="admin-label">
               Website
+              {websiteValid && data.website && (
+                <span className="ml-2 text-green-500">✔</span>
+              )}
             </label>
             <input
-              type="url"
-              className="admin-input"
+              className={`admin-input ${
+                !websiteValid ? "border-red-500" : ""
+              }`}
               value={data.website || ""}
-              onChange={(e) =>
-                setField("website", e.target.value)
-              }
+              onChange={(e) => {
+                const v = e.target.value;
+                setField("website", v);
+                setWebsiteValid(isValidUrl(v));
+              }}
             />
           </div>
         </>
       )}
 
-      {/* ─────────────────────────────
-         Contact visibility
-      ───────────────────────────── */}
-      <div className="mb-6 flex gap-6">
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={data.show_phone ?? true}
-            onChange={(e) =>
-              setField("show_phone", e.target.checked)
-            }
-          />
-          Show phone number
-        </label>
-
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={data.show_email ?? true}
-            onChange={(e) =>
-              setField("show_email", e.target.checked)
-            }
-          />
-          Show email
-        </label>
-      </div>
-
-      {/* ─────────────────────────────
-         Social links
-      ───────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <input
-          className="admin-input"
-          placeholder="Instagram URL"
-          value={data.instagram_url || ""}
-          onChange={(e) =>
-            setField("instagram_url", e.target.value)
-          }
-        />
-        <input
-          className="admin-input"
-          placeholder="LinkedIn URL"
-          value={data.linkedin_url || ""}
-          onChange={(e) =>
-            setField("linkedin_url", e.target.value)
-          }
-        />
-        <input
-          className="admin-input"
-          placeholder="Twitter / X URL"
-          value={data.twitter_url || ""}
-          onChange={(e) =>
-            setField("twitter_url", e.target.value)
-          }
-        />
-        <input
-          className="admin-input"
-          placeholder="Telegram"
-          value={data.telegram_url || ""}
-          onChange={(e) =>
-            setField("telegram_url", e.target.value)
-          }
-        />
-        <input
-          className="admin-input"
-          placeholder="WhatsApp number"
-          value={data.whatsapp_number || ""}
-          onChange={(e) =>
-            setField("whatsapp_number", e.target.value)
-          }
-        />
-      </div>
-
-      {/* ─────────────────────────────
-         Navigation
-      ───────────────────────────── */}
+      {/* Navigation */}
       <div className="flex justify-between">
         <button
           className="admin-btn admin-btn-secondary"
