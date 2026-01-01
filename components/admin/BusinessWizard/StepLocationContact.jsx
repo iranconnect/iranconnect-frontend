@@ -162,17 +162,21 @@ export default function StepLocationContact({
   const placesServiceRef = useRef(null);
 
   async function initMap() {
-    if (mapInstanceRef.current || !mapRef.current) return;
+    if (mapInstanceRef.current) return;
 
     const loader = new Loader({
       apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-      libraries: ["places"],
       version: "beta",
     });
+    
+    await loader.importLibrary("maps");
+    await loader.importLibrary("places");
 
-    const google = await loader.load();
 
-    const map = new google.maps.Map(mapRef.current, {
+    await new Promise(requestAnimationFrame); // ⬅️ تضمین mount DOM
+    if (!mapRef.current) return;
+  
+    const map = new window.google.maps.Map(mapRef.current, {
       center: { lat: 43.7102, lng: 7.262 },
       zoom: 13,
       mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID,
@@ -193,10 +197,16 @@ export default function StepLocationContact({
 
     if (!autocompleteEl) return;
 
-    autocompleteEl.addEventListener("gmp-placeselect", (e) => {
+    // قبل از bind کردن، عنصر قبلی را تمیز می‌کنیم
+    autocompleteEl.replaceWith(autocompleteEl.cloneNode(true));
+    
+    const freshAutocompleteEl =
+      document.getElementById("wizard-location-autocomplete");
+    
+    const onPlaceSelect = (e) => {
       const placeId = e?.place?.placeId;
-      if (!placeId) return;
-
+      if (!placeId || !placesServiceRef.current) return;
+    
       placesServiceRef.current.getDetails(
         {
           placeId,
@@ -209,23 +219,24 @@ export default function StepLocationContact({
         (details, status) => {
           if (
             status !==
-              google.maps.places.PlacesServiceStatus.OK ||
+              window.google.maps.places.PlacesServiceStatus.OK ||
             !details?.geometry?.location
           )
             return;
-
+    
           const loc = details.geometry.location;
+    
           map.setCenter(loc);
           map.setZoom(16);
           markerRef.current.setPosition(loc);
-
+    
           const c = {};
           details.address_components.forEach((x) =>
-            x.types.forEach(
-              (t) => (c[t] = x.long_name)
-            )
+            x.types.forEach((t) => {
+              c[t] = x.long_name;
+            })
           );
-
+    
           setData((prev) => ({
             ...prev,
             location: details.formatted_address || "",
@@ -242,14 +253,25 @@ export default function StepLocationContact({
           }));
         }
       );
-    });
+    };
+    
+    freshAutocompleteEl.addEventListener(
+      "gmp-placeselect",
+      onPlaceSelect
+    );
+
   }
 
   useEffect(() => {
-    if (needsPhysicalAddress) {
+    if (!needsPhysicalAddress) return;
+  
+    const t = setTimeout(() => {
       initMap();
-    }
+    }, 0);
+  
+    return () => clearTimeout(t);
   }, [needsPhysicalAddress]);
+  
 
   /* ─────────────────────────────
      Render — Main Form
@@ -361,6 +383,7 @@ export default function StepLocationContact({
                 width: "100%",
                 minHeight: 44,
                 padding: "10px",
+                cursor: "text",
               }}
               placeholder="Search address (e.g. 10 Rue Massena, Nice)"
             />
