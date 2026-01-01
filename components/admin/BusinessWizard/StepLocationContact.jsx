@@ -9,20 +9,25 @@ import {
 } from "libphonenumber-js";
 
 /* ======================================================
-   react-select styles (dark-mode safe)
+   Dark-mode friendly react-select styles (Enterprise)
 ====================================================== */
-const selectStyles = {
+const countrySelectStyles = {
   control: (base) => ({
     ...base,
     backgroundColor: "var(--bg)",
     borderColor: "var(--border)",
     color: "var(--text)",
-    minHeight: 42,
+    minHeight: 44,
+    boxShadow: "none",
+    ":hover": {
+      borderColor: "var(--primary)",
+    },
   }),
   menu: (base) => ({
     ...base,
     backgroundColor: "var(--bg)",
     color: "var(--text)",
+    zIndex: 20,
   }),
   option: (base, state) => ({
     ...base,
@@ -42,65 +47,82 @@ const selectStyles = {
   }),
 };
 
+/* ======================================================
+   Component
+====================================================== */
 export default function StepLocationContact({
   data,
   setData,
   onNext,
   onBack,
 }) {
-  const setField = (k, v) =>
-    setData((p) => ({ ...p, [k]: v }));
+  function setField(key, value) {
+    setData((prev) => ({ ...prev, [key]: value }));
+  }
 
   const mode = data.service_mode;
 
   /* ─────────────────────────────
-     Visibility rules
+     Visibility rules (unchanged logic)
   ───────────────────────────── */
   const needsPhysicalAddress =
     mode === "on_site" || mode === "hybrid";
+
   const needsServiceRadius =
     mode === "at_home" || mode === "hybrid";
+
   const needsContactInfo = !!mode;
+
   const canProceed = !!mode;
 
   /* ─────────────────────────────
-     Validation
+     Validation state
   ───────────────────────────── */
   const [errors, setErrors] = useState({});
-  const setError = (k, v) =>
-    setErrors((p) => ({ ...p, [k]: v || "" }));
 
-  const validateUrl = (k, v) => {
-    if (!v) return setError(k, "");
+  const setError = (field, message) => {
+    setErrors((p) => ({ ...p, [field]: message || "" }));
+  };
+
+  const validateEmail = (value) => {
+    if (!value) return setError("email", "");
     setError(
-      k,
-      /^https?:\/\/.+/i.test(v)
+      "email",
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
         ? ""
-        : "Invalid URL format (https://...)"
+        : "Invalid email format (e.g. name@domain.com)"
+    );
+  };
+
+  const validateUrl = (field, value) => {
+    if (!value) return setError(field, "");
+    setError(
+      field,
+      /^https?:\/\/.+/i.test(value)
+        ? ""
+        : "Invalid URL format (must start with https://)"
     );
   };
 
   /* ─────────────────────────────
-     Phone (libphonenumber)
+     Phone (libphonenumber + react-select)
   ───────────────────────────── */
-  const countryOptions = useMemo(
-    () =>
-      getCountries().map((cc) => ({
-        value: cc,
-        label: `${cc} (+${getCountryCallingCode(cc)})`,
-      })),
-    []
-  );
+  const countryOptions = useMemo(() => {
+    return getCountries().map((cc) => ({
+      value: cc,
+      label: `${cc} (+${getCountryCallingCode(cc)})`,
+    }));
+  }, []);
 
   const [phoneCountry, setPhoneCountry] = useState("FR");
   const [phoneNational, setPhoneNational] = useState("");
 
   useEffect(() => {
     if (!data.phone) return;
-    const p = parsePhoneNumberFromString(data.phone);
-    if (p) {
-      setPhoneCountry(p.country || "FR");
-      setPhoneNational(p.nationalNumber || "");
+    const parsed = parsePhoneNumberFromString(data.phone);
+    if (parsed) {
+      setPhoneCountry(parsed.country || "FR");
+      setPhoneNational(parsed.nationalNumber || "");
     }
   }, []);
 
@@ -118,25 +140,29 @@ export default function StepLocationContact({
       digits,
       country
     );
+
     if (!parsed || !parsed.isValid()) {
-      setError("phone", "Invalid phone number");
+      setError(
+        "phone",
+        "Invalid phone number for selected country"
+      );
       return;
     }
 
     setError("phone", "");
-    setField("phone", parsed.number);
+    setField("phone", parsed.number); // E.164
   }
 
   /* ─────────────────────────────
-     Google Maps (Loader + Map ID)
+     Google Maps — Stable Loader + Map ID
   ───────────────────────────── */
   const mapRef = useRef(null);
-  const mapInstance = useRef(null);
+  const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
-  const placesService = useRef(null);
+  const placesServiceRef = useRef(null);
 
   async function initMap() {
-    if (mapInstance.current || !mapRef.current) return;
+    if (mapInstanceRef.current || !mapRef.current) return;
 
     const loader = new Loader({
       apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
@@ -152,21 +178,26 @@ export default function StepLocationContact({
       mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID,
     });
 
-    mapInstance.current = map;
-    markerRef.current = new google.maps.Marker({ map });
-    placesService.current =
+    mapInstanceRef.current = map;
+
+    markerRef.current = new google.maps.Marker({
+      map,
+    });
+
+    placesServiceRef.current =
       new google.maps.places.PlacesService(map);
 
-    const el = document.getElementById(
+    const autocompleteEl = document.getElementById(
       "wizard-location-autocomplete"
     );
-    if (!el) return;
 
-    el.addEventListener("gmp-placeselect", (e) => {
+    if (!autocompleteEl) return;
+
+    autocompleteEl.addEventListener("gmp-placeselect", (e) => {
       const placeId = e?.place?.placeId;
       if (!placeId) return;
 
-      placesService.current.getDetails(
+      placesServiceRef.current.getDetails(
         {
           placeId,
           fields: [
@@ -175,29 +206,29 @@ export default function StepLocationContact({
             "address_components",
           ],
         },
-        (d, status) => {
+        (details, status) => {
           if (
             status !==
               google.maps.places.PlacesServiceStatus.OK ||
-            !d?.geometry
+            !details?.geometry?.location
           )
             return;
 
-          const loc = d.geometry.location;
+          const loc = details.geometry.location;
           map.setCenter(loc);
           map.setZoom(16);
           markerRef.current.setPosition(loc);
 
           const c = {};
-          d.address_components.forEach((x) =>
+          details.address_components.forEach((x) =>
             x.types.forEach(
               (t) => (c[t] = x.long_name)
             )
           );
 
-          setData((p) => ({
-            ...p,
-            location: d.formatted_address || "",
+          setData((prev) => ({
+            ...prev,
+            location: details.formatted_address || "",
             country: c.country || "",
             city:
               c.locality ||
@@ -215,28 +246,13 @@ export default function StepLocationContact({
   }
 
   useEffect(() => {
-    if (needsPhysicalAddress) initMap();
+    if (needsPhysicalAddress) {
+      initMap();
+    }
   }, [needsPhysicalAddress]);
 
   /* ─────────────────────────────
-     Remote reset
-  ───────────────────────────── */
-  useEffect(() => {
-    if (mode === "remote") {
-      setData((p) => ({
-        ...p,
-        country: "",
-        city: "",
-        address: "",
-        postal_code: "",
-        location: "",
-        service_radius_km: null,
-      }));
-    }
-  }, [mode]);
-
-  /* ─────────────────────────────
-     Render
+     Render — Main Form
   ───────────────────────────── */
   return (
     <div className="admin-section">
@@ -247,7 +263,9 @@ export default function StepLocationContact({
         Step 3 of 4 — Location, Availability & Contact
       </p>
 
-      {/* Service mode */}
+      {/* ─────────────────────────────
+         Service mode
+      ───────────────────────────── */}
       <div className="mb-6">
         <label className="admin-label">
           Service mode *
@@ -258,20 +276,54 @@ export default function StepLocationContact({
           onChange={(e) =>
             setField("service_mode", e.target.value)
           }
+          required
         >
           <option value="">Select service mode</option>
-          <option value="on_site">On-site</option>
+          <option value="on_site">
+            On-site (customers visit)
+          </option>
           <option value="at_home">
             At customer location
           </option>
           <option value="remote">
             Remote / Online
           </option>
-          <option value="hybrid">Hybrid</option>
+          <option value="hybrid">
+            Hybrid
+          </option>
         </select>
       </div>
 
-      {/* Availability */}
+      {/* ─────────────────────────────
+         Availability
+      ───────────────────────────── */}
+      <div className="mb-6">
+        <label className="admin-label">
+          Availability type
+        </label>
+        <select
+          className="admin-input"
+          value={data.availability_type || ""}
+          onChange={(e) =>
+            setField(
+              "availability_type",
+              e.target.value
+            )
+          }
+        >
+          <option value="">Select availability</option>
+          <option value="always_open">
+            Always open
+          </option>
+          <option value="business_hours">
+            Business hours
+          </option>
+          <option value="appointment_only">
+            Appointment only
+          </option>
+        </select>
+      </div>
+
       <div className="mb-6">
         <label className="admin-label">
           Availability note
@@ -281,50 +333,105 @@ export default function StepLocationContact({
           rows={2}
           value={data.availability_note || ""}
           onChange={(e) =>
-            setField("availability_note", e.target.value)
+            setField(
+              "availability_note",
+              e.target.value
+            )
           }
-          placeholder="e.g. Available weekends"
+          placeholder="e.g. Available weekends, emergency calls accepted"
         />
       </div>
 
-      {/* Map picker */}
+      {/* ─────────────────────────────
+         Google Map picker (AFTER availability note)
+      ───────────────────────────── */}
       {needsPhysicalAddress && (
         <div className="mb-6">
           <label className="admin-label">
             Business location on map *
           </label>
+
+          {/* Fixed-size wrapper to prevent layout jump */}
           <div className="admin-input p-0">
             <gmp-place-autocomplete
               id="wizard-location-autocomplete"
               tabIndex="0"
+              style={{
+                display: "block",
+                width: "100%",
+                minHeight: 44,
+                padding: "10px",
+              }}
               placeholder="Search address (e.g. 10 Rue Massena, Nice)"
             />
           </div>
+
           <div
             ref={mapRef}
-            className="mt-3 h-64 w-full rounded-lg border"
+            className="mt-3 h-64 w-full rounded-lg border border-[var(--border)]"
           />
         </div>
       )}
 
-      {/* Address */}
-      {needsPhysicalAddress &&
-        ["country", "city", "address", "postal_code"].map(
-          (f) => (
-            <div className="mb-5" key={f}>
-              <label className="admin-label">
-                {f.toUpperCase()}
-              </label>
-              <input
-                className="admin-input"
-                value={data[f] || ""}
-                readOnly
-              />
-            </div>
-          )
-        )}
+      {/* ─────────────────────────────
+         Physical address (auto-filled, read-only)
+      ───────────────────────────── */}
+      {needsPhysicalAddress && (
+        <>
+          <div className="mb-5">
+            <label className="admin-label">
+              Country *
+            </label>
+            <input
+              className="admin-input"
+              value={data.country || ""}
+              readOnly
+              placeholder="Auto-filled from map"
+            />
+          </div>
 
-      {/* Service radius */}
+          <div className="mb-5">
+            <label className="admin-label">
+              City *
+            </label>
+            <input
+              className="admin-input"
+              value={data.city || ""}
+              readOnly
+              placeholder="Auto-filled from map"
+            />
+          </div>
+
+          <div className="mb-5">
+            <label className="admin-label">
+              Address *
+            </label>
+            <textarea
+              className="admin-input"
+              rows={2}
+              value={data.address || ""}
+              readOnly
+              placeholder="Auto-filled from map"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="admin-label">
+              Postal code
+            </label>
+            <input
+              className="admin-input"
+              value={data.postal_code || ""}
+              readOnly
+              placeholder="Auto-filled from map"
+            />
+          </div>
+        </>
+      )}
+
+      {/* ─────────────────────────────
+         Service radius
+      ───────────────────────────── */}
       {needsServiceRadius && (
         <div className="mb-6">
           <label className="admin-label">
@@ -335,31 +442,49 @@ export default function StepLocationContact({
             className="admin-input"
             value={data.service_radius_km || ""}
             onChange={(e) =>
-              setField("service_radius_km", e.target.value)
+              setField(
+                "service_radius_km",
+                e.target.value
+              )
             }
             min={0}
           />
         </div>
       )}
 
-      {/* Contact */}
+      {/* ─────────────────────────────
+         Contact info
+      ───────────────────────────── */}
       {needsContactInfo && (
         <>
+          {/* Phone */}
           <div className="mb-6">
-            <label className="admin-label">Phone</label>
+            <label className="admin-label">
+              Phone
+            </label>
+
             <div className="flex gap-3">
-              <Select
-                styles={selectStyles}
-                options={countryOptions}
-                value={countryOptions.find(
-                  (o) => o.value === phoneCountry
-                )}
-                onChange={(o) => {
-                  setPhoneCountry(o.value);
-                  updatePhone(o.value, phoneNational);
-                }}
-                isSearchable
-              />
+              <div style={{ minWidth: 260 }}>
+                <Select
+                  styles={countrySelectStyles}
+                  options={countryOptions}
+                  value={countryOptions.find(
+                    (o) => o.value === phoneCountry
+                  )}
+                  onChange={(opt) => {
+                    const nextCountry =
+                      opt?.value || "FR";
+                    setPhoneCountry(nextCountry);
+                    updatePhone(
+                      nextCountry,
+                      phoneNational
+                    );
+                  }}
+                  isSearchable
+                  placeholder="Country code"
+                />
+              </div>
+
               <input
                 className="admin-input"
                 value={phoneNational}
@@ -369,69 +494,217 @@ export default function StepLocationContact({
                     e.target.value
                   )
                 }
-                placeholder="National number"
+                placeholder="National number (no leading 0)"
+                inputMode="numeric"
               />
             </div>
+
             {errors.phone && (
-              <p className="admin-error">{errors.phone}</p>
+              <p className="admin-error">
+                {errors.phone}
+              </p>
             )}
           </div>
 
+          {/* Email */}
           <div className="mb-6">
-            <label className="admin-label">Email</label>
+            <label className="admin-label">
+              Email
+            </label>
             <input
+              type="email"
               className="admin-input"
               value={data.email || ""}
-              onChange={(e) =>
-                setField("email", e.target.value)
-              }
+              onChange={(e) => {
+                setField("email", e.target.value);
+                validateEmail(e.target.value);
+              }}
+              placeholder="name@domain.com"
             />
+            {errors.email && (
+              <p className="admin-error">
+                {errors.email}
+              </p>
+            )}
+          </div>
+
+          {/* Website */}
+          <div className="mb-6">
+            <label className="admin-label">
+              Website
+            </label>
+            <input
+              type="url"
+              className="admin-input"
+              value={data.website || ""}
+              onChange={(e) => {
+                setField("website", e.target.value);
+                validateUrl(
+                  "website",
+                  e.target.value
+                );
+              }}
+              placeholder="https://example.com"
+            />
+            {errors.website && (
+              <p className="admin-error">
+                {errors.website}
+              </p>
+            )}
           </div>
         </>
       )}
 
-      {/* Social Media */}
+      {/* ─────────────────────────────
+         Contact visibility
+      ───────────────────────────── */}
+      <div className="mb-6 flex gap-6">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={data.show_phone ?? true}
+            onChange={(e) =>
+              setField(
+                "show_phone",
+                e.target.checked
+              )
+            }
+          />
+          Show phone number
+        </label>
+
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={data.show_email ?? true}
+            onChange={(e) =>
+              setField(
+                "show_email",
+                e.target.checked
+              )
+            }
+          />
+          Show email
+        </label>
+      </div>
+      {/* ─────────────────────────────
+         Social media links
+      ───────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {[
-          "instagram_url",
-          "linkedin_url",
-          "twitter_url",
-          "telegram_url",
-        ].map((f) => (
-          <div key={f}>
-            <input
-              className="admin-input"
-              placeholder={f.replace("_", " ")}
-              value={data[f] || ""}
-              onChange={(e) => {
-                setField(f, e.target.value);
-                validateUrl(f, e.target.value);
-              }}
-            />
-            {errors[f] && (
-              <p className="admin-error">{errors[f]}</p>
-            )}
-          </div>
-        ))}
-        <input
-          className="admin-input"
-          placeholder="WhatsApp number"
-          value={data.whatsapp_number || ""}
-          onChange={(e) =>
-            setField("whatsapp_number", e.target.value)
-          }
-        />
+        {/* Instagram */}
+        <div>
+          <input
+            className="admin-input"
+            placeholder="Instagram URL (https://instagram.com/username)"
+            value={data.instagram_url || ""}
+            onChange={(e) => {
+              setField("instagram_url", e.target.value);
+              validateUrl(
+                "instagram_url",
+                e.target.value
+              );
+            }}
+          />
+          {errors.instagram_url && (
+            <p className="admin-error">
+              {errors.instagram_url}
+            </p>
+          )}
+        </div>
+
+        {/* LinkedIn */}
+        <div>
+          <input
+            className="admin-input"
+            placeholder="LinkedIn URL (https://linkedin.com/in/username)"
+            value={data.linkedin_url || ""}
+            onChange={(e) => {
+              setField("linkedin_url", e.target.value);
+              validateUrl(
+                "linkedin_url",
+                e.target.value
+              );
+            }}
+          />
+          {errors.linkedin_url && (
+            <p className="admin-error">
+              {errors.linkedin_url}
+            </p>
+          )}
+        </div>
+
+        {/* Twitter / X */}
+        <div>
+          <input
+            className="admin-input"
+            placeholder="Twitter / X URL (https://x.com/username)"
+            value={data.twitter_url || ""}
+            onChange={(e) => {
+              setField("twitter_url", e.target.value);
+              validateUrl(
+                "twitter_url",
+                e.target.value
+              );
+            }}
+          />
+          {errors.twitter_url && (
+            <p className="admin-error">
+              {errors.twitter_url}
+            </p>
+          )}
+        </div>
+
+        {/* Telegram */}
+        <div>
+          <input
+            className="admin-input"
+            placeholder="Telegram URL (https://t.me/username)"
+            value={data.telegram_url || ""}
+            onChange={(e) => {
+              setField("telegram_url", e.target.value);
+              validateUrl(
+                "telegram_url",
+                e.target.value
+              );
+            }}
+          />
+          {errors.telegram_url && (
+            <p className="admin-error">
+              {errors.telegram_url}
+            </p>
+          )}
+        </div>
+
+        {/* WhatsApp */}
+        <div className="md:col-span-2">
+          <input
+            className="admin-input"
+            placeholder="WhatsApp number (optional)"
+            value={data.whatsapp_number || ""}
+            onChange={(e) =>
+              setField(
+                "whatsapp_number",
+                e.target.value
+              )
+            }
+          />
+        </div>
       </div>
 
-      {/* Navigation */}
+      {/* ─────────────────────────────
+         Navigation
+      ───────────────────────────── */}
       <div className="flex justify-between">
         <button
+          type="button"
           className="admin-btn admin-btn-secondary"
           onClick={onBack}
         >
           Back
         </button>
+
         <button
+          type="button"
           className="admin-btn admin-btn-primary"
           onClick={onNext}
           disabled={!canProceed}
