@@ -175,3 +175,13 @@
   background: var(--card-bg);
   border-radius: 0.5rem 0.5rem 0 0;
 }
+
+/* Google Maps Place Autocomplete – Dark mode fix */
+gmp-place-autocomplete::part(input) {
+  background-color: var(--bg-input, #0f172a);
+  color: var(--text-primary, #ffffff);
+}
+
+gmp-place-autocomplete::part(input)::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
