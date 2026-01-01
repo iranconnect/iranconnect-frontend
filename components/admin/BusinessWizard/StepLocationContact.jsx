@@ -1,6 +1,7 @@
 //components/admin/BusinessWizard/StepLocationContact.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import Select from "react-select";
+import { Loader } from "@googlemaps/js-api-loader";
 import {
   parsePhoneNumberFromString,
   getCountries,
@@ -8,7 +9,7 @@ import {
 } from "libphonenumber-js";
 
 /* ======================================================
-   Dark-mode friendly styles for react-select
+   react-select styles (dark-mode safe)
 ====================================================== */
 const selectStyles = {
   control: (base) => ({
@@ -41,18 +42,14 @@ const selectStyles = {
   }),
 };
 
-/* ======================================================
-   Component
-====================================================== */
 export default function StepLocationContact({
   data,
   setData,
   onNext,
   onBack,
 }) {
-  function setField(key, value) {
-    setData((prev) => ({ ...prev, [key]: value }));
-  }
+  const setField = (k, v) =>
+    setData((p) => ({ ...p, [k]: v }));
 
   const mode = data.service_mode;
 
@@ -67,39 +64,48 @@ export default function StepLocationContact({
   const canProceed = !!mode;
 
   /* ─────────────────────────────
-     Validation state
+     Validation
   ───────────────────────────── */
   const [errors, setErrors] = useState({});
   const setError = (k, v) =>
     setErrors((p) => ({ ...p, [k]: v || "" }));
 
+  const validateUrl = (k, v) => {
+    if (!v) return setError(k, "");
+    setError(
+      k,
+      /^https?:\/\/.+/i.test(v)
+        ? ""
+        : "Invalid URL format (https://...)"
+    );
+  };
+
   /* ─────────────────────────────
-     Phone (react-select + libphonenumber-js)
+     Phone (libphonenumber)
   ───────────────────────────── */
-  const countryOptions = useMemo(() => {
-    return getCountries().map((cc) => ({
-      value: cc,
-      label: `${cc} (+${getCountryCallingCode(cc)})`,
-    }));
-  }, []);
+  const countryOptions = useMemo(
+    () =>
+      getCountries().map((cc) => ({
+        value: cc,
+        label: `${cc} (+${getCountryCallingCode(cc)})`,
+      })),
+    []
+  );
 
   const [phoneCountry, setPhoneCountry] = useState("FR");
   const [phoneNational, setPhoneNational] = useState("");
 
   useEffect(() => {
     if (!data.phone) return;
-    const parsed = parsePhoneNumberFromString(data.phone);
-    if (parsed) {
-      setPhoneCountry(parsed.country || "FR");
-      setPhoneNational(parsed.nationalNumber || "");
+    const p = parsePhoneNumberFromString(data.phone);
+    if (p) {
+      setPhoneCountry(p.country || "FR");
+      setPhoneNational(p.nationalNumber || "");
     }
   }, []);
 
-  function updatePhone(nextCountry, nextNational) {
-    const digits = (nextNational || "")
-      .replace(/\D+/g, "")
-      .replace(/^0+/, "");
-
+  function updatePhone(country, raw) {
+    const digits = raw.replace(/\D+/g, "").replace(/^0+/, "");
     setPhoneNational(digits);
 
     if (!digits) {
@@ -110,77 +116,57 @@ export default function StepLocationContact({
 
     const parsed = parsePhoneNumberFromString(
       digits,
-      nextCountry
+      country
     );
-
     if (!parsed || !parsed.isValid()) {
-      setError(
-        "phone",
-        "Invalid phone number for selected country"
-      );
+      setError("phone", "Invalid phone number");
       return;
     }
 
     setError("phone", "");
-    setField("phone", parsed.number); // E.164
+    setField("phone", parsed.number);
   }
 
   /* ─────────────────────────────
-     Google Maps (Map ID + PlacesService)
+     Google Maps (Loader + Map ID)
   ───────────────────────────── */
   const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
+  const mapInstance = useRef(null);
   const markerRef = useRef(null);
-  const placesServiceRef = useRef(null);
-  const [mapReady, setMapReady] = useState(false);
-
-  async function ensureGoogleLoaded() {
-    if (window.google?.maps?.places) return;
-
-    await new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src =
-        `https://maps.googleapis.com/maps/api/js` +
-        `?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}` +
-        `&libraries=places&v=beta`;
-      s.async = true;
-      s.defer = true;
-      s.onload = resolve;
-      s.onerror = reject;
-      document.head.appendChild(s);
-    });
-  }
+  const placesService = useRef(null);
 
   async function initMap() {
-    if (mapReady || !mapRef.current) return;
+    if (mapInstance.current || !mapRef.current) return;
 
-    await ensureGoogleLoaded();
+    const loader = new Loader({
+      apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+      libraries: ["places"],
+      version: "beta",
+    });
 
-    const map = new window.google.maps.Map(mapRef.current, {
+    const google = await loader.load();
+
+    const map = new google.maps.Map(mapRef.current, {
       center: { lat: 43.7102, lng: 7.262 },
       zoom: 13,
-      mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID, // 🔑 حیاتی
+      mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID,
     });
 
-    mapInstanceRef.current = map;
+    mapInstance.current = map;
+    markerRef.current = new google.maps.Marker({ map });
+    placesService.current =
+      new google.maps.places.PlacesService(map);
 
-    markerRef.current = new window.google.maps.Marker({
-      map,
-    });
-
-    placesServiceRef.current =
-      new window.google.maps.places.PlacesService(map);
-
-    const autocompleteEl = document.getElementById(
+    const el = document.getElementById(
       "wizard-location-autocomplete"
     );
-    if (!autocompleteEl) return;
+    if (!el) return;
 
-    autocompleteEl.addEventListener("gmp-placeselect", (e) => {
+    el.addEventListener("gmp-placeselect", (e) => {
       const placeId = e?.place?.placeId;
       if (!placeId) return;
 
-      placesServiceRef.current.getDetails(
+      placesService.current.getDetails(
         {
           placeId,
           fields: [
@@ -189,29 +175,29 @@ export default function StepLocationContact({
             "address_components",
           ],
         },
-        (details, status) => {
+        (d, status) => {
           if (
             status !==
-              window.google.maps.places.PlacesServiceStatus.OK ||
-            !details?.geometry?.location
+              google.maps.places.PlacesServiceStatus.OK ||
+            !d?.geometry
           )
             return;
 
-          const loc = details.geometry.location;
+          const loc = d.geometry.location;
           map.setCenter(loc);
           map.setZoom(16);
           markerRef.current.setPosition(loc);
 
           const c = {};
-          details.address_components.forEach((x) =>
+          d.address_components.forEach((x) =>
             x.types.forEach(
               (t) => (c[t] = x.long_name)
             )
           );
 
-          setData((prev) => ({
-            ...prev,
-            location: details.formatted_address || "",
+          setData((p) => ({
+            ...p,
+            location: d.formatted_address || "",
             country: c.country || "",
             city:
               c.locality ||
@@ -226,8 +212,6 @@ export default function StepLocationContact({
         }
       );
     });
-
-    setMapReady(true);
   }
 
   useEffect(() => {
@@ -277,8 +261,12 @@ export default function StepLocationContact({
         >
           <option value="">Select service mode</option>
           <option value="on_site">On-site</option>
-          <option value="at_home">At customer location</option>
-          <option value="remote">Remote / Online</option>
+          <option value="at_home">
+            At customer location
+          </option>
+          <option value="remote">
+            Remote / Online
+          </option>
           <option value="hybrid">Hybrid</option>
         </select>
       </div>
@@ -305,29 +293,21 @@ export default function StepLocationContact({
           <label className="admin-label">
             Business location on map *
           </label>
-
           <div className="admin-input p-0">
             <gmp-place-autocomplete
               id="wizard-location-autocomplete"
               tabIndex="0"
-              style={{
-                display: "block",
-                width: "100%",
-                minHeight: 42,
-                padding: 10,
-              }}
               placeholder="Search address (e.g. 10 Rue Massena, Nice)"
             />
           </div>
-
           <div
             ref={mapRef}
-            className="mt-3 h-64 w-full rounded-lg border border-[var(--border)]"
+            className="mt-3 h-64 w-full rounded-lg border"
           />
         </div>
       )}
 
-      {/* Address (auto-filled, read-only) */}
+      {/* Address */}
       {needsPhysicalAddress &&
         ["country", "city", "address", "postal_code"].map(
           (f) => (
@@ -339,7 +319,6 @@ export default function StepLocationContact({
                 className="admin-input"
                 value={data[f] || ""}
                 readOnly
-                placeholder="Auto-filled from map"
               />
             </div>
           )
@@ -363,29 +342,24 @@ export default function StepLocationContact({
         </div>
       )}
 
-      {/* Contact info */}
+      {/* Contact */}
       {needsContactInfo && (
         <>
           <div className="mb-6">
             <label className="admin-label">Phone</label>
             <div className="flex gap-3">
-              <div style={{ minWidth: 260 }}>
-                <Select
-                  options={countryOptions}
-                  styles={selectStyles}
-                  value={countryOptions.find(
-                    (o) => o.value === phoneCountry
-                  )}
-                  onChange={(opt) => {
-                    setPhoneCountry(opt.value);
-                    updatePhone(
-                      opt.value,
-                      phoneNational
-                    );
-                  }}
-                  isSearchable
-                />
-              </div>
+              <Select
+                styles={selectStyles}
+                options={countryOptions}
+                value={countryOptions.find(
+                  (o) => o.value === phoneCountry
+                )}
+                onChange={(o) => {
+                  setPhoneCountry(o.value);
+                  updatePhone(o.value, phoneNational);
+                }}
+                isSearchable
+              />
               <input
                 className="admin-input"
                 value={phoneNational}
@@ -395,8 +369,7 @@ export default function StepLocationContact({
                     e.target.value
                   )
                 }
-                placeholder="National number (no leading 0)"
-                inputMode="numeric"
+                placeholder="National number"
               />
             </div>
             {errors.phone && (
@@ -407,17 +380,48 @@ export default function StepLocationContact({
           <div className="mb-6">
             <label className="admin-label">Email</label>
             <input
-              type="email"
               className="admin-input"
               value={data.email || ""}
               onChange={(e) =>
                 setField("email", e.target.value)
               }
-              placeholder="name@domain.com"
             />
           </div>
         </>
       )}
+
+      {/* Social Media */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {[
+          "instagram_url",
+          "linkedin_url",
+          "twitter_url",
+          "telegram_url",
+        ].map((f) => (
+          <div key={f}>
+            <input
+              className="admin-input"
+              placeholder={f.replace("_", " ")}
+              value={data[f] || ""}
+              onChange={(e) => {
+                setField(f, e.target.value);
+                validateUrl(f, e.target.value);
+              }}
+            />
+            {errors[f] && (
+              <p className="admin-error">{errors[f]}</p>
+            )}
+          </div>
+        ))}
+        <input
+          className="admin-input"
+          placeholder="WhatsApp number"
+          value={data.whatsapp_number || ""}
+          onChange={(e) =>
+            setField("whatsapp_number", e.target.value)
+          }
+        />
+      </div>
 
       {/* Navigation */}
       <div className="flex justify-between">
@@ -438,3 +442,4 @@ export default function StepLocationContact({
     </div>
   );
 }
+
