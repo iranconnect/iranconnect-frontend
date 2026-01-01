@@ -1,7 +1,10 @@
 //components/admin/BusinessWizard/StepLocationContact.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import Select from "react-select";
-import { Loader } from "@googlemaps/js-api-loader";
+import {
+  setOptions,
+  importLibrary,
+} from "@googlemaps/js-api-loader"
 import {
   parsePhoneNumberFromString,
   getCountries,
@@ -163,50 +166,51 @@ export default function StepLocationContact({
 
   async function initMap() {
     if (mapInstanceRef.current) return;
-
-    const loader = new Loader({
+  
+    // ✅ تنظیم global options (جایگزین Loader)
+    setOptions({
       apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
       version: "beta",
     });
-    
-    await loader.importLibrary("maps");
-    await loader.importLibrary("places");
-
-
-    await new Promise(requestAnimationFrame); // ⬅️ تضمین mount DOM
+  
+    // ✅ بارگذاری کتابخانه‌ها به روش جدید
+    const { Map } = await importLibrary("maps");
+    const { PlacesService } = await importLibrary("places");
+  
+    // ⬅️ تضمین mount شدن DOM
+    await new Promise(requestAnimationFrame);
     if (!mapRef.current) return;
   
-    const map = new window.google.maps.Map(mapRef.current, {
+    // ✅ ساخت Map با Map ID
+    const map = new Map(mapRef.current, {
       center: { lat: 43.7102, lng: 7.262 },
       zoom: 13,
       mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID,
     });
-
+  
     mapInstanceRef.current = map;
-
-    markerRef.current = new google.maps.Marker({
+  
+    markerRef.current = new window.google.maps.Marker({
       map,
     });
-
-    placesServiceRef.current =
-      new google.maps.places.PlacesService(map);
-
+  
+    placesServiceRef.current = new PlacesService(map);
+  
     const autocompleteEl = document.getElementById(
       "wizard-location-autocomplete"
     );
-
     if (!autocompleteEl) return;
-
-    // قبل از bind کردن، عنصر قبلی را تمیز می‌کنیم
+  
+    // ✅ جلوگیری از چندبار bind شدن event
     autocompleteEl.replaceWith(autocompleteEl.cloneNode(true));
-    
+  
     const freshAutocompleteEl =
       document.getElementById("wizard-location-autocomplete");
-    
+  
     const onPlaceSelect = (e) => {
       const placeId = e?.place?.placeId;
       if (!placeId || !placesServiceRef.current) return;
-    
+  
       placesServiceRef.current.getDetails(
         {
           placeId,
@@ -223,20 +227,20 @@ export default function StepLocationContact({
             !details?.geometry?.location
           )
             return;
-    
+  
           const loc = details.geometry.location;
-    
+  
           map.setCenter(loc);
           map.setZoom(16);
           markerRef.current.setPosition(loc);
-    
+  
           const c = {};
           details.address_components.forEach((x) =>
             x.types.forEach((t) => {
               c[t] = x.long_name;
             })
           );
-    
+  
           setData((prev) => ({
             ...prev,
             location: details.formatted_address || "",
@@ -254,14 +258,12 @@ export default function StepLocationContact({
         }
       );
     };
-    
+  
     freshAutocompleteEl.addEventListener(
       "gmp-placeselect",
       onPlaceSelect
     );
-
   }
-
   useEffect(() => {
     if (!needsPhysicalAddress) return;
   
