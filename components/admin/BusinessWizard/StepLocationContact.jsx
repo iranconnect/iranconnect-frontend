@@ -42,7 +42,7 @@ export default function StepLocationContact({
     switch (field) {
       case "email":
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          error = "Invalid email format";
+          error = "Invalid email format (e.g. name@domain.com)";
         }
         break;
 
@@ -52,14 +52,13 @@ export default function StepLocationContact({
       case "twitter_url":
       case "telegram_url":
         if (!/^https?:\/\/.+/i.test(value)) {
-          error = "Invalid URL format";
+          error = "Invalid URL format (must start with https://)";
         }
         break;
 
       case "phone":
         if (!/^\+[1-9]\d{6,14}$/.test(value)) {
-          error =
-            "Use international format, e.g. +33612345678";
+          error = "Use international format, e.g. +33612345678";
         }
         break;
 
@@ -68,6 +67,67 @@ export default function StepLocationContact({
     }
 
     setErrors((p) => ({ ...p, [field]: error }));
+  }
+
+  /* ─────────────────────────────
+     Phone (country code select + normalized storage)
+  ───────────────────────────── */
+  const COUNTRY_CODE_OPTIONS = [
+    { label: "France (+33)", value: "+33" },
+    { label: "Iran (+98)", value: "+98" },
+    { label: "United Kingdom (+44)", value: "+44" },
+    { label: "United States (+1)", value: "+1" },
+    { label: "Canada (+1)", value: "+1" },
+    { label: "Germany (+49)", value: "+49" },
+    { label: "Italy (+39)", value: "+39" },
+    { label: "Spain (+34)", value: "+34" },
+    { label: "Belgium (+32)", value: "+32" },
+    { label: "Netherlands (+31)", value: "+31" },
+    { label: "Turkey (+90)", value: "+90" },
+  ];
+
+  const [phoneCode, setPhoneCode] = useState("+33");
+  const [phoneNational, setPhoneNational] = useState("");
+
+  function parsePhoneToParts(phoneValue) {
+    const v = (phoneValue || "").replace(/\s+/g, "");
+    const m = v.match(/^\+(\d{1,3})(\d*)$/);
+    if (!m) return { code: "+33", national: "" };
+
+    const codeCandidate = `+${m[1]}`;
+    const isKnown = COUNTRY_CODE_OPTIONS.some(
+      (x) => x.value === codeCandidate
+    );
+
+    return {
+      code: isKnown ? codeCandidate : codeCandidate,
+      national: (m[2] || "").replace(/^0+/, ""),
+    };
+  }
+
+  function syncPhoneFromData() {
+    const parts = parsePhoneToParts(data.phone || "");
+    setPhoneCode(parts.code || "+33");
+    setPhoneNational(parts.national || "");
+  }
+
+  useEffect(() => {
+    // initial sync (and when returning to this step)
+    syncPhoneFromData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function updatePhoneE164(nextCode, nextNational) {
+    const nationalClean = (nextNational || "")
+      .replace(/\D+/g, "") // digits only
+      .replace(/^0+/, ""); // no leading zero
+
+    const codeClean = (nextCode || "+33").replace(/\s+/g, "");
+
+    const full = nationalClean ? `${codeClean}${nationalClean}` : "";
+    setField("phone", full);
+
+    validateField("phone", full);
   }
 
   /* ─────────────────────────────
@@ -122,33 +182,55 @@ export default function StepLocationContact({
         });
       });
 
+      const country = components.country || "";
+      const city =
+        components.locality ||
+        components.postal_town ||
+        components.administrative_area_level_2 ||
+        "";
+
+      const route = components.route || "";
+      const streetNumber = components.street_number || "";
+
+      const addressLine = [streetNumber, route]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+
       setData((prev) => ({
         ...prev,
         location: place.formattedAddress || "",
-        country: components.country || "",
-        city:
-          components.locality ||
-          components.postal_town ||
-          "",
-        address:
-          [components.route, components.street_number]
-            .filter(Boolean)
-            .join(" "),
+        country,
+        city,
+        address: addressLine,
         postal_code: components.postal_code || "",
       }));
     });
   }
 
+  // Robust activation: when section appears, preload once (prevents "not active on first click/tab")
+  useEffect(() => {
+    if (!needsPhysicalAddress) return;
+    loadMap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsPhysicalAddress]);
+
+  // Fallback listeners in case React handlers don't bind as expected to the custom element
   useEffect(() => {
     if (!needsPhysicalAddress) return;
 
-    const el = document.getElementById(
-      "wizard-location-autocomplete"
-    );
+    const el = document.getElementById("wizard-location-autocomplete");
     if (!el) return;
 
-    el.addEventListener("focus", loadMap);
-    return () => el.removeEventListener("focus", loadMap);
+    const handler = () => loadMap();
+
+    el.addEventListener("focusin", handler);
+    el.addEventListener("click", handler);
+
+    return () => {
+      el.removeEventListener("focusin", handler);
+      el.removeEventListener("click", handler);
+    };
   }, [needsPhysicalAddress]);
 
   useEffect(() => {
@@ -165,9 +247,6 @@ export default function StepLocationContact({
     }
   }, [mode]);
 
-  /* ─────────────────────────────
-     Render
-  ───────────────────────────── */
   return (
     <div className="admin-section">
       <h2 className="admin-title mb-1">
@@ -177,7 +256,9 @@ export default function StepLocationContact({
         Step 3 of 4 — Location, Availability & Contact
       </p>
 
-      {/* Service mode */}
+      {/* ─────────────────────────────
+         Service mode
+      ───────────────────────────── */}
       <div className="mb-6">
         <label className="admin-label">Service mode *</label>
         <select
@@ -186,16 +267,25 @@ export default function StepLocationContact({
           onChange={(e) =>
             setField("service_mode", e.target.value)
           }
+          required
         >
           <option value="">Select service mode</option>
-          <option value="on_site">On-site</option>
-          <option value="at_home">At customer location</option>
-          <option value="remote">Remote / Online</option>
+          <option value="on_site">
+            On-site (customers visit)
+          </option>
+          <option value="at_home">
+            At customer location
+          </option>
+          <option value="remote">
+            Remote / Online
+          </option>
           <option value="hybrid">Hybrid</option>
         </select>
       </div>
 
-      {/* Availability */}
+      {/* ─────────────────────────────
+         Availability
+      ───────────────────────────── */}
       <div className="mb-6">
         <label className="admin-label">
           Availability type
@@ -209,9 +299,7 @@ export default function StepLocationContact({
         >
           <option value="">Select availability</option>
           <option value="always_open">Always open</option>
-          <option value="business_hours">
-            Business hours
-          </option>
+          <option value="business_hours">Business hours</option>
           <option value="appointment_only">
             Appointment only
           </option>
@@ -229,10 +317,13 @@ export default function StepLocationContact({
           onChange={(e) =>
             setField("availability_note", e.target.value)
           }
+          placeholder="e.g. Available weekends, emergency calls accepted"
         />
       </div>
 
-      {/* Map picker – immediately after availability note */}
+      {/* ─────────────────────────────
+         Map picker – immediately after availability note
+      ───────────────────────────── */}
       {needsPhysicalAddress && (
         <div className="mb-6">
           <label className="admin-label">
@@ -242,13 +333,16 @@ export default function StepLocationContact({
           <div className="admin-input p-0">
             <gmp-place-autocomplete
               id="wizard-location-autocomplete"
+              tabIndex={0}
+              onFocus={loadMap}
+              onClick={loadMap}
               style={{
                 display: "block",
                 width: "100%",
                 minHeight: "42px",
                 padding: "10px",
               }}
-              placeholder="Search business location"
+              placeholder="Search (e.g. 10 Rue Massena, Nice)"
             ></gmp-place-autocomplete>
           </div>
 
@@ -261,94 +355,267 @@ export default function StepLocationContact({
         </div>
       )}
 
-      {/* Address (read-only) */}
+      {/* ─────────────────────────────
+         Service radius
+      ───────────────────────────── */}
+      {needsServiceRadius && (
+        <div className="mb-6">
+          <label className="admin-label">
+            Service radius (km)
+          </label>
+          <input
+            type="number"
+            className="admin-input"
+            value={data.service_radius_km || ""}
+            onChange={(e) =>
+              setField("service_radius_km", e.target.value)
+            }
+            min={0}
+          />
+        </div>
+      )}
+
+      {/* ─────────────────────────────
+         Physical address (read-only autofill)
+      ───────────────────────────── */}
       {needsPhysicalAddress && (
         <>
-          {["country", "city", "address", "postal_code"].map(
-            (f) => (
-              <div className="mb-5" key={f}>
-                <label className="admin-label">
-                  {f.replace("_", " ").toUpperCase()}
-                </label>
-                <input
-                  className="admin-input"
-                  value={data[f] || ""}
-                  readOnly
-                />
-              </div>
-            )
-          )}
+          <div className="mb-5">
+            <label className="admin-label">Country *</label>
+            <input
+              className="admin-input"
+              value={data.country || ""}
+              readOnly
+              placeholder="Auto-filled from map"
+            />
+          </div>
+
+          <div className="mb-5">
+            <label className="admin-label">City *</label>
+            <input
+              className="admin-input"
+              value={data.city || ""}
+              readOnly
+              placeholder="Auto-filled from map"
+            />
+          </div>
+
+          <div className="mb-5">
+            <label className="admin-label">Address *</label>
+            <textarea
+              className="admin-input"
+              rows={2}
+              value={data.address || ""}
+              readOnly
+              placeholder="Auto-filled from map"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="admin-label">Postal code</label>
+            <input
+              className="admin-input"
+              value={data.postal_code || ""}
+              readOnly
+              placeholder="Auto-filled from map"
+            />
+          </div>
         </>
       )}
 
-      {/* Contact */}
+      {/* ─────────────────────────────
+         Contact info
+      ───────────────────────────── */}
       {needsContactInfo && (
         <>
           <div className="mb-5">
             <label className="admin-label">Phone</label>
-            <input
-              className="admin-input"
-              value={data.phone || ""}
-              onChange={(e) => {
-                const v = e.target.value
-                  .replace(/\s+/g, "")
-                  .replace(/(\+\d+)0/, "$1");
-                setField("phone", v);
-                validateField("phone", v);
-              }}
-            />
+
+            <div className="flex gap-3">
+              <select
+                className="admin-input"
+                style={{ maxWidth: 220 }}
+                value={phoneCode}
+                onChange={(e) => {
+                  const nextCode = e.target.value;
+                  setPhoneCode(nextCode);
+                  updatePhoneE164(nextCode, phoneNational);
+                }}
+              >
+                {COUNTRY_CODE_OPTIONS.map((c) => (
+                  <option key={c.label} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                className="admin-input"
+                value={phoneNational}
+                onChange={(e) => {
+                  const raw = e.target.value || "";
+                  const clean = raw
+                    .replace(/\D+/g, "")
+                    .replace(/^0+/, "");
+                  setPhoneNational(clean);
+                  updatePhoneE164(phoneCode, clean);
+                }}
+                placeholder="National number (no leading 0) — e.g. 612345678"
+                inputMode="numeric"
+              />
+            </div>
+
+            {!!data.phone && (
+              <p className="admin-muted mt-1">
+                Saved format: {data.phone}
+              </p>
+            )}
+
             {errors.phone && (
               <p className="admin-error">{errors.phone}</p>
             )}
           </div>
 
-          {["email", "website"].map((f) => (
-            <div className="mb-5" key={f}>
-              <label className="admin-label">
-                {f.toUpperCase()}
-              </label>
-              <input
-                className="admin-input"
-                value={data[f] || ""}
-                onChange={(e) => {
-                  setField(f, e.target.value);
-                  validateField(f, e.target.value);
-                }}
-              />
-              {errors[f] && (
-                <p className="admin-error">{errors[f]}</p>
-              )}
-            </div>
-          ))}
+          <div className="mb-5">
+            <label className="admin-label">Email</label>
+            <input
+              type="email"
+              className="admin-input"
+              value={data.email || ""}
+              onChange={(e) => {
+                setField("email", e.target.value);
+                validateField("email", e.target.value);
+              }}
+              placeholder="name@domain.com"
+            />
+            {errors.email && (
+              <p className="admin-error">{errors.email}</p>
+            )}
+          </div>
+
+          <div className="mb-6">
+            <label className="admin-label">Website</label>
+            <input
+              type="url"
+              className="admin-input"
+              value={data.website || ""}
+              onChange={(e) => {
+                setField("website", e.target.value);
+                validateField("website", e.target.value);
+              }}
+              placeholder="https://example.com"
+            />
+            {errors.website && (
+              <p className="admin-error">{errors.website}</p>
+            )}
+          </div>
         </>
       )}
 
-      {/* Social */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {[
-          "instagram_url",
-          "linkedin_url",
-          "twitter_url",
-          "telegram_url",
-        ].map((f) => (
-          <div key={f}>
-            <input
-              className="admin-input"
-              placeholder={f.replace("_", " ")}
-              value={data[f] || ""}
-              onChange={(e) => {
-                setField(f, e.target.value);
-                validateField(f, e.target.value);
-              }}
-            />
-            {errors[f] && (
-              <p className="admin-error">{errors[f]}</p>
-            )}
-          </div>
-        ))}
+      {/* ─────────────────────────────
+         Contact visibility
+      ───────────────────────────── */}
+      <div className="mb-6 flex gap-6">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={data.show_phone ?? true}
+            onChange={(e) =>
+              setField("show_phone", e.target.checked)
+            }
+          />
+          Show phone number
+        </label>
+
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={data.show_email ?? true}
+            onChange={(e) =>
+              setField("show_email", e.target.checked)
+            }
+          />
+          Show email
+        </label>
       </div>
 
-      {/* Navigation */}
+      {/* ─────────────────────────────
+         Social links (with real-time validation + placeholders)
+      ───────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <input
+            className="admin-input"
+            placeholder="Instagram URL (https://instagram.com/username)"
+            value={data.instagram_url || ""}
+            onChange={(e) => {
+              setField("instagram_url", e.target.value);
+              validateField("instagram_url", e.target.value);
+            }}
+          />
+          {errors.instagram_url && (
+            <p className="admin-error">{errors.instagram_url}</p>
+          )}
+        </div>
+
+        <div>
+          <input
+            className="admin-input"
+            placeholder="LinkedIn URL (https://linkedin.com/in/username)"
+            value={data.linkedin_url || ""}
+            onChange={(e) => {
+              setField("linkedin_url", e.target.value);
+              validateField("linkedin_url", e.target.value);
+            }}
+          />
+          {errors.linkedin_url && (
+            <p className="admin-error">{errors.linkedin_url}</p>
+          )}
+        </div>
+
+        <div>
+          <input
+            className="admin-input"
+            placeholder="Twitter/X URL (https://x.com/username)"
+            value={data.twitter_url || ""}
+            onChange={(e) => {
+              setField("twitter_url", e.target.value);
+              validateField("twitter_url", e.target.value);
+            }}
+          />
+          {errors.twitter_url && (
+            <p className="admin-error">{errors.twitter_url}</p>
+          )}
+        </div>
+
+        <div>
+          <input
+            className="admin-input"
+            placeholder="Telegram URL (https://t.me/username)"
+            value={data.telegram_url || ""}
+            onChange={(e) => {
+              setField("telegram_url", e.target.value);
+              validateField("telegram_url", e.target.value);
+            }}
+          />
+          {errors.telegram_url && (
+            <p className="admin-error">{errors.telegram_url}</p>
+          )}
+        </div>
+
+        <input
+          className="admin-input"
+          placeholder="WhatsApp number"
+          value={data.whatsapp_number || ""}
+          onChange={(e) =>
+            setField("whatsapp_number", e.target.value)
+          }
+        />
+      </div>
+
+      {/* ─────────────────────────────
+         Navigation
+      ───────────────────────────── */}
       <div className="flex justify-between">
         <button
           className="admin-btn admin-btn-secondary"
