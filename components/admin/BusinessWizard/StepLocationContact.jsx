@@ -489,16 +489,23 @@ export default function StepLocationContact({
           </label>
           <input
             type="number"
+            className="admin-input"
             min={1}
             step={1}
             value={data.service_radius_km ?? ""}
             onChange={(e) =>
               setField("service_radius_km", e.target.value)
             }
+            placeholder="e.g. 10"
           />
-
+          {errors.service_radius_km && (
+            <p className="admin-error">
+              {errors.service_radius_km}
+            </p>
+          )}
         </div>
       )}
+
 
       {/* ─────────────────────────────
          Contact info
