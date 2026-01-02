@@ -1,10 +1,6 @@
 //components/admin/BusinessWizard/StepLocationContact.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Select from "react-select";
-import {
-  setOptions,
-  importLibrary,
-} from "@googlemaps/js-api-loader"
 import {
   parsePhoneNumberFromString,
   getCountries,
@@ -68,15 +64,9 @@ export default function StepLocationContact({
   /* ─────────────────────────────
      Visibility rules (unchanged logic)
   ───────────────────────────── */
-  const needsPhysicalAddress =
-    mode === "on_site" || mode === "hybrid";
-
-  const needsServiceRadius =
-    mode === "at_home" || mode === "hybrid";
-
+  const needsPhysicalAddress = mode === "on_site" || mode === "hybrid";
+  const needsServiceRadius = mode === "at_home" || mode === "hybrid";
   const needsContactInfo = !!mode;
-
-  const canProceed = !!mode;
 
   /* ─────────────────────────────
      Validation state
@@ -108,6 +98,30 @@ export default function StepLocationContact({
   };
 
   /* ─────────────────────────────
+     Location link validation (Google Maps link)
+     - Strict allowlist for google maps URLs
+  ───────────────────────────── */
+  const validateLocationMapUrl = (value, required) => {
+    if (!value) {
+      setError("location_map_url", required ? "Location link is required" : "");
+      return !required;
+    }
+
+    const ok =
+      /^(https:\/\/)(www\.)?(google\.com\/maps|maps\.app\.goo\.gl|goo\.gl\/maps)\//i.test(
+        value.trim()
+      ) ||
+      /^(https:\/\/)(www\.)?google\.[a-z.]+\/maps/i.test(value.trim());
+
+    setError(
+      "location_map_url",
+      ok ? "" : "Please paste a valid Google Maps link"
+    );
+
+    return ok;
+  };
+
+  /* ─────────────────────────────
      Phone (libphonenumber + react-select)
   ───────────────────────────── */
   const countryOptions = useMemo(() => {
@@ -127,6 +141,7 @@ export default function StepLocationContact({
       setPhoneCountry(parsed.country || "FR");
       setPhoneNational(parsed.nationalNumber || "");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function updatePhone(country, raw) {
@@ -139,16 +154,10 @@ export default function StepLocationContact({
       return;
     }
 
-    const parsed = parsePhoneNumberFromString(
-      digits,
-      country
-    );
+    const parsed = parsePhoneNumberFromString(digits, country);
 
     if (!parsed || !parsed.isValid()) {
-      setError(
-        "phone",
-        "Invalid phone number for selected country"
-      );
+      setError("phone", "Invalid phone number for selected country");
       return;
     }
 
@@ -157,124 +166,41 @@ export default function StepLocationContact({
   }
 
   /* ─────────────────────────────
-     Google Maps — Stable Loader + Map ID
+     Step-level validation before proceeding
+     - keeps UX stable, improves engineering safety
   ───────────────────────────── */
-  const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const markerRef = useRef(null);
-  const placesServiceRef = useRef(null);
+  function validateStep() {
+    // reset only step-critical errors if needed
+    let ok = true;
 
-  async function initMap() {
-    if (mapInstanceRef.current) return;
-  
-    // ✅ تنظیم global options (جایگزین Loader)
-    setOptions({
-      apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-      version: "beta",
-    });
-  
-    // ✅ بارگذاری کتابخانه‌ها به روش جدید
-    const { Map } = await importLibrary("maps");
-    const { PlacesService } = await importLibrary("places");
-  
-    // ⬅️ تضمین mount شدن DOM
-    await new Promise(requestAnimationFrame);
-    if (!mapRef.current) return;
-  
-    // ✅ ساخت Map با Map ID
-    const map = new Map(mapRef.current, {
-      center: { lat: 43.7102, lng: 7.262 },
-      zoom: 13,
-      mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID,
-    });
-  
-    mapInstanceRef.current = map;
-  
-    markerRef.current = new window.google.maps.Marker({
-      map,
-    });
-  
-    placesServiceRef.current = new PlacesService(map);
-  
-    const autocompleteEl = document.getElementById(
-      "wizard-location-autocomplete"
-    );
-    if (!autocompleteEl) return;
-  
-    // ✅ جلوگیری از چندبار bind شدن event
-    autocompleteEl.replaceWith(autocompleteEl.cloneNode(true));
-  
-    const freshAutocompleteEl =
-      document.getElementById("wizard-location-autocomplete");
-  
-    const onPlaceSelect = (e) => {
-      const placeId = e?.place?.placeId;
-      if (!placeId || !placesServiceRef.current) return;
-  
-      placesServiceRef.current.getDetails(
-        {
-          placeId,
-          fields: [
-            "geometry",
-            "formatted_address",
-            "address_components",
-          ],
-        },
-        (details, status) => {
-          if (
-            status !==
-              window.google.maps.places.PlacesServiceStatus.OK ||
-            !details?.geometry?.location
-          )
-            return;
-  
-          const loc = details.geometry.location;
-  
-          map.setCenter(loc);
-          map.setZoom(16);
-          markerRef.current.setPosition(loc);
-  
-          const c = {};
-          details.address_components.forEach((x) =>
-            x.types.forEach((t) => {
-              c[t] = x.long_name;
-            })
-          );
-  
-          setData((prev) => ({
-            ...prev,
-            location: details.formatted_address || "",
-            country: c.country || "",
-            city:
-              c.locality ||
-              c.postal_town ||
-              c.administrative_area_level_2 ||
-              "",
-            address: [c.street_number, c.route]
-              .filter(Boolean)
-              .join(" "),
-            postal_code: c.postal_code || "",
-          }));
-        }
-      );
-    };
-  
-    freshAutocompleteEl.addEventListener(
-      "gmp-placeselect",
-      onPlaceSelect
-    );
+    // if physical address is needed, require a map link
+    if (needsPhysicalAddress) {
+      const v = validateLocationMapUrl(data.location_map_url || "", true);
+      if (!v) ok = false;
+    } else {
+      // not required => clear error
+      validateLocationMapUrl(data.location_map_url || "", false);
+    }
+
+    // Optional validations that can still show errors (but not block next)
+    if (data.email) {
+      validateEmail(data.email);
+      if (errors.email) ok = false; // best effort; errors state async
+    }
+
+    if (data.website) validateUrl("website", data.website);
+    if (data.instagram_url) validateUrl("instagram_url", data.instagram_url);
+    if (data.linkedin_url) validateUrl("linkedin_url", data.linkedin_url);
+    if (data.twitter_url) validateUrl("twitter_url", data.twitter_url);
+    if (data.telegram_url) validateUrl("telegram_url", data.telegram_url);
+
+    // If phone entered but invalid, block
+    if (phoneNational && errors.phone) ok = false;
+
+    return ok;
   }
-  useEffect(() => {
-    if (!needsPhysicalAddress) return;
-  
-    const t = setTimeout(() => {
-      initMap();
-    }, 0);
-  
-    return () => clearTimeout(t);
-  }, [needsPhysicalAddress]);
-  
 
+  const canProceed = !!mode;
   /* ─────────────────────────────
      Render — Main Form
   ───────────────────────────── */
@@ -329,22 +255,13 @@ export default function StepLocationContact({
           className="admin-input"
           value={data.availability_type || ""}
           onChange={(e) =>
-            setField(
-              "availability_type",
-              e.target.value
-            )
+            setField("availability_type", e.target.value)
           }
         >
           <option value="">Select availability</option>
-          <option value="always_open">
-            Always open
-          </option>
-          <option value="business_hours">
-            Business hours
-          </option>
-          <option value="appointment_only">
-            Appointment only
-          </option>
+          <option value="always_open">Always open</option>
+          <option value="business_hours">Business hours</option>
+          <option value="appointment_only">Appointment only</option>
         </select>
       </div>
 
@@ -357,49 +274,46 @@ export default function StepLocationContact({
           rows={2}
           value={data.availability_note || ""}
           onChange={(e) =>
-            setField(
-              "availability_note",
-              e.target.value
-            )
+            setField("availability_note", e.target.value)
           }
           placeholder="e.g. Available weekends, emergency calls accepted"
         />
       </div>
 
       {/* ─────────────────────────────
-         Google Map picker (AFTER availability note)
+         Location (Google Maps link)
       ───────────────────────────── */}
       {needsPhysicalAddress && (
         <div className="mb-6">
           <label className="admin-label">
-            Business location on map *
+            Business location (Google Maps link) *
           </label>
-
-          {/* Fixed-size wrapper to prevent layout jump */}
-          <div className="admin-input p-0">
-            <gmp-place-autocomplete
-              id="wizard-location-autocomplete"
-              tabIndex="0"
-              style={{
-                display: "block",
-                width: "100%",
-                minHeight: 44,
-                padding: "10px",
-                cursor: "text",
-              }}
-              placeholder="Search address (e.g. 10 Rue Massena, Nice)"
-            />
-          </div>
-
-          <div
-            ref={mapRef}
-            className="mt-3 h-64 w-full rounded-lg border border-[var(--border)]"
+          <input
+            type="url"
+            className="admin-input"
+            value={data.location_map_url || ""}
+            onChange={(e) => {
+              const v = e.target.value;
+              setField("location_map_url", v);
+              validateLocationMapUrl(v, true);
+            }}
+            placeholder="Paste Google Maps link (e.g. https://maps.google.com/?q=...)"
           />
+          {!errors.location_map_url && (
+            <p className="admin-hint">
+              Paste the location link copied from Google Maps.
+            </p>
+          )}
+          {errors.location_map_url && (
+            <p className="admin-error">
+              {errors.location_map_url}
+            </p>
+          )}
         </div>
       )}
 
       {/* ─────────────────────────────
-         Physical address (auto-filled, read-only)
+         Physical address (manual / optional)
       ───────────────────────────── */}
       {needsPhysicalAddress && (
         <>
@@ -410,8 +324,10 @@ export default function StepLocationContact({
             <input
               className="admin-input"
               value={data.country || ""}
-              readOnly
-              placeholder="Auto-filled from map"
+              onChange={(e) =>
+                setField("country", e.target.value)
+              }
+              placeholder="Country"
             />
           </div>
 
@@ -422,21 +338,25 @@ export default function StepLocationContact({
             <input
               className="admin-input"
               value={data.city || ""}
-              readOnly
-              placeholder="Auto-filled from map"
+              onChange={(e) =>
+                setField("city", e.target.value)
+              }
+              placeholder="City"
             />
           </div>
 
           <div className="mb-5">
             <label className="admin-label">
-              Address *
+              Address
             </label>
             <textarea
               className="admin-input"
               rows={2}
               value={data.address || ""}
-              readOnly
-              placeholder="Auto-filled from map"
+              onChange={(e) =>
+                setField("address", e.target.value)
+              }
+              placeholder="Street and number (optional)"
             />
           </div>
 
@@ -447,8 +367,10 @@ export default function StepLocationContact({
             <input
               className="admin-input"
               value={data.postal_code || ""}
-              readOnly
-              placeholder="Auto-filled from map"
+              onChange={(e) =>
+                setField("postal_code", e.target.value)
+              }
+              placeholder="Postal code"
             />
           </div>
         </>
@@ -467,10 +389,7 @@ export default function StepLocationContact({
             className="admin-input"
             value={data.service_radius_km || ""}
             onChange={(e) =>
-              setField(
-                "service_radius_km",
-                e.target.value
-              )
+              setField("service_radius_km", e.target.value)
             }
             min={0}
           />
@@ -497,13 +416,9 @@ export default function StepLocationContact({
                     (o) => o.value === phoneCountry
                   )}
                   onChange={(opt) => {
-                    const nextCountry =
-                      opt?.value || "FR";
+                    const nextCountry = opt?.value || "FR";
                     setPhoneCountry(nextCountry);
-                    updatePhone(
-                      nextCountry,
-                      phoneNational
-                    );
+                    updatePhone(nextCountry, phoneNational);
                   }}
                   isSearchable
                   placeholder="Country code"
@@ -514,10 +429,7 @@ export default function StepLocationContact({
                 className="admin-input"
                 value={phoneNational}
                 onChange={(e) =>
-                  updatePhone(
-                    phoneCountry,
-                    e.target.value
-                  )
+                  updatePhone(phoneCountry, e.target.value)
                 }
                 placeholder="National number (no leading 0)"
                 inputMode="numeric"
@@ -564,10 +476,7 @@ export default function StepLocationContact({
               value={data.website || ""}
               onChange={(e) => {
                 setField("website", e.target.value);
-                validateUrl(
-                  "website",
-                  e.target.value
-                );
+                validateUrl("website", e.target.value);
               }}
               placeholder="https://example.com"
             />
@@ -579,142 +488,125 @@ export default function StepLocationContact({
           </div>
         </>
       )}
-
       {/* ─────────────────────────────
          Contact visibility
       ───────────────────────────── */}
-      <div className="mb-6 flex gap-6">
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={data.show_phone ?? true}
-            onChange={(e) =>
-              setField(
-                "show_phone",
-                e.target.checked
-              )
-            }
-          />
-          Show phone number
-        </label>
+      {needsContactInfo && (
+        <div className="mb-6 flex gap-6">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={data.show_phone ?? true}
+              onChange={(e) =>
+                setField("show_phone", e.target.checked)
+              }
+            />
+            Show phone number
+          </label>
 
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={data.show_email ?? true}
-            onChange={(e) =>
-              setField(
-                "show_email",
-                e.target.checked
-              )
-            }
-          />
-          Show email
-        </label>
-      </div>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={data.show_email ?? true}
+              onChange={(e) =>
+                setField("show_email", e.target.checked)
+              }
+            />
+            Show email
+          </label>
+        </div>
+      )}
+
       {/* ─────────────────────────────
          Social media links
       ───────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {/* Instagram */}
-        <div>
-          <input
-            className="admin-input"
-            placeholder="Instagram URL (https://instagram.com/username)"
-            value={data.instagram_url || ""}
-            onChange={(e) => {
-              setField("instagram_url", e.target.value);
-              validateUrl(
-                "instagram_url",
-                e.target.value
-              );
-            }}
-          />
-          {errors.instagram_url && (
-            <p className="admin-error">
-              {errors.instagram_url}
-            </p>
-          )}
-        </div>
+      {needsContactInfo && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Instagram */}
+          <div>
+            <input
+              className="admin-input"
+              placeholder="Instagram URL (https://instagram.com/username)"
+              value={data.instagram_url || ""}
+              onChange={(e) => {
+                setField("instagram_url", e.target.value);
+                validateUrl("instagram_url", e.target.value);
+              }}
+            />
+            {errors.instagram_url && (
+              <p className="admin-error">
+                {errors.instagram_url}
+              </p>
+            )}
+          </div>
 
-        {/* LinkedIn */}
-        <div>
-          <input
-            className="admin-input"
-            placeholder="LinkedIn URL (https://linkedin.com/in/username)"
-            value={data.linkedin_url || ""}
-            onChange={(e) => {
-              setField("linkedin_url", e.target.value);
-              validateUrl(
-                "linkedin_url",
-                e.target.value
-              );
-            }}
-          />
-          {errors.linkedin_url && (
-            <p className="admin-error">
-              {errors.linkedin_url}
-            </p>
-          )}
-        </div>
+          {/* LinkedIn */}
+          <div>
+            <input
+              className="admin-input"
+              placeholder="LinkedIn URL (https://linkedin.com/in/username)"
+              value={data.linkedin_url || ""}
+              onChange={(e) => {
+                setField("linkedin_url", e.target.value);
+                validateUrl("linkedin_url", e.target.value);
+              }}
+            />
+            {errors.linkedin_url && (
+              <p className="admin-error">
+                {errors.linkedin_url}
+              </p>
+            )}
+          </div>
 
-        {/* Twitter / X */}
-        <div>
-          <input
-            className="admin-input"
-            placeholder="Twitter / X URL (https://x.com/username)"
-            value={data.twitter_url || ""}
-            onChange={(e) => {
-              setField("twitter_url", e.target.value);
-              validateUrl(
-                "twitter_url",
-                e.target.value
-              );
-            }}
-          />
-          {errors.twitter_url && (
-            <p className="admin-error">
-              {errors.twitter_url}
-            </p>
-          )}
-        </div>
+          {/* Twitter / X */}
+          <div>
+            <input
+              className="admin-input"
+              placeholder="Twitter / X URL (https://x.com/username)"
+              value={data.twitter_url || ""}
+              onChange={(e) => {
+                setField("twitter_url", e.target.value);
+                validateUrl("twitter_url", e.target.value);
+              }}
+            />
+            {errors.twitter_url && (
+              <p className="admin-error">
+                {errors.twitter_url}
+              </p>
+            )}
+          </div>
 
-        {/* Telegram */}
-        <div>
-          <input
-            className="admin-input"
-            placeholder="Telegram URL (https://t.me/username)"
-            value={data.telegram_url || ""}
-            onChange={(e) => {
-              setField("telegram_url", e.target.value);
-              validateUrl(
-                "telegram_url",
-                e.target.value
-              );
-            }}
-          />
-          {errors.telegram_url && (
-            <p className="admin-error">
-              {errors.telegram_url}
-            </p>
-          )}
-        </div>
+          {/* Telegram */}
+          <div>
+            <input
+              className="admin-input"
+              placeholder="Telegram URL (https://t.me/username)"
+              value={data.telegram_url || ""}
+              onChange={(e) => {
+                setField("telegram_url", e.target.value);
+                validateUrl("telegram_url", e.target.value);
+              }}
+            />
+            {errors.telegram_url && (
+              <p className="admin-error">
+                {errors.telegram_url}
+              </p>
+            )}
+          </div>
 
-        {/* WhatsApp */}
-        <div className="md:col-span-2">
-          <input
-            className="admin-input"
-            placeholder="WhatsApp number (optional)"
-            value={data.whatsapp_number || ""}
-            onChange={(e) =>
-              setField(
-                "whatsapp_number",
-                e.target.value
-              )
-            }
-          />
+          {/* WhatsApp */}
+          <div className="md:col-span-2">
+            <input
+              className="admin-input"
+              placeholder="WhatsApp number (optional)"
+              value={data.whatsapp_number || ""}
+              onChange={(e) =>
+                setField("whatsapp_number", e.target.value)
+              }
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ─────────────────────────────
          Navigation
@@ -731,8 +623,12 @@ export default function StepLocationContact({
         <button
           type="button"
           className="admin-btn admin-btn-primary"
-          onClick={onNext}
           disabled={!canProceed}
+          onClick={() => {
+            const ok = validateStep();
+            if (!ok) return;
+            onNext();
+          }}
         >
           Next
         </button>
@@ -740,4 +636,3 @@ export default function StepLocationContact({
     </div>
   );
 }
-
