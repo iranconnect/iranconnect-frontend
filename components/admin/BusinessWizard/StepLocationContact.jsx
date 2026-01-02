@@ -121,6 +121,29 @@ export default function StepLocationContact({
     return ok;
   };
 
+  const validateBaseLocationMapUrl = (value, required) => {
+    if (!value) {
+      setError(
+        "base_location_map_url",
+        required ? "Base location link is required" : ""
+      );
+      return !required;
+    }
+  
+    const ok =
+      /^(https:\/\/)(www\.)?(google\.com\/maps|maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(
+        value.trim()
+      );
+  
+    setError(
+      "base_location_map_url",
+      ok ? "" : "Please paste a valid Google Maps link"
+    );
+  
+    return ok;
+  };
+
+  
   /* ─────────────────────────────
      Phone (libphonenumber + react-select)
   ───────────────────────────── */
@@ -173,9 +196,12 @@ export default function StepLocationContact({
     // reset only step-critical errors if needed
     let ok = true;
 
-    // if physical address is needed, require a map link
-    if (needsPhysicalAddress) {
-      const v = validateLocationMapUrl(data.location_map_url || "", true);
+    // on_site / hybrid
+    if (mode === "on_site" || mode === "hybrid") {
+      const v = validateLocationMapUrl(
+        data.location_map_url || "",
+        true
+      );
       if (!v) ok = false;
     
       if (!data.address || !data.address.trim()) {
@@ -191,16 +217,34 @@ export default function StepLocationContact({
       } else {
         setError("postal_code", "");
       }
-    } else {
-      // not required => clear error
-      validateLocationMapUrl(data.location_map_url || "", false);
+    }
+    
+    // at_home / hybrid
+    if (mode === "at_home" || mode === "hybrid") {
+      const v = validateBaseLocationMapUrl(
+        data.base_location_map_url || "",
+        true
+      );
+      if (!v) ok = false;
+    
+      const radius = Number(data.service_radius_km);
+
+      if (!Number.isInteger(radius) || radius < 1) {
+        setError(
+          "service_radius_km",
+          "Service radius must be at least 1 km"
+        );
+        ok = false;
+      } else {
+        setError("service_radius_km", "");
+      }
+    }
+    
+    // Optional validations that can still show errors (but not block next)
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      ok = false;
     }
 
-    // Optional validations that can still show errors (but not block next)
-    if (data.email) {
-      validateEmail(data.email);
-      if (errors.email) ok = false; // best effort; errors state async
-    }
 
     if (data.website) validateUrl("website", data.website);
     if (data.instagram_url) validateUrl("instagram_url", data.instagram_url);
@@ -327,6 +371,43 @@ export default function StepLocationContact({
       )}
 
       {/* ─────────────────────────────
+         Base location (for at customer location)
+      ───────────────────────────── */}
+      {(mode === "at_home" || mode === "hybrid") && (
+        <div className="mb-6">
+          <label className="admin-label">
+            Service base location (Google Maps link) *
+          </label>
+      
+          <input
+            type="url"
+            className="admin-input"
+            value={data.base_location_map_url || ""}
+            onChange={(e) => {
+              const v = e.target.value;
+              setField("base_location_map_url", v);
+              validateBaseLocationMapUrl(v, true);  
+            }}
+            placeholder="Paste Google Maps link (you may choose an approximate location)"
+          />
+      
+          <p className="admin-hint">
+            This location will be shown as your service starting point.
+            If you have privacy concerns, you may choose an approximate
+            location on Google Maps.
+          </p>
+      
+          {errors.base_location_map_url && (
+            <p className="admin-error">
+              {errors.base_location_map_url}
+            </p>
+          )}
+        </div>
+      )}
+    
+
+      
+      {/* ─────────────────────────────
          Physical address (manual / optional)
       ───────────────────────────── */}
       {needsPhysicalAddress && (
@@ -408,13 +489,14 @@ export default function StepLocationContact({
           </label>
           <input
             type="number"
-            className="admin-input"
-            value={data.service_radius_km || ""}
+            min={1}
+            step={1}
+            value={data.service_radius_km ?? ""}
             onChange={(e) =>
               setField("service_radius_km", e.target.value)
             }
-            min={0}
           />
+
         </div>
       )}
 
