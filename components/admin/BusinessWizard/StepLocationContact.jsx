@@ -177,6 +177,20 @@ export default function StepLocationContact({
     if (needsPhysicalAddress) {
       const v = validateLocationMapUrl(data.location_map_url || "", true);
       if (!v) ok = false;
+    
+      if (!data.address || !data.address.trim()) {
+        setError("address", "Address is required");
+        ok = false;
+      } else {
+        setError("address", "");
+      }
+    
+      if (!data.postal_code || !data.postal_code.trim()) {
+        setError("postal_code", "Postal code is required");
+        ok = false;
+      } else {
+        setError("postal_code", "");
+      }
     } else {
       // not required => clear error
       validateLocationMapUrl(data.location_map_url || "", false);
@@ -347,7 +361,7 @@ export default function StepLocationContact({
 
           <div className="mb-5">
             <label className="admin-label">
-              Address
+              Address *
             </label>
             <textarea
               className="admin-input"
@@ -356,13 +370,17 @@ export default function StepLocationContact({
               onChange={(e) =>
                 setField("address", e.target.value)
               }
-              placeholder="Street and number (optional)"
+              placeholder="Street name and number (e.g. 10 Rue Masséna)"
             />
+            {errors.address && (
+              <p className="admin-error">{errors.address}</p>
+            )}
+
           </div>
 
           <div className="mb-6">
             <label className="admin-label">
-              Postal code
+              Postal code *
             </label>
             <input
               className="admin-input"
@@ -370,8 +388,12 @@ export default function StepLocationContact({
               onChange={(e) =>
                 setField("postal_code", e.target.value)
               }
-              placeholder="Postal code"
+              placeholder="Postal code (e.g. 06000)"
             />
+            {errors.postal_code && (
+              <p className="admin-error">{errors.postal_code}</p>
+            )}
+
           </div>
         </>
       )}
