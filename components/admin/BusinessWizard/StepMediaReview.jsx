@@ -151,6 +151,22 @@ export default function StepMediaReview({
   const [error, setError] = useState("");
 
   /* --------------------------------------------------
+     ☑️ CHECKBOX LOCAL STATE (CRITICAL)
+   -------------------------------------------------- */
+  const [isPublic, setIsPublic] = useState(
+     normalizeBool(data.is_public, true)
+  );
+
+  const [allowReviews, setAllowReviews] = useState(
+    normalizeBool(data.allow_reviews, true)
+  );
+   
+  const [ownerConfirmed, setOwnerConfirmed] = useState(
+    normalizeBool(data.owner_confirmed, false)
+  );
+ 
+
+  /* --------------------------------------------------
      🖼 PREVIEW STATE (LOCAL, NOT BUSINESS DATA)
      - This is intentional
      - Prevents corrupting wizard data on failed upload
@@ -169,6 +185,12 @@ export default function StepMediaReview({
    */
   const [galleryPreview, setGalleryPreview] =
     useState([]);
+
+  const lastSavedMediaRef = useRef({
+    logo: null,
+    cover: null,
+  });
+
 
   /* --------------------------------------------------
      🔄 FILE INPUT HARD RESET (critical UX fix)
@@ -268,6 +290,8 @@ export default function StepMediaReview({
       name: file.name,
     });
 
+    lastSavedMediaRef.current[type] = result.url;
+
     revokeIfBlob(localPreviewUrl);
 
     if (type === "logo") {
@@ -281,11 +305,11 @@ export default function StepMediaReview({
     revokeIfBlob(localPreviewUrl);
 
     if (type === "logo") {
-      setLogoPreview(normalized.logo?.url || null);
+      setLogoPreview(lastSavedMediaRef.current.logo);
     }
 
     if (type === "cover") {
-      setCoverPreview(normalized.cover?.url || null);
+      setCoverPreview(lastSavedMediaRef.current.cover);
     }
 
     setError(
@@ -396,7 +420,7 @@ export default function StepMediaReview({
         // Mark all still-uploading previews as failed
         setGalleryPreview((prev) =>
           prev.map((item) =>
-            item.status === "uploading"
+            item.name === file.name && item.status === "uploading"
               ? { ...item, status: "failed" }
               : item
           )
@@ -447,14 +471,15 @@ export default function StepMediaReview({
   const canProceed = useMemo(() => {
     return (
       !!normalized.logo?.url &&
-      normalized.owner_confirmed === true &&
+      ownerConfirmed === true &&
       busy === false
     );
   }, [
     normalized.logo,
-    normalized.owner_confirmed,
+    ownerConfirmed,
     busy,
   ]);
+
 
     /* ======================================================
      🧱 RENDER — UI ONLY (NO LOGIC)
@@ -692,11 +717,11 @@ export default function StepMediaReview({
             accept={ACCEPT_ATTR}
             multiple
             disabled={busy}
-            onChange={(e) =>
-              handleGalleryUpload(
-                Array.from(e.target.files || [])
-              )
-            }
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              e.target.value = "";
+              handleGalleryUpload(files);
+            }}
           />
         )}
       </div>
@@ -713,28 +738,28 @@ export default function StepMediaReview({
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={normalized.is_public}
-              onChange={(e) =>
-                setField(
-                  "is_public",
-                  e.target.checked
-                )
-              }
+              checked={isPublic}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setIsPublic(checked);
+                setField("is_public", checked);
+              }}
             />
+
             Public profile
           </label>
 
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={normalized.allow_reviews}
-              onChange={(e) =>
-                setField(
-                  "allow_reviews",
-                  e.target.checked
-                )
-              }
+              checked={allowReviews}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setAllowReviews(checked);
+                setField("allow_reviews", checked);
+              }}
             />
+
             Allow reviews
           </label>
         </div>
@@ -751,14 +776,14 @@ export default function StepMediaReview({
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
-            checked={normalized.owner_confirmed}
-            onChange={(e) =>
-              setField(
-                "owner_confirmed",
-                e.target.checked
-              )
-            }
+            checked={ownerConfirmed}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setOwnerConfirmed(checked);
+              setField("owner_confirmed", checked);
+            }}
           />
+
           I confirm that I am authorized to manage this
           business information.
         </label>
