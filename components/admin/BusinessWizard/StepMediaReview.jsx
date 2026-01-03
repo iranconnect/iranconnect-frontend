@@ -229,90 +229,75 @@ export default function StepMediaReview({
      🖼 SINGLE MEDIA UPLOAD — LOGO / COVER
   ====================================================== */
 
-  const handleSingleMediaUpload = useCallback(
-    async ({ file, type }) => {
-      if (!file || !type) return;
+  async function handleSingleMediaUpload(file, type) {
+  if (!file || !type) return;
 
-      // Reset file input UI immediately
-      bumpInputKey(type);
+  bumpInputKey(type);
+  setError("");
+  setProgress(0);
 
-      // Clear previous error
-      setError("");
+  const localPreviewUrl = URL.createObjectURL(file);
 
-      // Create local preview first (UX-first)
-      const localPreviewUrl = URL.createObjectURL(file);
+  if (type === "logo") {
+    revokeIfBlob(logoPreview);
+    setLogoPreview(localPreviewUrl);
+  }
 
-      if (type === "logo") {
-        revokeIfBlob(logoPreview);
-        setLogoPreview(localPreviewUrl);
-      }
+  if (type === "cover") {
+    revokeIfBlob(coverPreview);
+    setCoverPreview(localPreviewUrl);
+  }
 
-      if (type === "cover") {
-        revokeIfBlob(coverPreview);
-        setCoverPreview(localPreviewUrl);
-      }
+  try {
+    setBusy(true);
+    setBusyLabel(
+      type === "logo"
+        ? "Uploading logo…"
+        : "Uploading cover image…"
+    );
 
-      try {
-        setBusy(true);
-        setBusyLabel(
-          type === "logo"
-            ? "Uploading logo…"
-            : "Uploading cover image…"
-        );
-        setProgress(0);
+    const result = await uploadMediaToServer({
+      file,
+      type,
+      onProgress: setProgress,
+    });
 
-        const result = await uploadMediaToServer({
-          file,
-          type,
-          onProgress: setProgress,
-        });
+    setField(type, {
+      url: result.url,
+      public_id: result.public_id,
+      name: file.name,
+    });
 
-        // Commit to wizard data ONLY after success
-        setField(type, {
-          url: result.url,
-          public_id: result.public_id,
-          name: file.name,
-        });
+    revokeIfBlob(localPreviewUrl);
 
-        // Replace local preview with final CDN url
-        revokeIfBlob(localPreviewUrl);
+    if (type === "logo") {
+      setLogoPreview(result.url);
+    }
 
-        if (type === "logo") {
-          setLogoPreview(result.url);
-        }
+    if (type === "cover") {
+      setCoverPreview(result.url);
+    }
+  } catch (err) {
+    revokeIfBlob(localPreviewUrl);
 
-        if (type === "cover") {
-          setCoverPreview(result.url);
-        }
+    if (type === "logo") {
+      setLogoPreview(normalized.logo?.url || null);
+    }
 
-        resetBusyState();
-      } catch (err) {
-        // Rollback preview but keep previous saved media (if any)
-        revokeIfBlob(localPreviewUrl);
+    if (type === "cover") {
+      setCoverPreview(normalized.cover?.url || null);
+    }
 
-        if (type === "logo") {
-          setLogoPreview(normalized.logo?.url || null);
-        }
-
-        if (type === "cover") {
-          setCoverPreview(normalized.cover?.url || null);
-        }
-
-        failWithError(
-          err?.response?.data?.error ||
-            `Failed to upload ${type}. Please try again.`
-        );
-      }
-    },
-    [
-      bumpInputKey,
-      logoPreview,
-      coverPreview,
-      normalized.logo,
-      normalized.cover,
-      setField,
-    ]
-  );
+    setError(
+      err?.response?.data?.error ||
+        `Failed to upload ${type}. Please try again.`
+    );
+  } finally {
+    setBusy(false);
+    setBusyLabel("");
+    setProgress(0);
+  }
+}
 
   /* ======================================================
      🖼 GALLERY MULTI-UPLOAD (MAX 10)
@@ -534,12 +519,11 @@ export default function StepMediaReview({
               type="file"
               accept={ACCEPT_ATTR}
               disabled={busy}
-              onChange={(e) =>
-                handleSingleMediaUpload({
-                  file: e.target.files?.[0],
-                  type: "logo",
-                })
-              }
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                handleSingleMediaUpload(file, "logo");
+              }}
             />
           </div>
         </div>
@@ -595,12 +579,11 @@ export default function StepMediaReview({
               type="file"
               accept={ACCEPT_ATTR}
               disabled={busy}
-              onChange={(e) =>
-                handleSingleMediaUpload({
-                  file: e.target.files?.[0],
-                  type: "cover",
-                })
-              }
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                handleSingleMediaUpload(file, "cover");
+              }}
             />
           </div>
         </div>
