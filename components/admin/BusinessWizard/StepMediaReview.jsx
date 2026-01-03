@@ -2,10 +2,7 @@
 import { useState } from "react";
 import apiClient from "../../../utils/apiClient";
 
-/* ======================================================
-   Helper: Upload file to backend
-====================================================== */
-async function uploadMedia(file, type, onProgress) {
+async function uploadMedia(file, type) {
   const form = new FormData();
   form.append("file", file);
   form.append("type", type);
@@ -13,98 +10,100 @@ async function uploadMedia(file, type, onProgress) {
   const res = await apiClient.post(
     "/admin/business-media/upload",
     form,
-    {
-      headers: { "Content-Type": "multipart/form-data" },
-      onUploadProgress: (e) => {
-        if (onProgress && e.total) {
-          onProgress(Math.round((e.loaded * 100) / e.total));
-        }
-      },
-    }
+    { headers: { "Content-Type": "multipart/form-data" } }
   );
 
   return res.data;
 }
 
-/* ======================================================
-   Component
-====================================================== */
-export default function StepMediaReview({
-  data,
-  setData,
-  onNext,
-  onBack,
-}) {
+export default function StepMediaReview({ data, setData, onNext, onBack }) {
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
 
   /* ─────────────────────────────
-     Handlers
+     Generic single upload (logo / cover)
   ───────────────────────────── */
-  async function handleUpload(file, type) {
+  async function handleSingleUpload(e, type) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 🔴 critical fix
+
+    if (!file) return;
+
     try {
       setError("");
       setUploading(true);
-      setProgress(0);
 
-      const result = await uploadMedia(file, type, setProgress);
+      const res = await uploadMedia(file, type);
 
-      setData((prev) => {
-        if (type === "gallery") {
-          const gallery = prev.gallery || [];
-          if (gallery.length >= 10) return prev;
-
-          return {
-            ...prev,
-            gallery: [
-              ...gallery,
-              {
-                url: result.url,
-                public_id: result.public_id,
-                order: gallery.length,
-              },
-            ],
-          };
-        }
-
-        return {
-          ...prev,
-          [type]: {
-            url: result.url,
-            public_id: result.public_id,
-          },
-        };
-      });
+      setData((prev) => ({
+        ...prev,
+        [type]: {
+          url: res.url,
+          public_id: res.public_id,
+          name: file.name,
+        },
+      }));
     } catch (err) {
       setError(
         err?.response?.data?.error ||
-          "Upload failed. Please try again."
+          `Failed to upload ${type}.`
       );
     } finally {
       setUploading(false);
-      setProgress(0);
     }
   }
 
-  function removeGalleryItem(index) {
-    setData((prev) => ({
-      ...prev,
-      gallery: prev.gallery.filter((_, i) => i !== index),
-    }));
+  /* ─────────────────────────────
+     Gallery multi-upload (max 10)
+  ───────────────────────────── */
+  async function handleGalleryUpload(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = ""; // 🔴 critical fix
+
+    if (!files.length) return;
+
+    const existing = data.gallery || [];
+    const remaining = 10 - existing.length;
+
+    if (remaining <= 0) return;
+
+    const toUpload = files.slice(0, remaining);
+
+    setUploading(true);
+    setError("");
+
+    try {
+      for (const file of toUpload) {
+        const res = await uploadMedia(file, "gallery");
+
+        setData((prev) => ({
+          ...prev,
+          gallery: [
+            ...(prev.gallery || []),
+            {
+              url: res.url,
+              public_id: res.public_id,
+              name: file.name,
+              order: prev.gallery?.length || 0,
+            },
+          ],
+        }));
+      }
+    } catch (err) {
+      setError(
+        err?.response?.data?.error ||
+          "One or more gallery images failed to upload."
+      );
+    } finally {
+      setUploading(false);
+    }
   }
 
-  /* ─────────────────────────────
-     Validation
-  ───────────────────────────── */
   const canProceed =
     data.logo &&
     data.owner_confirmed &&
     !uploading;
 
-  /* ─────────────────────────────
-     Render
-  ───────────────────────────── */
   return (
     <div className="admin-section">
       <h2 className="admin-title mb-1">
@@ -114,104 +113,73 @@ export default function StepMediaReview({
         Step 4 of 4 — Media, Visibility & Compliance
       </p>
 
-      {/* ─────────────────────────────
-         Logo (Required)
-      ───────────────────────────── */}
+      {/* Logo */}
       <div className="mb-6">
-        <label className="admin-label">
-          Business logo *
-        </label>
+        <label className="admin-label">Business logo *</label>
 
-        {data.logo ? (
-          <div className="flex items-center gap-4">
+        {data.logo && (
+          <div className="mb-2 flex items-center gap-3">
             <img
               src={data.logo.url}
-              alt="Logo preview"
-              className="h-20 w-20 rounded border"
+              className="h-16 w-16 rounded border"
             />
-            <button
-              className="admin-btn admin-btn-secondary"
-              onClick={() =>
-                setData((p) => ({ ...p, logo: null }))
-              }
-            >
-              Replace
-            </button>
+            <span className="text-sm opacity-70">
+              {data.logo.name}
+            </span>
           </div>
-        ) : (
-          <input
-            type="file"
-            accept="image/*"
-            disabled={uploading}
-            onChange={(e) =>
-              e.target.files &&
-              handleUpload(e.target.files[0], "logo")
-            }
-          />
         )}
+
+        <input
+          type="file"
+          accept="image/*"
+          disabled={uploading}
+          onChange={(e) =>
+            handleSingleUpload(e, "logo")
+          }
+        />
       </div>
 
-      {/* ─────────────────────────────
-         Cover (Optional)
-      ───────────────────────────── */}
+      {/* Cover */}
       <div className="mb-6">
         <label className="admin-label">
           Cover image (optional)
         </label>
 
-        {data.cover ? (
-          <div className="flex items-center gap-4">
+        {data.cover && (
+          <div className="mb-2">
             <img
               src={data.cover.url}
-              alt="Cover preview"
               className="h-24 rounded border"
             />
-            <button
-              className="admin-btn admin-btn-secondary"
-              onClick={() =>
-                setData((p) => ({ ...p, cover: null }))
-              }
-            >
-              Replace
-            </button>
+            <div className="text-sm opacity-70">
+              {data.cover.name}
+            </div>
           </div>
-        ) : (
-          <input
-            type="file"
-            accept="image/*"
-            disabled={uploading}
-            onChange={(e) =>
-              e.target.files &&
-              handleUpload(e.target.files[0], "cover")
-            }
-          />
         )}
+
+        <input
+          type="file"
+          accept="image/*"
+          disabled={uploading}
+          onChange={(e) =>
+            handleSingleUpload(e, "cover")
+          }
+        />
       </div>
 
-      {/* ─────────────────────────────
-         Gallery
-      ───────────────────────────── */}
+      {/* Gallery */}
       <div className="mb-6">
         <label className="admin-label">
-          Gallery images (optional)
+          Gallery images (max 10)
         </label>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
           {(data.gallery || []).map((img, i) => (
-            <div key={i} className="relative">
-              <img
-                src={img.url}
-                alt=""
-                className="h-28 w-full object-cover rounded border"
-              />
-              <button
-                type="button"
-                className="absolute top-1 right-1 bg-black/60 text-white text-xs px-2 py-1 rounded"
-                onClick={() => removeGalleryItem(i)}
-              >
-                ✕
-              </button>
-            </div>
+            <img
+              key={i}
+              src={img.url}
+              className="h-28 w-full object-cover rounded border"
+            />
           ))}
         </div>
 
@@ -219,18 +187,14 @@ export default function StepMediaReview({
           <input
             type="file"
             accept="image/*"
+            multiple
             disabled={uploading}
-            onChange={(e) =>
-              e.target.files &&
-              handleUpload(e.target.files[0], "gallery")
-            }
+            onChange={handleGalleryUpload}
           />
         )}
       </div>
 
-      {/* ─────────────────────────────
-         Visibility
-      ───────────────────────────── */}
+      {/* Visibility */}
       <div className="mb-6 flex gap-6">
         <label className="flex items-center gap-2">
           <input
@@ -261,9 +225,7 @@ export default function StepMediaReview({
         </label>
       </div>
 
-      {/* ─────────────────────────────
-         Compliance
-      ───────────────────────────── */}
+      {/* Compliance */}
       <div className="mb-6">
         <label className="flex items-center gap-2">
           <input
@@ -276,32 +238,14 @@ export default function StepMediaReview({
               }))
             }
           />
-          I confirm that I am authorized to manage this
-          business information.
+          I confirm I am authorized to manage this business.
         </label>
       </div>
 
-      {/* ─────────────────────────────
-         Upload progress / error
-      ───────────────────────────── */}
-      {uploading && (
-        <p className="text-sm opacity-70">
-          Uploading… {progress}%
-        </p>
-      )}
+      {error && <p className="admin-error">{error}</p>}
 
-      {error && (
-        <p className="admin-error">
-          {error}
-        </p>
-      )}
-
-      {/* ─────────────────────────────
-         Navigation
-      ───────────────────────────── */}
       <div className="flex justify-between">
         <button
-          type="button"
           className="admin-btn admin-btn-secondary"
           onClick={onBack}
           disabled={uploading}
@@ -310,10 +254,9 @@ export default function StepMediaReview({
         </button>
 
         <button
-          type="button"
           className="admin-btn admin-btn-primary"
-          disabled={!canProceed}
           onClick={onNext}
+          disabled={!canProceed}
         >
           Next
         </button>
