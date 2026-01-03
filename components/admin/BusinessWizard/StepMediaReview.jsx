@@ -423,7 +423,9 @@ export default function StepMediaReview({
         }
 
         resetBusyState();
-        setGalleryPreview([]);
+        setGalleryPreview((prev) =>
+          prev.filter((item) => item.status === "failed")
+        );
       } catch (err) {
           setGalleryPreview((prev) =>
             prev.map((item) =>
