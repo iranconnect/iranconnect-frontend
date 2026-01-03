@@ -151,22 +151,6 @@ export default function StepMediaReview({
   const [error, setError] = useState("");
 
   /* --------------------------------------------------
-     ☑️ CHECKBOX LOCAL STATE (CRITICAL)
-   -------------------------------------------------- */
-  const [isPublic, setIsPublic] = useState(
-     normalizeBool(data.is_public, true)
-  );
-
-  const [allowReviews, setAllowReviews] = useState(
-    normalizeBool(data.allow_reviews, true)
-  );
-   
-  const [ownerConfirmed, setOwnerConfirmed] = useState(
-    normalizeBool(data.owner_confirmed, false)
-  );
- 
-
-  /* --------------------------------------------------
      🖼 PREVIEW STATE (LOCAL, NOT BUSINESS DATA)
      - This is intentional
      - Prevents corrupting wizard data on failed upload
@@ -469,11 +453,12 @@ export default function StepMediaReview({
 
   const canProceed = useMemo(() => {
     return (
-      !!data.logo?.url &&
-      ownerConfirmed === true &&
-      busy === false
+      !!normalized.logo?.url &&
+      normalized.owner_confirmed === true &&
+      busy === false 
     );
-  }, [data.logo, ownerConfirmed, busy]);
+  }, [normalized.logo, normalized.owner_confirmed, busy]);
+
 
     /* ======================================================
      🧱 RENDER — UI ONLY (NO LOGIC)
@@ -732,12 +717,11 @@ export default function StepMediaReview({
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={isPublic}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                setIsPublic(checked);
-                setField("is_public", checked);
-              }}
+              checked={normalized.is_public}
+              onChange={(e) =>
+                setField("is_public", e.target.checked)
+              }
+
             />
 
             Public profile
@@ -746,12 +730,11 @@ export default function StepMediaReview({
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={allowReviews}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                setAllowReviews(checked);
-                setField("allow_reviews", checked);
-              }}
+              checked={normalized.allow_reviews}
+              onChange={(e) =>
+                setField("allow_reviews", e.target.checked)
+              }
+
             />
 
             Allow reviews
@@ -770,12 +753,11 @@ export default function StepMediaReview({
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
-            checked={ownerConfirmed}
-            onChange={(e) => {
-              const checked = e.target.checked;
-              setOwnerConfirmed(checked);
-              setField("owner_confirmed", checked);
-            }}
+            checked={normalized.owner_confirmed}
+            onChange={(e) =>
+              setField("owner_confirmed", e.target.checked)
+            }
+
           />
 
           I confirm that I am authorized to manage this
