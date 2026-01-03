@@ -417,20 +417,19 @@ export default function StepMediaReview({
 
         resetBusyState();
       } catch (err) {
-        // Mark all still-uploading previews as failed
-        setGalleryPreview((prev) =>
-          prev.map((item) =>
-            item.name === file.name && item.status === "uploading"
-              ? { ...item, status: "failed" }
-              : item
-          )
-        );
-
-        failWithError(
-          err?.response?.data?.error ||
-            "One or more gallery images failed to upload."
-        );
-      }
+          setGalleryPreview((prev) =>
+            prev.map((item) =>
+              item.status === "uploading"
+                ? { ...item, status: "failed" }
+                : item
+            )
+          );
+      
+          failWithError(
+            err?.response?.data?.error ||
+              "One or more gallery images failed to upload."
+          );
+        }
     },
     [
       bumpInputKey,
@@ -470,16 +469,11 @@ export default function StepMediaReview({
 
   const canProceed = useMemo(() => {
     return (
-      !!normalized.logo?.url &&
+      !!data.logo?.url &&
       ownerConfirmed === true &&
       busy === false
     );
-  }, [
-    normalized.logo,
-    ownerConfirmed,
-    busy,
-  ]);
-
+  }, [data.logo, ownerConfirmed, busy]);
 
     /* ======================================================
      🧱 RENDER — UI ONLY (NO LOGIC)
