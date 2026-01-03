@@ -119,11 +119,12 @@ export default function BusinessWizard() {
       {step === 3 && (
         <StepMediaReview
           data={data}
+          setData={setData}
           onBack={back}
-          onSubmit={submit}
-          loading={loading}
+          onNext={submit}
         />
       )}
+
 
       {duplicate && (
         <DuplicateModal
