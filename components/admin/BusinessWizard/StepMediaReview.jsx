@@ -194,18 +194,41 @@ export default function StepMediaReview({
   }, []);
 
   /* --------------------------------------------------
+     ✅ SAFE setData GUARD (prevents "n is not a function")
+  -------------------------------------------------- */
+  const safeSetData = useCallback(
+    (updater) => {
+      if (typeof setData !== "function") {
+        console.error(
+          "StepMediaReview: setData prop is not a function. Check parent wiring.",
+          setData
+        );
+        setError(
+          "Internal error: state setter is not connected. Please refresh and try again."
+        );
+        return;
+      }
+      setData(updater);
+    },
+    [setData]
+  );
+
+  
+
+  /* --------------------------------------------------
      🧱 SAFE DATA MUTATORS
      - Single entry point for wizard state writes
   -------------------------------------------------- */
   const setField = useCallback(
     (key, value) => {
-      setData((prev) => ({
+      safeSetData((prev) => ({
         ...prev,
         [key]: value,
       }));
     },
-    [setData]
+    [safeSetData]
   );
+
   /* ======================================================
      🧪 INTERNAL HELPERS
   ====================================================== */
@@ -368,7 +391,7 @@ export default function StepMediaReview({
           });
 
           // Commit to wizard data
-          setData((prev) => ({
+          safeSetData((prev) => ({
             ...prev,
             gallery: [
               ...normalizeGallery(prev.gallery),
@@ -418,33 +441,26 @@ export default function StepMediaReview({
     [
       bumpInputKey,
       normalized.gallery,
-      setData,
+      safeSetData,
     ]
   );
 
   /* ======================================================
      🗑 GALLERY REMOVE (LOCAL + BUSINESS DATA)
   ====================================================== */
-
   const removeGalleryItem = useCallback(
     (index) => {
-      setData((prev) => {
+      safeSetData((prev) => {
         const safeGallery = normalizeGallery(prev.gallery);
-        if (
-          index < 0 ||
-          index >= safeGallery.length
-        )
-          return prev;
+        if (index < 0 || index >= safeGallery.length) return prev;
 
         return {
           ...prev,
-          gallery: safeGallery.filter(
-            (_, i) => i !== index
-          ),
+          gallery: safeGallery.filter((_, i) => i !== index),
         };
       });
     },
-    [setData]
+    [safeSetData]
   );
 
   /* ======================================================
