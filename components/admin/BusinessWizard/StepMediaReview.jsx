@@ -1,6 +1,5 @@
 // components/admin/BusinessWizard/StepMediaReview.jsx
-import { useCallback, useMemo, useRef, useState } from "react";
-import apiClient from "../../../utils/apiClient";
+import { useCallback, useMemo, useState } from "react";
 
 /* ======================================================
    🧱 CONSTANTS — Business Rules (DO NOT INLINE)
@@ -17,29 +16,15 @@ const ACCEPT_ATTR = ACCEPTED_IMAGE_TYPES.join(",");
 
 /* ======================================================
    🧠 SAFE NORMALIZERS
-   هدف: جلوگیری از crash و رفتار غیرقابل پیش‌بینی
 ====================================================== */
-
-/**
- * Normalize boolean values coming from:
- * - undefined
- * - null
- * - string ("true"/"false")
- * - legacy payloads
- */
 function normalizeBool(value, fallback = false) {
   if (value === true) return true;
   if (value === false) return false;
-
   if (value === "true") return true;
   if (value === "false") return false;
-
   return fallback;
 }
 
-/**
- * Always return a safe gallery array
- */
 function normalizeGallery(value) {
   if (!Array.isArray(value)) return [];
   return value.filter(
@@ -50,9 +35,6 @@ function normalizeGallery(value) {
   );
 }
 
-/**
- * Normalize single media object (logo / cover)
- */
 function normalizeMedia(value) {
   if (
     value &&
@@ -65,48 +47,7 @@ function normalizeMedia(value) {
 }
 
 /* ======================================================
-   📡 UPLOAD API HELPER
-   - Centralized
-   - Progress-aware
-====================================================== */
-async function uploadMediaToServer({
-  file,
-  type,
-  onProgress,
-}) {
-  const form = new FormData();
-  form.append("file", file);
-  form.append("type", type);
-
-  const response = await apiClient.post(
-    "/admin/business-media/upload",
-    form,
-    {
-      withCredentials: true,
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      onUploadProgress: (event) => {
-        if (
-          !onProgress ||
-          !event.total ||
-          event.total === 0
-        )
-          return;
-
-        const percent = Math.round(
-          (event.loaded * 100) / event.total
-        );
-        onProgress(percent);
-      },
-    }
-  );
-
-  return response.data;
-}
-
-/* ======================================================
-   🧩 COMPONENT — STATE ONLY (NO JSX YET)
+   🧩 COMPONENT
 ====================================================== */
 export default function StepMediaReview({
   data,
@@ -115,7 +56,7 @@ export default function StepMediaReview({
   onBack,
 }) {
   /* --------------------------------------------------
-     🔐 NORMALIZED DATA (READ-ONLY DERIVED)
+     🔐 NORMALIZED DATA
   -------------------------------------------------- */
   const normalized = useMemo(
     () => ({
@@ -143,42 +84,20 @@ export default function StepMediaReview({
   );
 
   /* --------------------------------------------------
-     🧠 UI / UX STATE
+     🧠 UI STATE
   -------------------------------------------------- */
   const [busy, setBusy] = useState(false);
-  const [busyLabel, setBusyLabel] = useState("");
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
 
   /* --------------------------------------------------
-     🖼 PREVIEW STATE (LOCAL, NOT BUSINESS DATA)
-     - This is intentional
-     - Prevents corrupting wizard data on failed upload
+     🖼 PREVIEW STATE (LOCAL ONLY)
   -------------------------------------------------- */
   const [logoPreview, setLogoPreview] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
-
-  /**
-   * galleryPreview items:
-   * {
-   *   id: string,
-   *   url: string (blob or final),
-   *   name: string,
-   *   status: "uploading" | "done" | "failed"
-   * }
-   */
-  const [galleryPreview, setGalleryPreview] =
-    useState([]);
-
-  const lastSavedMediaRef = useRef({
-    logo: null,
-    cover: null,
-  });
-
+  const [galleryPreview, setGalleryPreview] = useState([]);
 
   /* --------------------------------------------------
-     🔄 FILE INPUT HARD RESET (critical UX fix)
-     - Browser keeps filename unless remounted
+     🔄 FILE INPUT HARD RESET
   -------------------------------------------------- */
   const [inputKey, setInputKey] = useState({
     logo: 0,
@@ -194,18 +113,12 @@ export default function StepMediaReview({
   }, []);
 
   /* --------------------------------------------------
-     ✅ SAFE setData GUARD (prevents "n is not a function")
+     ✅ SAFE setData
   -------------------------------------------------- */
   const safeSetData = useCallback(
     (updater) => {
       if (typeof setData !== "function") {
-        console.error(
-          "StepMediaReview: setData prop is not a function. Check parent wiring.",
-          setData
-        );
-        setError(
-          "Internal error: state setter is not connected. Please refresh and try again."
-        );
+        setError("Internal error. Please refresh.");
         return;
       }
       setData(updater);
@@ -213,12 +126,6 @@ export default function StepMediaReview({
     [setData]
   );
 
-  
-
-  /* --------------------------------------------------
-     🧱 SAFE DATA MUTATORS
-     - Single entry point for wizard state writes
-  -------------------------------------------------- */
   const setField = useCallback(
     (key, value) => {
       safeSetData((prev) => ({
@@ -229,141 +136,69 @@ export default function StepMediaReview({
     [safeSetData]
   );
 
-  /* ======================================================
-     🧪 INTERNAL HELPERS
-  ====================================================== */
-
-  function resetBusyState() {
-    setBusy(false);
-    setBusyLabel("");
-    setProgress(0);
-  }
-
-  function failWithError(message) {
-    resetBusyState();
-    setError(message);
-  }
-
   function revokeIfBlob(url) {
     try {
       if (typeof url === "string" && url.startsWith("blob:")) {
         URL.revokeObjectURL(url);
       }
-    } catch {
-      /* noop */
-    }
+    } catch {}
   }
-
   /* ======================================================
-     🖼 SINGLE MEDIA UPLOAD — LOGO / COVER
+     🖼 SINGLE MEDIA — LOGO / COVER (NO UPLOAD)
   ====================================================== */
-
   async function handleSingleMediaUpload(file, type) {
-  if (!file || !type) return;
+    if (!file || !type) return;
 
-  bumpInputKey(type);
-  setError("");
-  setProgress(0);
+    bumpInputKey(type);
+    setError("");
 
-  const localPreviewUrl = URL.createObjectURL(file);
-
-  if (type === "logo") {
-    revokeIfBlob(logoPreview);
-    setLogoPreview(localPreviewUrl);
-  }
-
-  if (type === "cover") {
-    revokeIfBlob(coverPreview);
-    setCoverPreview(localPreviewUrl);
-  }
-
-  try {
-    setBusy(true);
-    setBusyLabel(
-      type === "logo"
-        ? "Uploading logo…"
-        : "Uploading cover image…"
-    );
-
-    const result = await uploadMediaToServer({
-      file,
-      type,
-      onProgress: setProgress,
-    });
-
-    setField(type, {
-      url: result.url,
-      public_id: result.public_id,
-      name: file.name,
-    });
-
-    lastSavedMediaRef.current[type] = result.url;
-
-    revokeIfBlob(localPreviewUrl);
+    const localPreviewUrl = URL.createObjectURL(file);
 
     if (type === "logo") {
-      setLogoPreview(result.url);
+      revokeIfBlob(logoPreview);
+      setLogoPreview(localPreviewUrl);
+      setField("logo_file", file);
     }
 
     if (type === "cover") {
-      setCoverPreview(result.url);
+      revokeIfBlob(coverPreview);
+      setCoverPreview(localPreviewUrl);
+      setField("cover_file", file);
     }
-  } catch (err) {
-    revokeIfBlob(localPreviewUrl);
-
-    if (type === "logo") {
-      setLogoPreview(lastSavedMediaRef.current.logo);
-    }
-
-    if (type === "cover") {
-      setCoverPreview(lastSavedMediaRef.current.cover);
-    }
-
-    setError(
-      err?.response?.data?.error ||
-        `Failed to upload ${type}. Please try again.`
-    );
-  } finally {
-    setBusy(false);
-    setBusyLabel("");
-    setProgress(0);
   }
-}
 
   /* ======================================================
-     🖼 GALLERY MULTI-UPLOAD (MAX 10)
+     🖼 GALLERY — PREVIEW + FILE COLLECT (NO UPLOAD)
   ====================================================== */
-
   const handleGalleryUpload = useCallback(
     async (files) => {
-      if (!Array.isArray(files) || files.length === 0)
-        return;
+      if (!Array.isArray(files) || files.length === 0) return;
 
-      // Reset file input UI
       bumpInputKey("gallery");
       setError("");
 
-      const currentGallery = normalized.gallery;
+      const currentFiles = Array.isArray(data.gallery_files)
+        ? data.gallery_files
+        : [];
+
       const remainingSlots =
-        MAX_GALLERY_IMAGES - currentGallery.length;
+        MAX_GALLERY_IMAGES - currentFiles.length;
 
       if (remainingSlots <= 0) {
         setError(
-          `Maximum of ${MAX_GALLERY_IMAGES} images allowed.`
+          `MaximumRMaximum of ${MAX_GALLERY_IMAGES} images allowed.`
         );
         return;
       }
 
       const uploadBatch = files.slice(0, remainingSlots);
 
-      // Create preview placeholders immediately
       const previewBatch = uploadBatch.map((file) => ({
         id:
           crypto.randomUUID?.() ||
           `${Date.now()}-${Math.random()}`,
         url: URL.createObjectURL(file),
         name: file.name,
-        status: "uploading",
       }));
 
       setGalleryPreview((prev) => [
@@ -371,118 +206,30 @@ export default function StepMediaReview({
         ...previewBatch,
       ]);
 
-      try {
-        setBusy(true);
-        setProgress(0);
-
-        for (let i = 0; i < uploadBatch.length; i++) {
-          const file = uploadBatch[i];
-
-          setBusyLabel(
-            `Uploading gallery image ${i + 1} of ${
-              uploadBatch.length
-            }…`
-          );
-
-          const result = await uploadMediaToServer({
-            file,
-            type: "gallery",
-            onProgress: setProgress,
-          });
-
-          // Commit to wizard data
-          safeSetData((prev) => ({
-            ...prev,
-            gallery: [
-              ...normalizeGallery(prev.gallery),
-              {
-                url: result.url,
-                public_id: result.public_id,
-                name: file.name,
-              },
-            ],
-          }));
-
-          // Mark preview as done and replace URL
-          setGalleryPreview((prev) =>
-            prev.map((item) => {
-              if (
-                item.name === file.name &&
-                item.status === "uploading"
-              ) {
-                revokeIfBlob(item.url);
-                return {
-                  ...item,
-                  url: result.url,
-                  status: "done",
-                };
-              }
-              return item;
-            })
-          );
-        }
-
-        resetBusyState();
-        setGalleryPreview((prev) =>
-          prev.filter((item) => item.status === "failed")
-        );
-      } catch (err) {
-          setGalleryPreview((prev) =>
-            prev.map((item) =>
-              item.status === "uploading"
-                ? { ...item, status: "failed" }
-                : item
-            )
-          );
-      
-          failWithError(
-            err?.response?.data?.error ||
-              "One or more gallery images failed to upload."
-          );
-        }
+      safeSetData((prev) => ({
+        ...prev,
+        gallery_files: [
+          ...currentFiles,
+          ...uploadBatch,
+        ],
+      }));
     },
-    [
-      bumpInputKey,
-      normalized.gallery,
-      safeSetData,
-    ]
+    [bumpInputKey, data.gallery_files, safeSetData]
   );
 
   /* ======================================================
-     🗑 GALLERY REMOVE (LOCAL + BUSINESS DATA)
+     🧠 STEP VALIDATION
   ====================================================== */
-  const removeGalleryItem = useCallback(
-    (index) => {
-      safeSetData((prev) => {
-        const safeGallery = normalizeGallery(prev.gallery);
-        if (index < 0 || index >= safeGallery.length) return prev;
-
-        return {
-          ...prev,
-          gallery: safeGallery.filter((_, i) => i !== index),
-        };
-      });
-    },
-    [safeSetData]
-  );
-
-  /* ======================================================
-     🧠 STEP VALIDATION (USED BY PART 3)
-  ====================================================== */
-
   const canProceed = useMemo(() => {
     return (
-      !!normalized.logo?.url &&
+      !!data.logo_file &&
       normalized.owner_confirmed === true &&
-      busy === false 
+      busy === false
     );
-  }, [normalized.logo, normalized.owner_confirmed, busy]);
-
-
-    /* ======================================================
-     🧱 RENDER — UI ONLY (NO LOGIC)
+  }, [data.logo_file, normalized.owner_confirmed, busy]);
+  /* ======================================================
+     🧱 RENDER — UI ONLY
   ====================================================== */
-
   return (
     <div className="admin-section">
       <h2 className="admin-title mb-1">
@@ -492,13 +239,9 @@ export default function StepMediaReview({
         Step 4 of 4 — Media, Visibility & Compliance
       </p>
 
-      {/* ==================================================
-         LOGO
-      ================================================== */}
+      {/* LOGO */}
       <div className="mb-8">
-        <label className="admin-label">
-          Business logo *
-        </label>
+        <label className="admin-label">Business logo *</label>
 
         <div className="flex items-center gap-4 mb-3">
           <div
@@ -514,9 +257,9 @@ export default function StepMediaReview({
               overflow: "hidden",
             }}
           >
-            {logoPreview || normalized.logo?.url ? (
+            {logoPreview ? (
               <img
-                src={logoPreview || normalized.logo.url}
+                src={logoPreview}
                 alt="Logo preview"
                 style={{
                   width: "100%",
@@ -525,40 +268,27 @@ export default function StepMediaReview({
                 }}
               />
             ) : (
-              <span className="admin-hint text-xs">
-                No logo
-              </span>
+              <span className="admin-hint text-xs">No logo</span>
             )}
           </div>
 
-          <div className="flex-1">
-            <p className="admin-hint mb-2">
-              PNG / JPG / WEBP. Minimum recommended size:
-              512×512.
-            </p>
-
-            <input
-              key={`logo-${inputKey.logo}`}
-              type="file"
-              accept={ACCEPT_ATTR}
-              disabled={busy}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                e.target.value = "";
-                handleSingleMediaUpload(file, "logo");
-              }}
-            />
-          </div>
+          <input
+            key={`logo-${inputKey.logo}`}
+            type="file"
+            accept={ACCEPT_ATTR}
+            disabled={busy}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              handleSingleMediaUpload(file, "logo");
+            }}
+          />
         </div>
       </div>
 
-      {/* ==================================================
-         COVER IMAGE
-      ================================================== */}
+      {/* COVER */}
       <div className="mb-8">
-        <label className="admin-label">
-          Cover image (optional)
-        </label>
+        <label className="admin-label">Cover image</label>
 
         <div className="flex items-start gap-4 mb-3">
           <div
@@ -569,14 +299,11 @@ export default function StepMediaReview({
               border: "1px solid var(--border)",
               background: "var(--bg-soft)",
               overflow: "hidden",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
             }}
           >
-            {coverPreview || normalized.cover?.url ? (
+            {coverPreview && (
               <img
-                src={coverPreview || normalized.cover.url}
+                src={coverPreview}
                 alt="Cover preview"
                 style={{
                   width: "100%",
@@ -584,130 +311,48 @@ export default function StepMediaReview({
                   objectFit: "cover",
                 }}
               />
-            ) : (
-              <span className="admin-hint text-xs">
-                No cover
-              </span>
             )}
           </div>
 
-          <div className="flex-1">
-            <p className="admin-hint mb-2">
-              Recommended ratio 16:9. Shown at the top of
-              the business profile.
-            </p>
-
-            <input
-              key={`cover-${inputKey.cover}`}
-              type="file"
-              accept={ACCEPT_ATTR}
-              disabled={busy}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                e.target.value = "";
-                handleSingleMediaUpload(file, "cover");
-              }}
-            />
-          </div>
+          <input
+            key={`cover-${inputKey.cover}`}
+            type="file"
+            accept={ACCEPT_ATTR}
+            disabled={busy}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              handleSingleMediaUpload(file, "cover");
+            }}
+          />
         </div>
       </div>
 
-      {/* ==================================================
-         GALLERY
-      ================================================== */}
+      {/* GALLERY */}
       <div className="mb-8">
         <label className="admin-label">
           Gallery images (max {MAX_GALLERY_IMAGES})
         </label>
 
-        <p className="admin-hint mb-3">
-          You can select multiple images at once.
-        </p>
-
-        {(normalized.gallery.length > 0 ||
-          galleryPreview.length > 0) && (
+        {galleryPreview.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            {normalized.gallery.map((img, index) => (
-              <div
-                key={`saved-${index}`}
-                style={{ position: "relative" }}
-              >
-                <img
-                  src={img.url}
-                  alt=""
-                  className="rounded border"
-                  style={{
-                    width: "100%",
-                    height: 120,
-                    objectFit: "cover",
-                  }}
-                />
-
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-secondary"
-                  style={{
-                    position: "absolute",
-                    top: 6,
-                    right: 6,
-                    padding: "4px 6px",
-                    fontSize: 11,
-                  }}
-                  disabled={busy}
-                  onClick={() =>
-                    removeGalleryItem(index)
-                  }
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-
             {galleryPreview.map((item) => (
-              <div
+              <img
                 key={item.id}
-                style={{ position: "relative" }}
-              >
-                <img
-                  src={item.url}
-                  alt=""
-                  className="rounded border"
-                  style={{
-                    width: "100%",
-                    height: 120,
-                    objectFit: "cover",
-                    opacity:
-                      item.status === "failed" ? 0.5 : 1,
-                  }}
-                />
-
-                <div
-                  style={{
-                    position: "absolute",
-                    left: 6,
-                    bottom: 6,
-                    fontSize: 11,
-                    padding: "4px 6px",
-                    borderRadius: 8,
-                    background:
-                      item.status === "failed"
-                        ? "rgba(220,38,38,.85)"
-                        : "rgba(0,0,0,.6)",
-                    color: "#fff",
-                  }}
-                >
-                  {item.status === "uploading"
-                    ? "Uploading…"
-                    : item.status === "failed"
-                    ? "Failed"
-                    : "Uploaded"}
-                </div>
-              </div>
+                src={item.url}
+                alt=""
+                className="rounded border"
+                style={{
+                  width: "100%",
+                  height: 120,
+                  objectFit: "cover",
+                }}
+              />
             ))}
           </div>
         )}
 
-        {normalized.gallery.length <
+        {(data.gallery_files?.length || 0) <
           MAX_GALLERY_IMAGES && (
           <input
             key={`gallery-${inputKey.gallery}`}
@@ -724,85 +369,39 @@ export default function StepMediaReview({
         )}
       </div>
 
-      {/* ==================================================
-         VISIBILITY
-      ================================================== */}
+      {/* VISIBILITY */}
       <div className="mb-8">
-        <label className="admin-label">
-          Profile visibility
+        <label className="admin-label">Profile visibility</label>
+
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={normalized.is_public}
+            onChange={(e) =>
+              setField("is_public", e.target.checked)
+            }
+          />
+          Public profile
         </label>
-
-        <div className="flex gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={normalized.is_public}
-              onChange={(e) =>
-                setField("is_public", e.target.checked)
-              }
-
-            />
-
-            Public profile
-          </label>
-
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={normalized.allow_reviews}
-              onChange={(e) =>
-                setField("allow_reviews", e.target.checked)
-              }
-
-            />
-
-            Allow reviews
-          </label>
-        </div>
       </div>
 
-      {/* ==================================================
-         COMPLIANCE
-      ================================================== */}
+      {/* CONFIRMATION */}
       <div className="mb-8">
-        <label className="admin-label">
-          Confirmation
-        </label>
-
-        <label className="flex items-center gap-2 cursor-pointer">
+        <label className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={normalized.owner_confirmed}
             onChange={(e) =>
               setField("owner_confirmed", e.target.checked)
             }
-
           />
-
-          I confirm that I am authorized to manage this
-          business information.
+          I confirm that I am authorized to manage this business.
         </label>
       </div>
 
-      {/* ==================================================
-         STATUS
-      ================================================== */}
-      {busy && (
-        <p className="admin-hint mb-3">
-          {busyLabel}{" "}
-          {progress > 0 && `(${progress}%)`}
-        </p>
-      )}
+      {error && <p className="admin-error mb-3">{error}</p>}
 
-      {error && (
-        <p className="admin-error mb-3">
-          {error}
-        </p>
-      )}
-
-      {/* ==================================================
-         NAVIGATION
-      ================================================== */}
+      {/* NAVIGATION */}
       <div className="flex justify-between">
         <button
           type="button"
@@ -825,7 +424,3 @@ export default function StepMediaReview({
     </div>
   );
 }
- 
-
-
-
