@@ -97,12 +97,23 @@ export default function StepMediaReview({
   const [galleryPreview, setGalleryPreview] = useState([]);
 
   useEffect(() => {
-    if (!Array.isArray(data.gallery_files)) return;
+    if (
+      Array.isArray(data.gallery_files) &&
+      data.gallery_files.length > 0 &&
+      galleryPreview.length === 0
+    ) {
+      setGalleryPreview(
+        data.gallery_files.map((file) => ({
+          id:
+            crypto.randomUUID?.() ||
+            `${Date.now()}-${Math.random()}`,
+          url: URL.createObjectURL(file),
+          name: file.name,
+        }))
+      );
+    }
+  }, [data.gallery_files, galleryPreview.length]);
 
-    setGalleryPreview((prev) =>
-      prev.slice(0, data.gallery_files.length) 
-    );
-  }, [data.gallery_files]);
 
 
   /* --------------------------------------------------
