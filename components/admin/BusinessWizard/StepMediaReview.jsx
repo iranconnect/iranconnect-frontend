@@ -217,6 +217,39 @@ export default function StepMediaReview({
     [bumpInputKey, data.gallery_files, safeSetData]
   );
 
+  const replaceGalleryItem = useCallback(
+    (index, file) => {
+      if (!file) return;
+
+      const newPreviewUrl = URL.createObjectURL(file);
+
+      // replace preview
+      setGalleryPreview((prev) =>
+        prev.map((item, i) =>
+          i === index
+            ? { ...item, url: newPreviewUrl, name: file.name }
+            : item
+        )
+      );
+
+      // replace actual file
+      safeSetData((prev) => {
+        const files = Array.isArray(prev.gallery_files)
+          ? [...prev.gallery_files]
+          : [];
+
+        files[index] = file;
+
+        return {
+          ...prev,
+          gallery_files: files,
+        };
+      });
+    },
+    [safeSetData]
+  );
+
+
   /* ======================================================
      🧠 STEP VALIDATION
   ====================================================== */
@@ -336,19 +369,66 @@ export default function StepMediaReview({
 
         {galleryPreview.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            {galleryPreview.map((item) => (
-              <img
+            {galleryPreview.map((item, index) => (
+              <div
                 key={item.id}
-                src={item.url}
-                alt=""
-                className="rounded border"
-                style={{
-                  width: "100%",
-                  height: 120,
-                  objectFit: "cover",
-                }}
-              />
+                style={{ position: "relative" }}
+              >
+                <img
+                  src={item.url}
+                  alt=""
+                  className="rounded border"
+                  style={{
+                    width: "100%",
+                    height: 120,
+                    objectFit: "cover",
+                  }}
+                />
+            
+                {/* REMOVE */}
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-secondary"
+                  style={{
+                    position: "absolute",
+                    top: 6,
+                    right: 6,
+                    padding: "4px 6px",
+                    fontSize: 11,
+                  }}
+                  onClick={() => removeGalleryItem(index)}
+                  disabled={busy}
+                >
+                  Remove
+                </button>
+            
+                {/* CHANGE */}
+                <label
+                  style={{
+                    position: "absolute",
+                    bottom: 6,
+                    right: 6,
+                    fontSize: 11,
+                    padding: "4px 6px",
+                    borderRadius: 6,
+                    background: "rgba(0,0,0,.6)",
+                    color: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  Change
+                  <input
+                    type="file"
+                    accept={ACCEPT_ATTR}
+                    hidden
+                    onChange={(e) =>
+                      replaceGalleryItem(index, e.target.files?.[0])
+                    }
+                  />
+                </label>
+              </div>
             ))}
+
           </div>
         )}
 
@@ -383,7 +463,20 @@ export default function StepMediaReview({
           />
           Public profile
         </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={normalized.allow_reviews}
+            onChange={(e) =>
+              setField("allow_reviews", e.target.checked)
+            }
+          />
+          Allow reviews
+        </label>
+
       </div>
+
+      
 
       {/* CONFIRMATION */}
       <div className="mb-8">
