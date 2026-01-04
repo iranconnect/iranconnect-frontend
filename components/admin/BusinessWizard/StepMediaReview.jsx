@@ -1,5 +1,5 @@
 // components/admin/BusinessWizard/StepMediaReview.jsx
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 
 /* ======================================================
    🧱 CONSTANTS — Business Rules (DO NOT INLINE)
@@ -96,6 +96,15 @@ export default function StepMediaReview({
   const [coverPreview, setCoverPreview] = useState(null);
   const [galleryPreview, setGalleryPreview] = useState([]);
 
+  useEffect(() => {
+    if (!Array.isArray(data.gallery_files)) return;
+
+    setGalleryPreview((prev) =>
+      prev.slice(0, data.gallery_files.length) 
+    );
+  }, [data.gallery_files]);
+
+
   /* --------------------------------------------------
      🔄 FILE INPUT HARD RESET
   -------------------------------------------------- */
@@ -143,6 +152,17 @@ export default function StepMediaReview({
       }
     } catch {}
   }
+
+  useEffect(() => {
+    return () => {
+      revokeIfBlob(logoPreview);
+      revokeIfBlob(coverPreview);
+      galleryPreview.forEach((item) =>
+        revokeIfBlob(item.url)
+      );
+    };
+  }, [logoPreview, coverPreview, galleryPreview]);
+
   /* ======================================================
      🖼 SINGLE MEDIA — LOGO / COVER (NO UPLOAD)
   ====================================================== */
