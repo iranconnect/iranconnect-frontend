@@ -249,6 +249,30 @@ export default function StepMediaReview({
     [safeSetData]
   );
 
+  const removeGalleryItem = useCallback(
+    (index) => {
+      // remove preview
+      setGalleryPreview((prev) => {
+        const item = prev[index];
+        if (item?.url) revokeIfBlob(item.url);
+        return prev.filter((_, i) => i !== index);
+      });
+
+      // remove file
+      safeSetData((prev) => {
+        const files = Array.isArray(prev.gallery_files)
+          ? prev.gallery_files
+          : [];
+
+        return {
+          ...prev,
+          gallery_files: files.filter((_, i) => i !== index),
+        };
+      });
+    },
+    [safeSetData]
+  );
+
 
   /* ======================================================
      🧠 STEP VALIDATION
