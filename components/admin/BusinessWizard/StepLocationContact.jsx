@@ -69,6 +69,17 @@ function extractAddressParts(address = "") {
   };
 }
 
+const WEEK_DAYS = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+];
+
+
 /* ======================================================
    Component
 ====================================================== */
@@ -181,6 +192,26 @@ export default function StepLocationContact({
   const [phoneNational, setPhoneNational] = useState("");
 
   useEffect(() => {
+    if (data.availability_type !== "business_hours") {
+      if (data.availability_hours) setField("availability_hours", null);
+      return;
+    }
+  
+    if (!data.availability_hours) {
+      const initial = {};
+      WEEK_DAYS.forEach((d) => {
+        initial[d] =
+          d === "saturday" || d === "sunday"
+            ? { closed: true }
+            : { open: "09:00", close: "18:00", closed: false };
+      });
+      setField("availability_hours", initial);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.availability_type]);
+
+
+  useEffect(() => {
     if (!data.phone) return;
     const parsed = parsePhoneNumberFromString(data.phone);
     if (parsed) {
@@ -262,6 +293,29 @@ export default function StepLocationContact({
         setError("service_radius_km", "");
       }
     }
+
+    if (data.availability_type === "business_hours") {
+      const hours = data.availability_hours;
+    
+      if (!hours) {
+        ok = false;
+      } else {
+        for (const day of WEEK_DAYS) {
+          const d = hours[day];
+          if (!d) {
+            ok = false;
+            break;
+          }
+          if (!d.closed) {
+            if (!d.open || !d.close || d.open >= d.close) {
+              ok = false;
+              break;
+            }
+          }
+        }
+      }
+    }
+
     
     // Optional validations that can still show errors (but not block next)
     if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
@@ -361,6 +415,90 @@ export default function StepLocationContact({
         />
       </div>
 
+      {data.availability_type === "business_hours" && data.availability_hours && (
+        <div className="mb-8">
+          <label className="admin-label mb-3 block">
+            Business hours
+          </label>
+      
+          <div className="space-y-3">
+            {WEEK_DAYS.map((day) => {
+              const dayData = data.availability_hours[day];
+      
+              return (
+                <div
+                  key={day}
+                  className="flex flex-wrap items-center gap-4"
+                >
+                  <div style={{ width: 110, textTransform: "capitalize" }}>
+                    {day}
+                  </div>
+      
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={!!dayData.closed}
+                      onChange={(e) => {
+                        const updated = {
+                          ...data.availability_hours,
+                          [day]: {
+                            ...dayData,
+                            closed: e.target.checked,
+                          },
+                        };
+                        setField("availability_hours", updated);
+                      }}
+                    />
+                    Closed
+                  </label>
+      
+                  {!dayData.closed && (
+                    <>
+                      <input
+                        type="time"
+                        className="admin-input"
+                        style={{ width: 130 }}
+                        value={dayData.open || ""}
+                        onChange={(e) => {
+                          const updated = {
+                            ...data.availability_hours,
+                            [day]: {
+                              ...dayData,
+                              open: e.target.value,
+                            },
+                          };
+                          setField("availability_hours", updated);
+                        }}
+                      />
+      
+                      <span>to</span>
+      
+                      <input
+                        type="time"
+                        className="admin-input"
+                        style={{ width: 130 }}
+                        value={dayData.close || ""}
+                        onChange={(e) => {
+                          const updated = {
+                            ...data.availability_hours,
+                            [day]: {
+                              ...dayData,
+                              close: e.target.value,
+                            },
+                          };
+                          setField("availability_hours", updated);
+                        }}
+                      />
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      
       {/* ─────────────────────────────
          Location (Google Maps link)
       ───────────────────────────── */}
