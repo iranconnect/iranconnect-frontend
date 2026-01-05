@@ -351,10 +351,24 @@ export default function StepLocationContact({
             className="admin-input"
             value={data.location_map_url || ""}
             onChange={(e) => {
-              const v = e.target.value;
-              setField("location_map_url", v);
-              validateLocationMapUrl(v, true);
+              const value = e.target.value;
+              setField("address", value);
+            
+              const extracted = extractAddressParts(value);
+            
+              if (extracted.postal_code) {
+                setField("postal_code", extracted.postal_code);
+              }
+            
+              if (extracted.city) {
+                setField("city", extracted.city);
+              }
+            
+              if (extracted.country) {
+                setField("country", extracted.country);
+              }
             }}
+
             placeholder="Paste Google Maps link (e.g. https://maps.google.com/?q=...)"
           />
           {!errors.location_map_url && (
@@ -412,33 +426,6 @@ export default function StepLocationContact({
       ───────────────────────────── */}
       {needsPhysicalAddress && (
         <>
-          <div className="mb-5">
-            <label className="admin-label">
-              Country *
-            </label>
-            <input
-              className="admin-input"
-              value={data.country || ""}
-              onChange={(e) =>
-                setField("country", e.target.value)
-              }
-              placeholder="Country"
-            />
-          </div>
-
-          <div className="mb-5">
-            <label className="admin-label">
-              City *
-            </label>
-            <input
-              className="admin-input"
-              value={data.city || ""}
-              onChange={(e) =>
-                setField("city", e.target.value)
-              }
-              placeholder="City"
-            />
-          </div>
 
           <div className="mb-5">
             <label className="admin-label">
@@ -456,7 +443,34 @@ export default function StepLocationContact({
             {errors.address && (
               <p className="admin-error">{errors.address}</p>
             )}
+          </div>
+          <p className="text-sm text-red-600 mt-1">
+            Please enter the address in this order: 
+            Street and number, Postal code, City, Country.
+            <br />
+            Example: 3 Rue Barralis 06000 Nice France
+          </p>
 
+          <div className="mb-5">
+            <label className="admin-label">
+              Country *
+            </label>
+            <input
+              className="admin-input"
+              value={data.country || ""}
+              readOnly
+            />
+          </div>
+
+          <div className="mb-5">
+            <label className="admin-label">
+              City *
+            </label>
+            <input
+              className="admin-input"
+              value={data.city || ""}
+              readOnly
+            />
           </div>
 
           <div className="mb-6">
@@ -466,10 +480,7 @@ export default function StepLocationContact({
             <input
               className="admin-input"
               value={data.postal_code || ""}
-              onChange={(e) =>
-                setField("postal_code", e.target.value)
-              }
-              placeholder="Postal code (e.g. 06000)"
+              readOnly
             />
             {errors.postal_code && (
               <p className="admin-error">{errors.postal_code}</p>
@@ -645,11 +656,26 @@ export default function StepLocationContact({
               }}
             />
             {errors.instagram_url && (
-              <p className="admin-error">
-                {errors.instagram_url}
-              </p>
+              <p className="admin-error">{errors.instagram_url}</p>
             )}
           </div>
+          
+          {/* Facebook (NEW) */}
+          <div>
+            <input
+              className="admin-input"
+              placeholder="Facebook URL (https://facebook.com/page)"
+              value={data.facebook_url || ""}
+              onChange={(e) => {
+                setField("facebook_url", e.target.value);
+                validateUrl("facebook_url", e.target.value);
+              }}
+            />
+            {errors.facebook_url && (
+              <p className="admin-error">{errors.facebook_url}</p>
+            )}
+          </div>
+
 
           {/* LinkedIn */}
           <div>
