@@ -511,9 +511,14 @@ export default function StepLocationContact({
             type="url"
             className="admin-input"
             value={data.location_map_url || ""}
-            
+            onChange={(e) => {
+              const v = e.target.value;
+              setField("location_map_url", v);
+              validateLocationMapUrl(v, true);
+            }}
             placeholder="Paste Google Maps link (e.g. https://maps.google.com/?q=...)"
           />
+
           {!errors.location_map_url && (
             <p className="admin-hint">
               Paste the location link copied from Google Maps.
