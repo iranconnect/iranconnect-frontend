@@ -49,43 +49,25 @@ const countrySelectStyles = {
 function extractAddressParts(address = "") {
   if (!address) return {};
 
-  // Normalize
   const raw = address.replace(/\s+/g, " ").trim();
 
-  // Split by comma first (international-safe)
-  const segments = raw.split(",").map(s => s.trim());
+  const parts = raw.split(",").map(p => p.trim());
 
-  if (segments.length < 3) return {};
-
-  const country = segments[segments.length - 1];
-  const city = segments[segments.length - 2];
-
-  const middle = segments.slice(0, -2).join(" ");
-
-  // Postal code patterns
-  const postalPatterns = [
-    /\b\d{4,6}\b/,                 // EU / FR
-    /\b[A-Z]\d[A-Z][ -]?\d[A-Z]\d\b/i, // Canada
-    /\b\d{5}(-\d{4})?\b/,          // US
-  ];
-
-  let postal_code = "";
-
-  for (const pattern of postalPatterns) {
-    const match = middle.match(pattern);
-    if (match) {
-      postal_code = match[0];
-      break;
-    }
+  // Contract:
+  // [0] Unit / Street
+  // [1] Postal code
+  // [2] City
+  // [3] Country
+  if (parts.length < 4) {
+    return {};
   }
 
   return {
-    postal_code,
-    city,
-    country,
+    postal_code: parts[1] || "",
+    city: parts[2] || "",
+    country: parts[3] || "",
   };
 }
-
 
 /* ======================================================
    Component
@@ -485,9 +467,9 @@ export default function StepLocationContact({
             )}
             <p className="text-sm text-red-600 mt-1">
               Please enter the address in this order: 
-              Number & Street, Postal code, City, Country.
+              Number & Street, Postal code, City, Country
               <br />
-              Example: 3 Rue Barralis 06000, Nice, France
+              Example: 3 Rue Barralis, 06000, Nice, France
             </p>
           </div>
           
