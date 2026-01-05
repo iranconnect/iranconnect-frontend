@@ -4,6 +4,7 @@ import StepBasicInfo from "./StepBasicInfo";
 import StepServicesTags from "./StepServicesTags";
 import StepLocationContact from "./StepLocationContact";
 import StepMediaReview from "./StepMediaReview";
+import StepPreviewSubmit from "./StepPreviewSubmit";
 import WizardFooter from "./WizardFooter";
 import DuplicateModal from "../DuplicateModal";
 import apiClient from "../../../utils/apiClient";
@@ -13,6 +14,7 @@ const STEPS = [
   "services",
   "location",
   "review",
+  "preview",
 ];
 
 export default function BusinessWizard() {
@@ -22,10 +24,9 @@ export default function BusinessWizard() {
 
   const [data, setData] = useState({
     name: "",
-      
     category_id: "",
     subcategory_ids: [],
-
+  
     legal_name: "",
     business_type: "",
     year_established: "",
@@ -35,19 +36,29 @@ export default function BusinessWizard() {
     services: [],
     tags: [],
   
+    service_mode: "",
     country: "",
     city: "",
     address: "",
     postal_code: "",
-    location: "",
+    location_map_url: "",
+    base_location_map_url: "",
+    service_radius_km: "",
   
     phone: "",
     email: "",
     website: "",
   
-    image: null,
+    is_public: true,
+    allow_reviews: true,
+  
+    logo_file: null,
+    cover_file: null,
+    gallery_files: [],
+  
     force_create: false,
   });
+
 
 
   function next() {
@@ -65,17 +76,29 @@ export default function BusinessWizard() {
       const form = new FormData();
 
       Object.entries(data).forEach(([k, v]) => {
+        if (k === "gallery_files" && Array.isArray(v)) {
+          v.forEach((file) => {
+            form.append("gallery_files", file);
+          });
+          return;
+        }
+      
+        if (k === "logo_file" || k === "cover_file") {
+          if (v) form.append(k, v);
+          return;
+        }
+      
         if (Array.isArray(v)) {
           form.append(k, JSON.stringify(v));
-        } else if (v !== null) {
+        } else if (v !== null && v !== undefined) {
           form.append(k, v);
         }
       });
 
+
       const res = await apiClient.post(
         "/admin/businesses/create-v2",
         form,
-        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
 
@@ -122,7 +145,15 @@ export default function BusinessWizard() {
           data={data}
           setData={setData}
           onBack={back}
-          onNext={submit}
+          onNext={next}
+        />
+      )}
+
+      {step === 4 && (
+        <StepPreviewSubmit
+          data={data}
+          onBack={back}
+          onSubmit={submit}
         />
       )}
 
