@@ -73,10 +73,11 @@ export default function BusinessWizard() {
       });
 
       const res = await apiClient.post(
-        "/admin/businesses/create",
+        "/admin/businesses/create-v2",
         form,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
+
 
       window.location.href =
         `/admin/businesses/${res.data.business_id}`;
