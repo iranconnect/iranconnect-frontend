@@ -46,6 +46,37 @@ const countrySelectStyles = {
   }),
 };
 
+function extractAddressParts(address = "") {
+  const cleaned = address.replace(/[,;]/g, " ").replace(/\s+/g, " ").trim();
+
+  // French / EU style: postal code = 4–6 digits
+  const postalMatch = cleaned.match(/\b\d{4,6}\b/);
+
+  if (!postalMatch) return {};
+
+  const postal_code = postalMatch[0];
+
+  const afterPostal = cleaned.slice(
+    cleaned.indexOf(postal_code) + postal_code.length
+  ).trim();
+
+  const beforePostal = cleaned.slice(
+    0,
+    cleaned.indexOf(postal_code)
+  ).trim();
+
+  const partsAfter = afterPostal.split(" ");
+
+  const city = partsAfter.shift() || "";
+  const country = partsAfter.join(" ") || "";
+
+  return {
+    postal_code,
+    city,
+    country,
+  };
+}
+
 /* ======================================================
    Component
 ====================================================== */
@@ -350,25 +381,7 @@ export default function StepLocationContact({
             type="url"
             className="admin-input"
             value={data.location_map_url || ""}
-            onChange={(e) => {
-              const value = e.target.value;
-              setField("address", value);
             
-              const extracted = extractAddressParts(value);
-            
-              if (extracted.postal_code) {
-                setField("postal_code", extracted.postal_code);
-              }
-            
-              if (extracted.city) {
-                setField("city", extracted.city);
-              }
-            
-              if (extracted.country) {
-                setField("country", extracted.country);
-              }
-            }}
-
             placeholder="Paste Google Maps link (e.g. https://maps.google.com/?q=...)"
           />
           {!errors.location_map_url && (
@@ -435,11 +448,28 @@ export default function StepLocationContact({
               className="admin-input"
               rows={2}
               value={data.address || ""}
-              onChange={(e) =>
-                setField("address", e.target.value)
-              }
+              onChange={(e) => {
+                const value = e.target.value;
+                setField("address", value);
+              }}
+              onBlur={(e) => {
+                const extracted = extractAddressParts(e.target.value);
+            
+                if (extracted.postal_code) {
+                  setField("postal_code", extracted.postal_code);
+                }
+            
+                if (extracted.city) {
+                  setField("city", extracted.city);
+                }
+            
+                if (extracted.country) {
+                  setField("country", extracted.country);
+                }
+              }}
               placeholder="Street name and number (e.g. 10 Rue Masséna)"
             />
+
             {errors.address && (
               <p className="admin-error">{errors.address}</p>
             )}
