@@ -37,6 +37,9 @@ export default function BusinessWizard() {
     tags: [],
   
     service_mode: "",
+    availability_type: "",
+    availability_note: "",
+    availability_hours: null,
     country: "",
     city: "",
     address: "",
