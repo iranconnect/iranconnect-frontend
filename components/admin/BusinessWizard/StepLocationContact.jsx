@@ -47,28 +47,37 @@ const countrySelectStyles = {
 };
 
 function extractAddressParts(address = "") {
-  const cleaned = address.replace(/[,;]/g, " ").replace(/\s+/g, " ").trim();
+  if (!address) return {};
 
-  // French / EU style: postal code = 4–6 digits
-  const postalMatch = cleaned.match(/\b\d{4,6}\b/);
+  // Normalize
+  const raw = address.replace(/\s+/g, " ").trim();
 
-  if (!postalMatch) return {};
+  // Split by comma first (international-safe)
+  const segments = raw.split(",").map(s => s.trim());
 
-  const postal_code = postalMatch[0];
+  if (segments.length < 3) return {};
 
-  const afterPostal = cleaned.slice(
-    cleaned.indexOf(postal_code) + postal_code.length
-  ).trim();
+  const country = segments[segments.length - 1];
+  const city = segments[segments.length - 2];
 
-  const beforePostal = cleaned.slice(
-    0,
-    cleaned.indexOf(postal_code)
-  ).trim();
+  const middle = segments.slice(0, -2).join(" ");
 
-  const partsAfter = afterPostal.split(" ");
+  // Postal code patterns
+  const postalPatterns = [
+    /\b\d{4,6}\b/,                 // EU / FR
+    /\b[A-Z]\d[A-Z][ -]?\d[A-Z]\d\b/i, // Canada
+    /\b\d{5}(-\d{4})?\b/,          // US
+  ];
 
-  const city = partsAfter.shift() || "";
-  const country = partsAfter.join(" ") || "";
+  let postal_code = "";
+
+  for (const pattern of postalPatterns) {
+    const match = middle.match(pattern);
+    if (match) {
+      postal_code = match[0];
+      break;
+    }
+  }
 
   return {
     postal_code,
@@ -76,6 +85,7 @@ function extractAddressParts(address = "") {
     country,
   };
 }
+
 
 /* ======================================================
    Component
@@ -489,8 +499,9 @@ export default function StepLocationContact({
             <input
               className="admin-input"
               value={data.country || ""}
-              readOnly
+              onChange={(e) => setField("country", e.target.value)}
             />
+
           </div>
 
           <div className="mb-5">
@@ -500,8 +511,9 @@ export default function StepLocationContact({
             <input
               className="admin-input"
               value={data.city || ""}
-              readOnly
+              onChange={(e) => setField("city", e.target.value)}
             />
+
           </div>
 
           <div className="mb-6">
@@ -511,8 +523,9 @@ export default function StepLocationContact({
             <input
               className="admin-input"
               value={data.postal_code || ""}
-              readOnly
+              onChange={(e) => setField("postal_code", e.target.value)}
             />
+
             {errors.postal_code && (
               <p className="admin-error">{errors.postal_code}</p>
             )}
