@@ -443,13 +443,14 @@ export default function StepLocationContact({
             {errors.address && (
               <p className="admin-error">{errors.address}</p>
             )}
+            <p className="text-sm text-red-600 mt-1">
+              Please enter the address in this order: 
+              Street and number, Postal code, City, Country.
+              <br />
+              Example: 3 Rue Barralis 06000 Nice France
+            </p>
           </div>
-          <p className="text-sm text-red-600 mt-1">
-            Please enter the address in this order: 
-            Street and number, Postal code, City, Country.
-            <br />
-            Example: 3 Rue Barralis 06000 Nice France
-          </p>
+          
 
           <div className="mb-5">
             <label className="admin-label">
