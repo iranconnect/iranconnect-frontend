@@ -487,7 +487,7 @@ export default function StepLocationContact({
               Please enter the address in this order: 
               Number & Street, Postal code, City, Country.
               <br />
-              Example: 3 Rue Barralis 06000 Nice France
+              Example: 3 Rue Barralis 06000, Nice, France
             </p>
           </div>
           
