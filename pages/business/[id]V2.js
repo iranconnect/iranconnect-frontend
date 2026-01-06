@@ -8,6 +8,8 @@ import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
 import ClaimBusinessWidget from "../../components/ClaimBusinessWidget";
 import apiClient from "../../utils/apiClient";
+import Head from "next/head";
+
 
 export default function DetailV2() {
   const router = useRouter();
@@ -79,12 +81,27 @@ export default function DetailV2() {
   =============================== */
   useEffect(() => {
     if (!id) return;
-
+  
     apiClient
       .get(`/businesses/${id}`)
-      .then((res) => setBiz(res.data))
+      .then((res) => {
+        const data = res.data;
+  
+        // 🔁 SEO-safe redirect to slug
+        if (data?.slug) {
+          router.replace(
+            `/business/${data.slug}`,
+            undefined,
+            { shallow: true }
+          );
+          return;
+        }
+  
+        setBiz(data);
+      })
       .catch(() => setBiz(null));
   }, [id]);
+
 
   /* ===============================
      ⭐ Submit rating (UNCHANGED)
@@ -149,143 +166,149 @@ export default function DetailV2() {
      🧱 UI (STRUCTURE UNCHANGED)
   =============================== */
   return (
-    <div
-      className="flex flex-col min-h-screen"
-      style={{
-        background: "#ffffff",
-        color: theme === "dark" ? "#ffffff" : "#0a1d37",
-      }}
-    >
-      <Header />
-
-      <main className="flex-1 flex items-center justify-center px-4 py-10">
-        <div
-          className="rounded-2xl p-8 w-full max-w-2xl border transition-all text-center md:text-left"
-          style={{
-            background: theme === "dark" ? "#0b2149" : "#ffffff",
-            borderColor:
-              theme === "dark"
-                ? "rgba(255,255,255,0.1)"
-                : "rgba(0,0,0,0.05)",
-          }}
-        >
-          {/* --- Header --- */}
-          <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
-            <img
-              src={imageSrc}
-              alt={biz.name}
-              className="w-44 h-44 rounded-xl object-cover cursor-pointer"
-              onClick={() => setShowImageModal(true)}
-            />
-
-            <div className="flex-1 space-y-3">
-              <h1 className="text-2xl font-semibold flex items-center gap-2">
-                {biz.name}
-                {biz.owner_verified && <span>🎖️</span>}
-              </h1>
-
-              <p className="text-sm opacity-80">
-                {biz.category} • {biz.city}
-              </p>
-
-              {biz.address && <p>📍 {biz.address}</p>}
-
-              {isLoggedIn && (
-                <>
-                  {phoneWithCode && <p>📞 {phoneWithCode}</p>}
-                  {obfuscatedEmail && <p>📧 {obfuscatedEmail}</p>}
-                  {biz.website && (
-                    <p>
-                      🌐{" "}
-                      <a
-                        href={biz.website}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-turquoise hover:underline"
-                      >
-                        Visit Website
-                      </a>
-                    </p>
-                  )}
-                </>
-              )}
-
-              <p className="text-lg font-medium text-turquoise">
-                ⭐ {biz.avg_rating ?? "—"}
-              </p>
+    <>
+      {/* 🔴 SEO: prevent indexing of legacy ID-based page */}
+      <Head>
+        <meta name="robots" content="noindex,nofollow" />
+      </Head>
+      <div
+        className="flex flex-col min-h-screen"
+        style={{
+          background: "#ffffff",
+          color: theme === "dark" ? "#ffffff" : "#0a1d37",
+        }}
+      >
+        <Header />
+  
+        <main className="flex-1 flex items-center justify-center px-4 py-10">
+          <div
+            className="rounded-2xl p-8 w-full max-w-2xl border transition-all text-center md:text-left"
+            style={{
+              background: theme === "dark" ? "#0b2149" : "#ffffff",
+              borderColor:
+                theme === "dark"
+                  ? "rgba(255,255,255,0.1)"
+                  : "rgba(0,0,0,0.05)",
+            }}
+          >
+            {/* --- Header --- */}
+            <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+              <img
+                src={imageSrc}
+                alt={biz.name}
+                className="w-44 h-44 rounded-xl object-cover cursor-pointer"
+                onClick={() => setShowImageModal(true)}
+              />
+  
+              <div className="flex-1 space-y-3">
+                <h1 className="text-2xl font-semibold flex items-center gap-2">
+                  {biz.name}
+                  {biz.owner_verified && <span>🎖️</span>}
+                </h1>
+  
+                <p className="text-sm opacity-80">
+                  {biz.category} • {biz.city}
+                </p>
+  
+                {biz.address && <p>📍 {biz.address}</p>}
+  
+                {isLoggedIn && (
+                  <>
+                    {phoneWithCode && <p>📞 {phoneWithCode}</p>}
+                    {obfuscatedEmail && <p>📧 {obfuscatedEmail}</p>}
+                    {biz.website && (
+                      <p>
+                        🌐{" "}
+                        <a
+                          href={biz.website}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-turquoise hover:underline"
+                        >
+                          Visit Website
+                        </a>
+                      </p>
+                    )}
+                  </>
+                )}
+  
+                <p className="text-lg font-medium text-turquoise">
+                  ⭐ {biz.avg_rating ?? "—"}
+                </p>
+              </div>
             </div>
-          </div>
-
-          {/* --- Rating (HIDDEN FOR ADMIN) --- */}
-          {!isAdminView && isLoggedIn && (
-            <div className="mt-8 border-t pt-6">
-              <h3 className="font-semibold mb-3">Rate this business</h3>
-
-              <div className="flex flex-col sm:flex-row gap-3 items-center">
-                <RatingStars
-                  value={rating}
-                  onChange={setRating}
-                  color="#40E0D0"
-                />
+  
+            {/* --- Rating (HIDDEN FOR ADMIN) --- */}
+            {!isAdminView && isLoggedIn && (
+              <div className="mt-8 border-t pt-6">
+                <h3 className="font-semibold mb-3">Rate this business</h3>
+  
+                <div className="flex flex-col sm:flex-row gap-3 items-center">
+                  <RatingStars
+                    value={rating}
+                    onChange={setRating}
+                    color="#40E0D0"
+                  />
+                  <button
+                    className="btn-primary"
+                    disabled={!rating}
+                    onClick={submitRating}
+                  >
+                    Submit
+                  </button>
+                </div>
+  
+                {message && <p className="mt-3 text-sm">{message}</p>}
+              </div>
+            )}
+  
+            {/* --- Claim (HIDDEN FOR ADMIN) --- */}
+            {!isAdminView && (
+              <div className="mt-10 border-t pt-6 text-center">
+                {biz.owner_verified ? (
+                  <p className="text-green-600">🎖️ Verified by owner</p>
+                ) : isLoggedIn ? (
+                  <ClaimBusinessWidget businessId={id} />
+                ) : null}
+              </div>
+            )}
+  
+            {/* --- ADMIN ACTION --- */}
+            {isAdminView && (
+              <div className="mt-10 text-center">
                 <button
                   className="btn-primary"
-                  disabled={!rating}
-                  onClick={submitRating}
+                  onClick={() => router.push("/admin/add-v2")}
                 >
-                  Submit
+                  Back to register business
                 </button>
               </div>
-
-              {message && <p className="mt-3 text-sm">{message}</p>}
-            </div>
-          )}
-
-          {/* --- Claim (HIDDEN FOR ADMIN) --- */}
-          {!isAdminView && (
-            <div className="mt-10 border-t pt-6 text-center">
-              {biz.owner_verified ? (
-                <p className="text-green-600">🎖️ Verified by owner</p>
-              ) : isLoggedIn ? (
-                <ClaimBusinessWidget businessId={id} />
-              ) : null}
-            </div>
-          )}
-
-          {/* --- ADMIN ACTION --- */}
-          {isAdminView && (
-            <div className="mt-10 text-center">
-              <button
-                className="btn-primary"
-                onClick={() => router.push("/admin/add-v2")}
-              >
-                Back to register business
-              </button>
-            </div>
-          )}
-        </div>
-      </main>
-
-      <Footer />
-
-      {/* --- Image modal --- */}
-      {showImageModal && (
-        <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
-          onClick={() => setShowImageModal(false)}
-        >
-          <div className="relative max-w-3xl w-full px-4">
-            <button className="absolute -top-8 right-2 text-white">
-              <X size={28} />
-            </button>
-            <img
-              src={imageSrc}
-              alt={biz.name}
-              className="rounded-xl w-full"
-              onClick={(e) => e.stopPropagation()}
-            />
+            )}
           </div>
-        </div>
-      )}
-    </div>
+        </main>
+  
+        <Footer />
+  
+        {/* --- Image modal --- */}
+        {showImageModal && (
+          <div
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+            onClick={() => setShowImageModal(false)}
+          >
+            <div className="relative max-w-3xl w-full px-4">
+              <button className="absolute -top-8 right-2 text-white">
+                <X size={28} />
+              </button>
+              <img
+                src={imageSrc}
+                alt={biz.name}
+                className="rounded-xl w-full"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
