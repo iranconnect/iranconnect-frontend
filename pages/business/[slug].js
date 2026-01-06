@@ -25,8 +25,14 @@ export async function getServerSideProps(context) {
       "https://api.iranconnect.org";
 
     const res = await fetch(
-      `${apiBase}/businesses/by-slug/${encodeURIComponent(slug)}`
+      `${apiBase}/businesses/by-slug/${encodeURIComponent(slug)}`,
+      {
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      }
     );
+
 
     if (!res.ok) {
       return { notFound: true };
@@ -39,6 +45,9 @@ export async function getServerSideProps(context) {
         biz,
         isStaging,
       },
+      // 🔥 SSR Cache (Edge + CDN)
+      // 60s fresh, 10min stale
+      revalidate: 60, 
     };
   } catch {
     return { notFound: true };
@@ -259,9 +268,15 @@ export default function BusinessBySlug({ biz, isStaging }) {
               <img
                 src={imageSrc}
                 alt={biz.name}
+                width={176}
+                height={176}
+                loading="eager"
+                decoding="async"
+                fetchpriority="high"
                 className="w-44 h-44 rounded-xl object-cover cursor-pointer"
                 onClick={() => setShowImageModal(true)}
               />
+
         
               <div className="flex-1 space-y-3">
                 <h1 className="text-2xl font-semibold">
@@ -340,6 +355,8 @@ export default function BusinessBySlug({ biz, isStaging }) {
             <img
               src={imageSrc}
               alt={biz.name}
+              loading="lazy"
+              decoding="async"
               onClick={(e) => e.stopPropagation()}
             />
           </div>
