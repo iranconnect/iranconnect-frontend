@@ -113,8 +113,12 @@ export default function BusinessWizard() {
   
       const res = await apiClient.post(
         "/admin/businesses/create-v2",
-        form
+        form,
+        {
+          timeout: 120000,
+        }
       );
+
   
       window.location.href =
         `/admin/businesses/${res.data.business_id}`;
