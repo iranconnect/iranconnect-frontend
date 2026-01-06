@@ -79,37 +79,36 @@ export default function BusinessWizard() {
       const form = new FormData();
   
       Object.entries(data).forEach(([k, v]) => {
-        if (v === null || v === undefined) return;
-  
-        // gallery files (multiple)
         if (k === "gallery_files" && Array.isArray(v)) {
           v.forEach((file) => {
             form.append("gallery_files", file);
           });
           return;
         }
-  
-        // single file
+      
         if (k === "logo_file" || k === "cover_file") {
           if (v) form.append(k, v);
           return;
         }
-  
-        // arrays → JSON
+      
+        // ✅ arrays
         if (Array.isArray(v)) {
           form.append(k, JSON.stringify(v));
           return;
         }
-  
-        // objects (availability_hours !!!)
-        if (typeof v === "object") {
+      
+        // ✅ objects (VERY IMPORTANT)
+        if (typeof v === "object" && v !== null) {
           form.append(k, JSON.stringify(v));
           return;
         }
-  
-        // primitives (string, number, boolean)
-        form.append(k, String(v));
+      
+        // ✅ primitives
+        if (v !== null && v !== undefined) {
+          form.append(k, v);
+        }
       });
+
   
       const res = await apiClient.post(
         "/admin/businesses/create-v2",
