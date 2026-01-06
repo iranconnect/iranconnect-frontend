@@ -169,6 +169,7 @@ export default function BusinessWizard() {
           data={data}
           onBack={back}
           onSubmit={submit}
+          loading={loading}
         />
       )}
 
