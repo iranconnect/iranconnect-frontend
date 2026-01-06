@@ -186,7 +186,7 @@ export default function BusinessBySlug({ biz, isStaging }) {
       =============================== */}
       <Head>
         <title>{biz.name} | IranConnect</title>
-
+      
         <meta
           name="description"
           content={
@@ -194,41 +194,58 @@ export default function BusinessBySlug({ biz, isStaging }) {
             biz.full_description?.slice(0, 160)
           }
         />
-
+      
         <link
           rel="canonical"
           href={`https://iranconnect.org/business/${biz.slug}`}
         />
-
-        {isStaging && (
-          <meta name="robots" content="noindex,nofollow" />
-        )}
-
-        {isAdminView && (
-          <meta name="robots" content="noindex,nofollow" />
-        )}
-
-        {/* OpenGraph */}
+      
         <meta property="og:title" content={biz.name} />
         <meta
           property="og:description"
-          content={biz.short_description}
+          content={
+            biz.short_description ||
+            biz.full_description?.slice(0, 160)
+          }
         />
         <meta
           property="og:image"
           content={biz.cover_image_url || biz.logo_url}
         />
         <meta property="og:type" content="business.business" />
+      
+        {/* 🔵 Structured Data — LocalBusiness */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "LocalBusiness",
+              "@id": `https://iranconnect.org/business/${biz.slug}`,
+              name: biz.name,
+              url: `https://iranconnect.org/business/${biz.slug}`,
+              logo: biz.logo_url || undefined,
+              image: biz.cover_image_url || biz.logo_url || undefined,
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: biz.address || undefined,
+                addressLocality: biz.city || undefined,
+                addressCountry: biz.country || undefined,
+                postalCode: biz.postal_code || undefined,
+              },
+              telephone: biz.phone || undefined,
+              aggregateRating: biz.avg_rating
+                ? {
+                    "@type": "AggregateRating",
+                    ratingValue: biz.avg_rating,
+                    reviewCount: biz.review_count || 1,
+                  }
+                : undefined,
+            }),
+          }}
+        />
       </Head>
 
-      <div
-        className="flex flex-col min-h-screen"
-        style={{
-          background: "#ffffff",
-          color: theme === "dark" ? "#ffffff" : "#0a1d37",
-        }}
-      >
-        <Header />
 
         {/* ===============================
             UI — UNCHANGED
