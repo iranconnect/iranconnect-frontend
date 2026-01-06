@@ -30,13 +30,18 @@ export default function StepPreviewSubmit({
       ───────────────────────── */}
       <Section title="Descriptions">
         <Item label="Short description" value={data.short_description} />
-        <Item label="Full description" value={data.description} multiline />
+        <Item label="Full description" value={data.full_description} multiline />
       </Section>
 
       {/* ─────────────────────────
          SERVICES & TAGS
       ───────────────────────── */}
       <Section title="Services & Tags">
+        <Item
+          label="Subcategories"
+          value={(data.subcategory_ids || []).length + " selected"}
+        />
+
         <Item
           label="Services"
           value={(data.services || []).length + " selected"}
@@ -52,10 +57,32 @@ export default function StepPreviewSubmit({
       ───────────────────────── */}
       <Section title="Location & Availability">
         <Item label="Service mode" value={data.service_mode} />
+        <Item
+          label="Business location (Google Maps)"
+          value={data.location_map_url}
+        />
+        
+        <Item
+          label="Base location (Google Maps)"
+          value={data.base_location_map_url}
+        />
+
         <Item label="Address" value={data.address} />
         <Item label="City" value={data.city} />
         <Item label="Country" value={data.country} />
         <Item label="Service radius (km)" value={data.service_radius_km} />
+        <Item label="Availability type" value={data.availability_type} />
+        <Item label="Availability note" value={data.availability_note} />
+        <Item
+          label="Availability hours"
+          value={
+            data.availability_hours
+              ? JSON.stringify(data.availability_hours)
+              : null
+          }
+          multiline
+        />
+
       </Section>
 
       {/* ─────────────────────────
@@ -67,6 +94,12 @@ export default function StepPreviewSubmit({
         <Item label="Website" value={data.website} />
         <Item label="Public profile" value={data.is_public ? "Yes" : "No"} />
         <Item label="Allow reviews" value={data.allow_reviews ? "Yes" : "No"} />
+        <Item label="Instagram" value={data.instagram_url} />
+        <Item label="Facebook" value={data.facebook_url} />
+        <Item label="LinkedIn" value={data.linkedin_url} />
+        <Item label="Twitter / X" value={data.twitter_url} />
+        <Item label="Telegram" value={data.telegram_url} />
+        <Item label="WhatsApp" value={data.whatsapp_number} />
       </Section>
 
       {/* ─────────────────────────
@@ -74,13 +107,44 @@ export default function StepPreviewSubmit({
       ───────────────────────── */}
       <Section title="Media Preview">
         {data.logo_file && (
-          <img
-            src={URL.createObjectURL(data.logo_file)}
-            alt="Logo preview"
-            style={{ width: 80, borderRadius: 8 }}
-          />
+          <div>
+            <strong>Logo:</strong>
+            <img
+              src={URL.createObjectURL(data.logo_file)}
+              alt="Logo preview"
+              style={{ width: 80, borderRadius: 8, marginTop: 6 }}
+            />
+          </div>
+        )}
+      
+        {data.cover_file && (
+          <div style={{ marginTop: 12 }}>
+            <strong>Cover image:</strong>
+            <img
+              src={URL.createObjectURL(data.cover_file)}
+              alt="Cover preview"
+              style={{ width: "100%", maxWidth: 300, borderRadius: 8, marginTop: 6 }}
+            />
+          </div>
+        )}
+      
+        {Array.isArray(data.gallery_files) && data.gallery_files.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <strong>Gallery:</strong>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+              {data.gallery_files.map((file, idx) => (
+                <img
+                  key={idx}
+                  src={URL.createObjectURL(file)}
+                  alt={`Gallery ${idx + 1}`}
+                  style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 6 }}
+                />
+              ))}
+            </div>
+          </div>
         )}
       </Section>
+
 
       {/* ─────────────────────────
          ACTIONS
@@ -118,7 +182,7 @@ function Section({ title, children }) {
 }
 
 function Item({ label, value, multiline }) {
-  if (!value) return null;
+  if (value === undefined || value === null || value === "") return null;
 
   return (
     <div className="text-sm">
@@ -127,3 +191,4 @@ function Item({ label, value, multiline }) {
     </div>
   );
 }
+
