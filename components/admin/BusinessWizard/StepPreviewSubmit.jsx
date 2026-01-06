@@ -94,9 +94,10 @@ export default function StepPreviewSubmit({
 
         <button
           className="admin-btn admin-btn-primary"
+          disabled={loading}
           onClick={onSubmit}
         >
-          Submit & Create Business
+          {loading ? "Creating..." : "Submit & Create Business"}
         </button>
       </div>
     </div>
