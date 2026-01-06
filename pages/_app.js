@@ -7,6 +7,8 @@ import "../styles/intro.css";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/react";
+import GA4 from "../components/Analytics/GA4";
 
 import CookieConsent from "../components/CookieConsent";
 import AutoLogout from "../components/AutoLogout";
@@ -14,6 +16,11 @@ import apiClient from "../utils/apiClient";
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
+
+  const hasAnalyticsConsent =
+    typeof window !== "undefined" &&
+    localStorage.getItem("cookie_consent") === "accepted";
+
 
   const [theme, setTheme] = useState("light");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -84,23 +91,42 @@ export default function App({ Component, pageProps }) {
 
   return (
     <>
+      {hasAnalyticsConsent && (
+        <GA4 measurementId={process.env.NEXT_PUBLIC_GA4_ID} />
+      )}
+    
       {needsCaptcha && (
         <Script
           src="https://www.google.com/recaptcha/api.js"
           strategy="afterInteractive"
         />
       )}
-
+    
       <CookieConsent />
-
-      {/* ✅ Global AutoLogout – enforced after login */}
+    
       {!isAuthPage && <AutoLogout />}
-
+    
       <Component
         {...pageProps}
         toggleTheme={toggleTheme}
         currentTheme={theme}
       />
+      
+      <Analytics />
     </>
+  );
+}
+export function reportWebVitals(metric) {
+  if (process.env.NODE_ENV !== "production") return;
+
+  navigator.sendBeacon(
+    "/api/vitals",
+    JSON.stringify({
+      id: metric.id,
+      name: metric.name,
+      value: metric.value,
+      label: metric.label,
+      route: window.location.pathname,
+    })
   );
 }
