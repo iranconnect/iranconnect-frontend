@@ -76,9 +76,18 @@ export default function BusinessWizard() {
     setLoading(true);
   
     try {
+
+      const cleanedData = {
+        ...data,
+        availability_hours:
+          data.availability_type === "business_hours"
+            ? data.availability_hours
+            : null,
+      };
+
       const form = new FormData();
   
-      Object.entries(data).forEach(([k, v]) => {
+      Object.entries(cleanedData).forEach(([k, v]) => {
         if (k === "gallery_files" && Array.isArray(v)) {
           v.forEach((file) => {
             form.append("gallery_files", file);
