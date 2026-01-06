@@ -186,7 +186,7 @@ export default function BusinessBySlug({ biz, isStaging }) {
       =============================== */}
       <Head>
         <title>{biz.name} | IranConnect</title>
-      
+
         <meta
           name="description"
           content={
@@ -194,12 +194,12 @@ export default function BusinessBySlug({ biz, isStaging }) {
             biz.full_description?.slice(0, 160)
           }
         />
-      
+
         <link
           rel="canonical"
           href={`https://iranconnect.org/business/${biz.slug}`}
         />
-      
+
         <meta property="og:title" content={biz.name} />
         <meta
           property="og:description"
@@ -213,8 +213,7 @@ export default function BusinessBySlug({ biz, isStaging }) {
           content={biz.cover_image_url || biz.logo_url}
         />
         <meta property="og:type" content="business.business" />
-      
-        {/* 🔵 Structured Data — LocalBusiness */}
+
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -225,7 +224,10 @@ export default function BusinessBySlug({ biz, isStaging }) {
               name: biz.name,
               url: `https://iranconnect.org/business/${biz.slug}`,
               logo: biz.logo_url || undefined,
-              image: biz.cover_image_url || biz.logo_url || undefined,
+              image:
+                biz.cover_image_url ||
+                biz.logo_url ||
+                undefined,
               address: {
                 "@type": "PostalAddress",
                 streetAddress: biz.address || undefined,
@@ -246,10 +248,10 @@ export default function BusinessBySlug({ biz, isStaging }) {
         />
       </Head>
 
+      {/* 🔽 این div جدید است */}
+      <div className="flex flex-col min-h-screen">
+        <Header />
 
-        {/* ===============================
-            UI — UNCHANGED
-        =============================== */}
         <main className="flex-1 flex items-center justify-center px-4 py-10">
           <div className="rounded-2xl p-8 w-full max-w-2xl border">
             {/* Header */}
@@ -260,25 +262,23 @@ export default function BusinessBySlug({ biz, isStaging }) {
                 className="w-44 h-44 rounded-xl object-cover cursor-pointer"
                 onClick={() => setShowImageModal(true)}
               />
-
+        
               <div className="flex-1 space-y-3">
                 <h1 className="text-2xl font-semibold">
                   {biz.name}
                   {biz.owner_verified && <span> 🎖️</span>}
                 </h1>
-
+        
                 <p className="text-sm opacity-80">
                   {biz.category} • {biz.city}
                 </p>
-
+        
                 {biz.address && <p>📍 {biz.address}</p>}
-
+        
                 {isLoggedIn && (
                   <>
                     {phoneWithCode && <p>📞 {phoneWithCode}</p>}
-                    {obfuscatedEmail && (
-                      <p>📧 {obfuscatedEmail}</p>
-                    )}
+                    {obfuscatedEmail && <p>📧 {obfuscatedEmail}</p>}
                     {biz.website && (
                       <p>
                         🌐{" "}
@@ -293,13 +293,13 @@ export default function BusinessBySlug({ biz, isStaging }) {
                     )}
                   </>
                 )}
-
+        
                 <p className="text-lg font-medium">
                   ⭐ {biz.avg_rating ?? "—"}
                 </p>
               </div>
             </div>
-
+        
             {/* Rating */}
             {!isAdminView && isLoggedIn && (
               <div className="mt-8 border-t pt-6">
@@ -316,16 +316,14 @@ export default function BusinessBySlug({ biz, isStaging }) {
                 {message && <p>{message}</p>}
               </div>
             )}
-
+        
             {/* Claim */}
             {!isAdminView && (
               <div className="mt-10 border-t pt-6 text-center">
                 {biz.owner_verified ? (
                   <p>🎖️ Verified by owner</p>
                 ) : isLoggedIn ? (
-                  <ClaimBusinessWidget
-                    businessId={biz.id}
-                  />
+                  <ClaimBusinessWidget businessId={biz.id} />
                 ) : null}
               </div>
             )}
@@ -334,7 +332,6 @@ export default function BusinessBySlug({ biz, isStaging }) {
 
         <Footer />
 
-        {/* Image modal */}
         {showImageModal && (
           <div
             className="fixed inset-0 bg-black/70 flex items-center justify-center"
@@ -348,6 +345,7 @@ export default function BusinessBySlug({ biz, isStaging }) {
           </div>
         )}
       </div>
+      {/* 🔼 این div بسته می‌شود */}
     </>
   );
 }
