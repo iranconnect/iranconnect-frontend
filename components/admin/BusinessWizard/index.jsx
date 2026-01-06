@@ -120,7 +120,8 @@ export default function BusinessWizard() {
 
   
       window.location.href =
-        `/admin/businesses/${res.data.business_id}`;
+        `/business/${res.data.business_id}V2?admin=1`;
+
   
     } catch (err) {
       if (err.response?.status === 409) {
