@@ -74,40 +74,51 @@ export default function BusinessWizard() {
 
   async function submit() {
     setLoading(true);
-
+  
     try {
       const form = new FormData();
-
+  
       Object.entries(data).forEach(([k, v]) => {
+        if (v === null || v === undefined) return;
+  
+        // gallery files (multiple)
         if (k === "gallery_files" && Array.isArray(v)) {
           v.forEach((file) => {
             form.append("gallery_files", file);
           });
           return;
         }
-      
+  
+        // single file
         if (k === "logo_file" || k === "cover_file") {
           if (v) form.append(k, v);
           return;
         }
-      
+  
+        // arrays → JSON
         if (Array.isArray(v)) {
           form.append(k, JSON.stringify(v));
-        } else if (v !== null && v !== undefined) {
-          form.append(k, v);
+          return;
         }
+  
+        // objects (availability_hours !!!)
+        if (typeof v === "object") {
+          form.append(k, JSON.stringify(v));
+          return;
+        }
+  
+        // primitives (string, number, boolean)
+        form.append(k, String(v));
       });
-
-
+  
       const res = await apiClient.post(
         "/admin/businesses/create-v2",
-        form,
+        form
       );
-
-
+  
       window.location.href =
         `/admin/businesses/${res.data.business_id}`;
-
+  
     } catch (err) {
       if (err.response?.status === 409) {
         setDuplicate(err.response.data);
@@ -118,6 +129,7 @@ export default function BusinessWizard() {
       setLoading(false);
     }
   }
+
 
   return (
     <>
