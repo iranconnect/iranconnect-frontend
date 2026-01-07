@@ -45,6 +45,7 @@ const csp = `
   connect-src
     'self'
     ${API_ORIGIN}
+    https://*.ingest.sentry.io
     https://maps.googleapis.com
     https://places.googleapis.com
     https://api.cloudinary.com
