@@ -6,6 +6,8 @@ import Topbar from "./Topbar";
 import apiClient from "../../utils/apiClient.js";
 import { useSentryBaseContext } from "../../hooks/useSentryBaseContext";
 import { SentryContextReady } from "../../hooks/useSentryContextStatus";
+import * as Sentry from "@sentry/nextjs";
+
 
 
 
@@ -24,43 +26,60 @@ export default function AdminLayout({ children }) {
   ---------------------------------------------------------*/
   useEffect(() => {
     let mounted = true;
-
+  
     async function checkSession() {
       try {
         const res = await apiClient.get("/auth/me", {
           withCredentials: true,
         });
-
+  
         if (!mounted) return;
-
+  
         const role = res?.data?.role;
-
+  
         if (!role) {
           router.replace("/auth/login");
           return;
         }
-
+  
         if (role !== "admin" && role !== "superadmin") {
           router.replace("/");
           return;
         }
-        
-        setRole(role);          // ← این خط جدید
+  
+        setRole(role);
         setAuthorized(true);
-
       } catch (err) {
         router.replace("/auth/login");
       } finally {
         if (mounted) setLoading(false);
       }
     }
-
+  
     checkSession();
-
+  
     return () => {
       mounted = false;
     };
   }, [router]);
+
+  /* -------------------------------------------------------
+     📡  Sentry — Admin Page Viewed (STANDARD)
+  ---------------------------------------------------------*/
+  useEffect(() => {
+    if (!authorized || !role) return;
+  
+    Sentry.captureMessage("ADMIN_PAGE_VIEWED", {
+      level: "info",
+      tags: {
+        role,
+        page: router.pathname,
+        layout: "admin",
+      },
+    });
+  }, [authorized, role, router.pathname]);
+
+
 
   /* -------------------------------------------------------
      🎨 2) مدیریت تم (Preference فقط – امن)
