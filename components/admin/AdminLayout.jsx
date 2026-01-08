@@ -130,3 +130,4 @@ export default function AdminLayout({ children }) {
       </div>
     </SentryContextReady.Provider>
   );
+} 
