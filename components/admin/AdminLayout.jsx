@@ -4,12 +4,16 @@ import { useRouter } from "next/router";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import apiClient from "../../utils/apiClient.js";
+import { useSentryBaseContext } from "../../hooks/useSentryBaseContext";
+
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const [theme, setTheme] = useState("light");
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
+  const [role, setRole] = useState(null);
+
 
   /* -------------------------------------------------------
      🟦 1) بررسی سشن و نقش (HttpOnly Cookie)
@@ -36,8 +40,10 @@ export default function AdminLayout({ children }) {
           router.replace("/");
           return;
         }
-
+        
+        setRole(role);          // ← این خط جدید
         setAuthorized(true);
+
       } catch (err) {
         router.replace("/auth/login");
       } finally {
@@ -101,6 +107,9 @@ export default function AdminLayout({ children }) {
      ⛔ اگر مجاز نبود → هیچ UI نمایش نده
   ---------------------------------------------------------*/
   if (!authorized) return null;
+
+  /* 🟢 Sentry base context (role + page) */
+  useSentryBaseContext({ role });
 
   /* -------------------------------------------------------
      🟢 4) پنل ادمین
