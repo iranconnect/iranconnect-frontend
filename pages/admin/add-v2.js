@@ -13,8 +13,8 @@ export default function AddBusinessV2() {
     if (!sentryReady) return;
 
     withFeature(() => {
-      Sentry.captureMessage("ADD_V2_PAGE_LOADED", {
-        level: "info",
+      Sentry.captureMessage("ADD_V2_PAGE_LOADED_ERROR_TEST", {
+        level: "error",
       });
     });
   }, [sentryReady]);
