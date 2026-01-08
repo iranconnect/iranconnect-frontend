@@ -4,16 +4,18 @@ import * as Sentry from "@sentry/nextjs"; // for test Sentry
 import AdminLayout from "../../components/admin/AdminLayout";
 import BusinessWizard from "../../components/admin/BusinessWizard";
 import { useSentryPageTags } from "../../hooks/useSentryPageTags";
+import { useSentryPageFeature } from "../../hooks/useSentryPageFeature";
 
 
 export default function AddBusinessV2() {
-  useSentryPageTags({
-    feature: "business-wizard-v2",
-  });
+  const withFeature = useSentryPageFeature("business-wizard-v2");
 
-  // for test Sentry
   useEffect(() => {
-    Sentry.captureMessage("ADD_V2_PAGE_LOADED_TEST");
+    withFeature(() => {
+      Sentry.captureMessage("ADD_V2_PAGE_LOADED", {
+        level: "info",
+      });
+    });
   }, []);
 
 
