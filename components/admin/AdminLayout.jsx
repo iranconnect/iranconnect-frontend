@@ -66,9 +66,21 @@ export default function AdminLayout({ children }) {
      📡  Sentry — Admin Page Viewed (STANDARD)
   ---------------------------------------------------------*/
   useEffect(() => {
-    if (!authorized || !role) return;
+    console.log("[ADMIN_LAYOUT] useEffect fired", {
+      authorized,
+      role,
+      pathname: router.pathname,
+      env: process.env.NEXT_PUBLIC_ENV,
+    });
   
-    Sentry.captureMessage("ADMIN_PAGE_VIEWED", {
+    if (!authorized || !role) {
+      console.log("[ADMIN_LAYOUT] blocked – missing authorized/role");
+      return;
+    }
+  
+    console.log("[ADMIN_LAYOUT] calling Sentry.captureMessage");
+  
+    Sentry.captureMessage("ADMIN_PAGE_VIEWED_DEBUG", {
       level: "error",
       tags: {
         role,
@@ -76,9 +88,7 @@ export default function AdminLayout({ children }) {
         layout: "admin",
       },
     });
-  }, [authorized, role, router.pathname]);
-
-
+  }, [authorized, role, router.pathname]);  
 
   /* -------------------------------------------------------
      🎨 2) مدیریت تم (Preference فقط – امن)
