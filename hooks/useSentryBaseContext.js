@@ -8,17 +8,19 @@ export function useSentryBaseContext({ role }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!router.pathname) return;
-    if (!role) return;
-
+    if (!router.pathname || !role) {
+      setReady(false);
+      return;
+    }
+  
     setSentryBaseContext({
-      role,                // ❗ دیگر guest نداریم
+      role,
       page: router.pathname,
     });
-
+  
     setReady(true);
   }, [role, router.pathname]);
-
+  
   return ready;
 }
 
