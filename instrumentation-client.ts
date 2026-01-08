@@ -14,9 +14,18 @@ export function register() {
     ],
 
     beforeSend(event) {
-      // Guard: never send events without page
-      if (!event.tags?.page) return null;
+    // Always allow errors
+    if (event.level === "error" || event.exception) {
       return event;
-    },
+    }
+  
+    // Drop ONLY non-error events without page
+    if (!event.tags?.page) {
+      return null;
+    }
+  
+    return event;
+  },
+
   });
 }
