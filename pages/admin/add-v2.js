@@ -6,8 +6,7 @@ import BusinessWizard from "../../components/admin/BusinessWizard";
 import { useSentryPageFeature } from "../../hooks/useSentryPageFeature";
 
 export default function AddBusinessV2() {
-  const { withFeature, sentryReady } =
-    useSentryPageFeature("business-wizard-v2");
+  const withFeature = useSentryPageFeature("business-wizard-v2");
 
   useEffect(() => {
     withFeature(() => {
@@ -17,7 +16,6 @@ export default function AddBusinessV2() {
     });
   }, []);
 
-
   return (
     <AdminLayout>
       <main className="admin-container">
@@ -26,3 +24,4 @@ export default function AddBusinessV2() {
     </AdminLayout>
   );
 }
+
