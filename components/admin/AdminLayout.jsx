@@ -5,6 +5,8 @@ import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import apiClient from "../../utils/apiClient.js";
 import { useSentryBaseContext } from "../../hooks/useSentryBaseContext";
+import { SentryContextReady } from "../../hooks/useSentryContextStatus";
+
 
 
 export default function AdminLayout({ children }) {
@@ -114,17 +116,17 @@ export default function AdminLayout({ children }) {
      🟢 4) پنل ادمین
   ---------------------------------------------------------*/
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex transition-colors">
-      <Sidebar />
-
-      <div className="flex-1 min-w-0 flex flex-col">
-        <Topbar toggleTheme={toggleTheme} currentTheme={theme} />
-
-        <main className="admin-main transition-all duration-300">
-          {children}
-        </main>
+    <SentryContextReady.Provider value={sentryReady}>
+      <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex transition-colors">
+        <Sidebar />
+  
+        <div className="flex-1 min-w-0 flex flex-col">
+          <Topbar toggleTheme={toggleTheme} currentTheme={theme} />
+  
+          <main className="admin-main transition-all duration-300">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </SentryContextReady.Provider>
   );
-}
-
