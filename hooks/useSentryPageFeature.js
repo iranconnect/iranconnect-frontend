@@ -1,12 +1,13 @@
 //frontend/hooks/useSentryPageFeature.js
-import { useEffect } from "react";
 import { withSentryFeature } from "../utils/sentryContext";
+import { useSentryContextStatus } from "./useSentryContextStatus";
 
 export function useSentryPageFeature(feature) {
-  useEffect(() => {
-    // Intentionally empty side-effect
-    // Feature tag is applied only when an event is captured via withSentryFeature
-  }, [feature]);
+  const sentryReady = useSentryContextStatus();
 
-  return (fn) => withSentryFeature(feature, fn);
+  return (fn) => {
+    if (!sentryReady) return;
+
+    withSentryFeature(feature, fn);
+  };
 }
