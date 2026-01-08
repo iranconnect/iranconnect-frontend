@@ -8,6 +8,13 @@ export default function AddBusinessV2() {
     feature: "business-wizard-v2",
   });
 
+  useSentryPageTags({ feature: "business-wizard-v2" });
+
+  useEffect(() => {
+    Sentry.captureMessage("ADD_V2_PAGE_LOADED_TEST");
+  }, []);
+
+
   return (
     <AdminLayout>
       <main className="admin-container">
