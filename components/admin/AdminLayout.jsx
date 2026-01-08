@@ -10,7 +10,6 @@ import * as Sentry from "@sentry/nextjs";
 
 
 
-
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const [theme, setTheme] = useState("light");
