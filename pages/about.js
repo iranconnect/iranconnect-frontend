@@ -1,5 +1,7 @@
 //pages/about.js
 import LegalLayout from "../components/LegalLayout";
+import { useSentryPageTags } from "../hooks/useSentryPageTags";
+
 
 const texts = {
   en: `
@@ -49,5 +51,10 @@ const texts = {
 };
 
 export default function AboutPage() {
+  useSentryPageTags({
+    feature: "public-about",
+  });
+
   return <LegalLayout texts={texts} />;
 }
+
