@@ -14,6 +14,9 @@ export default function AdminLayout({ children }) {
   const [authorized, setAuthorized] = useState(false);
   const [role, setRole] = useState(null);
 
+  /* 🟢 Sentry base context (role + page) */
+  useSentryBaseContext({ role });
+
 
   /* -------------------------------------------------------
      🟦 1) بررسی سشن و نقش (HttpOnly Cookie)
@@ -107,9 +110,6 @@ export default function AdminLayout({ children }) {
      ⛔ اگر مجاز نبود → هیچ UI نمایش نده
   ---------------------------------------------------------*/
   if (!authorized) return null;
-
-  /* 🟢 Sentry base context (role + page) */
-  useSentryBaseContext({ role });
 
   /* -------------------------------------------------------
      🟢 4) پنل ادمین
