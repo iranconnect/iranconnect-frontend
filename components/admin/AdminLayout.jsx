@@ -15,8 +15,7 @@ export default function AdminLayout({ children }) {
   const [role, setRole] = useState(null);
 
   /* 🟢 Sentry base context (role + page) */
-  useSentryBaseContext({ role });
-
+  const sentryReady = useSentryBaseContext({ role });
 
   /* -------------------------------------------------------
      🟦 1) بررسی سشن و نقش (HttpOnly Cookie)
