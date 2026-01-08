@@ -69,7 +69,7 @@ export default function AdminLayout({ children }) {
     if (!authorized || !role) return;
   
     Sentry.captureMessage("ADMIN_PAGE_VIEWED", {
-      level: "info",
+      level: "error",
       tags: {
         role,
         page: router.pathname,
