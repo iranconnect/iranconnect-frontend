@@ -6,7 +6,22 @@ Sentry.init({
 
   environment: process.env.NEXT_PUBLIC_ENV,
 
-  tracesSampleRate: 0.1,
+  enabled: process.env.NODE_ENV === "production" ||
+           process.env.NEXT_PUBLIC_ENV === "staging",
 
-  enabled: true,
+  tracesSampleRate: 0.2,
+
+  beforeSend(event) {
+    /* 🔐 Mask IP & headers */
+    if (event.user) {
+      delete event.user.ip_address;
+    }
+
+    if (event.request?.headers) {
+      delete event.request.headers.cookie;
+      delete event.request.headers.authorization;
+    }
+
+    return event;
+  },
 });
