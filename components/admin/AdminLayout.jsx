@@ -66,22 +66,13 @@ export default function AdminLayout({ children }) {
      📡  Sentry — Admin Page Viewed (STANDARD)
   ---------------------------------------------------------*/
   useEffect(() => {
-    console.log("[ADMIN_LAYOUT] useEffect fired", {
-      authorized,
-      role,
-      pathname: router.pathname,
-      env: process.env.NEXT_PUBLIC_ENV,
-    });
   
     if (!authorized || !role) {
-      console.log("[ADMIN_LAYOUT] blocked – missing authorized/role");
       return;
     }
   
-    console.log("[ADMIN_LAYOUT] calling Sentry.captureMessage");
-  
     Sentry.captureMessage("ADMIN_PAGE_VIEWED_DEBUG", {
-      level: "error",
+      level: "info",
       tags: {
         role,
         page: router.pathname,
