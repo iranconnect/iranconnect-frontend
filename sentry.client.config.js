@@ -10,11 +10,9 @@ Sentry.init({
 
   // برای اینکه Message هم ثبت شود
   beforeSend(event) {
-    console.log("[SENTRY CLIENT beforeSend]", {
-      message: event.message,
-      level: event.level,
-    });
-
+    if (process.env.NODE_ENV === "development") {
+      console.log("[SENTRY]", event.message);
+    }
     return event;
   },
 });
