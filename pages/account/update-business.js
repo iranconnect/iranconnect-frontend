@@ -1,8 +1,7 @@
 /*frontend/pages/account/update-business.js*/
 'use client';
 import { useEffect, useState } from "react";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
+import AccountLayout from "../../components/account/AccountLayout";
 import apiClient from "../../utils/apiClient"; // ✅ مسیر صحیح
 
 export default function UpdateBusinessRequest() {
@@ -168,8 +167,7 @@ export default function UpdateBusinessRequest() {
       : "bg-[#f5f7fa] text-gray-900 placeholder-gray-500");
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#ffffff" }}>
-      <Header />
+    <AccountLayout>
       <main className="flex-1 flex items-center justify-center p-6">
         <div
           className="rounded-2xl p-8 w-full max-w-xl border transition-all duration-300"
@@ -266,7 +264,6 @@ export default function UpdateBusinessRequest() {
           </form>
         </div>
       </main>
-      <Footer />
-    </div>
+    </AccountLayout>
   );
 }
