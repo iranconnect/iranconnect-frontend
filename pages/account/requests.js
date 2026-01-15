@@ -1,7 +1,6 @@
 //frontend/pages/account/requests.js
 import { useEffect, useState } from "react";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
+import AccountLayout from "../../components/account/AccountLayout";
 import apiClient from "../../utils/apiClient"; // ✅ جایگزین axios
 
 export default function RequestHistory() {
@@ -56,12 +55,7 @@ export default function RequestHistory() {
     } catch (err) {
       console.error(err);
 
-      // 🔐 اگر سشن معتبر نباشد → خروج
-      if (err.response?.status === 401) {
-        window.location.href = "/auth/login";
-        return;
-      }
-      
+            
       setError("Unable to load requests.");
     }
 
@@ -118,8 +112,7 @@ export default function RequestHistory() {
   const closeModal = () => setSelectedRequest(null);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#ffffff]">
-      <Header />
+    <AccountLayout>
       <main className="flex-1 px-4 py-10 w-full max-w-5xl mx-auto">
         <div
           className="rounded-2xl p-6 border transition-all duration-300"
@@ -375,7 +368,6 @@ export default function RequestHistory() {
           </div>
         )}
       </main>
-      <Footer />
-    </div>
+    </AccountLayout>
   );
 }
