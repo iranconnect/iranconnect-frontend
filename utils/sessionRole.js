@@ -15,8 +15,9 @@ export async function getSessionRole() {
         return cachedRole;
       })
       .catch(() => {
-        cachedRole = "guest";
-        return cachedRole;
+        cachedRole = null;
+        rolePromise = null;
+        return "guest";
       });
   }
 
