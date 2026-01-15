@@ -29,7 +29,11 @@ apiClient.interceptors.request.use(
 let handlingConcurrentLogout = false; // 🔐 anti-loop flag
 
 function forceRedirect(message, reason = "") {
+  if (handlingConcurrentLogout) return;
+  handlingConcurrentLogout = true;
+
   try {
+
     
     // پاکسازی امن فقط کلیدهای auth
     sessionStorage.removeItem("iran_user");
