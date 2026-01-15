@@ -18,10 +18,11 @@ export default function AutoLogout() {
 
   useEffect(() => {
     if (router.query.reason === "security") {
-      setEnabled(false);
       cleanup();
+      return;
     }
   }, [router.query.reason]);
+
 
 
   /* ----------------------------------------------------
