@@ -1,8 +1,7 @@
 //frontend/pages/account/new-business.js
 'use client';
 import { useState, useEffect } from "react";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
+import AccountLayout from "../../components/account/AccountLayout";
 import apiClient from "../../utils/apiClient"; // ✅ جایگزین axios و حذف localStorage token
 
 export default function NewBusinessRequest() {
@@ -133,8 +132,7 @@ export default function NewBusinessRequest() {
       : "bg-[#f5f7fa] text-gray-900 border-gray-300 placeholder-gray-500");
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#ffffff" }}>
-      <Header />
+    <AccountLayout>
       <main className="flex-1 flex items-center justify-center p-6">
         <div className="rounded-2xl p-8 w-full max-w-xl border transition-all duration-300" style={cardStyle}>
           <h2 className="text-2xl font-semibold text-center mb-6">🆕 Add New Business Request</h2>
@@ -193,7 +191,6 @@ export default function NewBusinessRequest() {
           </form>
         </div>
       </main>
-      <Footer />
-    </div>
+    </AccountLayout>
   );
 }
