@@ -1,5 +1,5 @@
 // frontend/components/account/AccountLayout.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 
 import Header from "../Header";
@@ -30,6 +30,7 @@ export default function AccountLayout({ children }) {
 
   const [role, setRole] = useState(null);
   const [checking, setChecking] = useState(true);
+  const hasRedirectedRef = useRef(false);
 
   /* ----------------------------------------------------
      🔐 Auth Gate — only USER allowed
@@ -44,14 +45,19 @@ export default function AccountLayout({ children }) {
         if (!mounted) return;
 
         // Only authenticated USER can access account pages
-        if (r !== "user") {
+        if (!hasRedirectedRef.current) {
+          hasRedirectedRef.current = true;
           router.replace("/auth/login");
-          return;
         }
+        return;
 
         setRole("user");
       } catch {
-        router.replace("/auth/login");
+        if (!hasRedirectedRef.current) {
+          hasRedirectedRef.current = true;
+          router.replace("/auth/login");
+        }
+        return;
       } finally {
         if (mounted) setChecking(false);
       }
@@ -74,12 +80,16 @@ export default function AccountLayout({ children }) {
   /* ----------------------------------------------------
      📊 Observability — Page Viewed
   ---------------------------------------------------- */
-  useSentryPageLoad("ACCOUNT_PAGE_VIEWED", {
-    level: "info",
-    tags: {
-      layout: "account",
-    },
-  });
+  useSentryPageLoad(
+    role === "user" ? "ACCOUNT_PAGE_VIEWED" : null,
+    {
+      level: "info",
+      tags: {
+        layout: "account",
+      },
+    }
+  );
+
 
   /* ----------------------------------------------------
      ⏳ Loading state (auth check)
