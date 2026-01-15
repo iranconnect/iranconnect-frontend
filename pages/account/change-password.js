@@ -2,8 +2,7 @@
 import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import apiClient from "../../utils/apiClient";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
+import AccountLayout from "../../components/account/AccountLayout";
 
 export default function ChangePasswordPage() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -106,8 +105,7 @@ export default function ChangePasswordPage() {
   const inputTextColor = "#0A1D37";
 
   return (
-    <div className="min-h-screen flex flex-col text-[var(--text)] transition-all">
-      <Header />
+    <AccountLayout>
 
       <main
         className="flex-1 flex items-center justify-center p-6"
@@ -228,7 +226,6 @@ export default function ChangePasswordPage() {
         </div>
       </main>
 
-      <Footer />
-    </div>
+    </AccountLayout>
   );
 }
