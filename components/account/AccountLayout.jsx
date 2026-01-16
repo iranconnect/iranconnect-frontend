@@ -9,7 +9,7 @@ import { getSessionRole } from "../../utils/sessionRole";
 
 import { useSentryBaseContext } from "../../hooks/useSentryBaseContext";
 import { SentryContextReady } from "../../hooks/useSentryContextStatus";
-import { useSentryPageLoad } from "../../hooks/useSentryPageLoad";
+import { useSafePageEvent } from "../../hooks/useSafePageEvent";
 
 /**
  * AccountLayout — IranConnect
@@ -80,16 +80,11 @@ export default function AccountLayout({ children }) {
   /* ----------------------------------------------------
      📊 Observability — Page Viewed
   ---------------------------------------------------- */
-  useSentryPageLoad(
-    role === "user" ? "ACCOUNT_PAGE_VIEWED" : null,
-    {
-      level: "info",
-      tags: {
-        layout: "account",
-      },
-    }
-  );
-
+  useSafePageEvent("ACCOUNT_PAGE_VIEWED", {
+    tags: {
+      layout: "account",
+    },
+  });
 
   /* ----------------------------------------------------
      ⏳ Loading state (auth check)
