@@ -13,6 +13,8 @@ import GA4 from "../components/Analytics/GA4";
 import CookieConsent from "../components/CookieConsent";
 import AutoLogout from "../components/AutoLogout";
 import apiClient from "../utils/apiClient";
+import { useSessionReason } from "../hooks/useSessionReason";
+
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
@@ -57,17 +59,19 @@ export default function App({ Component, pageProps }) {
   }, []);
 
   /* 🔄 Session keep-alive (interval-based only) */
+  const { isSecurity, isInactive } = useSessionReason();
+
   useEffect(() => {
     if (!isLoggedIn) return;
-  
-    if (router.query.reason === "security") return;
+    if (isSecurity || isInactive) return;
   
     const interval = setInterval(() => {
       apiClient.get("/auth/ping").catch(() => {});
     }, 60000);
   
     return () => clearInterval(interval);
-  }, [isLoggedIn, router.query.reason]);
+  }, [isLoggedIn, isSecurity, isInactive]);
+
 
 
   /* 🎨 Toggle theme */
