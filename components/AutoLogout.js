@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import apiClient from "../utils/apiClient";
 import AutoLogoutModal from "./AutoLogoutModal";
+import { useSessionReason } from "../hooks/useSessionReason";
+
 
 const INACTIVITY_LIMIT = 2 * 60 * 1000; // 2 minutes
 const LOGOUT_COUNTDOWN = 30 * 1000; // 30 seconds
@@ -15,13 +17,15 @@ export default function AutoLogout() {
   const logoutTimer = useRef(null);
 
   const router = useRouter();
+  const { isSecurity, isInactive } = useSessionReason();
+
 
   useEffect(() => {
-    if (router.query.reason === "security") {
+    if (isSecurity || isInactive) {
       cleanup();
-      return;
     }
-  }, [router.query.reason]);
+  }, [isSecurity, isInactive]);
+
 
 
 
