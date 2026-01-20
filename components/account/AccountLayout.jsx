@@ -38,30 +38,31 @@ export default function AccountLayout({ children }) {
   useEffect(() => {
     let mounted = true;
 
-    async function checkRole() {
-      try {
-        const r = await getSessionRole();
-
-        if (!mounted) return;
-
-        // Only authenticated USER can access account pages
+  async function checkRole() {
+    try {
+      const r = await getSessionRole();
+  
+      if (!mounted) return;
+  
+      // Only authenticated USER can access account pages
+      if (r !== "user") {
         if (!hasRedirectedRef.current) {
           hasRedirectedRef.current = true;
           router.replace("/auth/login");
         }
         return;
-
-        setRole("user");
-      } catch {
-        if (!hasRedirectedRef.current) {
-          hasRedirectedRef.current = true;
-          router.replace("/auth/login");
-        }
-        return;
-      } finally {
-        if (mounted) setChecking(false);
       }
+  
+      setRole("user");
+    } catch {
+      if (!hasRedirectedRef.current) {
+        hasRedirectedRef.current = true;
+        router.replace("/auth/login");
+      }
+    } finally {
+      if (mounted) setChecking(false);
     }
+  }
 
     checkRole();
 
