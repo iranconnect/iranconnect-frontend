@@ -82,18 +82,14 @@ export default function AccountPage() {
             background: theme === "dark" ? "#0b2149" : "#ffffff",
             color: theme === "dark" ? "#ffffff" : "#0a1b2a",
             borderColor:
-              theme === "dark"
-                ? "rgba(255,255,255,0.1)"
-                : "rgba(0,0,0,0.05)",
+              theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
             boxShadow:
               theme === "dark"
                 ? "10px 10px 25px rgba(0,0,0,0.4), -10px -10px 25px rgba(255,255,255,0.05)"
                 : "6px 6px 15px rgba(0,0,0,0.1), -6px -6px 15px rgba(255,255,255,0.4)",
           }}
         >
-
-
-          <h2 className="text-2xl font-semibold text-navy text-center mb-6">
+          <h2 className="text-2xl font-semibold text-center mb-6">
             My Account 👤
           </h2>
 
@@ -111,16 +107,16 @@ export default function AccountPage() {
 
           <button
             onClick={logout}
-            className="w-full mt-6 py-2 rounded-lg font-medium transition-all duration-200"
-            style={{
-              background: theme === "dark" ? "transparent" : "#f5f7fa",
-              color: theme === "dark" ? "#ffffff" : "#0a1b2a",
-              border: "1px solid",
-              borderColor:
-                theme === "dark"
-                  ? "rgba(255,255,255,0.2)"
-                  : "rgba(0,0,0,0.1)",
-            }}
+            className="w-full bg-turquoise text-navy py-2 rounded-lg font-medium shadow-md hover:bg-turquoise/90 transition-all duration-200"
+            //style={{
+            //  background: theme === "dark" ? "transparent" : "#f5f7fa",
+            //  color: theme === "dark" ? "#ffffff" : "#0a1b2a",
+            //  border: "1px solid",
+            //  borderColor:
+            //    theme === "dark"
+            //      ? "rgba(255,255,255,0.2)"
+            //      : "rgba(0,0,0,0.1)",
+            //}}
           >
             Log Out
           </button>
