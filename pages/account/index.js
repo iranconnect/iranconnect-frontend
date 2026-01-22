@@ -92,11 +92,12 @@ export default function AccountPage() {
           }}
         >
 
+
           <h2 className="text-2xl font-semibold text-navy text-center mb-6">
             My Account 👤
           </h2>
 
-          <div className="space-y-3 mb-6 text-sm text-gray-700">
+          <div className="space-y-3 mb-6 text-sm">
             <p><strong>Email:</strong> {user.email}</p>
             <p><strong>Role:</strong> {user.role}</p>
           
@@ -110,7 +111,16 @@ export default function AccountPage() {
 
           <button
             onClick={logout}
-            className="w-full mt-6 border border-gray-300 text-gray-600 py-2 rounded-lg font-medium hover:bg-gray-100 transition-all"
+            className="w-full mt-6 py-2 rounded-lg font-medium transition-all duration-200"
+            style={{
+              background: theme === "dark" ? "transparent" : "#f5f7fa",
+              color: theme === "dark" ? "#ffffff" : "#0a1b2a",
+              border: "1px solid",
+              borderColor:
+                theme === "dark"
+                  ? "rgba(255,255,255,0.2)"
+                  : "rgba(0,0,0,0.1)",
+            }}
           >
             Log Out
           </button>
