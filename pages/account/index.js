@@ -8,6 +8,15 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
 
   const [theme, setTheme] = useState("light");
+
+  useEffect(() => {
+    apiClient.get("/auth/me").then((res) => {
+      console.log("AUTH_ME_RESPONSE:", res.data);
+      setUser(res.data);
+      setLoading(false);
+    });
+  }, []);
+
   
   useEffect(() => {
     const current =
