@@ -9,16 +9,6 @@ export default function AccountPage() {
 
   const [theme, setTheme] = useState("light");
 
-  console.log("AUTH /me response user:", user);
-
-  useEffect(() => {
-    apiClient.get("/auth/me").then((res) => {
-      console.log("AUTH_ME_RESPONSE:", res.data);
-      setUser(res.data);
-      setLoading(false);
-    });
-  }, []);
-
   
   useEffect(() => {
     const current =
