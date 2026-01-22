@@ -9,6 +9,8 @@ export default function AccountPage() {
 
   const [theme, setTheme] = useState("light");
 
+  console.log("AUTH /me response user:", user);
+
   useEffect(() => {
     apiClient.get("/auth/me").then((res) => {
       console.log("AUTH_ME_RESPONSE:", res.data);
@@ -108,15 +110,6 @@ export default function AccountPage() {
           <button
             onClick={logout}
             className="w-full bg-turquoise text-navy py-2 rounded-lg font-medium shadow-md hover:bg-turquoise/90 transition-all duration-200"
-            //style={{
-            //  background: theme === "dark" ? "transparent" : "#f5f7fa",
-            //  color: theme === "dark" ? "#ffffff" : "#0a1b2a",
-            //  border: "1px solid",
-            //  borderColor:
-            //    theme === "dark"
-            //      ? "rgba(255,255,255,0.2)"
-            //      : "rgba(0,0,0,0.1)",
-            //}}
           >
             Log Out
           </button>
