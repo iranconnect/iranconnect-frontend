@@ -50,12 +50,14 @@ export default function AccountPage() {
           <div className="space-y-3 mb-6 text-sm text-gray-700">
             <p><strong>Email:</strong> {user.email}</p>
             <p><strong>Role:</strong> {user.role}</p>
+          
             {memberSince && (
-                <p>
-                  <strong>Member since:</strong> {memberSince}
-                </p>
-              )}
+              <p>
+                <strong>Member since:</strong> {memberSince}
+              </p>
+            )}
           </div>
+
 
           <button
             onClick={logout}
