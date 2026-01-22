@@ -47,7 +47,7 @@ export default function AccountPage() {
             <p><strong>Role:</strong> {user.role}</p>
             <p>
               <strong>Verified:</strong>{" "}
-              {user.is_verified ? "Yes ✅" : "No ❌"}
+              {(user.is_verified ?? user.verified) ? "Yes ✅" : "No ❌"}
             </p>
           </div>
 
