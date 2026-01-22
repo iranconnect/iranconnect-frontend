@@ -34,6 +34,11 @@ export default function AccountPage() {
     );
   }
 
+  const memberSince = user?.created_at
+    ? new Date(user.created_at).toISOString().slice(0, 10)
+    : null;
+
+
   return (
     <AccountLayout>
       <div className="flex flex-col justify-center items-center p-4">
@@ -45,10 +50,11 @@ export default function AccountPage() {
           <div className="space-y-3 mb-6 text-sm text-gray-700">
             <p><strong>Email:</strong> {user.email}</p>
             <p><strong>Role:</strong> {user.role}</p>
-            <p>
-              <strong>Verified:</strong>{" "}
-              {(user.is_verified ?? user.verified) ? "Yes ✅" : "No ❌"}
-            </p>
+            {memberSince && (
+                <p>
+                  <strong>Member since:</strong> {memberSince}
+                </p>
+              )}
           </div>
 
           <button
