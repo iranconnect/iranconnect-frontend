@@ -7,6 +7,26 @@ export default function AccountPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [theme, setTheme] = useState("light");
+  
+  useEffect(() => {
+    const current =
+      document.documentElement.getAttribute("data-theme") || "light";
+    setTheme(current);
+  
+    const obs = new MutationObserver(() => {
+      setTheme(document.documentElement.getAttribute("data-theme"));
+    });
+  
+    obs.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+  
+    return () => obs.disconnect();
+  }, []);
+
+
   // فقط fetch داده — auth gate در AccountLayout
   useEffect(() => {
     apiClient.get("/auth/me").then((res) => {
@@ -34,15 +54,35 @@ export default function AccountPage() {
     );
   }
 
-  const memberSince = user?.created_at
-    ? new Date(user.created_at).toISOString().slice(0, 10)
+  const createdRaw =
+    user?.created_at ||
+    user?.createdAt ||
+    user?.created ||
+    null;
+  
+  const memberSince = createdRaw
+    ? new Date(createdRaw).toISOString().slice(0, 10)
     : null;
-
 
   return (
     <AccountLayout>
       <div className="flex flex-col justify-center items-center p-4">
-        <div className="bg-white shadow-[5px_5px_15px_#d1d9e6,-5px_-5px_15px_#ffffff] rounded-2xl p-8 w-full max-w-md">
+        <div
+          className="rounded-2xl p-8 w-full max-w-md border transition-all duration-300"
+          style={{
+            background: theme === "dark" ? "#0b2149" : "#ffffff",
+            color: theme === "dark" ? "#ffffff" : "#0a1b2a",
+            borderColor:
+              theme === "dark"
+                ? "rgba(255,255,255,0.1)"
+                : "rgba(0,0,0,0.05)",
+            boxShadow:
+              theme === "dark"
+                ? "10px 10px 25px rgba(0,0,0,0.4), -10px -10px 25px rgba(255,255,255,0.05)"
+                : "6px 6px 15px rgba(0,0,0,0.1), -6px -6px 15px rgba(255,255,255,0.4)",
+          }}
+        >
+
           <h2 className="text-2xl font-semibold text-navy text-center mb-6">
             My Account 👤
           </h2>
