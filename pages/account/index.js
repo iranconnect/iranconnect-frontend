@@ -17,10 +17,12 @@ export default function AccountPage() {
 
   async function logout() {
     try {
-      await apiClient.post("/auth/logout");
+      await apiClient.post("/auth/logout", {}, { withCredentials: true });
     } catch {}
-    window.location.href = "/";
+  
+    window.location.href = "/search";
   }
+
 
   if (loading) {
     return (
