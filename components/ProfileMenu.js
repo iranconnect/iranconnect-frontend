@@ -90,10 +90,15 @@ export default function ProfileMenu({ role, hasClaim }) {
                      shadow-[6px_6px_14px_var(--shadow-dark),-6px_-6px_14px_var(--shadow-light)]
                      p-3 z-50"
         >
-          {/* User email */}
-          <p className="text-sm text-[var(--text)] mb-3 truncate">
+          {/* User email → clickable to account */}
+          <a
+            href="/account"
+            onClick={() => setMenuOpen(false)}
+            className="block text-sm font-medium text-turquoise mb-3 truncate hover:underline"
+          >
             {email}
-          </p>
+          </a>
+
 
           {/* Business features */}
           {hasClaim && (
