@@ -44,16 +44,17 @@ export default function AccountLayout({ children }) {
   
       if (!mounted) return;
   
-      // Only authenticated USER can access account pages
-      if (r !== "user") {
+      // Allow user, admin, superadmin to access /account
+      if (!["user", "admin", "superadmin"].includes(r)) {
         if (!hasRedirectedRef.current) {
           hasRedirectedRef.current = true;
           router.replace("/auth/login");
         }
         return;
       }
-  
-      setRole("user");
+      
+      setRole(r);
+
     } catch {
       if (!hasRedirectedRef.current) {
         hasRedirectedRef.current = true;
