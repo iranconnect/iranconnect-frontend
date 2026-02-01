@@ -6,7 +6,7 @@ Sentry.init({
   environment: process.env.NEXT_PUBLIC_ENV || "development",
 
   // ⛔️ فقط برای تست می‌گذاریم 100%
-  tracesSampleRate: 1.0,
+  tracesSampleRate: 0.2,
 
   // برای اینکه Message هم ثبت شود
   beforeSend(event) {
