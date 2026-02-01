@@ -71,14 +71,12 @@ export default function AdminLayout({ children }) {
       return;
     }
   
-    Sentry.captureMessage("ADMIN_PAGE_VIEWED_DEBUG", {
-      level: "info",
-      tags: {
-        role,
-        page: router.pathname,
-        layout: "admin",
-      },
-    });
+    if (process.env.NODE_ENV !== "production") {
+      Sentry.captureMessage("ADMIN_PAGE_VIEWED_DEBUG", {
+        level: "info",
+        tags: { role, page: router.pathname, layout: "admin" },
+      });
+    }
   }, [authorized, role, router.pathname]);  
 
   /* -------------------------------------------------------
