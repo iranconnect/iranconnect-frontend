@@ -16,3 +16,4 @@ Quick start:
 4. Run: npm run dev
 
 Replace /public/logo.png with your actual logo (500x500) to display in the header.
+.
