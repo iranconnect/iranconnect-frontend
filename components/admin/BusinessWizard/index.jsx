@@ -127,9 +127,13 @@ export default function BusinessWizard() {
         }
       );
 
-  
-      window.location.href =
-        `/business/${res.data.business_id}V2?admin=1`;
+      const createdSlug = res?.data?.slug;
+
+      if (!createdSlug) {
+        throw new Error("Business created but slug was not returned.");
+      }
+
+      window.location.href = `/business/${createdSlug}`;
 
   
     } catch (err) {
