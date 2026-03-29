@@ -1,7 +1,5 @@
-//pages/business/[slug].js
 import Head from "next/head";
-import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
@@ -10,7 +8,9 @@ import ClaimBusinessWidget from "../../components/ClaimBusinessWidget";
 
 import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
+
 import apiClient from "../../utils/apiClient";
+import { useAuthSession } from "../../hooks/useAuthSession";
 
 /* ======================================================
    SSR — Fetch business by slug
@@ -21,18 +21,19 @@ export async function getServerSideProps(context) {
 
   try {
     const apiBase =
-      process.env.NEXT_PUBLIC_API_BASE ||
-      "https://api.iranconnect.org";
+      process.env.NEXT_PUBLIC_API_BASE || "https://api.iranconnect.org";
+
+    const cookie = context.req.headers.cookie || "";
 
     const res = await fetch(
       `${apiBase}/businesses/by-slug/${encodeURIComponent(slug)}`,
       {
         headers: {
           "Cache-Control": "no-cache",
+          ...(cookie ? { cookie } : {}),
         },
       }
     );
-
 
     if (!res.ok) {
       return { notFound: true };
@@ -45,9 +46,6 @@ export async function getServerSideProps(context) {
         biz,
         isStaging,
       },
-      // 🔥 SSR Cache (Edge + CDN)
-      // 60s fresh, 10min stale
-      revalidate: 60, 
     };
   } catch {
     return { notFound: true };
@@ -55,100 +53,35 @@ export async function getServerSideProps(context) {
 }
 
 /* ======================================================
+   Helpers
+====================================================== */
+function toPlainText(value) {
+  if (!value) return "";
+  return String(value).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function buildMetaDescription(biz) {
+  const shortText = toPlainText(biz?.short_description);
+  const fullText = toPlainText(biz?.full_description);
+
+  const base = shortText || fullText || `${biz?.name || "Business"} on IranConnect`;
+  return base.slice(0, 160);
+}
+
+/* ======================================================
    Page
 ====================================================== */
-export default function BusinessBySlug({ biz, isStaging }) {
-  const router = useRouter();
+export default function BusinessBySlug({ biz }) {
+  const { status, role } = useAuthSession();
 
   const [rating, setRating] = useState(0);
   const [message, setMessage] = useState("");
-  const [theme, setTheme] = useState("light");
   const [showImageModal, setShowImageModal] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [isAdminView, setIsAdminView] = useState(false);
 
-  /* ===============================
-     🌗 Theme watcher (UNCHANGED)
-  =============================== */
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  const isAuthReady = status !== "checking";
+  const isLoggedIn = status === "authenticated";
+  const isAdminView = role === "admin" || role === "superadmin";
 
-    const current =
-      document.documentElement.getAttribute("data-theme") || "light";
-    setTheme(current);
-
-    const observer = new MutationObserver(() => {
-      const next =
-        document.documentElement.getAttribute("data-theme") || "light";
-      setTheme(next);
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
-  /* ===============================
-     🔐 Auth + role detection
-  =============================== */
-  useEffect(() => {
-    let mounted = true;
-
-    apiClient
-      .get("/auth/me", { silent: true })
-      .then((res) => {
-        if (!mounted) return;
-
-        setIsLoggedIn(true);
-        if (
-          res.data?.role === "admin" ||
-          res.data?.role === "superadmin"
-        ) {
-          setIsAdminView(true);
-        }
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setIsLoggedIn(false);
-        setIsAdminView(false);
-      })
-      .finally(() => mounted && setAuthChecked(true));
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  /* ===============================
-     ⭐ Submit rating (UNCHANGED)
-  =============================== */
-  async function submitRating() {
-    try {
-      if (!isLoggedIn) {
-        setMessage("You must be logged in to rate.");
-        return;
-      }
-
-      await apiClient.post(
-        `/businesses/${biz.id}/ratings`,
-        { score: rating }
-      );
-
-      setMessage("✅ Rating submitted");
-    } catch (e) {
-      setMessage(
-        e.response?.data?.error || "Error submitting rating."
-      );
-    }
-  }
-
-  /* ===============================
-     🖼 Images (UNCHANGED)
-  =============================== */
   const apiBase =
     process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
   const cdnBase =
@@ -163,24 +96,43 @@ export default function BusinessBySlug({ biz, isStaging }) {
   let imageSrc = original;
   if (original.startsWith("http")) {
     const filename = original.split("/").pop().split("?")[0];
-    imageSrc = `${cdnBase}/cdn/${filename}?url=${encodeURIComponent(
-      original
-    )}`;
+    imageSrc = `${cdnBase}/cdn/${filename}?url=${encodeURIComponent(original)}`;
   }
+
+  const coverImage = biz.cover_image_url || biz.logo_url || null;
 
   const phoneWithCode =
     biz?.phone && biz?.country
       ? `+${getCountryCallingCode(biz.country)} ${biz.phone}`
       : biz?.phone || "";
 
-  const obfuscatedEmail = biz?.email
-    ? biz.email.replace("@", " [at] ")
-    : null;
+  const metaDescription = buildMetaDescription(biz);
+  const canonicalUrl = `https://iranconnect.org/business/${biz.slug}`;
+  const shouldNoIndex = isAdminView && biz?.is_public === false;
 
-  /* ===============================
-     🧱 Render
-  =============================== */
-  if (!biz || !authChecked) {
+  async function submitRating() {
+    try {
+      if (!isLoggedIn) {
+        setMessage("You must be logged in to rate.");
+        return;
+      }
+
+      if (!biz.allow_reviews) {
+        setMessage("Reviews are disabled for this business.");
+        return;
+      }
+
+      await apiClient.post(`/businesses/${biz.id}/ratings`, {
+        score: rating,
+      });
+
+      setMessage("✅ Rating submitted");
+    } catch (e) {
+      setMessage(e.response?.data?.error || "Error submitting rating.");
+    }
+  }
+
+  if (!biz || !isAuthReady) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>Loading...</p>
@@ -190,38 +142,22 @@ export default function BusinessBySlug({ biz, isStaging }) {
 
   return (
     <>
-      {/* ===============================
-          🧠 SEO Head
-      =============================== */}
       <Head>
         <title>{biz.name} | IranConnect</title>
 
-        <meta
-          name="description"
-          content={
-            biz.short_description ||
-            biz.full_description?.slice(0, 160)
-          }
-        />
+        <meta name="description" content={metaDescription} />
 
-        <link
-          rel="canonical"
-          href={`https://iranconnect.org/business/${biz.slug}`}
-        />
+        <link rel="canonical" href={canonicalUrl} />
+
+        {shouldNoIndex && (
+          <meta name="robots" content="noindex,nofollow" />
+        )}
 
         <meta property="og:title" content={biz.name} />
-        <meta
-          property="og:description"
-          content={
-            biz.short_description ||
-            biz.full_description?.slice(0, 160)
-          }
-        />
-        <meta
-          property="og:image"
-          content={biz.cover_image_url || biz.logo_url}
-        />
+        <meta property="og:description" content={metaDescription} />
+        {coverImage && <meta property="og:image" content={coverImage} />}
         <meta property="og:type" content="business.business" />
+        <meta property="og:url" content={canonicalUrl} />
 
         <script
           type="application/ld+json"
@@ -229,14 +165,12 @@ export default function BusinessBySlug({ biz, isStaging }) {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "LocalBusiness",
-              "@id": `https://iranconnect.org/business/${biz.slug}`,
+              "@id": canonicalUrl,
               name: biz.name,
-              url: `https://iranconnect.org/business/${biz.slug}`,
+              url: canonicalUrl,
               logo: biz.logo_url || undefined,
-              image:
-                biz.cover_image_url ||
-                biz.logo_url ||
-                undefined,
+              image: coverImage || undefined,
+              description: metaDescription || undefined,
               address: {
                 "@type": "PostalAddress",
                 streetAddress: biz.address || undefined,
@@ -245,6 +179,14 @@ export default function BusinessBySlug({ biz, isStaging }) {
                 postalCode: biz.postal_code || undefined,
               },
               telephone: biz.phone || undefined,
+              sameAs: [
+                biz.website,
+                biz.instagram_url,
+                biz.facebook_url,
+                biz.linkedin_url,
+                biz.twitter_url,
+                biz.telegram_url,
+              ].filter(Boolean),
               aggregateRating: biz.avg_rating
                 ? {
                     "@type": "AggregateRating",
@@ -257,13 +199,17 @@ export default function BusinessBySlug({ biz, isStaging }) {
         />
       </Head>
 
-      {/* 🔽 این div جدید است */}
       <div className="flex flex-col min-h-screen">
         <Header />
 
         <main className="flex-1 flex items-center justify-center px-4 py-10">
-          <div className="rounded-2xl p-8 w-full max-w-2xl border">
-            {/* Header */}
+          <div className="rounded-2xl p-8 w-full max-w-3xl border">
+            {isAdminView && biz?.is_public === false && (
+              <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
+                Admin preview: this business is currently private/unpublished and is visible here because you are logged in as an admin.
+              </div>
+            )}
+
             <div className="flex flex-col md:flex-row gap-6 items-center">
               <img
                 src={imageSrc}
@@ -277,62 +223,150 @@ export default function BusinessBySlug({ biz, isStaging }) {
                 onClick={() => setShowImageModal(true)}
               />
 
-        
               <div className="flex-1 space-y-3">
                 <h1 className="text-2xl font-semibold">
                   {biz.name}
                   {biz.owner_verified && <span> 🎖️</span>}
                 </h1>
-        
+
                 <p className="text-sm opacity-80">
-                  {biz.category} • {biz.city}
+                  {[biz.category, biz.sub_category, biz.city].filter(Boolean).join(" • ")}
                 </p>
-        
-                {biz.address && <p>📍 {biz.address}</p>}
-        
-                {isLoggedIn && (
-                  <>
-                    {phoneWithCode && <p>📞 {phoneWithCode}</p>}
-                    {obfuscatedEmail && <p>📧 {obfuscatedEmail}</p>}
-                    {biz.website && (
-                      <p>
-                        🌐{" "}
-                        <a
-                          href={biz.website}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Visit Website
-                        </a>
-                      </p>
-                    )}
-                  </>
+
+                {biz.short_description && (
+                  <p className="text-base opacity-90">{biz.short_description}</p>
                 )}
-        
+
+                {biz.address && <p>📍 {biz.address}</p>}
+
+                {phoneWithCode && <p>📞 {phoneWithCode}</p>}
+
+                {biz.email && <p>📧 {biz.email}</p>}
+
+                {biz.website && (
+                  <p>
+                    🌐{" "}
+                    <a href={biz.website} target="_blank" rel="noreferrer">
+                      Visit Website
+                    </a>
+                  </p>
+                )}
+
                 <p className="text-lg font-medium">
                   ⭐ {biz.avg_rating ?? "—"}
+                  {typeof biz.review_count === "number"
+                    ? ` (${biz.review_count} review${biz.review_count === 1 ? "" : "s"})`
+                    : ""}
                 </p>
               </div>
             </div>
-        
-            {/* Rating */}
-            {!isAdminView && isLoggedIn && (
+
+            {biz.full_description && (
               <div className="mt-8 border-t pt-6">
-                <RatingStars
-                  value={rating}
-                  onChange={setRating}
-                />
-                <button
-                  disabled={!rating}
-                  onClick={submitRating}
-                >
+                <h2 className="text-lg font-semibold mb-3">About this business</h2>
+                <p className="whitespace-pre-line">{toPlainText(biz.full_description)}</p>
+              </div>
+            )}
+
+            {(biz.service_mode ||
+              biz.availability_type ||
+              biz.availability_note ||
+              biz.service_radius_km) && (
+              <div className="mt-8 border-t pt-6">
+                <h2 className="text-lg font-semibold mb-3">Service details</h2>
+                <div className="grid gap-2 text-sm">
+                  {biz.service_mode && (
+                    <p>
+                      <strong>Service mode:</strong> {biz.service_mode}
+                    </p>
+                  )}
+                  {biz.availability_type && (
+                    <p>
+                      <strong>Availability type:</strong> {biz.availability_type}
+                    </p>
+                  )}
+                  {biz.availability_note && (
+                    <p>
+                      <strong>Availability note:</strong> {biz.availability_note}
+                    </p>
+                  )}
+                  {biz.service_radius_km && (
+                    <p>
+                      <strong>Service radius:</strong> {biz.service_radius_km} km
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {(biz.instagram_url ||
+              biz.facebook_url ||
+              biz.linkedin_url ||
+              biz.twitter_url ||
+              biz.telegram_url ||
+              biz.whatsapp_number) && (
+              <div className="mt-8 border-t pt-6">
+                <h2 className="text-lg font-semibold mb-3">Online presence</h2>
+                <div className="grid gap-2 text-sm">
+                  {biz.instagram_url && (
+                    <p>
+                      <strong>Instagram:</strong>{" "}
+                      <a href={biz.instagram_url} target="_blank" rel="noreferrer">
+                        Open
+                      </a>
+                    </p>
+                  )}
+                  {biz.facebook_url && (
+                    <p>
+                      <strong>Facebook:</strong>{" "}
+                      <a href={biz.facebook_url} target="_blank" rel="noreferrer">
+                        Open
+                      </a>
+                    </p>
+                  )}
+                  {biz.linkedin_url && (
+                    <p>
+                      <strong>LinkedIn:</strong>{" "}
+                      <a href={biz.linkedin_url} target="_blank" rel="noreferrer">
+                        Open
+                      </a>
+                    </p>
+                  )}
+                  {biz.twitter_url && (
+                    <p>
+                      <strong>X / Twitter:</strong>{" "}
+                      <a href={biz.twitter_url} target="_blank" rel="noreferrer">
+                        Open
+                      </a>
+                    </p>
+                  )}
+                  {biz.telegram_url && (
+                    <p>
+                      <strong>Telegram:</strong>{" "}
+                      <a href={biz.telegram_url} target="_blank" rel="noreferrer">
+                        Open
+                      </a>
+                    </p>
+                  )}
+                  {biz.whatsapp_number && (
+                    <p>
+                      <strong>WhatsApp:</strong> {biz.whatsapp_number}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!isAdminView && isLoggedIn && biz.allow_reviews && (
+              <div className="mt-8 border-t pt-6">
+                <RatingStars value={rating} onChange={setRating} />
+                <button disabled={!rating} onClick={submitRating}>
                   Submit
                 </button>
                 {message && <p>{message}</p>}
               </div>
             )}
-        
-            {/* Claim */}
+
             {!isAdminView && (
               <div className="mt-10 border-t pt-6 text-center">
                 {biz.owner_verified ? (
@@ -349,20 +383,29 @@ export default function BusinessBySlug({ biz, isStaging }) {
 
         {showImageModal && (
           <div
-            className="fixed inset-0 bg-black/70 flex items-center justify-center"
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4"
             onClick={() => setShowImageModal(false)}
           >
+            <button
+              type="button"
+              aria-label="Close image"
+              className="absolute top-4 right-4 text-white"
+              onClick={() => setShowImageModal(false)}
+            >
+              <X size={28} />
+            </button>
+
             <img
               src={imageSrc}
               alt={biz.name}
               loading="lazy"
               decoding="async"
+              className="max-h-[90vh] max-w-[90vw] rounded-xl"
               onClick={(e) => e.stopPropagation()}
             />
           </div>
         )}
       </div>
-      {/* 🔼 این div بسته می‌شود */}
     </>
   );
 }
