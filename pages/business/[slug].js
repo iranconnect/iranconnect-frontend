@@ -101,10 +101,15 @@ export default function BusinessBySlug({ biz }) {
 
   const coverImage = biz.cover_image_url || biz.logo_url || null;
 
-  const phoneWithCode =
-    biz?.phone && biz?.country
-      ? `+${getCountryCallingCode(biz.country)} ${biz.phone}`
-      : biz?.phone || "";
+  let phoneWithCode = biz?.phone || "";
+
+  try {
+    if (biz?.phone && biz?.country && /^[A-Z]{2}$/.test(biz.country)) {
+      phoneWithCode = `+${getCountryCallingCode(biz.country)} ${biz.phone}`;
+    }
+  } catch {
+    phoneWithCode = biz?.phone || "";
+  }
 
   const metaDescription = buildMetaDescription(biz);
   const canonicalUrl = `https://iranconnect.org/business/${biz.slug}`;
