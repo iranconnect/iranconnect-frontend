@@ -28,7 +28,7 @@ export default function BusinessCard({ b }) {
 
   return (
     <Link
-      href={`/business/${b.id}`}
+      href={`/business/${b.slug || b.id}`}
       className="block group w-full"
       prefetch={false}
     >
