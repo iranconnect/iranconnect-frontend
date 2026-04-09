@@ -40,7 +40,11 @@ export default function BusinessHero({ biz, phoneWithCode }) {
           </h1>
 
           <p className="text-sm text-gray-500">
-            {[biz.category, biz.sub_category, biz.city]
+            {[
+              biz.category,
+              biz.sub_category,
+              [biz.city, biz.country].filter(Boolean).join(", "),
+            ]
               .filter(Boolean)
               .join(" • ")}
           </p>
@@ -48,7 +52,32 @@ export default function BusinessHero({ biz, phoneWithCode }) {
           {biz.short_description && (
             <p className="text-gray-700">{biz.short_description}</p>
           )}
+          {biz.address && (
+            <p className="text-sm text-gray-600">
+              📍{" "}
+              {biz.location_map_url ? (
+                <a
+                  href={biz.location_map_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline hover:text-blue-600 transition"
+                >
+                  {biz.address}
+                </a>
+              ) : (
+                biz.address
+              )}
+            </p>
+          )}
 
+          {biz.service_mode && (
+            <p className="text-sm text-gray-600">
+              {biz.service_mode === "on_site" && "🏢 On-site"}
+              {biz.service_mode === "at_home" && "🚗 At home"}
+              {biz.service_mode === "remote" && "💻 Remote"}
+              {biz.service_mode === "hybrid" && "🔄 Hybrid"}
+            </p>
+          )}
           {/* 🔵 Rating */}
           <p className="text-lg font-medium">
             ⭐ {biz.avg_rating ?? "—"}{" "}
@@ -84,7 +113,7 @@ export default function BusinessHero({ biz, phoneWithCode }) {
 
           {biz.whatsapp_number && (
             <a
-              href={`https://wa.me/${biz.whatsapp_number}`}
+              href={`https://wa.me/${biz.whatsapp_number.replace(/\D/g, "")}`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 text-white text-sm hover:opacity-90"
