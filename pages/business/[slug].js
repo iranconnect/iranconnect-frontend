@@ -1,3 +1,4 @@
+//pages/business/[slug].js
 import Head from "next/head";
 import { useState } from "react";
 
@@ -5,6 +6,7 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import RatingStars from "../../components/RatingStars";
 import ClaimBusinessWidget from "../../components/ClaimBusinessWidget";
+import BusinessHero from "../../components/business/BusinessHero";
 
 import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
@@ -208,63 +210,14 @@ export default function BusinessBySlug({ biz }) {
         <Header />
 
         <main className="flex-1 flex items-center justify-center px-4 py-10">
-          <div className="rounded-2xl p-8 w-full max-w-3xl border">
+          <div className="w-full max-w-5xl space-y-8">
             {isAdminView && biz?.is_public === false && (
               <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
                 Admin preview: this business is currently private/unpublished and is visible here because you are logged in as an admin.
               </div>
             )}
 
-            <div className="flex flex-col md:flex-row gap-6 items-center">
-              <img
-                src={imageSrc}
-                alt={biz.name}
-                width={176}
-                height={176}
-                loading="eager"
-                decoding="async"
-                fetchpriority="high"
-                className="w-44 h-44 rounded-xl object-cover cursor-pointer"
-                onClick={() => setShowImageModal(true)}
-              />
-
-              <div className="flex-1 space-y-3">
-                <h1 className="text-2xl font-semibold">
-                  {biz.name}
-                  {biz.owner_verified && <span> 🎖️</span>}
-                </h1>
-
-                <p className="text-sm opacity-80">
-                  {[biz.category, biz.sub_category, biz.city].filter(Boolean).join(" • ")}
-                </p>
-
-                {biz.short_description && (
-                  <p className="text-base opacity-90">{biz.short_description}</p>
-                )}
-
-                {biz.address && <p>📍 {biz.address}</p>}
-
-                {phoneWithCode && <p>📞 {phoneWithCode}</p>}
-
-                {biz.email && <p>📧 {biz.email}</p>}
-
-                {biz.website && (
-                  <p>
-                    🌐{" "}
-                    <a href={biz.website} target="_blank" rel="noreferrer">
-                      Visit Website
-                    </a>
-                  </p>
-                )}
-
-                <p className="text-lg font-medium">
-                  ⭐ {biz.avg_rating ?? "—"}
-                  {typeof biz.review_count === "number"
-                    ? ` (${biz.review_count} review${biz.review_count === 1 ? "" : "s"})`
-                    : ""}
-                </p>
-              </div>
-            </div>
+            <BusinessHero biz={biz} phoneWithCode={phoneWithCode} />
 
             {biz.full_description && (
               <div className="mt-8 border-t pt-6">
