@@ -14,14 +14,7 @@ function formatServiceMode(mode) {
   }
 }
 
-function formatAvailability(type, note) {
-  if (note) return note;
 
-  if (type === "business_hours") return "Business hours available";
-  if (type === "24_7") return "Open 24/7";
-
-  return null;
-}
 
 function formatAvailabilityNote(note) {
   if (!note) return [];
@@ -53,17 +46,67 @@ function formatAvailabilityNote(note) {
   return result;
 }
 
+function renderAvailability(biz) {
+  // 1️⃣ Always open
+  if (biz.availability_type === "always_open") {
+    return <p className="text-sm">🟢 Open 24/7</p>;
+  }
+
+  // 2️⃣ Appointment only
+  if (biz.availability_type === "appointment_only") {
+    return <p className="text-sm">📅 By appointment only</p>;
+  }
+
+  // 3️⃣ Business hours (structured)
+  if (
+    biz.availability_type === "business_hours" &&
+    biz.availability_hours &&
+    typeof biz.availability_hours === "object"
+  ) {
+    const days = Object.entries(biz.availability_hours);
+
+    return (
+      <div className="mt-2">
+        <p className="text-sm font-medium mb-2">🕒 Opening hours</p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-sm">
+          {days.map(([day, hours]) => (
+            <div key={day} className="flex justify-between">
+              <span className="font-medium capitalize">
+                {day.slice(0, 3)}
+              </span>
+              <span className="text-gray-600">
+                {Array.isArray(hours) && hours.length > 0
+                  ? hours.join(" | ")
+                  : "Closed"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // 4️⃣ fallback → note
+  if (biz.availability_note) {
+    return (
+      <p className="text-sm whitespace-pre-line">
+        📝 {biz.availability_note}
+      </p>
+    );
+  }
+
+  return null;
+}
 export default function BusinessServices({ biz }) {
   const serviceMode = formatServiceMode(biz.service_mode);
-  const availability = formatAvailability(
-    biz.availability_type,
-    biz.availability_note
-  );
   const weeklyHours = formatAvailabilityNote(biz.availability_note);
 
   const hasData =
     serviceMode ||
-    availability ||
+    biz.availability_type ||
+    biz.availability_note ||
+    biz.availability_hours ||
     biz.service_radius_km;
 
   if (!hasData) return null;
@@ -98,9 +141,7 @@ export default function BusinessServices({ biz }) {
             </div>
           </div>
         ) : (
-          availability && (
-            <p className="text-sm">🕒 {availability}</p>
-          )
+          {renderAvailability(biz)}
         )}
 
         {biz.service_radius_km && (
