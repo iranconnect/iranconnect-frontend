@@ -228,7 +228,7 @@ export default function StepBasicInfo({ data, setData, onNext }) {
       {/* Short description */}
       <div className="mb-5">
         <label className="admin-label">
-          Short description
+          Short description *
         </label>
         <textarea
           className="admin-input"
