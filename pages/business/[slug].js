@@ -8,6 +8,7 @@ import RatingStars from "../../components/RatingStars";
 import ClaimBusinessWidget from "../../components/ClaimBusinessWidget";
 import BusinessHero from "../../components/business/BusinessHero";
 import BusinessAbout from "../../components/business/BusinessAbout";
+import BusinessServices from "../../components/business/BusinessServices";   
 
 import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
@@ -222,37 +223,8 @@ export default function BusinessBySlug({ biz }) {
 
             <BusinessAbout biz={biz} />
 
-            {(biz.service_mode ||
-              biz.availability_type ||
-              biz.availability_note ||
-              biz.service_radius_km) && (
-              <div className="mt-8 border-t pt-6">
-                <h2 className="text-lg font-semibold mb-3">Service details</h2>
-                <div className="grid gap-2 text-sm">
-                  {biz.service_mode && (
-                    <p>
-                      <strong>Service mode:</strong> {biz.service_mode}
-                    </p>
-                  )}
-                  {biz.availability_type && (
-                    <p>
-                      <strong>Availability type:</strong> {biz.availability_type}
-                    </p>
-                  )}
-                  {biz.availability_note && (
-                    <p>
-                      <strong>Availability note:</strong> {biz.availability_note}
-                    </p>
-                  )}
-                  {biz.service_radius_km && (
-                    <p>
-                      <strong>Service radius:</strong> {biz.service_radius_km} km
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
+            <BusinessServices biz={biz} />
+            
             {(biz.instagram_url ||
               biz.facebook_url ||
               biz.linkedin_url ||
