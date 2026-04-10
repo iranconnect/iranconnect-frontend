@@ -75,6 +75,9 @@ export default function StepBasicInfo({ data, setData, onNext }) {
       data?.name?.trim() &&
       categoryId &&
       selectedSubcategories.length > 0 &&
+      data?.short_description &&
+      data.short_description.trim().length >= 20 &&
+      data.short_description.trim().length <= 160 &&
       data?.full_description &&
       data.full_description.trim().length >= 50;
 
@@ -225,7 +228,7 @@ export default function StepBasicInfo({ data, setData, onNext }) {
       {/* Short description */}
       <div className="mb-5">
         <label className="admin-label">
-          Short description (SEO)
+          Short description
         </label>
         <textarea
           className="admin-input"
@@ -268,7 +271,7 @@ export default function StepBasicInfo({ data, setData, onNext }) {
             </p>
         )}
         
-        /* 🔵 Character counter */
+        {/* 🔵 Character counter */}
         <p className="text-xs text-gray-400 mt-1">
           {(data?.full_description?.length || 0)} / 50 characters
         </p>
