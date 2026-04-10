@@ -71,10 +71,12 @@ export default function StepBasicInfo({ data, setData, onNext }) {
     });
   }
 
-  const canProceed =
-    data?.name?.trim() &&
-    categoryId &&
-    selectedSubcategories.length > 0;
+    const canProceed =
+      data?.name?.trim() &&
+      categoryId &&
+      selectedSubcategories.length > 0 &&
+      data?.full_description &&
+      data.full_description.trim().length >= 50;
 
   /* ─────────────────────────────
      Render
@@ -235,22 +237,41 @@ export default function StepBasicInfo({ data, setData, onNext }) {
           }
           placeholder="Max 160 characters"
         />
+        
+        <p className="text-xs text-gray-400 mt-1">
+          {(data?.short_description?.length || 0)} / 160 characters
+        </p>
       </div>
 
       {/* Full description */}
       <div className="mb-6">
         <label className="admin-label">
-          Full description
+          Full description *
         </label>
+        
         <textarea
           className="admin-input"
           rows={4}
-          value={data?.description || ""}
+          value={data?.full_description || ""}
           onChange={(e) =>
-            setField("description", e.target.value)
+            setField("full_description", e.target.value)
           }
-          placeholder="Detailed description of services and expertise"
+          placeholder="Write at least 50 characters about the business, services, and expertise"
+          required
         />
+        
+        {/* 🔴 Validation */}
+        {data?.full_description &&
+          data.full_description.trim().length < 50 && (
+            <p className="text-red-500 text-sm mt-1">
+              Minimum 50 characters required
+            </p>
+        )}
+        
+        /* 🔵 Character counter */
+        <p className="text-xs text-gray-400 mt-1">
+          {(data?.full_description?.length || 0)} / 50 characters
+        </p>
       </div>
 
       {/* Next */}
