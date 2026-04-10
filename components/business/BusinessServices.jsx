@@ -39,7 +39,7 @@ function formatAvailabilityNote(note) {
   const result = [];
 
   days.forEach((day) => {
-    const regex = new RegExp(`${day}:(.*?)(?=${days.join("|")}|$)`, "i");
+    const regex = new RegExp(`\\d*\\s*${day}:(.*?)(?=${days.join("|")}|$)`, "i");
     const match = note.match(regex);
 
     if (match) {
