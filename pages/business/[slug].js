@@ -7,6 +7,7 @@ import Footer from "../../components/Footer";
 import RatingStars from "../../components/RatingStars";
 import ClaimBusinessWidget from "../../components/ClaimBusinessWidget";
 import BusinessHero from "../../components/business/BusinessHero";
+import BusinessAbout from "../../components/business/BusinessAbout";
 
 import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
@@ -219,12 +220,7 @@ export default function BusinessBySlug({ biz }) {
 
             <BusinessHero biz={biz} phoneWithCode={phoneWithCode} />
 
-            {biz.full_description && (
-              <div className="mt-8 border-t pt-6">
-                <h2 className="text-lg font-semibold mb-3">About this business</h2>
-                <p className="whitespace-pre-line">{toPlainText(biz.full_description)}</p>
-              </div>
-            )}
+            <BusinessAbout biz={biz} />
 
             {(biz.service_mode ||
               biz.availability_type ||
