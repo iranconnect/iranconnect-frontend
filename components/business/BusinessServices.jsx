@@ -141,7 +141,7 @@ export default function BusinessServices({ biz }) {
             </div>
           </div>
         ) : (
-          {renderAvailability(biz)}
+          renderAvailability(biz)
         )}
 
         {biz.service_radius_km && (
