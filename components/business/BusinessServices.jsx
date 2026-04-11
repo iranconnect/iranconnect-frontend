@@ -53,8 +53,41 @@ function renderAvailability(biz) {
   }
 
   // 2️⃣ Appointment only
-  if (biz.availability_type === "appointment_only") {
-    return <p className="text-sm">📅 By appointment only</p>;
+  if (type === "appointment_only") {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm">📅 By appointment only</p>
+  
+        {biz.availability_hours &&
+          typeof biz.availability_hours === "object" && (
+            <div>
+              <p className="text-sm font-medium mb-1">
+                🕒 Suggested hours
+              </p>
+  
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-sm">
+                {Object.entries(biz.availability_hours).map(
+                  ([day, hrs]) => (
+                    <div
+                      key={day}
+                      className="flex justify-between"
+                    >
+                      <span className="font-medium capitalize">
+                        {day.slice(0, 3)}
+                      </span>
+                      <span className="text-gray-600">
+                        {hrs.length > 0
+                          ? hrs.join(" | ")
+                          : "Closed"}
+                      </span>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          )}
+      </div>
+    );
   }
 
   // 3️⃣ Business hours (structured)
