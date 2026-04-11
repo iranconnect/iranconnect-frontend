@@ -132,6 +132,8 @@ function renderAvailability(biz) {
   return null;
 }
 export default function BusinessServices({ biz }) {
+  const type = biz.availability_type;
+  const hours = biz.availability_hours;
   const serviceMode = formatServiceMode(biz.service_mode);
   const weeklyHours = formatAvailabilityNote(biz.availability_note);
 
