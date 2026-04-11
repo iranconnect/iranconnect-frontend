@@ -53,7 +53,7 @@ function renderAvailability(biz) {
   }
 
   // 2️⃣ Appointment only
-  if (type === "appointment_only") {
+  if (biz.availability_type === "appointment_only") {
     return (
       <div className="space-y-2">
         <p className="text-sm">📅 By appointment only</p>
