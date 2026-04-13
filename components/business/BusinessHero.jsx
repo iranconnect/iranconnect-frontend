@@ -1,7 +1,7 @@
 //frontend/components/business/BusinessHero.jsx
 import { Phone, Globe, MessageCircle } from "lucide-react";
 
-export default function BusinessHero({ biz, phoneWithCode }) {
+export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
   const coverImage = biz.cover_image_url || biz.logo_url;
 
   return (
@@ -88,39 +88,52 @@ export default function BusinessHero({ biz, phoneWithCode }) {
 
         {/* 🔵 CTA Buttons */}
         <div className="mt-6 flex flex-wrap gap-3">
-          
-          {phoneWithCode && (
-            <a
-              href={`tel:${biz.phone}`}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black text-white text-sm hover:opacity-90"
+        
+          {isLoggedIn ? (
+            <>
+              {phoneWithCode && (
+                <a
+                  href={`tel:${biz.phone}`}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black text-white text-sm hover:opacity-90"
+                >
+                  <Phone size={16} />
+                  Call
+                </a>
+              )}
+        
+              {biz.website && (
+                <a
+                  href={biz.website}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm hover:bg-gray-50"
+                >
+                  <Globe size={16} />
+                  Website
+                </a>
+              )}
+        
+              {biz.whatsapp_number && (
+                <a
+                  href={`https://wa.me/${biz.whatsapp_number.replace(/\D/g, "")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 text-white text-sm hover:opacity-90"
+                >
+                  <MessageCircle size={16} />
+                  WhatsApp
+                </a>
+              )}
+            </>
+          ) : (
+            <button
+              onClick={() =>
+                window.location.href = `/auth/login?redirect=/business/${biz.slug}`
+              }
+              className="w-full md:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-[#3fd0c9] to-[#2aa7a1] text-white font-medium hover:opacity-90"
             >
-              <Phone size={16} />
-              Call
-            </a>
-          )}
-
-          {biz.website && (
-            <a
-              href={biz.website}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm hover:bg-gray-50"
-            >
-              <Globe size={16} />
-              Website
-            </a>
-          )}
-
-          {biz.whatsapp_number && (
-            <a
-              href={`https://wa.me/${biz.whatsapp_number.replace(/\D/g, "")}`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 text-white text-sm hover:opacity-90"
-            >
-              <MessageCircle size={16} />
-              WhatsApp
-            </a>
+              Login to see contact info
+            </button>
           )}
         </div>
       </div>
