@@ -1,4 +1,4 @@
-//pages/business/[slug].js
+//pages/business/[slug].js 
 import Head from "next/head";
 import { useState } from "react";
 
