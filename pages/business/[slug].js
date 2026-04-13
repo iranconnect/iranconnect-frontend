@@ -222,17 +222,24 @@ export default function BusinessBySlug({ biz }) {
               </div>
             )}
 
-            <BusinessHero biz={biz} phoneWithCode={phoneWithCode} />
+            <BusinessHero
+              biz={biz}
+              phoneWithCode={phoneWithCode}
+              isLoggedIn={isLoggedIn}
+            />
 
             <BusinessAbout biz={biz} />
 
             <BusinessGallery biz={biz} />
 
-            <BusinessReviews businessId={biz.id} />
+            <BusinessReviews
+              businessId={biz.id}
+              isLoggedIn={isLoggedIn}
+            />
 
             <BusinessServices biz={biz} />
 
-            <BusinessLocation biz={biz} />
+            <BusinessLocation biz={biz} isLoggedIn={isLoggedIn} />
             
             {(biz.instagram_url ||
               biz.facebook_url ||
