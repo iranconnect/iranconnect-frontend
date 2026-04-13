@@ -1,5 +1,5 @@
 //frontend/components/business/BusinessLocation.jsx
-export default function BusinessLocation({ biz }) {
+export default function BusinessLocation({ biz, isLoggedIn }) {
   if (!biz) return null;
 
   const fullAddress = [
@@ -69,7 +69,7 @@ export default function BusinessLocation({ biz }) {
       )}
 
       {/* Open in Maps */}
-      {mapUrl && (
+      {isLoggedIn && mapUrl && (
         <div className="mb-4">
           <a
             href={mapUrl}
@@ -83,7 +83,7 @@ export default function BusinessLocation({ biz }) {
       )}
 
       {/* Map Embed */}
-      {embedUrl && (
+      {isLoggedIn && embedUrl && (
         <div className="rounded-xl overflow-hidden border">
           <iframe
             src={embedUrl}
