@@ -10,6 +10,7 @@ import BusinessHero from "../../components/business/BusinessHero";
 import BusinessAbout from "../../components/business/BusinessAbout";
 import BusinessServices from "../../components/business/BusinessServices";   
 import BusinessLocation from "../../components/business/BusinessLocation";
+import BusinessGallery from "../../components/business/BusinessGallery";
 
 import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
@@ -221,6 +222,8 @@ export default function BusinessBySlug({ biz }) {
             )}
 
             <BusinessHero biz={biz} phoneWithCode={phoneWithCode} />
+
+            <BusinessGallery biz={biz} />
 
             <BusinessAbout biz={biz} />
 
