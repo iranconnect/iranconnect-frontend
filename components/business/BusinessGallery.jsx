@@ -2,7 +2,6 @@
 import { useState } from "react";
 
 export default function BusinessGallery({ biz }) {
-  const [showAll, setShowAll] = useState(false);
   const [activeImage, setActiveImage] = useState(null);
 
   const apiBase =
@@ -59,50 +58,7 @@ export default function BusinessGallery({ biz }) {
   return (
     <div className="mt-6">
 
-      {/* 🔥 HERO + PREVIEW */}
-      {!showAll && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
 
-          {/* Cover */}
-          {cover && (
-            <div
-              className="md:col-span-2 rounded-2xl overflow-hidden cursor-pointer"
-              onClick={() => setActiveImage(cover)}
-            >
-              <img
-                src={cover}
-                alt="Cover"
-                className="w-full h-[260px] md:h-[360px] object-cover"
-                loading="eager"
-              />
-            </div>
-          )}
-  
-          {/* Preview Images */}
-          <div className="grid grid-cols-2 gap-2">
-            {gallery.slice(0, 4).map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                alt={`Gallery ${i}`}
-                className="rounded-xl h-[120px] object-cover cursor-pointer"
-                onClick={() => setActiveImage(img)}
-                loading="lazy"
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 🔥 SHOW MORE BUTTON */}
-      {gallery.length > 4 && !showAll && (
-        <button
-          onClick={() => setShowAll(true)}
-          className="mt-3 text-sm font-medium text-blue-600 hover:underline"
-        >
-          +{gallery.length - 4} more photos
-        </button>
-      )}
 
       {/* 🔥 HORIZONTAL SLIDER */}
       {showAll && gallery.length > 0 && (
