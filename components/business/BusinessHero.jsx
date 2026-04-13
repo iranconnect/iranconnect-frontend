@@ -53,15 +53,10 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
             <p className="text-gray-700">{biz.short_description}</p>
           )}
           {biz.address && (
-            <p className="text-sm text-gray-600">
+            <p className={`text-sm text-gray-600 ${!isLoggedIn ? "blur-sm" : ""}`}>
               📍{" "}
               {biz.location_map_url ? (
-                <a
-                  href={biz.location_map_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline hover:text-blue-600 transition"
-                >
+                <a href={biz.location_map_url} target="_blank" rel="noreferrer">
                   {biz.address}
                 </a>
               ) : (
@@ -71,7 +66,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
           )}
 
           {biz.service_mode && (
-            <p className="text-sm text-gray-600">
+            <p className={`text-sm text-gray-600 ${!isLoggedIn ? "blur-sm" : ""}`}>
               {biz.service_mode === "on_site" && "🏢 On-site"}
               {biz.service_mode === "at_home" && "🚗 At home"}
               {biz.service_mode === "remote" && "💻 Remote"}
