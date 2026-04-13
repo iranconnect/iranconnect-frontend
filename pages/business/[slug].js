@@ -82,6 +82,7 @@ function buildMetaDescription(biz) {
 export default function BusinessBySlug({ biz }) {
   const { status, role } = useAuthSession();
 
+
   const [rating, setRating] = useState(0);
   const [message, setMessage] = useState("");
   const [showImageModal, setShowImageModal] = useState(false);
@@ -317,29 +318,24 @@ export default function BusinessBySlug({ biz }) {
 
             {!isAdminView && (
               <div className="mt-10 border-t pt-6 text-center">
-                {/* 🔥 CLAIM BUSINESS */}
-                {!isAdminView && (
-                  <div className="mt-10 border-t pt-6 text-center">
-                    
-                    {biz.owner_verified ? (
-                      <p className="text-green-600 font-medium">
-                        🎖️ Verified by owner
-                      </p>
-                    ) : !isLoggedIn ? (
-                      <button
-                        onClick={() =>
-                          window.location.href = `/auth/login?redirect=/business/${biz.slug}`
-                        }
-                        className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#3fd0c9] to-[#2aa7a1] text-white font-medium shadow"
-                      >
-                        Claim this business (Login required)
-                      </button>
-                    ) : (
-                      <ClaimBusinessWidget businessId={biz.id} />
-                    )}
-               
-                  </div>
+                
+                {biz.owner_verified ? (
+                  <p className="text-green-600 font-medium">
+                    🎖️ Verified by owner
+                  </p>
+                ) : !isLoggedIn ? (
+                  <button
+                    onClick={() =>
+                      window.location.href = `/auth/login?redirect=/business/${biz.slug}`
+                    }
+                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#3fd0c9] to-[#2aa7a1] text-white font-medium shadow"
+                  >
+                    Claim this business (Login required)
+                  </button>
+                ) : (
+                  <ClaimBusinessWidget businessId={biz.id} />
                 )}
+            
               </div>
             )}
           </div>
