@@ -34,8 +34,7 @@ export default function BusinessGallery({ biz }) {
   /* ─────────────────────────────
      Data
   ───────────────────────────── */
-  const cover = resolveImage(biz.cover_image_url);
-
+  
   let gallery = Array.isArray(biz.gallery)
     ? biz.gallery.map(resolveImage).filter(Boolean)
     : [];
