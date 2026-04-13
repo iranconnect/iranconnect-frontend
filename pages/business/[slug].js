@@ -5,7 +5,6 @@ import { useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import RatingStars from "../../components/RatingStars";
-import ClaimBusinessWidget from "../../components/ClaimBusinessWidget";
 import BusinessHero from "../../components/business/BusinessHero";
 import BusinessAbout from "../../components/business/BusinessAbout";
 import BusinessServices from "../../components/business/BusinessServices";   
