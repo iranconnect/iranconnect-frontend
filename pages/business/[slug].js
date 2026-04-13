@@ -12,6 +12,7 @@ import BusinessServices from "../../components/business/BusinessServices";
 import BusinessLocation from "../../components/business/BusinessLocation";
 import BusinessGallery from "../../components/business/BusinessGallery";
 import BusinessReviews from "../../components/business/BusinessReviews";
+import BlurGate from "../../components/ui/BlurGate";
 
 import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
@@ -230,16 +231,21 @@ export default function BusinessBySlug({ biz }) {
 
             <BusinessAbout biz={biz} />
 
-            <BusinessGallery biz={biz} />
+            <BlurGate isVisible={isLoggedIn}>
+              <BusinessGallery biz={biz} />
+            </BlurGate>
 
-            <BusinessReviews
-              businessId={biz.id}
-              isLoggedIn={isLoggedIn}
-            />
+            <BlurGate isVisible={isLoggedIn}>
+              <BusinessReviews businessId={biz.id} />
+            </BlurGate>
 
-            <BusinessServices biz={biz} />
+            <BlurGate isVisible={isLoggedIn}>
+              <BusinessServices biz={biz} />
+            </BlurGate>
 
-            <BusinessLocation biz={biz} isLoggedIn={isLoggedIn} />
+            <BlurGate isVisible={isLoggedIn}>
+              <BusinessLocation biz={biz} />
+            </BlurGate>
             
             {(biz.instagram_url ||
               biz.facebook_url ||
