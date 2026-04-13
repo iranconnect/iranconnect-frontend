@@ -332,7 +332,7 @@ export default function BusinessBySlug({ biz }) {
                         }
                         className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#3fd0c9] to-[#2aa7a1] text-white font-medium shadow"
                       >
-                        Claim this business
+                        Claim this business (Login required)
                       </button>
                     ) : (
                       <ClaimBusinessWidget businessId={biz.id} />
