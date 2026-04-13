@@ -315,7 +315,16 @@ export default function BusinessBySlug({ biz }) {
                   <p>🎖️ Verified by owner</p>
                 ) : isLoggedIn ? (
                   <ClaimBusinessWidget businessId={biz.id} />
-                ) : null}
+                ) : (
+                  <button
+                    onClick={() =>
+                      window.location.href = `/auth/login?redirect=/business/${biz.slug}`
+                    }
+                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#3fd0c9] to-[#2aa7a1] text-white"
+                  >
+                    Login to claim this business
+                  </button>
+                )}
               </div>
             )}
           </div>
