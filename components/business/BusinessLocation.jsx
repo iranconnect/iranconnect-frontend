@@ -17,18 +17,38 @@ export default function BusinessLocation({ biz }) {
     null;
 
   // Extract embed src from Google Maps URL
-  function getEmbedUrl(url) {
-    if (!url) return null;
-
-    try {
-      const encoded = encodeURIComponent(url);
-      return `https://www.google.com/maps?q=${encoded}&output=embed`;
-    } catch {
-      return null;
+  function getEmbedUrl(biz) {
+    // 1️⃣ اگر link گوگل داریم → extract query
+    if (biz.location_map_url) {
+      try {
+        const url = new URL(biz.location_map_url);
+  
+        // حالت Google Maps معمولی
+        const query = url.searchParams.get("q");
+  
+        if (query) {
+          return `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+        }
+  
+        // fallback → کل url رو به عنوان query استفاده نکن!
+      } catch {}
     }
+  
+    // 2️⃣ fallback → استفاده از آدرس
+    const address = [
+      biz.address,
+      biz.city,
+      biz.country,
+    ]
+      .filter(Boolean)
+      .join(", ");
+  
+    if (!address) return null;
+  
+    return `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
   }
 
-  const embedUrl = getEmbedUrl(mapUrl);
+  const embedUrl = getEmbedUrl(biz);
 
   if (!fullAddress && !mapUrl) return null;
 
