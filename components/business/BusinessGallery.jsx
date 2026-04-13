@@ -103,7 +103,7 @@ export default function BusinessGallery({ biz }) {
             {/* Left Arrow */}
             <button
               onClick={() => {
-                document.getElementById("gallery-scroll").scrollBy({
+                document.getElementById("gallery-scroll")?.scrollBy({
                   left: -300,
                   behavior: "smooth",
                 });
@@ -132,7 +132,7 @@ export default function BusinessGallery({ biz }) {
             {/* Right Arrow */}
             <button
               onClick={() => {
-                document.getElementById("gallery-scroll").scrollBy({
+                document.getElementById("gallery-scroll")?.scrollBy({
                   left: 300,
                   behavior: "smooth",
                 });
@@ -141,6 +141,7 @@ export default function BusinessGallery({ biz }) {
             >
               →
             </button>
+        
           </div>
         )}
       )}
