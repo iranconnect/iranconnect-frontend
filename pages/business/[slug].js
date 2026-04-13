@@ -11,6 +11,7 @@ import BusinessAbout from "../../components/business/BusinessAbout";
 import BusinessServices from "../../components/business/BusinessServices";   
 import BusinessLocation from "../../components/business/BusinessLocation";
 import BusinessGallery from "../../components/business/BusinessGallery";
+import BusinessReviews from "../../components/business/BusinessReviews";
 
 import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
@@ -228,6 +229,8 @@ export default function BusinessBySlug({ biz }) {
             <BusinessAbout biz={biz} />
 
             <BusinessServices biz={biz} />
+
+            <BusinessReviews businessId={biz.id} />
 
             <BusinessLocation biz={biz} />
             
