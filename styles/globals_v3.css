@@ -204,3 +204,12 @@ iframe[src*="google.com/recaptcha/"] {
   all: unset !important;
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
