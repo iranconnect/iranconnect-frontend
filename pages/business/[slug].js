@@ -224,13 +224,13 @@ export default function BusinessBySlug({ biz }) {
 
             <BusinessHero biz={biz} phoneWithCode={phoneWithCode} />
 
-            <BusinessGallery biz={biz} />
-
             <BusinessAbout biz={biz} />
 
-            <BusinessServices biz={biz} />
+            <BusinessGallery biz={biz} />
 
             <BusinessReviews businessId={biz.id} />
+
+            <BusinessServices biz={biz} />
 
             <BusinessLocation biz={biz} />
             
