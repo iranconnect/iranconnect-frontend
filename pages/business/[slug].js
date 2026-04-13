@@ -9,6 +9,7 @@ import ClaimBusinessWidget from "../../components/ClaimBusinessWidget";
 import BusinessHero from "../../components/business/BusinessHero";
 import BusinessAbout from "../../components/business/BusinessAbout";
 import BusinessServices from "../../components/business/BusinessServices";   
+import BusinessLocation from "../../components/business/BusinessLocation";
 
 import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
@@ -224,6 +225,8 @@ export default function BusinessBySlug({ biz }) {
             <BusinessAbout biz={biz} />
 
             <BusinessServices biz={biz} />
+
+            <BusinessLocation biz={biz} />
             
             {(biz.instagram_url ||
               biz.facebook_url ||
