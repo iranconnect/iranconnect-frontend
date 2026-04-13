@@ -2,6 +2,7 @@
 import { useState } from "react";
 
 export default function BusinessGallery({ biz }) {
+  const [showAll, setShowAll] = useState(false);
   const [activeImage, setActiveImage] = useState(null);
 
   const apiBase =
@@ -11,69 +12,102 @@ export default function BusinessGallery({ biz }) {
 
   function resolveImage(input) {
     if (!input) return null;
-  
-    // اگر object بود → url رو استخراج کن
+
     const url =
       typeof input === "string"
         ? input
         : input.url || input.src || null;
-  
+
     if (!url || typeof url !== "string") return null;
-  
+
     if (url.startsWith("http")) return url;
-  
+
     const full = `${apiBase.replace("/api", "")}${url}`;
-  
     const filename = full.split("/").pop().split("?")[0];
-  
+
     return `${cdnBase}/cdn/${filename}?url=${encodeURIComponent(full)}`;
   }
 
   const cover = resolveImage(biz.cover_image_url);
-  const gallery = Array.isArray(biz.gallery)
+
+  let gallery = Array.isArray(biz.gallery)
     ? biz.gallery.map(resolveImage).filter(Boolean)
     : [];
 
+  // ❗ حذف cover از gallery (حل مشکل تکرار)
+  if (cover) {
+    gallery = gallery.filter((img) => img !== cover);
+  }
+
   if (!cover && gallery.length === 0) return null;
 
+  const visibleImages = showAll ? gallery : gallery.slice(0, 4);
+
   return (
-    <div className="mt-6 space-y-4">
+    <div className="mt-6">
 
-      {/* Cover */}
-      {cover && (
-        <div
-          className="rounded-2xl overflow-hidden cursor-pointer"
-          onClick={() => setActiveImage(cover)}
-        >
-          <img
-            src={cover}
-            alt="Cover"
-            className="w-full h-[260px] md:h-[360px] object-cover"
-            loading="eager"
-          />
-        </div>
-      )}
+      {/* 🔥 HERO + GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
 
-      {/* Gallery */}
-      {gallery.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {gallery.slice(0, 6).map((img, i) => (
+        {/* Cover (Hero) */}
+        {cover && (
+          <div
+            className="md:col-span-2 rounded-2xl overflow-hidden cursor-pointer"
+            onClick={() => setActiveImage(cover)}
+          >
+            <img
+              src={cover}
+              alt="Cover"
+              className="w-full h-[260px] md:h-[360px] object-cover"
+              loading="eager"
+            />
+          </div>
+        )}
+
+        {/* Side images */}
+        <div className="grid grid-cols-2 gap-2">
+          {visibleImages.slice(0, 4).map((img, i) => (
             <img
               key={i}
               src={img}
               alt={`Gallery ${i}`}
-              className="rounded-xl h-32 object-cover cursor-pointer hover:opacity-90"
+              className="rounded-xl h-[120px] object-cover cursor-pointer"
               onClick={() => setActiveImage(img)}
               loading="lazy"
             />
           ))}
         </div>
+      </div>
+
+      {/* 🔥 SHOW MORE */}
+      {gallery.length > 4 && !showAll && (
+        <button
+          onClick={() => setShowAll(true)}
+          className="mt-3 text-sm font-medium text-blue-600 hover:underline"
+        >
+          +{gallery.length - 4} more photos
+        </button>
       )}
 
-      {/* Modal */}
+      {/* 🔥 FULL GRID (بعد از کلیک) */}
+      {showAll && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+          {gallery.map((img, i) => (
+            <img
+              key={i}
+              src={img}
+              alt={`Gallery ${i}`}
+              className="rounded-xl h-[140px] object-cover cursor-pointer"
+              onClick={() => setActiveImage(img)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* 🔥 MODAL */}
       {activeImage && (
         <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
           onClick={() => setActiveImage(null)}
         >
           <img
