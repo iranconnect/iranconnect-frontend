@@ -60,37 +60,39 @@ export default function BusinessGallery({ biz }) {
     <div className="mt-6">
 
       {/* 🔥 HERO + PREVIEW */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+      {!showAll && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
 
-        {/* Cover */}
-        {cover && (
-          <div
-            className="md:col-span-2 rounded-2xl overflow-hidden cursor-pointer"
-            onClick={() => setActiveImage(cover)}
-          >
-            <img
-              src={cover}
-              alt="Cover"
-              className="w-full h-[260px] md:h-[360px] object-cover"
-              loading="eager"
-            />
+          {/* Cover */}
+          {cover && (
+            <div
+              className="md:col-span-2 rounded-2xl overflow-hidden cursor-pointer"
+              onClick={() => setActiveImage(cover)}
+            >
+              <img
+                src={cover}
+                alt="Cover"
+                className="w-full h-[260px] md:h-[360px] object-cover"
+                loading="eager"
+              />
+            </div>
+          )}
+  
+          {/* Preview Images */}
+          <div className="grid grid-cols-2 gap-2">
+            {gallery.slice(0, 4).map((img, i) => (
+              <img
+                key={i}
+                src={img}
+                alt={`Gallery ${i}`}
+                className="rounded-xl h-[120px] object-cover cursor-pointer"
+                onClick={() => setActiveImage(img)}
+                loading="lazy"
+              />
+            ))}
           </div>
-        )}
-
-        {/* Preview Images */}
-        <div className="grid grid-cols-2 gap-2">
-          {gallery.slice(0, 4).map((img, i) => (
-            <img
-              key={i}
-              src={img}
-              alt={`Gallery ${i}`}
-              className="rounded-xl h-[120px] object-cover cursor-pointer"
-              onClick={() => setActiveImage(img)}
-              loading="lazy"
-            />
-          ))}
         </div>
-      </div>
+      )}
 
       {/* 🔥 SHOW MORE BUTTON */}
       {gallery.length > 4 && !showAll && (
