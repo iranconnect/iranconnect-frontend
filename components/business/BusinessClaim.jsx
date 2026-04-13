@@ -1,6 +1,6 @@
 // frontend/components/BusinessClaim.jsx
 import { useState } from "react";
-import apiClient from "../utils/apiClient";
+import apiClient from "../../utils/apiClient";
 
 export default function ClaimBusinessWidget({ businessId }) {
   const [lang, setLang] = useState("en");
