@@ -127,7 +127,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
               }
               className="w-full md:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-[#3fd0c9] to-[#2aa7a1] text-white font-medium hover:opacity-90"
             >
-              Login to see contact info
+              Login to see full details and reviews
             </button>
           )}
         </div>
