@@ -9,15 +9,23 @@ export default function BusinessGallery({ biz }) {
   const cdnBase =
     process.env.NEXT_PUBLIC_CDN_BASE || "http://localhost:5000";
 
-  function resolveImage(url) {
-    if (!url) return null;
-
+  function resolveImage(input) {
+    if (!input) return null;
+  
+    // اگر object بود → url رو استخراج کن
+    const url =
+      typeof input === "string"
+        ? input
+        : input.url || input.src || null;
+  
+    if (!url || typeof url !== "string") return null;
+  
     if (url.startsWith("http")) return url;
-
+  
     const full = `${apiBase.replace("/api", "")}${url}`;
-
+  
     const filename = full.split("/").pop().split("?")[0];
-
+  
     return `${cdnBase}/cdn/${filename}?url=${encodeURIComponent(full)}`;
   }
 
