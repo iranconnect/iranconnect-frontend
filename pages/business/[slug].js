@@ -13,6 +13,7 @@ import BusinessLocation from "../../components/business/BusinessLocation";
 import BusinessGallery from "../../components/business/BusinessGallery";
 import BusinessReviews from "../../components/business/BusinessReviews";
 import BlurGate from "../../components/ui/BlurGate";
+import BusinessClaim from "../../components/business/BusinessClaim";
 
 import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
@@ -316,28 +317,11 @@ export default function BusinessBySlug({ biz }) {
               </div>
             )}
 
-            {!isAdminView && (
-              <div className="mt-10 border-t pt-6 text-center">
-                
-                {biz.owner_verified ? (
-                  <p className="text-green-600 font-medium">
-                    🎖️ Verified by owner
-                  </p>
-                ) : !isLoggedIn ? (
-                  <button
-                    onClick={() =>
-                      window.location.href = `/auth/login?redirect=/business/${biz.slug}`
-                    }
-                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#3fd0c9] to-[#2aa7a1] text-white font-medium shadow"
-                  >
-                    Claim this business (Login required)
-                  </button>
-                ) : (
-                  <ClaimBusinessWidget businessId={biz.id} />
-                )}
-            
-              </div>
-            )}
+            <BusinessClaim
+              biz={biz}
+              isLoggedIn={isLoggedIn}
+              isAdminView={isAdminView}
+            />
           </div>
         </main>
 
