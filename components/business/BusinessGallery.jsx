@@ -61,7 +61,7 @@ export default function BusinessGallery({ biz }) {
 
 
       {/* 🔥 HORIZONTAL SLIDER */}
-      {showAll && gallery.length > 0 && (
+      {gallery.length > 0 && (
         <div className="relative mt-4">
 
           {/* Left Arrow */}
