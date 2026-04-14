@@ -2,7 +2,6 @@
 User-agent: *
 # Allow: /
 
-Disallow: /
 Disallow: /admin
 Disallow: /auth
 Disallow: /business/*V2
