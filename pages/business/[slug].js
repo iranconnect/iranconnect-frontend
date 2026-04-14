@@ -239,6 +239,37 @@ export default function BusinessBySlug({ biz }) {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                {
+                  "@type": "ListItem",
+                  position: 1,
+                  name: "Home",
+                  item: "https://iranconnect.org",
+                },
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: biz.category || "Category",
+                  item: `https://iranconnect.org/search?category=${encodeURIComponent(
+                    biz.category || ""
+                  )}`,
+                },
+                {
+                  "@type": "ListItem",
+                  position: 3,
+                  name: biz.name,
+                  item: canonicalUrl,
+                },
+              ],
+            }),
+          }}
+        /> 
       </Head>
 
       <div className="flex flex-col min-h-screen">
