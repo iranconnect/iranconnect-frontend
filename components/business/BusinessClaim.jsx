@@ -6,7 +6,7 @@ export default function BusinessClaim({
   isLoggedIn,
   isAdminView,
 }) {
-  if (isAdminView) return null;
+  
 
   // 🟢 اگر owner verified
   if (biz.owner_verified) {
