@@ -157,9 +157,14 @@ export default function BusinessBySlug({ biz }) {
   return (
     <>
       <Head>
-        <title>{biz.name} | IranConnect</title>
+        <title>
+          {biz.name} in {biz.city} | {biz.category} | IranConnect
+        </title>
 
-        <meta name="description" content={metaDescription} />
+        <meta
+          name="description"
+          content={`${biz.name} - ${biz.category} in ${biz.city}. ${metaDescription}`}
+        />
 
         <link rel="canonical" href={canonicalUrl} />
 
@@ -172,6 +177,9 @@ export default function BusinessBySlug({ biz }) {
         {coverImage && <meta property="og:image" content={coverImage} />}
         <meta property="og:type" content="business.business" />
         <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="IranConnect" />
+        <meta property="og:locale" content="en_US" />
+        <meta name="twitter:card" content="summary_large_image" />
 
         <script
           type="application/ld+json"
@@ -201,13 +209,33 @@ export default function BusinessBySlug({ biz }) {
                 biz.twitter_url,
                 biz.telegram_url,
               ].filter(Boolean),
-              aggregateRating: biz.avg_rating
-                ? {
-                    "@type": "AggregateRating",
-                    ratingValue: biz.avg_rating,
-                    reviewCount: biz.review_count || 1,
-                  }
-                : undefined,
+              aggregateRating:
+                biz.avg_rating && biz.review_count > 0
+                  ? {
+                      "@type": "AggregateRating",
+                      ratingValue: Number(biz.avg_rating),
+                      reviewCount: Number(biz.review_count),
+                      bestRating: 5,
+                      worstRating: 1,
+                    }
+                  : undefined,
+               review:
+                 biz.reviews && biz.reviews.length > 0
+                   ? biz.reviews.slice(0, 5).map((r) => ({
+                       "@type": "Review",
+                       author: {
+                         "@type": "Person",
+                         name: `User ${r.user_id}`,
+                       },
+                       reviewRating: {
+                         "@type": "Rating",
+                         ratingValue: r.rating,
+                         bestRating: 5,
+                       },
+                       reviewBody: r.comment || "",
+                       datePublished: r.created_at,
+                     }))
+                   : undefined,
             }),
           }}
         />
