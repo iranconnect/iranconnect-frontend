@@ -219,23 +219,6 @@ export default function BusinessBySlug({ biz }) {
                       worstRating: 1,
                     }
                   : undefined,
-               review:
-                 biz.reviews && biz.reviews.length > 0
-                   ? biz.reviews.slice(0, 5).map((r) => ({
-                       "@type": "Review",
-                       author: {
-                         "@type": "Person",
-                         name: `User ${r.user_id}`,
-                       },
-                       reviewRating: {
-                         "@type": "Rating",
-                         ratingValue: r.rating,
-                         bestRating: 5,
-                       },
-                       reviewBody: r.comment || "",
-                       datePublished: r.created_at,
-                     }))
-                   : undefined,
             }),
           }}
         />
