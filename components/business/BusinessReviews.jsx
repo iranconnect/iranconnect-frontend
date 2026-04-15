@@ -5,7 +5,29 @@ import apiClient from "../../utils/apiClient";
 export default function BusinessReviews({ businessId, isLoggedIn }) {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [rating, setRating] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
 
+  async function submitRating() {
+    try {
+      setSubmitting(true);
+      setMessage("");
+  
+      await apiClient.post(
+        `/businesses/${businessId}/reviews`,
+        { rating }
+      );
+  
+      setMessage("✅ Rating submitted");
+      window.location.reload();
+  
+    } catch (e) {
+      setMessage(e.response?.data?.error || "Error submitting rating.");
+    } finally {
+      setSubmitting(false);
+    }
+  }  
   useEffect(() => {
     if (!businessId) return;
 
@@ -22,12 +44,8 @@ export default function BusinessReviews({ businessId, isLoggedIn }) {
     return <p className="text-sm text-gray-500">Loading reviews...</p>;
   }
 
-  if (reviews.length === 0) {
-    return (
-      <p className="text-sm text-gray-500">
-        No reviews yet
-      </p>
-    );
+  if (loading) {
+    return <p className="text-sm text-gray-500">Loading reviews...</p>;
   }
 
   const avg =
@@ -38,6 +56,37 @@ export default function BusinessReviews({ businessId, isLoggedIn }) {
     return (
       <div className="bg-white border rounded-2xl p-6 md:p-8 shadow-sm mt-6 text-center">
         <h2 className="text-xl font-semibold mb-4">Reviews</h2>
+
+        {/* ⭐ Submit Rating */}
+        <div className="mb-6">
+          <div className="flex gap-2 mb-3">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                onClick={() => setRating(star)}
+                className={`text-2xl ${
+                  star <= rating ? "text-yellow-500" : "text-gray-300"
+                }`}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+        
+          <button
+            disabled={!rating || submitting}
+            onClick={submitRating}
+            className="px-4 py-2 bg-[#2aa7a1] text-white rounded-lg disabled:opacity-50"
+          >
+            Submit Rating
+          </button>
+        
+          {message && (
+            <p className="text-sm mt-2 text-gray-600">{message}</p>
+          )}
+        </div>
+
+        
   
         <p className="text-sm text-gray-500 mb-4">
           Login to see reviews and submit your rating
