@@ -113,7 +113,7 @@ export default function DetailV2() {
         return;
       }
 
-      await apiClient.post(`/businesses/${id}/ratings`, { score: rating });
+      await apiClient.post(`/businesses/${id}/reviews`, { rating });
 
       setMessage("✅ Rating submitted");
 
