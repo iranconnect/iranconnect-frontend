@@ -136,11 +136,15 @@ export default function BusinessBySlug({ biz }) {
         return;
       }
 
-      await apiClient.post(`/businesses/${biz.id}/ratings`, {
-        score: rating,
+      await apiClient.post(`/businesses/${biz.id}/reviews`, {
+        rating,
       });
 
       setMessage("✅ Rating submitted");
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 800); 
     } catch (e) {
       setMessage(e.response?.data?.error || "Error submitting rating.");
     }
