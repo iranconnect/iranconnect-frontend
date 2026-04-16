@@ -169,7 +169,11 @@ export default function DetailV2() {
     <>
       {/* 🔴 SEO: prevent indexing of legacy ID-based page */}
       <Head>
-        <meta name="robots" content="noindex,nofollow" />
+        {process.env.NEXT_PUBLIC_ENV === "production" ? (
+          <meta name="robots" content="index,follow" />
+        ) : (
+          <meta name="robots" content="noindex,nofollow" />
+        )}
       </Head>
       <div
         className="flex flex-col min-h-screen"
