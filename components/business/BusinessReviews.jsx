@@ -2,13 +2,14 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
 
-export default function BusinessReviews({ businessId, isLoggedIn }) {
+export default function BusinessReviews({ businessId }) {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rating, setRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [userRating, setUserRating] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   async function submitRating() {
     try {
@@ -55,6 +56,13 @@ export default function BusinessReviews({ businessId, isLoggedIn }) {
   }, [businessId]);
 
   useEffect(() => {
+    apiClient
+      .get("/auth/me")
+      .then(() => setIsLoggedIn(true))
+      .catch(() => setIsLoggedIn(false));
+  }, []);
+
+  useEffect(() => {
     if (userRating) {
       setRating(userRating);
     }
@@ -77,7 +85,7 @@ export default function BusinessReviews({ businessId, isLoggedIn }) {
       </h2>
 
       {/* ⭐ Submit Rating (only if logged in) */}
-      {isLoggedIn && (
+      
         <div className="mb-6">
           
           {userRating && (
@@ -101,7 +109,7 @@ export default function BusinessReviews({ businessId, isLoggedIn }) {
           </div>
       
           <button
-            disabled={!rating || submitting}
+            disabled={!isLoggedIn || !rating || submitting}
             onClick={submitRating}
             className="px-4 py-2 bg-[#2aa7a1] text-white rounded-lg disabled:opacity-50"
           >
@@ -116,7 +124,7 @@ export default function BusinessReviews({ businessId, isLoggedIn }) {
             <p className="text-sm mt-2 text-gray-600">{message}</p>
           )}
         </div>
-      )}
+      
 
       {/* ⭐ Summary */}
       <div className="flex items-center gap-3 mb-6">
@@ -129,35 +137,6 @@ export default function BusinessReviews({ businessId, isLoggedIn }) {
         <div className="text-sm text-gray-500">
           ({reviews.length} reviews)
         </div>
-      </div>
-
-      {/* 🧾 List */}
-      <div className="space-y-4">
-        {reviews.map((r) => (
-          <div
-            key={r.id}
-            className="border rounded-xl p-4"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-medium text-sm">
-                User #{r.user_id}
-              </span>
-              <span className="text-yellow-500 text-sm">
-                {"★".repeat(r.rating)}
-              </span>
-            </div>
-
-            {r.comment && (
-              <p className="text-sm text-gray-700">
-                {r.comment}
-              </p>
-            )}
-
-            <p className="text-xs text-gray-400 mt-2">
-              {new Date(r.created_at).toLocaleDateString()}
-            </p>
-          </div>
-        ))}
       </div>
     </div>
   );
