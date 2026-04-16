@@ -85,21 +85,8 @@ export default function BusinessReviews({ businessId, isLoggedIn }) {
             <p className="text-sm mt-2 text-gray-600">{message}</p>
           )}
         </div>
-
+  
         
-  
-        <p className="text-sm text-gray-500 mb-4">
-          Login to see reviews and submit your rating
-        </p>
-  
-        <button
-          onClick={() =>
-            window.location.href = `/auth/login?redirect=/business/${businessId}`
-          }
-          className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#3fd0c9] to-[#2aa7a1] text-white"
-        >
-          Login
-        </button>
       </div>
     );
   }
