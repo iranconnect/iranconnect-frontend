@@ -1,11 +1,12 @@
 //frontend/middleware.js
 import { NextResponse } from "next/server";
-console.log("🔥 Middleware HIT:", request.nextUrl.pathname);
+
 export const config = {
   matcher: ["/business/:path*"], // 🔥 خیلی مهم
 };
 
 export async function middleware(request) {
+  console.log("🔥 Middleware HIT:", request.nextUrl.pathname);
   const url = request.nextUrl;
   const pathname = url.pathname;
 
