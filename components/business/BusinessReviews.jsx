@@ -8,6 +8,7 @@ export default function BusinessReviews({ businessId, isLoggedIn }) {
   const [rating, setRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const [userRating, setUserRating] = useState(null);
 
   async function submitRating() {
     try {
@@ -19,8 +20,20 @@ export default function BusinessReviews({ businessId, isLoggedIn }) {
         { rating }
       );
   
-      setMessage("✅ Rating submitted");
-      window.location.reload();
+      if (userRating) {
+        setMessage("✅ Rating updated");
+      } else {
+        setMessage("✅ Rating submitted");
+      }
+
+      setUserRating(rating);
+
+      await apiClient
+        .get(`/businesses/${businessId}/reviews`)
+        .then((res) => {
+          setReviews(res.data?.data || []);
+          setUserRating(res.data?.user_review?.rating || null);
+        });
   
     } catch (e) {
       setMessage(e.response?.data?.error || "Error submitting rating.");
@@ -35,30 +48,44 @@ export default function BusinessReviews({ businessId, isLoggedIn }) {
       .get(`/businesses/${businessId}/reviews`)
       .then((res) => {
         setReviews(res.data?.data || []);
+        setUserRating(res.data?.user_review?.rating || null);
       })
       .catch(() => setReviews([]))
       .finally(() => setLoading(false));
   }, [businessId]);
 
-  if (loading) {
-    return <p className="text-sm text-gray-500">Loading reviews...</p>;
-  }
+  useEffect(() => {
+    if (userRating) {
+      setRating(userRating);
+    }
+  }, [userRating]);
 
   if (loading) {
     return <p className="text-sm text-gray-500">Loading reviews...</p>;
   }
 
-  const avg =
-    reviews.reduce((acc, r) => acc + r.rating, 0) /
-    reviews.length;
+  const avg = reviews.length
+    ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
+    : 0;
 
-  if (!isLoggedIn) {
-    return (
-      <div className="bg-white border rounded-2xl p-6 md:p-8 shadow-sm mt-6 text-center">
-        <h2 className="text-xl font-semibold mb-4">Reviews</h2>
 
-        {/* ⭐ Submit Rating */}
+
+  return (
+    <div className="bg-white border rounded-2xl p-6 md:p-8 shadow-sm mt-6">
+      <h2 className="text-xl font-semibold mb-4">
+        Reviews
+      </h2>
+
+      {/* ⭐ Submit Rating (only if logged in) */}
+      {isLoggedIn && (
         <div className="mb-6">
+          
+          {userRating && (
+            <p className="text-sm text-green-600 mb-2">
+              ⭐ Your rating: {userRating} (you can update it)
+            </p>
+          )}
+      
           <div className="flex gap-2 mb-3">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
@@ -72,30 +99,24 @@ export default function BusinessReviews({ businessId, isLoggedIn }) {
               </button>
             ))}
           </div>
-        
+      
           <button
             disabled={!rating || submitting}
             onClick={submitRating}
             className="px-4 py-2 bg-[#2aa7a1] text-white rounded-lg disabled:opacity-50"
           >
-            Submit Rating
+            {submitting
+              ? "Saving..."
+              : userRating
+              ? "Update Rating"
+              : "Submit Rating"}
           </button>
-        
+      
           {message && (
             <p className="text-sm mt-2 text-gray-600">{message}</p>
           )}
         </div>
-  
-        
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white border rounded-2xl p-6 md:p-8 shadow-sm mt-6">
-      <h2 className="text-xl font-semibold mb-4">
-        Reviews
-      </h2>
+      )}
 
       {/* ⭐ Summary */}
       <div className="flex items-center gap-3 mb-6">
