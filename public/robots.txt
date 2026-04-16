@@ -1,6 +1,6 @@
 # public/robots.txt
 User-agent: *
-# Allow: /
+Allow: /
 
 Disallow: /admin
 Disallow: /auth
