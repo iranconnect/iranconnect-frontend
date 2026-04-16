@@ -122,7 +122,10 @@ export default function BusinessBySlug({ biz }) {
 
   const metaDescription = buildMetaDescription(biz);
   const canonicalUrl = `https://iranconnect.org/business/${biz.slug}`;
-  const shouldNoIndex = isAdminView && biz?.is_public === false;
+  const isStaging = process.env.NEXT_PUBLIC_ENV !== "production";
+
+  const shouldNoIndex =
+    isStaging || (isAdminView && biz?.is_public === false);
 
   async function submitRating() {
     try {
@@ -172,11 +175,10 @@ export default function BusinessBySlug({ biz }) {
 
         <link rel="canonical" href={canonicalUrl} />
 
-        {process.env.NEXT_PUBLIC_ENV === "production" ? (
-          <meta name="robots" content="index,follow" />
-        ) : (
-          <meta name="robots" content="noindex,nofollow" />
-        )}   
+        <meta
+          name="robots"
+          content={shouldNoIndex ? "noindex,nofollow" : "index,follow"}
+        />   
 
         <meta property="og:title" content={biz.name} />
         <meta property="og:description" content={metaDescription} />
