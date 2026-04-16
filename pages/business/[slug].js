@@ -172,9 +172,11 @@ export default function BusinessBySlug({ biz }) {
 
         <link rel="canonical" href={canonicalUrl} />
 
-        {shouldNoIndex && (
+        {process.env.NEXT_PUBLIC_ENV === "production" ? (
+          <meta name="robots" content="index,follow" />
+        ) : (
           <meta name="robots" content="noindex,nofollow" />
-        )}
+        )}   
 
         <meta property="og:title" content={biz.name} />
         <meta property="og:description" content={metaDescription} />
