@@ -1,32 +1,36 @@
 //frontend/middleware.js
 import { NextResponse } from "next/server";
+console.log("🔥 Middleware HIT:", request.nextUrl.pathname);
+export const config = {
+  matcher: ["/business/:path*"], // 🔥 خیلی مهم
+};
 
 export async function middleware(request) {
   const url = request.nextUrl;
+  const pathname = url.pathname;
 
-  // فقط مسیر business
-  if (url.pathname.startsWith("/business/")) {
-    const parts = url.pathname.split("/");
-    const param = parts[2];
+  const parts = pathname.split("/");
+  const param = parts[2];
 
-    // اگر عدد بود → یعنی ID
-    if (/^\d+$/.test(param)) {
-      try {
-        const res = await fetch(
-          `https://api.iranconnect.org/businesses/${param}`
-        );
+  // اگر ID بود
+  if (/^\d+$/.test(param)) {
+    try {
+      const res = await fetch(
+        `https://api.iranconnect.org/businesses/${param}`
+      );
 
-        if (res.ok) {
-          const data = await res.json();
+      if (res.ok) {
+        const data = await res.json();
 
-          if (data?.slug) {
-            return NextResponse.redirect(
-              new URL(`/business/${data.slug}`, request.url),
-              301
-            );
-          }
+        if (data?.slug) {
+          return NextResponse.redirect(
+            new URL(`/business/${data.slug}`, request.url),
+            301
+          );
         }
-      } catch {}
+      }
+    } catch (err) {
+      console.error("Middleware error:", err);
     }
   }
 
