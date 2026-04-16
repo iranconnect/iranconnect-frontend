@@ -2,23 +2,26 @@
 import { NextResponse } from "next/server";
 
 export const config = {
-  matcher: ["/business/:path*"], // 🔥 خیلی مهم
+  matcher: ["/business/:path*"],
 };
 
 export async function middleware(request) {
-  console.log("🔥 Middleware HIT:", request.nextUrl.pathname);
-  const url = request.nextUrl;
-  const pathname = url.pathname;
+  const pathname = request.nextUrl.pathname;
+
+  console.log("🔥 Middleware HIT:", pathname);
 
   const parts = pathname.split("/");
   const param = parts[2];
 
-  // اگر ID بود
   if (/^\d+$/.test(param)) {
     try {
-      const res = await fetch(
-        `https://api.iranconnect.org/businesses/${param}`
-      );
+      const isStaging = request.nextUrl.hostname.includes("staging");
+
+      const API_BASE = isStaging
+        ? "https://api-staging.iranconnect.org"
+        : "https://api.iranconnect.org";
+
+      const res = await fetch(`${API_BASE}/businesses/${param}`);
 
       if (res.ok) {
         const data = await res.json();
