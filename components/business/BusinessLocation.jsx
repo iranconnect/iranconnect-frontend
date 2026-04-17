@@ -28,9 +28,9 @@ export default function BusinessLocation({ biz, isLoggedIn }) {
   
     if (!address) return null;
   
-    return `https://maps.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
+    return `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
   }
-
+  
   const embedUrl = getEmbedUrl(biz);
 
   if (!fullAddress && !mapUrl) return null;
