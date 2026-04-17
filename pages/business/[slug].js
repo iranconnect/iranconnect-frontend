@@ -27,14 +27,39 @@ export async function getServerSideProps(context) {
   const { slug } = context.params;
   const isStaging = process.env.NEXT_PUBLIC_ENV === "staging";
 
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_BASE || "https://api.iranconnect.org";
+
+  const cookie = context.req.headers.cookie || "";
+
+  // 🔥 STEP 1: اگر ID بود → redirect
+  if (/^\d+$/.test(slug)) {
+    try {
+      const res = await fetch(`${apiBase}/businesses/${slug}`);
+
+      if (!res.ok) return { notFound: true };
+
+      const data = await res.json();
+
+      if (data?.slug) {
+        return {
+          redirect: {
+            destination: `/business/${data.slug}`,
+            permanent: true,
+          },
+        };
+      }
+
+      return { notFound: true };
+    } catch {
+      return { notFound: true };
+    }
+  }
+
+  // ✅ STEP 2: slug واقعی
   try {
-    const apiBase =
-      process.env.NEXT_PUBLIC_API_BASE || "https://api.iranconnect.org";
-
-    const cookie = context.req.headers.cookie || "";
-
     const res = await fetch(
-      `${apiBase}/businesses/by-slug/${encodeURIComponent(slug)}`,
+      `${apiBase}/public-businesses/by-slug/${encodeURIComponent(slug)}`,
       {
         headers: {
           "Cache-Control": "no-cache",
