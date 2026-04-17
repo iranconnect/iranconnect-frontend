@@ -12,8 +12,6 @@ import {
 } from "lucide-react";
 
 export default function BusinessContact({ biz }) {
-  const isLoggedIn = biz.viewer_is_authenticated;
-
   const hasAny =
     biz.phone ||
     biz.email ||
@@ -39,46 +37,31 @@ export default function BusinessContact({ biz }) {
 
       <div className="space-y-4">
 
-        {/* 📞 Phone */}
+        {/* Phone */}
         {biz.phone && biz.show_phone && (
-          <a
-            href={isLoggedIn ? `tel:${biz.phone}` : "#"}
-            className={`flex items-center gap-3 ${
-              !isLoggedIn ? "blur-sm pointer-events-none" : ""
-            }`}
-          >
+          <a href={`tel:${biz.phone}`} className="flex items-center gap-3">
             <Phone size={18} />
             <span>{biz.phone}</span>
           </a>
         )}
 
-        {/* 📧 Email */}
+        {/* Email */}
         {biz.email && biz.show_email && (
-          <a
-            href={isLoggedIn ? `mailto:${biz.email}` : "#"}
-            className={`flex items-center gap-3 ${
-              !isLoggedIn ? "blur-sm pointer-events-none" : ""
-            }`}
-          >
+          <a href={`mailto:${biz.email}`} className="flex items-center gap-3">
             <Mail size={18} />
             <span>{biz.email}</span>
           </a>
         )}
 
-        {/* 🌐 Website */}
+        {/* Website */}
         {biz.website && (
-          <a
-            href={biz.website}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-3"
-          >
+          <a href={biz.website} target="_blank" rel="noreferrer" className="flex items-center gap-3">
             <Globe size={18} />
             <span>Website</span>
           </a>
         )}
 
-        {/* 🔥 Social Icons Row */}
+        {/* Social */}
         <div className="flex flex-wrap gap-3 pt-2">
 
           {biz.instagram_url && (
@@ -112,12 +95,7 @@ export default function BusinessContact({ biz }) {
           )}
 
           {biz.whatsapp_number && (
-            <a
-              href={`https://wa.me/${cleanWhatsApp(
-                biz.whatsapp_number
-              )}`}
-              target="_blank"
-            >
+            <a href={`https://wa.me/${cleanWhatsApp(biz.whatsapp_number)}`} target="_blank">
               <MessageCircle className="hover:text-green-500" />
             </a>
           )}
