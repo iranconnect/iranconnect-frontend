@@ -8,7 +8,7 @@ export const config = {
 export async function middleware(request) {
   const pathname = request.nextUrl.pathname;
 
-  console.log("🔥 Middleware HIT:", pathname);
+ 
 
   const parts = pathname.split("/");
   const param = parts[2];
