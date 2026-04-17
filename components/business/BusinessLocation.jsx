@@ -66,8 +66,8 @@ export default function BusinessLocation({ biz, isLoggedIn }) {
       )}
 
       {/* Map Embed */}
-      {isLoggedIn && embedUrl && (
-        <div className="rounded-xl overflow-hidden border">
+      {embedUrl && (
+        <div className={!isLoggedIn ? "blur-sm pointer-events-none" : ""}>
           <iframe
             src={embedUrl}
             width="100%"
