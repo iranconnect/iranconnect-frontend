@@ -18,14 +18,6 @@ export default function BusinessLocation({ biz, isLoggedIn }) {
 
   // Extract embed src from Google Maps URL
   function getEmbedUrl(biz) {
-    // 1️⃣ اگر لینک گوگل داریم → مستقیم embed کن
-    if (biz.location_map_url) {
-      return `https://www.google.com/maps?q=${encodeURIComponent(
-        biz.location_map_url
-      )}&output=embed`;
-    }
-  
-    // 2️⃣ fallback → استفاده از آدرس
     const address = [
       biz.address,
       biz.city,
@@ -36,7 +28,7 @@ export default function BusinessLocation({ biz, isLoggedIn }) {
   
     if (!address) return null;
   
-    return `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
+    return `https://maps.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
   }
 
   const embedUrl = getEmbedUrl(biz);
