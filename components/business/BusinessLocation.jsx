@@ -18,20 +18,11 @@ export default function BusinessLocation({ biz, isLoggedIn }) {
 
   // Extract embed src from Google Maps URL
   function getEmbedUrl(biz) {
-    // 1️⃣ اگر link گوگل داریم → extract query
+    // 1️⃣ اگر لینک گوگل داریم → مستقیم embed کن
     if (biz.location_map_url) {
-      try {
-        const url = new URL(biz.location_map_url);
-  
-        // حالت Google Maps معمولی
-        const query = url.searchParams.get("q");
-  
-        if (query) {
-          return `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
-        }
-  
-        // fallback → کل url رو به عنوان query استفاده نکن!
-      } catch {}
+      return `https://www.google.com/maps?q=${encodeURIComponent(
+        biz.location_map_url
+      )}&output=embed`;
     }
   
     // 2️⃣ fallback → استفاده از آدرس
