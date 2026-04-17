@@ -109,8 +109,8 @@ function renderAvailability(biz) {
                 {day.slice(0, 3)}
               </span>
               <span className="text-gray-600">
-                {Array.isArray(hours) && hours.length > 0
-                  ? hours.join(" | ")
+                {!hours.closed
+                  ? `${hours.open} - ${hours.close}`
                   : "Closed"}
               </span>
             </div>
