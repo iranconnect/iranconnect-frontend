@@ -327,64 +327,6 @@ export default function BusinessBySlug({ biz }) {
             <BlurGate isVisible={isLoggedIn}>
               <BusinessLocation biz={biz} />
             </BlurGate>
-            
-            {(biz.instagram_url ||
-              biz.facebook_url ||
-              biz.linkedin_url ||
-              biz.twitter_url ||
-              biz.telegram_url ||
-              biz.whatsapp_number) && (
-              <div className="mt-8 border-t pt-6">
-                <h2 className="text-lg font-semibold mb-3">Online presence</h2>
-                <div className="grid gap-2 text-sm">
-                  {biz.instagram_url && (
-                    <p>
-                      <strong>Instagram:</strong>{" "}
-                      <a href={biz.instagram_url} target="_blank" rel="noreferrer">
-                        Open
-                      </a>
-                    </p>
-                  )}
-                  {biz.facebook_url && (
-                    <p>
-                      <strong>Facebook:</strong>{" "}
-                      <a href={biz.facebook_url} target="_blank" rel="noreferrer">
-                        Open
-                      </a>
-                    </p>
-                  )}
-                  {biz.linkedin_url && (
-                    <p>
-                      <strong>LinkedIn:</strong>{" "}
-                      <a href={biz.linkedin_url} target="_blank" rel="noreferrer">
-                        Open
-                      </a>
-                    </p>
-                  )}
-                  {biz.twitter_url && (
-                    <p>
-                      <strong>X / Twitter:</strong>{" "}
-                      <a href={biz.twitter_url} target="_blank" rel="noreferrer">
-                        Open
-                      </a>
-                    </p>
-                  )}
-                  {biz.telegram_url && (
-                    <p>
-                      <strong>Telegram:</strong>{" "}
-                      <a href={biz.telegram_url} target="_blank" rel="noreferrer">
-                        Open
-                      </a>
-                    </p>
-                  )}
-                  {biz.whatsapp_number && (
-                    <p>
-                      <strong>WhatsApp:</strong> {biz.whatsapp_number}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
 
             {!isAdminView && isLoggedIn && biz.allow_reviews && (
               <div className="mt-8 border-t pt-6">
