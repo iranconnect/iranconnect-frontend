@@ -1,6 +1,8 @@
 //frontend/components/business/BusinessLocation.jsx
-export default function BusinessLocation({ biz, isLoggedIn }) {
+export default function BusinessLocation({ biz }) {
   if (!biz) return null;
+
+  const isLoggedIn = biz.viewer_is_authenticated; // ✅ FIX
 
   const fullAddress = [
     biz.address,
@@ -16,7 +18,6 @@ export default function BusinessLocation({ biz, isLoggedIn }) {
     biz.base_location_map_url ||
     null;
 
-  // Extract embed src from Google Maps URL
   function getEmbedUrl(biz) {
     const address = [
       biz.address,
@@ -37,11 +38,8 @@ export default function BusinessLocation({ biz, isLoggedIn }) {
 
   return (
     <div className="bg-white border rounded-2xl p-6 md:p-8 shadow-sm mt-6">
-      <h2 className="text-xl font-semibold mb-4">
-        Location
-      </h2>
+      <h2 className="text-xl font-semibold mb-4">Location</h2>
 
-      {/* Address */}
       {fullAddress && (
         <div className="mb-4">
           <p className="text-sm text-gray-700 flex items-start gap-2">
@@ -51,7 +49,6 @@ export default function BusinessLocation({ biz, isLoggedIn }) {
         </div>
       )}
 
-      {/* Open in Maps */}
       {isLoggedIn && mapUrl && (
         <div className="mb-4">
           <a
@@ -65,7 +62,6 @@ export default function BusinessLocation({ biz, isLoggedIn }) {
         </div>
       )}
 
-      {/* Map Embed */}
       {embedUrl && (
         <div className={!isLoggedIn ? "blur-sm pointer-events-none" : ""}>
           <iframe
@@ -74,7 +70,6 @@ export default function BusinessLocation({ biz, isLoggedIn }) {
             height="300"
             style={{ border: 0 }}
             loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
           />
         </div>
       )}
