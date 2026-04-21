@@ -14,6 +14,7 @@ import BusinessReviews from "../../components/business/BusinessReviews";
 import BlurGate from "../../components/ui/BlurGate";
 import BusinessClaim from "../../components/business/BusinessClaim";
 import BusinessContact from "../../components/business/BusinessContact";
+import BusinessStickyCTA from "../../components/business/BusinessStickyCTA";
 
 import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
@@ -292,7 +293,7 @@ export default function BusinessBySlug({ biz }) {
       <div className="flex flex-col min-h-screen">
         <Header />
 
-        <main className="flex-1 flex items-center justify-center px-4 py-10">
+        <main className="flex-1 flex items-center justify-center px-4 py-10 pb-24">
           <div className="w-full max-w-5xl space-y-8">
             {isAdminView && biz?.is_public === false && (
               <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
@@ -345,7 +346,10 @@ export default function BusinessBySlug({ biz }) {
             />
           </div>
         </main>
-
+        
+        {/* 🔥 Sticky CTA (Mobile Only) */}
+        <BusinessStickyCTA biz={biz} isLoggedIn={isLoggedIn} />
+                 
         <Footer />
 
         {showImageModal && (
