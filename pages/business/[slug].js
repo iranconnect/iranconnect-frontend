@@ -76,12 +76,7 @@ export async function getServerSideProps(context) {
     }
 
     const biz = await res.json();
-    // ✅ اینجا لاگ بگیر
-    console.log("SSR BIZ DATA:", {
-      phone: biz?.phone,
-      show_phone: biz?.show_phone,
-      whatsapp: biz?.whatsapp_number,
-    });
+    
    
     return {
       props: {
@@ -121,11 +116,7 @@ function buildMetaDescription(biz) {
    Page
 ====================================================== */
 export default function BusinessBySlug({ biz }) {
-  console.log("PAGE COMPONENT BIZ:", {
-    phone: biz?.phone,
-    show_phone: biz?.show_phone,
-    whatsapp: biz?.whatsapp_number,
-  }); 
+  
   const { status, role } = useAuthSession();
 
 
