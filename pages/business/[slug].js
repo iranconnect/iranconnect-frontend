@@ -26,7 +26,7 @@ import { useAuthSession } from "../../hooks/useAuthSession";
    SSR — Fetch business by slug
 ====================================================== */
 export async function getServerSideProps(context) {
-  console.log("PAGE biz:", biz); 
+   
   const { slug } = context.params;
   const isStaging = process.env.NEXT_PUBLIC_ENV === "staging";
 
@@ -76,6 +76,19 @@ export async function getServerSideProps(context) {
     }
 
     const biz = await res.json();
+    // ✅ اینجا لاگ بگیر
+    console.log("SSR BIZ DATA:", {
+      phone: biz?.phone,
+      show_phone: biz?.show_phone,
+      whatsapp: biz?.whatsapp_number,
+    });
+   
+    return {
+      props: {
+        biz,
+        isStaging,
+      },
+    }; 
 
     return {
       props: {
@@ -108,6 +121,11 @@ function buildMetaDescription(biz) {
    Page
 ====================================================== */
 export default function BusinessBySlug({ biz }) {
+  console.log("PAGE COMPONENT BIZ:", {
+    phone: biz?.phone,
+    show_phone: biz?.show_phone,
+    whatsapp: biz?.whatsapp_number,
+  }); 
   const { status, role } = useAuthSession();
 
 
