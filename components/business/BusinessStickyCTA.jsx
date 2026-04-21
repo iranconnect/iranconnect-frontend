@@ -23,7 +23,7 @@ export default function BusinessStickyCTA({ biz, isLoggedIn }) {
       data-cta
       className="fixed bottom-0 left-0 right-0 z-[9999] md:hidden"
     >
-      <div className="shadow-lg px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex gap-3 bg-white">
+      <div className="shadow-lg px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex gap-3">
     
         {biz.phone && biz.show_phone && (
           <a
