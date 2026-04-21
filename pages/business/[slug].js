@@ -26,6 +26,7 @@ import { useAuthSession } from "../../hooks/useAuthSession";
    SSR — Fetch business by slug
 ====================================================== */
 export async function getServerSideProps(context) {
+  console.log("PAGE biz:", biz); 
   const { slug } = context.params;
   const isStaging = process.env.NEXT_PUBLIC_ENV === "staging";
 
