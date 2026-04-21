@@ -2,8 +2,7 @@
 import { Phone, MessageCircle } from "lucide-react";
 
 export default function BusinessStickyCTA({ biz, isLoggedIn }) {
-  console.log("CTA biz:", biz);
-  console.log("CTA fields:", {
+  
   phone: biz?.phone,
   show_phone: biz?.show_phone,
   whatsapp: biz?.whatsapp_number,
