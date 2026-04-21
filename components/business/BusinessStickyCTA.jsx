@@ -26,9 +26,9 @@ export default function BusinessStickyCTA({ biz, isLoggedIn }) {
   return (
     <div
       data-cta
-      className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-[9999] md:hidden"
     >
-      <div className="bg-white border-t shadow-lg px-4 py-3 flex gap-3">
+      <div className="bg-red-500 border-4 border-blue-500 shadow-lg px-4 py-3 flex gap-3">
 
         {/* 📞 Call */}
         {biz.phone && biz.show_phone && (
