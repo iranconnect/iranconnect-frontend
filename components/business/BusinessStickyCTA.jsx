@@ -3,10 +3,6 @@ import { Phone, MessageCircle } from "lucide-react";
 
 export default function BusinessStickyCTA({ biz, isLoggedIn }) {
   
-  phone: biz?.phone,
-  show_phone: biz?.show_phone,
-  whatsapp: biz?.whatsapp_number,
-});
   if (!biz) return null;
 
   // ✅ فقط برای کاربران لاگین شده
