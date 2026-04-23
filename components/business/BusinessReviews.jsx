@@ -69,7 +69,7 @@ export default function BusinessReviews({ businessId }) {
   }, [userRating]);
 
   if (loading) {
-    return <p className="text-sm text-gray-500">Loading reviews...</p>;
+    return <p className="text-sm text-muted">Loading reviews...</p>;
   }
 
   const avg = reviews.length
@@ -79,7 +79,7 @@ export default function BusinessReviews({ businessId }) {
 
 
   return (
-    <div className="bg-white border rounded-2xl p-6 md:p-8 shadow-sm mt-6">
+    <div className="card mt-6">
       <h2 className="text-xl font-semibold mb-4">
         Reviews
       </h2>
@@ -89,7 +89,7 @@ export default function BusinessReviews({ businessId }) {
         <div className="mb-6">
           
           {userRating && (
-            <p className="text-sm text-green-600 mb-2">
+            <p className="text-sm text-turquoise mb-2">
               ⭐ Your rating: {userRating} (you can update it)
             </p>
           )}
@@ -100,7 +100,7 @@ export default function BusinessReviews({ businessId }) {
                 key={star}
                 onClick={() => setRating(star)}
                 className={`text-2xl ${
-                  star <= rating ? "text-yellow-500" : "text-gray-300"
+                  star <= rating ? "text-yellow-500" : "text-muted"
                 }`}
               >
                 ★
@@ -111,7 +111,7 @@ export default function BusinessReviews({ businessId }) {
           <button
             disabled={!isLoggedIn || !rating || submitting}
             onClick={submitRating}
-            className="px-4 py-2 bg-[#2aa7a1] text-white rounded-lg disabled:opacity-50"
+            className="btn-primary px-4 py-2"
           >
             {submitting
               ? "Saving..."
@@ -121,7 +121,7 @@ export default function BusinessReviews({ businessId }) {
           </button>
       
           {message && (
-            <p className="text-sm mt-2 text-gray-600">{message}</p>
+            <p className="text-sm mt-2 text-muted">{message}</p>
           )}
         </div>
       
@@ -134,7 +134,7 @@ export default function BusinessReviews({ businessId }) {
         <div className="text-yellow-500">
           {"★".repeat(Math.round(avg))}
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-muted">
           ({reviews.length} reviews)
         </div>
       </div>
