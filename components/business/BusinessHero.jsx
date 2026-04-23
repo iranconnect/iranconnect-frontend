@@ -20,7 +20,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
       )}
 
       {/* 🔵 Content */}
-      <div className="px-6 md:px-8 pb-6 md:pb-8 pt-20 md:pt-24 relative space-y-4">
+      <div className="px-6 pb-6 md:pb-8 pt-20 md:pt-24 relative space-y-4">
         
         {/* 🔵 Logo floating */}
         <div className="absolute -top-14 left-6 md:left-8">
