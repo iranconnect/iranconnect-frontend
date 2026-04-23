@@ -37,12 +37,13 @@ export default function BusinessLocation({ biz }) {
   if (!fullAddress && !mapUrl) return null;
 
   return (
-    <div className="bg-white border rounded-2xl p-6 md:p-8 shadow-sm mt-6">
+    <div className="card mt-6">
+    {*/<div className="bg-white border rounded-2xl p-6 md:p-8 shadow-sm mt-6">*/}
       <h2 className="text-xl font-semibold mb-4">Location</h2>
 
       {fullAddress && (
         <div className="mb-4">
-          <p className="text-sm text-gray-700 flex items-start gap-2">
+          <p className="text-sm text-[var(--text)] opacity-80 flex items-start gap-2">
             <span>📍</span>
             <span>{fullAddress}</span>
           </p>
