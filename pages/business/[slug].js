@@ -322,9 +322,9 @@ export default function BusinessBySlug({ biz }) {
 
             <BusinessAbout biz={biz} />
 
+            <BusinessSubcategories subcategories={biz.subcategories} />
             <BusinessServicesList services={biz.services} />
-            <BusinessTags tags={biz.tags} />
-            <BusinessSubcategories subcategories={biz.subcategories} />     
+            <BusinessTags tags={biz.tags} />     
 
             <BlurGate isVisible={isLoggedIn}>
               <BusinessGallery biz={biz} />
