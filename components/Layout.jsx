@@ -6,7 +6,7 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen flex flex-col bg-pagebg text-text">
       <Header />
-      <main className="flex-1 section-gap bg-white">
+      <main className="flex-1 section-gap">
         <div className="container-app">
           {children}
         </div>
