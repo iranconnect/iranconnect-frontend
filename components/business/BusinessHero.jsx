@@ -20,10 +20,10 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
       )}
 
       {/* 🔵 Content */}
-      <div className="p-6 md:p-8 relative">
+      <div className="p-6 md:p-8 relative space-y-4">
         
         {/* 🔵 Logo floating */}
-        <div className="-mt-16 mb-4">
+        <div className="-mt-16 mb-4 pl-1">
           <img
             src={biz.logo_url || "/logo.png"}
             alt={biz.name}
@@ -32,7 +32,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
         </div>
 
         {/* 🔵 Title */}
-        <div className="space-y-2">
+        <div className="space-y-2 max-w-full">
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
             {biz.name}
             {biz.owner_verified && (
@@ -97,17 +97,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
                 </a>
               )}
         
-              {biz.website && (
-                <a
-                  href={biz.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-ghost !w-auto flex items-center gap-2 text-sm px-4 py-2"
-                >
-                  <Globe size={16} />
-                  Website
-                </a>
-              )}
+              
         
               {biz.whatsapp_number && (
                 <a
@@ -118,6 +108,18 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
                 >
                   <MessageCircle size={16} />
                   WhatsApp
+                </a>
+              )}
+
+              {biz.website && (
+                <a
+                  href={biz.website}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-ghost !w-auto flex items-center gap-2 text-sm px-4 py-2"
+                >
+                  <Globe size={16} />
+                  Website
                 </a>
               )}
             </>
