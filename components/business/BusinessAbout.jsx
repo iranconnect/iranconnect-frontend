@@ -4,13 +4,13 @@ export default function BusinessAbout({ biz }) {
     biz.short_description || biz.full_description;
 
   return (
-    <div className="bg-white border rounded-2xl p-6 md:p-8 shadow-sm">
+    <div className="card">
       <h2 className="text-xl font-semibold mb-4">About</h2>
 
       {hasContent ? (
         <>
           {biz.short_description && (
-            <p className="text-gray-700 mb-3">
+            <p className="text-[var(--text)] opacity-80">
               {biz.short_description}
             </p>
           )}
