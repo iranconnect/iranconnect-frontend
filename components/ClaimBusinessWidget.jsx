@@ -118,7 +118,7 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
   }
 
   return (
-    <div className="mt-8 p-6 rounded-2xl border border-gray-200 bg-white text-[#0a1a44]">
+    <div className="card mt-8">
       <div className="flex justify-between items-center mb-3">
         <h3 className="font-semibold text-lg">{t.title}</h3>
         <div className="flex gap-2">
@@ -128,8 +128,8 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
               onClick={() => setLang(l)}
               className={`text-xs px-2 py-1 rounded ${
                 lang === l
-                  ? "bg-[#0a1a44] text-white"
-                  : "bg-gray-100 text-[#0a1a44]"
+                  ? "bg-[var(--text)] text-[var(--bg)]"
+                  : "bg-[var(--card-bg)] text-[var(--text)] border border-[var(--border)]"
               }`}
             >
               {l.toUpperCase()}
@@ -140,7 +140,7 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
 
       {step === 1 && (
         <>
-          <p className="text-sm text-gray-700 mb-4">{t.desc}</p>
+          <p className="text-sm text-[var(--text)] mb-4">{t.desc}</p>
 
           <div className="flex flex-col gap-3">
             <input
@@ -182,7 +182,7 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
             />
 
             {/* 📄 Ownership document guidance */}
-            <div className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <div className="text-xs text-muted bg-[var(--card-bg)] border border-[var(--border)] rounded-lg p-3">
               {t.fileHelp}
             </div>
 
@@ -224,7 +224,7 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
 
       {step === 2 && (
         <div className="text-center space-y-3">
-          <p className="text-green-600 font-medium">{msg}</p>
+          <p className="text-turquoise font-medium">{msg}</p>
           <p className="text-sm">{t.tokenNote}</p>
           <div className="text-xl font-bold text-turquoise tracking-widest">
             {claimToken}
