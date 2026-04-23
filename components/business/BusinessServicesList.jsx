@@ -9,12 +9,6 @@ export default function BusinessServicesList({ services }) {
       <div className="flex flex-wrap gap-2">
         {services.map((s) => (
           <span className="tag">
-          {/*<span
-            key={s.id}
-            className="px-3 py-1 rounded-full text-sm bg-white-100 text-gray-700"
-          >
-            {s.name}
-          </span>*/}
         ))}
       </div>
     </section>
