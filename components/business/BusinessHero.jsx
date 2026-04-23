@@ -5,7 +5,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
   const coverImage = biz.cover_image_url || biz.logo_url;
 
   return (
-    <div className="w-full rounded-2xl overflow-hidden border bg-white shadow-sm">
+    <div className="w-full rounded-2xl overflow-hidden border bg-[var(--card-bg)] shadow-sm">
       
       {/* 🔵 Cover */}
       {coverImage && (
@@ -39,7 +39,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
             )}
           </h1>
 
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted">
             {[
               biz.category,
               biz.sub_category,
