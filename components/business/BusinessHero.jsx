@@ -6,7 +6,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
 
   return (
       <div className="card mt-6">
-      {/*<div className="w-full rounded-2xl overflow-hidden border bg-[var(--card-bg)] shadow-sm">*/}
+      
       
       {/* 🔵 Cover */}
       {coverImage && (
@@ -36,7 +36,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
             {biz.name}
             {biz.owner_verified && (
-              <span className="text-green-600 text-lg">✔</span>
+              <span className="text-muted text-lg">✔</span>
             )}
           </h1>
 
@@ -84,13 +84,13 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
 
         {/* 🔵 CTA Buttons */}
         <div className="mt-6 flex flex-wrap gap-3">
-        
+
           {isLoggedIn ? (
             <>
               {phoneWithCode && (
                 <a
                   href={`tel:${biz.phone}`}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black text-white text-sm hover:opacity-90"
+                  className="btn-primary flex items-center gap-2 text-sm px-4 py-2 w-auto"
                 >
                   <Phone size={16} />
                   Call
@@ -102,7 +102,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
                   href={biz.website}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm hover:bg-gray-50"
+                  className="btn-ghost flex items-center gap-2 text-sm px-4 py-2"
                 >
                   <Globe size={16} />
                   Website
@@ -114,7 +114,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
                   href={`https://wa.me/${biz.whatsapp_number.replace(/\D/g, "")}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 text-white text-sm hover:opacity-90"
+                  className="btn-primary flex items-center gap-2 text-sm px-4 py-2 w-auto"
                 >
                   <MessageCircle size={16} />
                   WhatsApp
