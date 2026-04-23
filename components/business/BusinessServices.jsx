@@ -147,7 +147,7 @@ export default function BusinessServices({ biz }) {
   if (!hasData) return null;
 
   return (
-    <div className="bg-white border rounded-2xl p-6 md:p-8 shadow-sm">
+    <div className="card">
       <h2 className="text-xl font-semibold mb-4">
         Services & Availability
       </h2>
