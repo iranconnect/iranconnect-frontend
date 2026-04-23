@@ -8,7 +8,9 @@ export default function BusinessServicesList({ services }) {
 
       <div className="flex flex-wrap gap-2">
         {services.map((s) => (
-          <span className="tag">
+          <span key={s.id} className="tag">
+            {s.name}
+          </span>
         ))}
       </div>
     </section>
