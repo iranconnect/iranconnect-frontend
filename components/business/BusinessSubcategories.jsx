@@ -10,7 +10,7 @@ export default function BusinessSubcategories({ subcategories }) {
         {subcategories.map((sc) => (
           <span
             key={sc.id}
-            className="px-3 py-1 rounded-full text-sm bg-gray-200 text-gray-800"
+            className="px-3 py-1 rounded-full text-sm bg-indigo-50 text-indigo-700"
           >
             {sc.name}
           </span>
