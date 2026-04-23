@@ -38,7 +38,7 @@ export default function BusinessLocation({ biz }) {
 
   return (
     <div className="card mt-6">
-    {*/<div className="bg-white border rounded-2xl p-6 md:p-8 shadow-sm mt-6">*/}
+    {/*<div className="bg-white border rounded-2xl p-6 md:p-8 shadow-sm mt-6">*/}
       <h2 className="text-xl font-semibold mb-4">Location</h2>
 
       {fullAddress && (
