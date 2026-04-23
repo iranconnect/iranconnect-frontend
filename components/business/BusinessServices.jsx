@@ -75,7 +75,7 @@ function renderAvailability(biz) {
                       <span className="font-medium capitalize">
                         {day.slice(0, 3)}
                       </span>
-                      <span className="text-gray-600">
+                      <span className="text-[var(--text)] opacity-80">
                         {hrs.length > 0
                           ? hrs.join(" | ")
                           : "Closed"}
@@ -108,7 +108,7 @@ function renderAvailability(biz) {
               <span className="font-medium capitalize">
                 {day.slice(0, 3)}
               </span>
-              <span className="text-gray-600">
+              <span className="text-[var(--text)] opacity-80">
                 {!hours.closed
                   ? `${hours.open} - ${hours.close}`
                   : "Closed"}
@@ -152,7 +152,7 @@ export default function BusinessServices({ biz }) {
         Services & Availability
       </h2>
 
-      <div className="space-y-3 text-gray-700">
+      <div className="space-y-3 text-[var(--text)] opacity-80">
 
         {serviceMode && (
           <p className="text-sm">{serviceMode}</p>
@@ -162,13 +162,13 @@ export default function BusinessServices({ biz }) {
           <div className="mt-2">
             <p className="text-sm font-medium mb-2">🕒 Opening hours</p>
         
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-sm text-gray-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-sm text-[var(--text)] opacity-80">
               {weeklyHours.map((item) => (
                 <div key={item.day} className="flex justify-between">
                   <span className="font-medium">
                     {item.day.slice(0, 3)}
                   </span>
-                  <span className="text-gray-600">
+                  <span className="text-[var(--text)] opacity-80">
                     {item.hours || "Closed"}
                   </span>
                 </div>
