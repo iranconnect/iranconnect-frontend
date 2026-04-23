@@ -8,8 +8,8 @@ export default function BusinessTags({ tags }) {
 
       <div className="flex flex-wrap gap-2">
         {tags.map((t) => (
-          <span key={s.id} className="tag">
-            {s.name}
+          <span key={t.id} className="tag">
+            {t.name}
           </span>
         ))}
       </div>
