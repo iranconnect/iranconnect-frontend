@@ -6,13 +6,11 @@ export default function BusinessClaim({
   isLoggedIn,
   isAdminView,
 }) {
-  
-
   // 🟢 اگر owner verified
   if (biz.owner_verified) {
     return (
-      <div className="mt-10 border-t pt-6 text-center">
-        <p className="text-green-600 font-medium">
+      <div className="mt-10 border-t pt-6 text-center border-[var(--border)]">
+        <p className="text-turquoise font-medium">
           🎖️ Verified by owner
         </p>
       </div>
@@ -22,12 +20,12 @@ export default function BusinessClaim({
   // ❌ اگر لاگین نیست
   if (!isLoggedIn) {
     return (
-      <div className="mt-10 border-t pt-6 text-center">
+      <div className="mt-10 border-t pt-6 text-center border-[var(--border)]">
         <button
           onClick={() =>
             window.location.href = `/auth/login?redirect=/business/${biz.slug}`
           }
-          className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#3fd0c9] to-[#2aa7a1] text-white font-medium shadow"
+          className="btn-primary inline-block px-6 py-3"
         >
           Claim this business (Login required)
         </button>
@@ -37,7 +35,7 @@ export default function BusinessClaim({
 
   // ✅ اگر لاگین کرده
   return (
-    <div className="mt-10 border-t pt-6 text-center">
+    <div className="mt-10 border-t pt-6 text-center border-[var(--border)]">
       <ClaimBusinessWidget businessId={biz.id} />
     </div>
   );
