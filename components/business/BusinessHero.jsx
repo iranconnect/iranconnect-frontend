@@ -90,7 +90,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
               {phoneWithCode && (
                 <a
                   href={`tel:${biz.phone}`}
-                  className="btn-primary flex items-center gap-2 text-sm px-4 py-2 w-auto"
+                  className="btn-primary !w-auto flex items-center gap-2 text-sm px-4 py-2"
                 >
                   <Phone size={16} />
                   Call
@@ -102,7 +102,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
                   href={biz.website}
                   target="_blank"
                   rel="noreferrer"
-                  className="btn-ghost flex items-center gap-2 text-sm px-4 py-2"
+                  className="btn-ghost !w-auto flex items-center gap-2 text-sm px-4 py-2"
                 >
                   <Globe size={16} />
                   Website
@@ -114,7 +114,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
                   href={`https://wa.me/${biz.whatsapp_number.replace(/\D/g, "")}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="btn-primary flex items-center gap-2 text-sm px-4 py-2 w-auto"
+                  className="btn-primary !w-auto flex items-center gap-2 text-sm px-4 py-2"
                 >
                   <MessageCircle size={16} />
                   WhatsApp
