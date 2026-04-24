@@ -1,5 +1,6 @@
 //frontend/components/business/BusinessGallery.jsx
 import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function BusinessGallery({ biz }) {
   const [activeIndex, setActiveIndex] = useState(null);
@@ -97,9 +98,16 @@ export default function BusinessGallery({ biz }) {
                 .getElementById("gallery-scroll")
                 ?.scrollBy({ left: -300, behavior: "smooth" });
             }}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur border border-gray-200 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center transition"
+            className="
+            absolute left-2 top-1/2 -translate-y-1/2 z-10
+            w-10 h-10 flex items-center justify-center rounded-full
+            bg-[var(--card)] border border-[var(--border)]
+            shadow-md backdrop-blur
+            hover:scale-105 hover:shadow-lg
+            transition-all duration-200
+            "
           >
-            ←
+            <ChevronLeft size={18} />
           </button>
 
           {/* Scroll Container */}
@@ -125,9 +133,16 @@ export default function BusinessGallery({ biz }) {
                 .getElementById("gallery-scroll")
                 ?.scrollBy({ left: 300, behavior: "smooth" });
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur border border-gray-200 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center transition"
+            className="
+            absolute right-2 top-1/2 -translate-y-1/2 z-10
+            w-10 h-10 flex items-center justify-center rounded-full
+            bg-[var(--card)] border border-[var(--border)]
+            shadow-md backdrop-blur
+            hover:scale-105 hover:shadow-lg
+            transition-all duration-200
+            "
           >
-            →
+            <ChevronRight size={18} />
           </button>
         </div>
       )}
