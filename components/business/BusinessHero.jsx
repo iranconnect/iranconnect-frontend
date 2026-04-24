@@ -14,7 +14,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
           <img
             src={coverImage}
             alt={biz.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full rounded object-cover"
           />
         </div>
       )}
@@ -27,7 +27,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
           <img
             src={biz.logo_url || "/logo.png"}
             alt={biz.name}
-            className="w-28 h-28 rounded-xl border-4 border-[var(--bg)] object-cover shadow"
+            className="w-28 h-28 rounded-xl border-[var(--bg)] object-cover shadow"
           />
         </div>
 
