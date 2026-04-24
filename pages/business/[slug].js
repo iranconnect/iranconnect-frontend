@@ -1,6 +1,7 @@
 //pages/business/[slug].js 
 import Head from "next/head";
 import { useState, useEffect } from "react";
+import { ArrowUp } from "lucide-react";
 
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
@@ -382,11 +383,20 @@ export default function BusinessBySlug({ biz }) {
            onClick={() =>
              window.scrollTo({ top: 0, behavior: "smooth" })
            }
-           className="fixed bottom-6 right-6 z-50 
-           bg-gradient-to-r from-[#3fd0c9] to-[#2aa7a1]
-           text-white p-3 rounded-full shadow-lg hover:opacity-90 transition"
+           className="
+           fixed right-4 md:right-6
+           bottom-20 md:bottom-6
+           z-50
+           bg-[var(--card)]
+           border border-[var(--border)]
+           shadow-lg backdrop-blur
+           text-[var(--text)]
+           p-3 rounded-full
+           hover:scale-110 hover:shadow-xl
+           transition-all duration-200
+           "
          >
-           ↑
+           <ArrowUp size={18} />
          </button>
        )}   
                  
