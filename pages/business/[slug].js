@@ -306,7 +306,7 @@ export default function BusinessBySlug({ biz }) {
       <div className="flex flex-col min-h-screen">
         <Header />
 
-        <main className="flex-1 flex items-center justify-center px-4 py-4 pb-24" style={{ backgroundColor: "#ffffff" }}>
+        <main className="flex-1 flex items-center justify-center px-4 py-10" style={{ backgroundColor: "#ffffff" }}>
           <div className="w-full max-w-5xl space-y-8">
             {isAdminView && biz?.is_public === false && (
               <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
