@@ -387,10 +387,9 @@ export default function BusinessBySlug({ biz }) {
            fixed right-4 md:right-6
            bottom-20 md:bottom-6
            z-50
-           bg-[var(--card)]
-           border border-[var(--border)]
-           shadow-lg backdrop-blur
-           text-[var(--text)]
+           bg-white/80 border border-gray-200
+           shadow-lg backdrop-blur-md
+           text-gray-700
            p-3 rounded-full
            hover:scale-110 hover:shadow-xl
            transition-all duration-200
