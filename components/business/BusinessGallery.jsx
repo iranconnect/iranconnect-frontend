@@ -1,8 +1,8 @@
 //frontend/components/business/BusinessGallery.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function BusinessGallery({ biz }) {
-  const [activeImage, setActiveImage] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(null);
 
   const apiBase =
     process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
@@ -52,6 +52,32 @@ export default function BusinessGallery({ biz }) {
 
   if (!cover && gallery.length === 0) return null;
 
+  
+  useEffect(() => {
+    function handleKey(e) {
+      if (activeIndex === null) return;
+  
+      if (e.key === "ArrowRight") {
+        setActiveIndex((prev) =>
+          prev === gallery.length - 1 ? 0 : prev + 1
+        );
+      }
+  
+      if (e.key === "ArrowLeft") {
+        setActiveIndex((prev) =>
+          prev === 0 ? gallery.length - 1 : prev - 1
+        );
+      }
+  
+      if (e.key === "Escape") {
+        setActiveIndex(null);
+      }
+    }
+  
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [activeIndex, gallery.length]);
+  
   /* ─────────────────────────────
      UI
   ───────────────────────────── */
@@ -71,7 +97,7 @@ export default function BusinessGallery({ biz }) {
                 .getElementById("gallery-scroll")
                 ?.scrollBy({ left: -300, behavior: "smooth" });
             }}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow rounded-full w-8 h-8 flex items-center justify-center"
+            className=className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur border border-gray-200 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center transition"
           >
             ←
           </button>
@@ -87,7 +113,7 @@ export default function BusinessGallery({ biz }) {
                 src={img}
                 alt={`Gallery ${i}`}
                 className="min-w-[160px] h-[120px] rounded-xl object-cover cursor-pointer"
-                onClick={() => setActiveImage(img)}
+                onClick={() => setActiveIndex(i)}
               />
             ))}
           </div>
@@ -99,7 +125,7 @@ export default function BusinessGallery({ biz }) {
                 .getElementById("gallery-scroll")
                 ?.scrollBy({ left: 300, behavior: "smooth" });
             }}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow rounded-full w-8 h-8 flex items-center justify-center"
+            className=className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur border border-gray-200 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center transition"
           >
             →
           </button>
@@ -107,17 +133,44 @@ export default function BusinessGallery({ biz }) {
       )}
 
       {/* 🔥 MODAL */}
-      {activeImage && (
+      {activeIndex !== null && (
         <div
           className="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
-          onClick={() => setActiveImage(null)}
+          onClick={() => setActiveIndex(null)}
         >
+          {/* LEFT */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveIndex((prev) =>
+                prev === 0 ? gallery.length - 1 : prev - 1
+              );
+            }}
+            className="absolute left-6 text-white text-3xl"
+          >
+            ‹
+          </button>
+      
+          {/* IMAGE */}
           <img
-            src={activeImage}
+            src={gallery[activeIndex]}
             alt="Preview"
             className="max-h-[90vh] max-w-[90vw] rounded-xl"
             onClick={(e) => e.stopPropagation()}
           />
+      
+          {/* RIGHT */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveIndex((prev) =>
+                prev === gallery.length - 1 ? 0 : prev + 1
+              );
+            }}
+            className="absolute right-6 text-white text-3xl"
+          >
+            ›
+          </button>
         </div>
       )}
     </div>
