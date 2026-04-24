@@ -97,7 +97,7 @@ export default function BusinessGallery({ biz }) {
                 .getElementById("gallery-scroll")
                 ?.scrollBy({ left: -300, behavior: "smooth" });
             }}
-            className=className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur border border-gray-200 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center transition"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur border border-gray-200 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center transition"
           >
             ←
           </button>
@@ -125,7 +125,7 @@ export default function BusinessGallery({ biz }) {
                 .getElementById("gallery-scroll")
                 ?.scrollBy({ left: 300, behavior: "smooth" });
             }}
-            className=className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur border border-gray-200 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center transition"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur border border-gray-200 hover:bg-white shadow-md rounded-full w-9 h-9 flex items-center justify-center transition"
           >
             →
           </button>
