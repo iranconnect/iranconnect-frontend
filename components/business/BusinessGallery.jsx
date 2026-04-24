@@ -107,7 +107,7 @@ export default function BusinessGallery({ biz }) {
             transition-all duration-200
             "
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft size={18} className="text-black" />
           </button>
 
           {/* Scroll Container */}
@@ -142,7 +142,7 @@ export default function BusinessGallery({ biz }) {
             transition-all duration-200
             "
           >
-            <ChevronRight size={18} />
+            <ChevronRight size={18} className="text-black" />
           </button>
         </div>
       )}
