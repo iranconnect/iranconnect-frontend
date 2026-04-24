@@ -35,7 +35,7 @@ export default function BusinessClaim({
 
   // ✅ اگر لاگین کرده
   return (
-    <div className="mt-10 border-t pt-6 text-center border-[var(--border)]">
+    <div className="mt-10 pt0 text-center border-[var(--border)]">
       <ClaimBusinessWidget businessId={biz.id} />
     </div>
   );
