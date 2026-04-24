@@ -101,9 +101,9 @@ export default function BusinessGallery({ biz }) {
             className="
             absolute left-2 top-1/2 -translate-y-1/2 z-10
             w-10 h-10 flex items-center justify-center rounded-full
-            bg-[var(--card)] border border-[var(--border)]
+            bg-white/90 border border-gray-200
             shadow-md backdrop-blur
-            hover:scale-105 hover:shadow-lg
+            hover:bg-white hover:scale-105 hover:shadow-lg
             transition-all duration-200
             "
           >
@@ -136,9 +136,9 @@ export default function BusinessGallery({ biz }) {
             className="
             absolute right-2 top-1/2 -translate-y-1/2 z-10
             w-10 h-10 flex items-center justify-center rounded-full
-            bg-[var(--card)] border border-[var(--border)]
+            bg-white/90 border border-gray-200
             shadow-md backdrop-blur
-            hover:scale-105 hover:shadow-lg
+            hover:bg-white hover:scale-105 hover:shadow-lg
             transition-all duration-200
             "
           >
