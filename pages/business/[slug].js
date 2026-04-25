@@ -128,6 +128,7 @@ export default function BusinessBySlug({ biz }) {
   const [message, setMessage] = useState("");
   const [showImageModal, setShowImageModal] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false); 
+  const [showCTA, setShowCTA] = useState(true); 
 
   const isAuthReady = status !== "checking";
   const isLoggedIn = status === "authenticated";
@@ -177,6 +178,26 @@ export default function BusinessBySlug({ biz }) {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    const footer = document.querySelector("footer");
+    if (!footer) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // اگر footer دیده شد → CTA مخفی
+        setShowCTA(!entry.isIntersecting);
+      },
+      {
+        root: null,
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(footer);
+
+    return () => observer.disconnect();
+  }, []); 
    
   async function submitRating() {
     try {
@@ -382,7 +403,11 @@ export default function BusinessBySlug({ biz }) {
         </main>
         
         {/* 🔥 Sticky CTA (Mobile Only) */}
-        <BusinessStickyCTA biz={biz} isLoggedIn={isLoggedIn} />
+        <BusinessStickyCTA
+          biz={biz}
+          isLoggedIn={isLoggedIn}
+          isVisible={showCTA}
+        />
 
         {showScrollTop && (
          <button
