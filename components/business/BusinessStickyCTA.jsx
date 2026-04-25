@@ -1,7 +1,7 @@
 //frontend/components/business/BusinessStickyCTA.jsx
 import { Phone, MessageCircle } from "lucide-react";
 
-export default function BusinessStickyCTA({ biz, isLoggedIn }) {
+export default function BusinessStickyCTA({ biz, isLoggedIn, isVisible }) {
   
   if (!biz) return null;
 
@@ -21,7 +21,11 @@ export default function BusinessStickyCTA({ biz, isLoggedIn }) {
   return (
     <div
       data-cta
-      className="fixed bottom-0 left-0 right-0 z-[9999] md:hidden"
+      className={`
+        fixed bottom-0 left-0 right-0 z-[9999] md:hidden
+        transition-all duration-300
+        ${isVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"}
+      `}
     >
       <div className="shadow-lg px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex gap-3">
     
