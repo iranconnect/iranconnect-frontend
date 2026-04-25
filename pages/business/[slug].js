@@ -180,24 +180,23 @@ export default function BusinessBySlug({ biz }) {
   }, []);
 
   useEffect(() => {
-    const footer = document.querySelector("footer");
-    if (!footer) return;
+    const sentinel = document.getElementById("cta-sentinel");
+    if (!sentinel) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // اگر footer دیده شد → CTA مخفی
         setShowCTA(!entry.isIntersecting);
       },
       {
         root: null,
-        threshold: 0.1,
+        threshold: 0,
       }
     );
 
-    observer.observe(footer);
+    observer.observe(sentinel);
 
     return () => observer.disconnect();
-  }, []); 
+  }, []);
    
   async function submitRating() {
     try {
@@ -410,26 +409,26 @@ export default function BusinessBySlug({ biz }) {
         />
 
         {showScrollTop && (
-         <button
-           onClick={() =>
-             window.scrollTo({ top: 0, behavior: "smooth" })
-           }
-           className="
-           fixed right-4 md:right-6
-           bottom-[120px] md:bottom-6
-           z-50
-           bg-white/80 border border-gray-200
-           shadow-lg backdrop-blur-md
-           text-gray-700
-           p-3 rounded-full
-           hover:scale-110 hover:shadow-xl
-           transition-all duration-200
-           "
-         >
-           <ArrowUp size={18} />
-         </button>
-       )}   
-                 
+          <button
+            onClick={() =>
+              window.scrollTo({ top: 0, behavior: "smooth" })
+            }
+            className="
+            fixed right-4 md:right-6
+            bottom-[120px] md:bottom-6
+            z-50
+            bg-white/80 border border-gray-200
+            shadow-lg backdrop-blur-md
+            text-gray-700
+            p-3 rounded-full
+            hover:scale-110 hover:shadow-xl
+            transition-all duration-200
+            "
+          >
+            <ArrowUp size={18} />
+          </button>
+        )}   
+        <div id="cta-sentinel" className="h-1 w-full" />         
         <Footer />
 
         {showImageModal && (
