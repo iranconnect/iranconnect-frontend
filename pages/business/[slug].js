@@ -385,7 +385,7 @@ export default function BusinessBySlug({ biz }) {
            }
            className="
            fixed right-4 md:right-6
-           bottom-20 md:bottom-6
+           bottom-[120px] md:bottom-6
            z-50
            bg-white/80 border border-gray-200
            shadow-lg backdrop-blur-md
