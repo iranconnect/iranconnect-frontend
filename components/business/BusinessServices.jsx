@@ -208,6 +208,8 @@ export default function BusinessServices({ biz }) {
     biz.availability_hours ||
     biz.service_radius_km;
 
+  const hasParsedNoteHours = weeklyHoursRaw.length > 0;
+
   if (!hasData) return null;
 
   return (
@@ -220,7 +222,7 @@ export default function BusinessServices({ biz }) {
 
         {serviceMode && <p className="text-sm">{serviceMode}</p>}
 
-        const hasParsedNoteHours = weeklyHoursRaw.length > 0;
+        
         {hasParsedNoteHours ? (
           <div className="mt-2">
             <p className="text-sm font-medium mb-2">🕒 Opening hours</p>
