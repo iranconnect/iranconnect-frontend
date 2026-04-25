@@ -184,7 +184,9 @@ export default function BusinessBySlug({ biz }) {
     if (!footer) return;
 
     const observer = new IntersectionObserver(
+       
       ([entry]) => {
+        console.log("INTERSECT:", entry.isIntersecting); 
         setShowCTA(!entry.isIntersecting);
       },
       {
