@@ -1,4 +1,14 @@
 //frontend/components/business/BusinessServices.jsx
+const DAYS_ORDER = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+];
+
 function formatServiceMode(mode) {
   switch (mode) {
     case "on_site":
@@ -96,18 +106,26 @@ function renderAvailability(biz) {
     biz.availability_hours &&
     typeof biz.availability_hours === "object"
   ) {
-    const days = Object.entries(biz.availability_hours);
+    const days = Object.entries(biz.availability_hours).sort(
+      ([a], [b]) =>
+        DAYS_ORDER.indexOf(a.toLowerCase()) -
+        DAYS_ORDER.indexOf(b.toLowerCase())
+    );
 
     return (
       <div className="mt-2">
         <p className="text-sm font-medium mb-2">🕒 Opening hours</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
           {days.map(([day, hours]) => (
-            <div key={day} className="flex justify-between">
+            <div
+              key={day}
+              className="grid grid-cols-[80px_1fr] items-start"
+            >
               <span className="font-medium capitalize">
                 {day.slice(0, 3)}
               </span>
+        
               <span className="text-[var(--text)] opacity-80">
                 {!hours.closed
                   ? `${hours.open} - ${hours.close}`
@@ -162,13 +180,17 @@ export default function BusinessServices({ biz }) {
           <div className="mt-2">
             <p className="text-sm font-medium mb-2">🕒 Opening hours</p>
         
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-sm text-[var(--text)] opacity-80">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm text-[var(--text)] opacity-80">
               {weeklyHours.map((item) => (
-                <div key={item.day} className="flex justify-between">
+                <div
+                  key={item.day}
+                  className="grid grid-cols-[80px_1fr] items-start"
+                >
                   <span className="font-medium">
                     {item.day.slice(0, 3)}
                   </span>
-                  <span className="text-[var(--text)] opacity-80">
+            
+                  <span>
                     {item.hours || "Closed"}
                   </span>
                 </div>
