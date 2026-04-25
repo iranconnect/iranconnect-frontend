@@ -9,6 +9,21 @@ const DAYS_ORDER = [
   "sunday",
 ];
 
+// 🔥 تشخیص روز جاری
+function getTodayKey() {
+  const todayIndex = new Date().getDay(); // 0=Sunday
+  const map = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
+  return map[todayIndex];
+}
+
 function formatServiceMode(mode) {
   switch (mode) {
     case "on_site":
@@ -24,8 +39,7 @@ function formatServiceMode(mode) {
   }
 }
 
-
-
+// 🔥 parse note
 function formatAvailabilityNote(note) {
   if (!note) return [];
 
@@ -56,6 +70,28 @@ function formatAvailabilityNote(note) {
   return result;
 }
 
+// 🔥 shared UI renderer
+function DayRow({ dayKey, label, hours }) {
+  const today = getTodayKey();
+  const isToday = dayKey.toLowerCase() === today;
+
+  return (
+    <div className="grid grid-cols-[80px_1fr] items-start">
+      <span
+        className={`font-medium capitalize ${
+          isToday ? "text-[#2aa7a1] font-semibold" : ""
+        }`}
+      >
+        {label}
+      </span>
+
+      <span className="text-[var(--text)] opacity-80">
+        {hours}
+      </span>
+    </div>
+  );
+}
+
 function renderAvailability(biz) {
   // 1️⃣ Always open
   if (biz.availability_type === "always_open") {
@@ -64,47 +100,38 @@ function renderAvailability(biz) {
 
   // 2️⃣ Appointment only
   if (biz.availability_type === "appointment_only") {
+    const days = Object.entries(biz.availability_hours || {}).sort(
+      ([a], [b]) =>
+        DAYS_ORDER.indexOf(a.toLowerCase()) -
+        DAYS_ORDER.indexOf(b.toLowerCase())
+    );
+
     return (
       <div className="space-y-2">
         <p className="text-sm">📅 By appointment only</p>
-  
-        {biz.availability_hours &&
-          typeof biz.availability_hours === "object" && (
-            <div>
-              <p className="text-sm font-medium mb-1">
-                🕒 Suggested hours
-              </p>
-  
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-sm">
-                {Object.entries(biz.availability_hours).map(
-                  ([day, hrs]) => (
-                    <div
-                      key={day}
-                      className="flex justify-between"
-                    >
-                      <span className="font-medium capitalize">
-                        {day.slice(0, 3)}
-                      </span>
-                      <span className="text-[var(--text)] opacity-80">
-                        {hrs.length > 0
-                          ? hrs.join(" | ")
-                          : "Closed"}
-                      </span>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-          )}
+
+        <div>
+          <p className="text-sm font-medium mb-2">🕒 Suggested hours</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+            {days.map(([day, hrs]) => (
+              <DayRow
+                key={day}
+                dayKey={day}
+                label={day.slice(0, 3)}
+                hours={hrs.length > 0 ? hrs.join(" | ") : "Closed"}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
-  // 3️⃣ Business hours (structured)
+  // 3️⃣ Business hours
   if (
     biz.availability_type === "business_hours" &&
-    biz.availability_hours &&
-    typeof biz.availability_hours === "object"
+    biz.availability_hours
   ) {
     const days = Object.entries(biz.availability_hours).sort(
       ([a], [b]) =>
@@ -118,27 +145,23 @@ function renderAvailability(biz) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
           {days.map(([day, hours]) => (
-            <div
+            <DayRow
               key={day}
-              className="grid grid-cols-[80px_1fr] items-start"
-            >
-              <span className="font-medium capitalize">
-                {day.slice(0, 3)}
-              </span>
-        
-              <span className="text-[var(--text)] opacity-80">
-                {!hours.closed
+              dayKey={day}
+              label={day.slice(0, 3)}
+              hours={
+                !hours.closed
                   ? `${hours.open} - ${hours.close}`
-                  : "Closed"}
-              </span>
-            </div>
+                  : "Closed"
+              }
+            />
           ))}
         </div>
       </div>
     );
   }
 
-  // 4️⃣ fallback → note
+  // 4️⃣ fallback note
   if (biz.availability_note) {
     return (
       <p className="text-sm whitespace-pre-line">
@@ -149,11 +172,17 @@ function renderAvailability(biz) {
 
   return null;
 }
+
 export default function BusinessServices({ biz }) {
-  const type = biz.availability_type;
-  const hours = biz.availability_hours;
   const serviceMode = formatServiceMode(biz.service_mode);
-  const weeklyHours = formatAvailabilityNote(biz.availability_note);
+  const weeklyHoursRaw = formatAvailabilityNote(biz.availability_note);
+
+  // 🔥 sort weeklyHours
+  const weeklyHours = weeklyHoursRaw.sort(
+    (a, b) =>
+      DAYS_ORDER.indexOf(a.day.toLowerCase()) -
+      DAYS_ORDER.indexOf(b.day.toLowerCase())
+  );
 
   const hasData =
     serviceMode ||
@@ -172,28 +201,20 @@ export default function BusinessServices({ biz }) {
 
       <div className="space-y-3 text-[var(--text)] opacity-80">
 
-        {serviceMode && (
-          <p className="text-sm">{serviceMode}</p>
-        )}
+        {serviceMode && <p className="text-sm">{serviceMode}</p>}
 
         {weeklyHours.length > 0 ? (
           <div className="mt-2">
             <p className="text-sm font-medium mb-2">🕒 Opening hours</p>
-        
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm text-[var(--text)] opacity-80">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
               {weeklyHours.map((item) => (
-                <div
+                <DayRow
                   key={item.day}
-                  className="grid grid-cols-[80px_1fr] items-start"
-                >
-                  <span className="font-medium">
-                    {item.day.slice(0, 3)}
-                  </span>
-            
-                  <span>
-                    {item.hours || "Closed"}
-                  </span>
-                </div>
+                  dayKey={item.day}
+                  label={item.day.slice(0, 3)}
+                  hours={item.hours || "Closed"}
+                />
               ))}
             </div>
           </div>
