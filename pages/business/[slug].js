@@ -181,23 +181,25 @@ export default function BusinessBySlug({ biz }) {
   }, []);
 
   useEffect(() => {
-    if (!footerRef.current) return;
+    function handleCTAVisibility() {
+      const footer = footerRef.current;
+      if (!footer) return;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        console.log("INTERSECT:", entry.isIntersecting);
-        setShowCTA(!entry.isIntersecting);
-      },
-      {
-        root: null,
-        threshold: 0,
-        rootMargin: "0px 0px -120px 0px",
+      const footerTop = footer.getBoundingClientRect().top;
+      const screenHeight = window.innerHeight;
+
+      // 👇 وقتی footer نزدیک شد → CTA hide
+      if (footerTop < screenHeight - 120) {
+        setShowCTA(false);
+      } else {
+        setShowCTA(true);
       }
-    );
+    }
 
-    observer.observe(footerRef.current);
+    window.addEventListener("scroll", handleCTAVisibility);
+    handleCTAVisibility(); // initial check
 
-    return () => observer.disconnect();
+    return () => window.removeEventListener("scroll", handleCTAVisibility);
   }, []);
    
   async function submitRating() {
