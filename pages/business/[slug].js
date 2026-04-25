@@ -1,6 +1,6 @@
 //pages/business/[slug].js 
 import Head from "next/head";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ArrowUp } from "lucide-react";
 
 import Header from "../../components/Header";
@@ -120,7 +120,8 @@ function buildMetaDescription(biz) {
    Page
 ====================================================== */
 export default function BusinessBySlug({ biz }) {
-  
+
+  const footerRef = useRef(null); 
   const { status, role } = useAuthSession();
 
 
@@ -180,24 +181,21 @@ export default function BusinessBySlug({ biz }) {
   }, []);
 
   useEffect(() => {
-    const footer = document.querySelector("footer");
-    if (!footer) return;
+    if (!footerRef.current) return;
 
     const observer = new IntersectionObserver(
-       
       ([entry]) => {
-        console.log("INTERSECT:", entry.isIntersecting); 
+        console.log("INTERSECT:", entry.isIntersecting);
         setShowCTA(!entry.isIntersecting);
       },
       {
         root: null,
         threshold: 0,
-        // 👇 این مهمه (ارتفاع CTA)
         rootMargin: "0px 0px -120px 0px",
       }
     );
 
-    observer.observe(footer);
+    observer.observe(footerRef.current);
 
     return () => observer.disconnect();
   }, []);
@@ -433,7 +431,9 @@ export default function BusinessBySlug({ biz }) {
           </button>
         )}   
         <div id="cta-sentinel" className="h-1 w-full" />         
-        <Footer />
+        <div ref={footerRef}>
+          <Footer />
+        </div>
 
         {showImageModal && (
           <div
