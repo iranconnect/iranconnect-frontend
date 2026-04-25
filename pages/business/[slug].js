@@ -180,8 +180,8 @@ export default function BusinessBySlug({ biz }) {
   }, []);
 
   useEffect(() => {
-    const sentinel = document.getElementById("cta-sentinel");
-    if (!sentinel) return;
+    const footer = document.querySelector("footer");
+    if (!footer) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -190,10 +190,12 @@ export default function BusinessBySlug({ biz }) {
       {
         root: null,
         threshold: 0,
+        // 👇 این مهمه (ارتفاع CTA)
+        rootMargin: "0px 0px -120px 0px",
       }
     );
 
-    observer.observe(sentinel);
+    observer.observe(footer);
 
     return () => observer.disconnect();
   }, []);
