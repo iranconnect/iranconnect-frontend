@@ -125,7 +125,7 @@ function renderAvailability(biz) {
                 key={day}
                 dayKey={day}
                 label={day.slice(0, 3)}
-                hours={hrs.length > 0 ? hrs.join(" | ") : "Closed"}
+                hours={hours}
               />
             ))}
           </div>
@@ -162,11 +162,7 @@ function renderAvailability(biz) {
               key={day}
               dayKey={day}
               label={day.slice(0, 3)}
-              hours={
-                !hours.closed
-                  ? `${hours.open} - ${hours.close}`
-                  : "Closed"
-              }
+              hours={hours}
             />
           ))}
         </div>
@@ -191,16 +187,19 @@ export default function BusinessServices({ biz }) {
   const weeklyHoursRaw = formatAvailabilityNote(biz.availability_note);
 
   // 🔥 sort weeklyHours
-  const weeklyHours = DAYS_ORDER.map((dayKey) => {
-    const found = weeklyHoursRaw.find(
-      (d) => d.day.toLowerCase() === dayKey
-    );
+  const weeklyHours =
+    weeklyHoursRaw.length > 0
+      ? DAYS_ORDER.map((dayKey) => {
+          const found = weeklyHoursRaw.find(
+            (d) => d.day.toLowerCase() === dayKey
+          );
   
-    return {
-      day: dayKey,
-      hours: found ? found.hours : "Closed",
-    };
-  });
+          return {
+            day: dayKey,
+            hours: found ? found.hours : "Closed",
+          };
+        })
+      : [];
 
   const hasData =
     serviceMode ||
@@ -221,7 +220,8 @@ export default function BusinessServices({ biz }) {
 
         {serviceMode && <p className="text-sm">{serviceMode}</p>}
 
-        {weeklyHours.length > 0 ? (
+        const hasParsedNoteHours = weeklyHoursRaw.length > 0;
+        {hasParsedNoteHours ? (
           <div className="mt-2">
             <p className="text-sm font-medium mb-2">🕒 Opening hours</p>
 
