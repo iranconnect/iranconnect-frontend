@@ -100,11 +100,17 @@ function renderAvailability(biz) {
 
   // 2️⃣ Appointment only
   if (biz.availability_type === "appointment_only") {
-    const days = Object.entries(biz.availability_hours || {}).sort(
-      ([a], [b]) =>
-        DAYS_ORDER.indexOf(a.toLowerCase()) -
-        DAYS_ORDER.indexOf(b.toLowerCase())
-    );
+    const days = DAYS_ORDER.map((dayKey) => {
+      const hrs = biz.availability_hours?.[dayKey];
+    
+      return {
+        day: dayKey,
+        hours:
+          hrs && hrs.length > 0
+            ? hrs.join(" | ")
+            : "Closed",
+      };
+    });
 
     return (
       <div className="space-y-2">
@@ -114,7 +120,7 @@ function renderAvailability(biz) {
           <p className="text-sm font-medium mb-2">🕒 Suggested hours</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
-            {days.map(([day, hrs]) => (
+            {days.map(({ day, hours }) => (
               <DayRow
                 key={day}
                 dayKey={day}
@@ -133,18 +139,25 @@ function renderAvailability(biz) {
     biz.availability_type === "business_hours" &&
     biz.availability_hours
   ) {
-    const days = Object.entries(biz.availability_hours).sort(
-      ([a], [b]) =>
-        DAYS_ORDER.indexOf(a.toLowerCase()) -
-        DAYS_ORDER.indexOf(b.toLowerCase())
-    );
+    const days = DAYS_ORDER.map((dayKey) => {
+      const data = biz.availability_hours?.[dayKey];
+    
+      return {
+        day: dayKey,
+        hours: data
+          ? !data.closed
+            ? `${data.open} - ${data.close}`
+            : "Closed"
+          : "Closed",
+      };
+    });
 
     return (
       <div className="mt-2">
         <p className="text-sm font-medium mb-2">🕒 Opening hours</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
-          {days.map(([day, hours]) => (
+          {days.map(({ day, hours }) => (
             <DayRow
               key={day}
               dayKey={day}
@@ -178,11 +191,16 @@ export default function BusinessServices({ biz }) {
   const weeklyHoursRaw = formatAvailabilityNote(biz.availability_note);
 
   // 🔥 sort weeklyHours
-  const weeklyHours = weeklyHoursRaw.sort(
-    (a, b) =>
-      DAYS_ORDER.indexOf(a.day.toLowerCase()) -
-      DAYS_ORDER.indexOf(b.day.toLowerCase())
-  );
+  const weeklyHours = DAYS_ORDER.map((dayKey) => {
+    const found = weeklyHoursRaw.find(
+      (d) => d.day.toLowerCase() === dayKey
+    );
+  
+    return {
+      day: dayKey,
+      hours: found ? found.hours : "Closed",
+    };
+  });
 
   const hasData =
     serviceMode ||
