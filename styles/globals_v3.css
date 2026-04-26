@@ -238,4 +238,26 @@ iframe[src*="google.com/recaptcha/"] {
   background: rgba(64, 224, 208, 0.2);
 }
 
+/* =========================================
+   📖 Text Justify (Professional)
+========================================= */
 
+.text-justify-pro {
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+/* 👇 جلوگیری از ugly spacing در موبایل */
+@media (max-width: 640px) {
+  .text-justify-pro {
+    text-align: left;
+  }
+}
+
+/* =========================================
+   🌙 Dark Mode Typography
+========================================= */
+
+[data-theme="dark"] .text-justify-pro {
+  color: #ffffff;
+}
