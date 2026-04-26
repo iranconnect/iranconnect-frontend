@@ -10,19 +10,19 @@ export default function BusinessAbout({ biz }) {
       {hasContent ? (
         <>
           {biz.short_description && (
-            <p className="text-[var(--text)] opacity-80">
+            <p className="text-[var(--text)] opacity-80 text-sm text-justify-pro">
               {biz.short_description}
             </p>
           )}
 
           {biz.full_description && (
-            <p className="text-gray-600 whitespace-pre-line text-sm text-justify-pro">
+            <p className="text-[var(--text)] opacity-80 text-sm text-justify-pro">
               {biz.full_description}
             </p>
           )}
         </>
       ) : (
-        <p className="text-gray-400 text-sm">
+        <p className="text-[var(--text)] opacity-80 text-sm text-justify-pro">
           No description has been added for this business yet.
         </p>
       )}
