@@ -245,19 +245,17 @@ iframe[src*="google.com/recaptcha/"] {
 .text-justify-pro {
   text-align: justify;
   text-justify: inter-word;
+  line-height: 1.7;
 }
 
-/* 👇 جلوگیری از ugly spacing در موبایل */
-@media (max-width: 640px) {
-  .text-justify-pro {
-    text-align: left;
-  }
+/* Light mode */
+.text-justify-pro {
+  color: var(--text);
+  opacity: 0.85;
 }
 
-/* =========================================
-   🌙 Dark Mode Typography
-========================================= */
-
+/* Dark mode */
 [data-theme="dark"] .text-justify-pro {
   color: #ffffff;
+  opacity: 0.9;
 }
