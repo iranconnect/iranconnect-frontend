@@ -116,6 +116,69 @@ function buildMetaDescription(biz) {
   return base.slice(0, 160);
 }
 
+function buildOpeningHoursSchema(biz) {
+  if (!biz) return null;
+
+  const result = [];
+
+  const dayMap = {
+    monday: "Monday",
+    tuesday: "Tuesday",
+    wednesday: "Wednesday",
+    thursday: "Thursday",
+    friday: "Friday",
+    saturday: "Saturday",
+    sunday: "Sunday",
+  };
+
+  // ✅ حالت business_hours (دقیق‌ترین)
+  if (
+    biz.availability_type === "business_hours" &&
+    biz.availability_hours
+  ) {
+    Object.entries(biz.availability_hours).forEach(([day, data]) => {
+      if (!data || data.closed) return;
+
+      if (data.open && data.close) {
+        result.push({
+          "@type": "OpeningHoursSpecification",
+          dayOfWeek: dayMap[day],
+          opens: data.open,
+          closes: data.close,
+        });
+      }
+    });
+  }
+
+  // ✅ fallback از note (فقط اگر بالا چیزی نداشت)
+  if (result.length === 0 && biz.availability_note) {
+    const lines = biz.availability_note.match(
+      /(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday):\s*(.*)/gi
+    );
+
+    if (lines) {
+      lines.forEach((line) => {
+        const [day, hours] = line.split(":");
+
+        if (!hours || hours.toLowerCase().includes("closed")) return;
+
+        const parts = hours.trim().split("-");
+
+        if (parts.length === 2) {
+          result.push({
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: day.trim(),
+            opens: parts[0].trim(),
+            closes: parts[1].trim(),
+          });
+        }
+      });
+    }
+  }
+
+  return result.length > 0 ? result : null;
+}
+
 /* ======================================================
    Page
 ====================================================== */
@@ -235,7 +298,7 @@ export default function BusinessBySlug({ biz }) {
       </div>
     );
   }
-
+  const openingHours = biz ? buildOpeningHoursSchema(biz) : null; 
   return (
     <>
       <Head>
@@ -292,6 +355,9 @@ export default function BusinessBySlug({ biz }) {
                 biz.twitter_url,
                 biz.telegram_url,
               ].filter(Boolean),
+              ...(openingHours?.length > 0 && {
+                openingHoursSpecification: openingHours,
+              }), 
               aggregateRating:
                 biz.avg_rating && biz.review_count > 0
                   ? {
