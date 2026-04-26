@@ -16,7 +16,7 @@ export default function BusinessAbout({ biz }) {
           )}
 
           {biz.full_description && (
-            <p className="text-gray-600 whitespace-pre-line">
+            <p className="text-gray-600 whitespace-pre-line text-sm text-justify-pro">
               {biz.full_description}
             </p>
           )}
