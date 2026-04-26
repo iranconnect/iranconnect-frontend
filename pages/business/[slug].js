@@ -345,7 +345,7 @@ export default function BusinessBySlug({ biz }) {
            className="flex-1 flex items-center justify-center px-4 py-4 md:pb-4"
            style={{
              backgroundColor: "#ffffff",
-             paddingBottom: "calc(40px + env(safe-area-inset-bottom))",
+             paddingBottom: "40px",
            }}
          >
           <div className="w-full max-w-5xl space-y-8">
