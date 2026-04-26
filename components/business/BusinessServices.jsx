@@ -1,4 +1,5 @@
 //frontend/components/business/BusinessServices.jsx
+
 const DAYS_ORDER = [
   "monday",
   "tuesday",
@@ -39,7 +40,7 @@ function formatServiceMode(mode) {
   }
 }
 
-// 🔥 parse note
+// 🔥 parse note (بدون تغییر منطق)
 function formatAvailabilityNote(note) {
   if (!note) return [];
 
@@ -70,7 +71,7 @@ function formatAvailabilityNote(note) {
   return result;
 }
 
-// 🔥 shared UI renderer
+// 🔥 UI row
 function DayRow({ dayKey, label, hours }) {
   const today = getTodayKey();
   const isToday = dayKey.toLowerCase() === today;
@@ -92,7 +93,29 @@ function DayRow({ dayKey, label, hours }) {
   );
 }
 
+// 🔥 helper: آیا واقعا دیتا داریم؟
+function hasRealHoursData(biz) {
+  if (!biz?.availability_hours) return false;
+
+  return Object.values(biz.availability_hours).some((d) => {
+    if (!d) return false;
+
+    // appointment mode → array
+    if (Array.isArray(d)) return d.length > 0;
+
+    // business_hours → object
+    if (typeof d === "object") {
+      return d.open || d.close || d.closed === true;
+    }
+
+    return false;
+  });
+}
+
+// 🔥 renderer اصلی (با fix)
 function renderAvailability(biz) {
+  const hasData = hasRealHoursData(biz);
+
   // 1️⃣ Always open
   if (biz.availability_type === "always_open") {
     return <p className="text-sm">🟢 Open 24/7</p>;
@@ -100,15 +123,19 @@ function renderAvailability(biz) {
 
   // 2️⃣ Appointment only
   if (biz.availability_type === "appointment_only") {
+    if (!hasData) {
+      return <p className="text-sm">📅 By appointment only</p>;
+    }
+
     const days = DAYS_ORDER.map((dayKey) => {
       const hrs = biz.availability_hours?.[dayKey];
-    
+
       return {
         day: dayKey,
         hours:
           hrs && hrs.length > 0
             ? hrs.join(" | ")
-            : "Closed",
+            : "—", // ✅ FIX
       };
     });
 
@@ -135,20 +162,17 @@ function renderAvailability(biz) {
   }
 
   // 3️⃣ Business hours
-  if (
-    biz.availability_type === "business_hours" &&
-    biz.availability_hours
-  ) {
+  if (biz.availability_type === "business_hours" && hasData) {
     const days = DAYS_ORDER.map((dayKey) => {
       const data = biz.availability_hours?.[dayKey];
-    
+
       return {
         day: dayKey,
         hours: data
           ? !data.closed
             ? `${data.open} - ${data.close}`
             : "Closed"
-          : "Closed",
+          : "—", // ✅ FIX
       };
     });
 
@@ -179,24 +203,29 @@ function renderAvailability(biz) {
     );
   }
 
-  return null;
+  // 5️⃣ هیچ دیتایی نداریم
+  return (
+    <p className="text-sm opacity-70">
+      🕓 Availability not specified
+    </p>
+  );
 }
 
+// 🔥 main component
 export default function BusinessServices({ biz }) {
   const serviceMode = formatServiceMode(biz.service_mode);
   const weeklyHoursRaw = formatAvailabilityNote(biz.availability_note);
 
-  // 🔥 sort weeklyHours
   const weeklyHours =
     weeklyHoursRaw.length > 0
       ? DAYS_ORDER.map((dayKey) => {
           const found = weeklyHoursRaw.find(
             (d) => d.day.toLowerCase() === dayKey
           );
-  
+
           return {
             day: dayKey,
-            hours: found ? found.hours : "Closed",
+            hours: found ? found.hours : "—", // ✅ FIX
           };
         })
       : [];
@@ -222,7 +251,6 @@ export default function BusinessServices({ biz }) {
 
         {serviceMode && <p className="text-sm">{serviceMode}</p>}
 
-        
         {hasParsedNoteHours ? (
           <div className="mt-2">
             <p className="text-sm font-medium mb-2">🕒 Opening hours</p>
@@ -233,7 +261,7 @@ export default function BusinessServices({ biz }) {
                   key={item.day}
                   dayKey={item.day}
                   label={item.day.slice(0, 3)}
-                  hours={item.hours || "Closed"}
+                  hours={item.hours}
                 />
               ))}
             </div>
