@@ -133,7 +133,8 @@ function buildOpeningHoursSchema(biz) {
 
   // ✅ حالت business_hours (دقیق‌ترین)
   if (
-    biz.availability_type === "business_hours" &&
+    (biz.availability_type === "business_hours" ||
+     biz.availability_type === "appointment_only") &&
     biz.availability_hours
   ) {
     Object.entries(biz.availability_hours).forEach(([day, data]) => {
