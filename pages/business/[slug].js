@@ -137,31 +137,21 @@ function buildOpeningHoursSchema(biz) {
      biz.availability_type === "appointment_only") &&
     biz.availability_hours
   ) {
-    Object.entries(biz.availability_hours).forEach(([day, data]) => {
-      if (!data || data.closed) return;
+    Object.entries(biz.availability_hours).forEach(([day, ranges]) => {
+      if (!ranges || ranges.length === 0) return;
 
-      if (
-        (biz.availability_type === "business_hours" ||
-         biz.availability_type === "appointment_only") &&
-        biz.availability_hours
-      ) {
-        Object.entries(biz.availability_hours).forEach(([day, ranges]) => {
-          if (!ranges || ranges.length === 0) return;
-      
-          ranges.forEach((range) => {
-            const [open, close] = range.split("-");
-      
-            if (open && close) {
-              result.push({
-                "@type": "OpeningHoursSpecification",
-                dayOfWeek: dayMap[day],
-                opens: open.trim(),
-                closes: close.trim(),
-              });
-            }
+      ranges.forEach((range) => {
+        const [open, close] = range.split("-");
+
+        if (open && close) {
+          result.push({
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: dayMap[day],
+            opens: open.trim(),
+            closes: close.trim(),
           });
-        });
-      }
+        }
+      });
     });
   }
 
