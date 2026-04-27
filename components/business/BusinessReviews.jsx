@@ -121,7 +121,7 @@ export default function BusinessReviews({ businessId }) {
           </button>
       
           {message && (
-            <p className="text-sm mt-2 text-muted">{message}</p>
+            <p className="text-sm mt-2 text-justify-pro">{message}</p>
           )}
         </div>
       
@@ -134,7 +134,7 @@ export default function BusinessReviews({ businessId }) {
         <div className="text-yellow-500">
           {"★".repeat(Math.round(avg))}
         </div>
-        <div className="text-sm text-muted">
+        <div className="text-sm text-justify-pro">
           ({reviews.length} reviews)
         </div>
       </div>
