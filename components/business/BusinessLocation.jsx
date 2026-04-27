@@ -4,15 +4,14 @@ export default function BusinessLocation({ biz }) {
 
   const isLoggedIn = biz.viewer_is_authenticated; // ✅ FIX
 
-  const fullAddress = [
-    biz.address,
-    biz.postal_code,
-    biz.city,
-    biz.country,
-  ]
-    .filter(Boolean)
-    .join(", ");
-
+  const fullAddress = biz.address
+  ? biz.address
+  : [
+      biz.postal_code,
+      biz.city,
+      biz.country,
+    ].filter(Boolean).join(", ");
+  
   const mapUrl =
     biz.location_map_url ||
     biz.base_location_map_url ||
