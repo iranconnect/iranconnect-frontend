@@ -69,7 +69,7 @@ export default function BusinessReviews({ businessId }) {
   }, [userRating]);
 
   if (loading) {
-    return <p className="text-sm text-muted">Loading reviews...</p>;
+    return <p className="text-sm text-justify-pro">Loading reviews...</p>;
   }
 
   const avg = reviews.length
