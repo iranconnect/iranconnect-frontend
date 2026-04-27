@@ -43,7 +43,7 @@ export default function BusinessLocation({ biz }) {
 
       {fullAddress && (
         <div className="mb-4">
-          <p className="text-sm text-[var(--text)] opacity-80 flex items-start gap-2">
+          <p className="text-sm text-sm text-justify-pro flex items-start gap-2">
             <span>📍</span>
             <span>{fullAddress}</span>
           </p>
