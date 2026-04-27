@@ -40,7 +40,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
             )}
           </h1>
 
-          <p className="text-sm text-muted">
+          <p className="text-sm text-justify-pro">
             {[
               biz.category,
               biz.sub_category,
