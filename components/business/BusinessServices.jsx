@@ -86,7 +86,7 @@ function DayRow({ dayKey, label, hours }) {
         {label}
       </span>
 
-      <span className="text-[var(--text)] opacity-80">
+      <span className="text-sm text-justify-pro">
         {hours}
       </span>
     </div>
@@ -247,7 +247,7 @@ export default function BusinessServices({ biz }) {
         Services & Availability
       </h2>
 
-      <div className="space-y-3 text-[var(--text)] opacity-80">
+      <div className="space-y-3 text-sm text-justify-pro">
 
         {serviceMode && <p className="text-sm">{serviceMode}</p>}
 
