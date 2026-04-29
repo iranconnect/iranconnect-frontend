@@ -78,7 +78,12 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
   const t = texts[lang];
 
   async function handleSubmit() {
-    if (!confirmed || role !== "owner") {
+    if (
+      role !== "owner" ||
+      !email ||
+      !phone ||
+      !fullName
+    ) {
       setMsg(t.error);
       return;
     }
@@ -93,7 +98,7 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
       formData.append("full_name", fullName);
       formData.append("applicant_role", role);
       formData.append("description", description);
-      formData.append("confirmed", "true");
+      
 
       if (document) formData.append("document", document);
 
@@ -101,7 +106,7 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
       console.log("📤 SENDING CLAIM...");
     
       const res = await apiClient.post(
-        `/businesses/${businessId}/claim/start`,
+        `/businesses/${businessId}/claims/start`,
         formData,
         {
           withCredentials: true,
