@@ -10,7 +10,8 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [theme, setTheme] = useState('light');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [hasClaim, setHasClaim] = useState(false);
+  const [hasPendingClaim, setHasPendingClaim] = useState(false);
+  const [hasBusiness, setHasBusiness] = useState(false);
   const [email, setEmail] = useState('');
 
   /* 🧩 بررسی وضعیت کاربر با HttpOnly cookie */
@@ -18,75 +19,83 @@ export default function Header() {
     if (window.location.pathname.startsWith("/auth")) {
       return;
     }
-    async function checkAuth() {
+  
+    async function initUserState() {
       try {
+        // 🔐 1. auth check
         const me = await apiClient.get("/auth/me", {
           withCredentials: true,
-          // ⬇️ خیلی مهم
           validateStatus: (status) => status < 500,
         });
-      
+  
         if (me?.status === 200 && me.data?.ok) {
           setIsLoggedIn(true);
+  
           const role = me.data.role || "user";
           setIsAdmin(role === "admin" || role === "superadmin");
           setEmail(me.data.email || "");
+  
+          // 🔥 2. NEW API (باید بسازی در بک‌اند)
+          const ownership = await apiClient.get("/users/me/ownership", {
+            withCredentials: true,
+            validateStatus: (status) => status < 500,
+          });
+          
+          if (ownership.status === 200) {
+            setHasPendingClaim(ownership.data.has_pending_claim);
+            setHasBusiness(ownership.data.has_verified_business);
+          
+          } else if (ownership.status === 404) {
+            // 🟡 API هنوز deploy نشده
+            setHasPendingClaim(false);
+            setHasBusiness(false);
+          
+          } else {
+            // ❌ سایر خطاها
+            setHasPendingClaim(false);
+            setHasBusiness(false);
+          }
+  
         } else {
           setIsLoggedIn(false);
           setIsAdmin(false);
           setEmail("");
+          setHasPendingClaim(false);
+          setHasBusiness(false);
         }
+  
       } catch {
         setIsLoggedIn(false);
         setIsAdmin(false);
         setEmail("");
-      }       
+        setHasPendingClaim(false);
+        setHasBusiness(false);
+      }
     }
-
-    checkAuth();
-
-    /* 🧩 بررسی وضعیت بیزینس کلیم */
-    apiClient
-      .get('/business-claims/my', {
-        withCredentials: true,
-        validateStatus: (status) => status < 500, // ⬅️ خیلی مهم
-      })
-      .then((res) => {
-        if (
-          res.status === 200 &&
-          Array.isArray(res.data) &&
-          res.data.some((c) => c.status === 'verified')
-        ) {
-          setHasClaim(true);
-        } else {
-          setHasClaim(false);
-        }
-      })
-      .catch(() => {
-        setHasClaim(false);
-      });
-
-
-    /* 🌓 بارگذاری تم */
+  
+    initUserState();
+  
+    // 🎨 theme
     const savedTheme =
       localStorage.getItem('iran_theme') ||
       document.documentElement.getAttribute('data-theme') ||
       'light';
-
+  
     document.documentElement.setAttribute('data-theme', savedTheme);
     setTheme(savedTheme);
-
+  
     const observer = new MutationObserver(() => {
       const newTheme = document.documentElement.getAttribute('data-theme');
       setTheme(newTheme);
     });
-
+  
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme'],
     });
-
+  
     return () => observer.disconnect();
+  
   }, []);
 
   /* 🌗 تغییر تم */
@@ -155,7 +164,10 @@ export default function Header() {
 
           {/* Profile */}
           {isLoggedIn && (
-            <ProfileMenu role={isAdmin ? 'admin' : 'user'} hasClaim={hasClaim} />
+            <ProfileMenu
+              role={isAdmin ? 'admin' : 'user'}
+              hasClaim={hasPendingClaim || hasBusiness}
+            />
           )}
 
           {/* Theme switch */}
@@ -251,22 +263,25 @@ export default function Header() {
           {isLoggedIn && (
             <>
               {/* Requests */}
-              {hasClaim && (
+              {(hasPendingClaim || hasBusiness) && (
+                <Link
+                  href="/account/requests"
+                  onClick={() => setMenuOpen(false)}
+                  className="text-[var(--text)] hover:text-turquoise"
+                >
+                  Requests / History
+                </Link>
+              )}
+              
+              {/* Business Management */}
+              {hasBusiness && (
                 <>
-                  <Link
-                    href="/account/requests"
-                    onClick={() => setMenuOpen(false)}
-                    className="text-[var(--text)] hover:text-turquoise"
-                  >
-                    Requests / History
-                  </Link>
-
                   <div className="border-t border-[var(--border)] my-2"></div>
-
+              
                   <p className="text-xs uppercase tracking-wide text-gray-500">
                     Business Management
                   </p>
-
+              
                   <Link
                     href="/account/update-business"
                     onClick={() => setMenuOpen(false)}
@@ -274,7 +289,7 @@ export default function Header() {
                   >
                     ✏️ Update Business
                   </Link>
-
+              
                   <Link
                     href="/account/delete-business"
                     onClick={() => setMenuOpen(false)}
@@ -282,7 +297,7 @@ export default function Header() {
                   >
                     🗑️ Delete Business
                   </Link>
-
+              
                   <Link
                     href="/account/new-business"
                     onClick={() => setMenuOpen(false)}
