@@ -101,7 +101,7 @@ export default function ProfileMenu({ role, hasPendingClaim, hasBusiness }) {
 
 
           {/* Business features */}
-          {hasPendingClaim && (
+          {(hasPendingClaim || hasBusiness) && (
             <a
               href="/account/requests"
               className="block text-sm text-turquoise hover:underline mb-2"
