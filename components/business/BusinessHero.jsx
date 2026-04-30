@@ -36,7 +36,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
             {biz.name}
             {biz.owner_verified && (
-              <span className="text-turquoise text-2xl md:text-3xl">
+              <span className="ml-2 text-turquoise text-xl md:text-2xl align-middle">
                 🎖️
               </span>
             )}
