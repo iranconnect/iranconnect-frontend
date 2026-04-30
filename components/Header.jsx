@@ -42,8 +42,8 @@ export default function Header() {
           });
           
           if (ownership.status === 200) {
-            setHasPendingClaim(ownership.data.has_pending_claim);
-            setHasBusiness(ownership.data.has_verified_business);
+            setHasPendingClaim(!!ownership.data?.has_pending_claim);
+            setHasBusiness(!!ownership.data?.has_verified_business);
           
           } else if (ownership.status === 404) {
             // 🟡 API هنوز deploy نشده
@@ -166,7 +166,8 @@ export default function Header() {
           {isLoggedIn && (
             <ProfileMenu
               role={isAdmin ? 'admin' : 'user'}
-              hasClaim={hasPendingClaim || hasBusiness}
+              hasPendingClaim={hasPendingClaim}
+              hasBusiness={hasBusiness}
             />
           )}
 
@@ -263,7 +264,7 @@ export default function Header() {
           {isLoggedIn && (
             <>
               {/* Requests */}
-              {(hasPendingClaim || hasBusiness) && (
+              {hasPendingClaim && (
                 <Link
                   href="/account/requests"
                   onClick={() => setMenuOpen(false)}
