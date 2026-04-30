@@ -9,10 +9,26 @@ export default function BusinessClaim({
   // 🟢 اگر owner verified
   if (biz.owner_verified) {
     return (
-      <div className="mt-10 pt-0 text-center border-[var(--border)]">
-        <p className="text-turquoise font-medium">
-          🎖️ Verified by owner
+      <div className="card mt-10 p-6 text-center space-y-3">
+        <div className="text-3xl">🎖️</div>
+  
+        <h3 className="text-lg font-semibold text-turquoise">
+          Verified Business
+        </h3>
+  
+        <p className="text-sm text-[var(--text)] max-w-xl mx-auto">
+          This business has been verified by its owner.
+          If you are the rightful owner of this business and believe this
+          verification is incorrect, you can contact IranConnect support
+          for further assistance.
         </p>
+  
+        <a
+          href="/contact"
+          className="inline-block mt-2 text-sm text-turquoise hover:underline"
+        >
+          Contact Support
+        </a>
       </div>
     );
   }
