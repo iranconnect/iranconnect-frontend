@@ -2,23 +2,55 @@
 'use client';
 import { useState, useEffect } from "react";
 import AccountLayout from "../../components/account/AccountLayout";
-import apiClient from "../../utils/apiClient"; // ✅ جایگزین axios و حذف localStorage token
+import apiClient from "../../utils/apiClient";
 
 export default function NewBusinessRequest() {
+
   const [form, setForm] = useState({
     name: "",
-    category: "",
-    sub_category: "",
+    category_id: "",
+    subcategory_ids: "",
+
+    legal_name: "",
+    business_type: "",
+    year_established: "",
+
+    short_description: "",
+    full_description: "",
+
     country: "",
     city: "",
     address: "",
     postal_code: "",
+
     phone: "",
     email: "",
     website: "",
-    map_link: "",
-    description: "",
+    show_phone: true,
+    show_email: false,
+
+    instagram_url: "",
+    facebook_url: "",
+    linkedin_url: "",
+    twitter_url: "",
+    telegram_url: "",
+    whatsapp_number: "",
+
+    service_mode: "",
+    availability_type: "",
+    availability_note: "",
+
+    service_radius_km: "",
+    location_map_url: "",
+    base_location_map_url: "",
+
+    is_public: true,
+    allow_reviews: true,
+
+    services: "",
+    tags: ""
   });
+
   const [errors, setErrors] = useState({});
   const [ownershipDoc, setOwnershipDoc] = useState(null);
   const [buildingImage, setBuildingImage] = useState(null);
@@ -28,84 +60,111 @@ export default function NewBusinessRequest() {
   const [ticket, setTicket] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /* 🎨 تم */
+  /* 🎨 Theme */
   useEffect(() => {
     const current = document.documentElement.getAttribute("data-theme") || "light";
     setTheme(current);
+
     const obs = new MutationObserver(() => {
       const newTheme = document.documentElement.getAttribute("data-theme");
       setTheme(newTheme);
     });
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+    obs.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"]
+    });
+
     return () => obs.disconnect();
   }, []);
 
-  /* ✅ لایو ولیدیشن */
+  /* ✅ Validation */
   const validateField = (name, value) => {
     let error = "";
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^\+\d{6,15}$/;
-    const urlRegex = /^(https?:\/\/)?([\w\d-]+\.)+[\w]{2,}(\/.*)?$/;
+    const urlRegex = /^(https?:\/\/)/;
 
     if (name === "email" && value && !emailRegex.test(value))
-      error = "Invalid email format (e.g. example@mail.com)";
+      error = "Invalid email format";
+
     if (name === "phone" && value && !phoneRegex.test(value))
-      error = "Phone must be like +33712345678 (no 0)";
-    if (name === "website" && value && !urlRegex.test(value))
-      error = "Website must start with https://";
-    if (name === "map_link" && value && !value.startsWith("https://maps"))
-      error = "Map link must start with https://maps...";
+      error = "Phone must be like +33712345678";
+
+    if ((name === "website" || name === "location_map_url") && value && !urlRegex.test(value))
+      error = "Must start with https://";
+
     if (name === "name" && value.trim().length < 3)
-      error = "Business name must be at least 3 characters long";
+      error = "Business name must be at least 3 characters";
 
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
-    validateField(name, value);
+    const { name, value, type, checked } = e.target;
+
+    const val = type === "checkbox" ? checked : value;
+
+    setForm((p) => ({ ...p, [name]: val }));
+    validateField(name, val);
   };
-  /* 📤 ارسال فرم */
+
+  /* 🔥 normalize before submit */
+  const normalizeForm = (form) => {
+    return {
+      ...form,
+      subcategory_ids: form.subcategory_ids
+        ? form.subcategory_ids.split(",").map(Number)
+        : [],
+      services: form.services
+        ? form.services.split(",").map(Number)
+        : [],
+      tags: form.tags
+        ? form.tags.split(",").map(Number)
+        : [],
+      year_established: form.year_established
+        ? Number(form.year_established)
+        : null,
+      service_radius_km: form.service_radius_km
+        ? Number(form.service_radius_km)
+        : null
+    };
+  };
+
+  /* 📤 Submit */
   async function handleSubmit(e) {
     e.preventDefault();
-    setMsg(""); 
+    setMsg("");
     setTicket("");
 
     const hasErrors = Object.values(errors).some((e) => e);
-    if (hasErrors) return setMsg("⚠️ Please fix validation errors before submitting.");
-    if (!confirm) return setMsg("Please confirm that your information is accurate.");
-    if (!ownershipDoc || !buildingImage) return setMsg("Please upload both required files.");
+    if (hasErrors) return setMsg("⚠️ Fix validation errors.");
+
+    if (!confirm) return setMsg("Please confirm your data.");
+    if (!ownershipDoc || !buildingImage)
+      return setMsg("Upload required files.");
 
     setLoading(true);
 
     try {
       const fd = new FormData();
+
       fd.append("request_type", "new");
-      fd.append("payload", JSON.stringify(form));
+      fd.append("payload", JSON.stringify(normalizeForm(form)));
+
       fd.append("files", ownershipDoc);
       fd.append("files", buildingImage);
 
-      // ✅ ارسال کاملاً سازگار با HttpOnly
       const res = await apiClient.post("/requests", fd, {
         headers: { "Content-Type": "multipart/form-data" },
-        withCredentials: true, // مهم
+        withCredentials: true,
       });
 
-      setMsg("✅ Your new business request has been submitted successfully!");
+      setMsg("✅ Request submitted!");
       setTicket(res.data.ticket_code);
 
       setTimeout(() => window.location.reload(), 10000);
-
-      setForm({
-        name: "", category: "", sub_category: "", country: "", city: "",
-        address: "", postal_code: "", phone: "", email: "", website: "", map_link: "", description: "",
-      });
-
-      setErrors({});
-      setOwnershipDoc(null);
-      setBuildingImage(null);
-      setConfirm(false);
 
     } catch (err) {
       console.error(err);
@@ -114,80 +173,108 @@ export default function NewBusinessRequest() {
 
     setLoading(false);
   }
-  /* 🎨 استایل‌ها */
+
+  /* 🎨 UI */
   const cardStyle = {
     background: theme === "dark" ? "#0b2149" : "#ffffff",
     color: theme === "dark" ? "#ffffff" : "#0a1b2a",
-    borderColor: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
-    boxShadow:
-      theme === "dark"
-        ? "10px 10px 25px rgba(0,0,0,0.4), -10px -10px 25px rgba(255,255,255,0.05)"
-        : "6px 6px 15px rgba(0,0,0,0.1), -6px -6px 15px rgba(255,255,255,0.4)",
   };
 
   const inputClass =
-    "w-full p-3 rounded-lg border shadow-inner focus:outline-none focus:ring-2 focus:ring-turquoise transition-all duration-200 " +
+    "w-full p-3 rounded-lg border shadow-inner focus:outline-none focus:ring-2 focus:ring-turquoise " +
     (theme === "dark"
-      ? "bg-[#153b78] text-white placeholder-gray-300 border-gray-600"
-      : "bg-[#f5f7fa] text-gray-900 border-gray-300 placeholder-gray-500");
+      ? "bg-[#153b78] text-white border-gray-600"
+      : "bg-[#f5f7fa] text-gray-900 border-gray-300");
 
   return (
     <AccountLayout>
       <main className="flex-1 flex items-center justify-center p-6">
-        <div className="rounded-2xl p-8 w-full max-w-xl border transition-all duration-300" style={cardStyle}>
-          <h2 className="text-2xl font-semibold text-center mb-6">🆕 Add New Business Request</h2>
+        <div className="rounded-2xl p-8 w-full max-w-xl border" style={cardStyle}>
+
+          <h2 className="text-2xl font-semibold text-center mb-6">
+            🆕 Add New Business Request
+          </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {Object.keys(form).map((f) => (
-              <div key={f}>
-                <label className="block font-medium mb-1 capitalize">
-                  {f === "name" ? "Business Name" : f.replace("_", " ")}
-                </label>
-                <input
-                  name={f}
-                  value={form[f]}
-                  onChange={handleChange}
-                  className={`${inputClass} ${errors[f] ? "border-red-500" : ""}`}
-                  placeholder={
-                    f === "name" ? "Enter your business name" : `Enter ${f.replace("_", " ")}`
-                  }
-                />
-                {errors[f] && <p className="text-red-400 text-sm mt-1">{errors[f]}</p>}
-              </div>
-            ))}
 
-            <div>
-              <label className="block font-medium mb-1">Proof of Ownership (required)</label>
-              <input type="file" onChange={(e) => setOwnershipDoc(e.target.files[0])}
-                accept="image/*,.pdf" className="w-full text-sm" required />
-            </div>
+            {/* Basic */}
+            <input name="name" placeholder="Business Name" onChange={handleChange} className={inputClass} />
+            <input name="legal_name" placeholder="Legal Name" onChange={handleChange} className={inputClass} />
+            <input name="business_type" placeholder="Business Type" onChange={handleChange} className={inputClass} />
 
-            <div>
-              <label className="block font-medium mb-1">Building Photo (required)</label>
-              <input type="file" onChange={(e) => setBuildingImage(e.target.files[0])}
-                accept="image/*" className="w-full text-sm" required />
-            </div>
+            {/* Category */}
+            <input name="category_id" placeholder="Category ID" onChange={handleChange} className={inputClass} />
+            <input name="subcategory_ids" placeholder="Subcategories (1,2,3)" onChange={handleChange} className={inputClass} />
 
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} />
-              I confirm that the information provided above is accurate.
+            {/* Description */}
+            <input name="short_description" placeholder="Short Description" onChange={handleChange} className={inputClass} />
+            <textarea name="full_description" placeholder="Full Description" onChange={handleChange} className={inputClass} />
+
+            {/* Location */}
+            <input name="country" placeholder="Country" onChange={handleChange} className={inputClass} />
+            <input name="city" placeholder="City" onChange={handleChange} className={inputClass} />
+            <input name="address" placeholder="Address" onChange={handleChange} className={inputClass} />
+            <input name="postal_code" placeholder="Postal Code" onChange={handleChange} className={inputClass} />
+
+            {/* Contact */}
+            <input name="phone" placeholder="Phone" onChange={handleChange} className={inputClass} />
+            <input name="email" placeholder="Email" onChange={handleChange} className={inputClass} />
+            <input name="website" placeholder="Website" onChange={handleChange} className={inputClass} />
+
+            {/* Map */}
+            <input name="location_map_url" placeholder="Google Maps URL" onChange={handleChange} className={inputClass} />
+
+            {/* Service */}
+            <input name="service_mode" placeholder="service_mode (on_site, remote...)" onChange={handleChange} className={inputClass} />
+            <input name="availability_type" placeholder="availability_type" onChange={handleChange} className={inputClass} />
+            <textarea name="availability_note" placeholder="Availability note" onChange={handleChange} className={inputClass} />
+
+            {/* Arrays */}
+            <input name="services" placeholder="Services IDs (1,2,3)" onChange={handleChange} className={inputClass} />
+            <input name="tags" placeholder="Tags IDs (1,2,3)" onChange={handleChange} className={inputClass} />
+
+            {/* Flags */}
+            <label className="flex gap-2">
+              <input type="checkbox" name="show_phone" checked={form.show_phone} onChange={handleChange} />
+              Show Phone
             </label>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-turquoise py-3 rounded-lg font-medium hover:bg-turquoise/90 transition-all mt-4"
-              style={{ color: "#0b2149" }}
-            >
-              {loading ? "Submitting..." : "Submit New Business Request"}
+            <label className="flex gap-2">
+              <input type="checkbox" name="show_email" checked={form.show_email} onChange={handleChange} />
+              Show Email
+            </label>
+
+            <label className="flex gap-2">
+              <input type="checkbox" name="is_public" checked={form.is_public} onChange={handleChange} />
+              Public
+            </label>
+
+            <label className="flex gap-2">
+              <input type="checkbox" name="allow_reviews" checked={form.allow_reviews} onChange={handleChange} />
+              Allow Reviews
+            </label>
+
+            {/* Files */}
+            <input type="file" onChange={(e) => setOwnershipDoc(e.target.files[0])} required />
+            <input type="file" onChange={(e) => setBuildingImage(e.target.files[0])} required />
+
+            {/* Confirm */}
+            <label className="flex gap-2 text-sm">
+              <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} />
+              Confirm data is correct
+            </label>
+
+            <button type="submit" disabled={loading} className="w-full bg-turquoise py-3 rounded-lg">
+              {loading ? "Submitting..." : "Submit Request"}
             </button>
 
             {msg && (
-              <p className="text-center text-sm mt-3 text-[var(--text)]">
+              <p className="text-center mt-2">
                 {msg}
-                {ticket && <span className="block font-semibold text-turquoise mt-1">Ticket: {ticket}</span>}
+                {ticket && <span className="block">Ticket: {ticket}</span>}
               </p>
             )}
+
           </form>
         </div>
       </main>
