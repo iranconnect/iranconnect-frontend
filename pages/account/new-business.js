@@ -3,31 +3,31 @@
 import { useState, useEffect } from "react";
 import AccountLayout from "../../components/account/AccountLayout";
 import apiClient from "../../utils/apiClient";
+import categoriesData from "../../data/categories";
 
 export default function NewBusinessRequest() {
 
   const [form, setForm] = useState({
     name: "",
-    category_id: "",
-    subcategory_ids: "",
+    category: "",
+    sub_category: "",
+    country: "",
+    city: "",
+    address: "",
+    postal_code: "",
+    phone: "",
+    email: "",
+    website: "",
+    map_link: "",
+    description: "",
 
+    // ✅ NEW FIELDS
     legal_name: "",
     business_type: "",
     year_established: "",
 
     short_description: "",
     full_description: "",
-
-    country: "",
-    city: "",
-    address: "",
-    postal_code: "",
-
-    phone: "",
-    email: "",
-    website: "",
-    show_phone: true,
-    show_email: false,
 
     instagram_url: "",
     facebook_url: "",
@@ -41,14 +41,11 @@ export default function NewBusinessRequest() {
     availability_note: "",
 
     service_radius_km: "",
-    location_map_url: "",
-    base_location_map_url: "",
 
+    show_phone: true,
+    show_email: false,
     is_public: true,
     allow_reviews: true,
-
-    services: "",
-    tags: ""
   });
 
   const [errors, setErrors] = useState({});
@@ -60,7 +57,7 @@ export default function NewBusinessRequest() {
   const [ticket, setTicket] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /* 🎨 Theme */
+  /* 🎨 تم */
   useEffect(() => {
     const current = document.documentElement.getAttribute("data-theme") || "light";
     setTheme(current);
@@ -72,16 +69,15 @@ export default function NewBusinessRequest() {
 
     obs.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ["data-theme"]
+      attributeFilter: ["data-theme"],
     });
 
     return () => obs.disconnect();
   }, []);
 
-  /* ✅ Validation */
+  /* ✅ ولیدیشن */
   const validateField = (name, value) => {
     let error = "";
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^\+\d{6,15}$/;
     const urlRegex = /^(https?:\/\/)/;
@@ -90,10 +86,13 @@ export default function NewBusinessRequest() {
       error = "Invalid email format";
 
     if (name === "phone" && value && !phoneRegex.test(value))
-      error = "Phone must be like +33712345678";
+      error = "Use +33712345678 format";
 
-    if ((name === "website" || name === "location_map_url") && value && !urlRegex.test(value))
-      error = "Must start with https://";
+    if (name === "website" && value && !urlRegex.test(value))
+      error = "Website must start with https://";
+
+    if (name === "map_link" && value && !value.startsWith("https://maps"))
+      error = "Must be valid Google Maps link";
 
     if (name === "name" && value.trim().length < 3)
       error = "Business name must be at least 3 characters";
@@ -103,56 +102,28 @@ export default function NewBusinessRequest() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
     const val = type === "checkbox" ? checked : value;
 
     setForm((p) => ({ ...p, [name]: val }));
     validateField(name, val);
   };
 
-  /* 🔥 normalize before submit */
-  const normalizeForm = (form) => {
-    return {
-      ...form,
-      subcategory_ids: form.subcategory_ids
-        ? form.subcategory_ids.split(",").map(Number)
-        : [],
-      services: form.services
-        ? form.services.split(",").map(Number)
-        : [],
-      tags: form.tags
-        ? form.tags.split(",").map(Number)
-        : [],
-      year_established: form.year_established
-        ? Number(form.year_established)
-        : null,
-      service_radius_km: form.service_radius_km
-        ? Number(form.service_radius_km)
-        : null
-    };
-  };
-
-  /* 📤 Submit */
   async function handleSubmit(e) {
     e.preventDefault();
     setMsg("");
     setTicket("");
 
     const hasErrors = Object.values(errors).some((e) => e);
-    if (hasErrors) return setMsg("⚠️ Fix validation errors.");
-
-    if (!confirm) return setMsg("Please confirm your data.");
-    if (!ownershipDoc || !buildingImage)
-      return setMsg("Upload required files.");
+    if (hasErrors) return setMsg("⚠️ Please fix validation errors before submitting.");
+    if (!confirm) return setMsg("Please confirm that your information is accurate.");
+    if (!ownershipDoc || !buildingImage) return setMsg("Please upload both required files.");
 
     setLoading(true);
 
     try {
       const fd = new FormData();
-
       fd.append("request_type", "new");
-      fd.append("payload", JSON.stringify(normalizeForm(form)));
-
+      fd.append("payload", JSON.stringify(form));
       fd.append("files", ownershipDoc);
       fd.append("files", buildingImage);
 
@@ -161,10 +132,20 @@ export default function NewBusinessRequest() {
         withCredentials: true,
       });
 
-      setMsg("✅ Request submitted!");
+      setMsg("✅ Your new business request has been submitted successfully!");
       setTicket(res.data.ticket_code);
 
       setTimeout(() => window.location.reload(), 10000);
+
+      setForm({
+        name: "", category: "", sub_category: "", country: "", city: "",
+        address: "", postal_code: "", phone: "", email: "", website: "", map_link: "", description: "",
+      });
+
+      setErrors({});
+      setOwnershipDoc(null);
+      setBuildingImage(null);
+      setConfirm(false);
 
     } catch (err) {
       console.error(err);
@@ -174,7 +155,6 @@ export default function NewBusinessRequest() {
     setLoading(false);
   }
 
-  /* 🎨 UI */
   const cardStyle = {
     background: theme === "dark" ? "#0b2149" : "#ffffff",
     color: theme === "dark" ? "#ffffff" : "#0a1b2a",
@@ -195,73 +175,83 @@ export default function NewBusinessRequest() {
             🆕 Add New Business Request
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
 
-            {/* Basic */}
-            <input name="name" placeholder="Business Name" onChange={handleChange} className={inputClass} />
-            <input name="legal_name" placeholder="Legal Name" onChange={handleChange} className={inputClass} />
-            <input name="business_type" placeholder="Business Type" onChange={handleChange} className={inputClass} />
+            {/* 🔹 BASIC */}
+            <div>
+              <h3 className="font-semibold mb-2">Basic Information</h3>
+              <input name="name" placeholder="Business Name" onChange={handleChange} className={inputClass} />
+              <input name="legal_name" placeholder="Legal Name" onChange={handleChange} className={inputClass} />
+              <input name="business_type" placeholder="Business Type" onChange={handleChange} className={inputClass} />
+            </div>
 
-            {/* Category */}
-            <input name="category_id" placeholder="Category ID" onChange={handleChange} className={inputClass} />
-            <input name="subcategory_ids" placeholder="Subcategories (1,2,3)" onChange={handleChange} className={inputClass} />
+            {/* 🔹 CATEGORY */}
+            <div>
+              <h3 className="font-semibold mb-2">Category</h3>
+              <select name="category" onChange={handleChange} className={inputClass}>
+                <option value="">Select category</option>
+                {categoriesData.map((c) => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
 
-            {/* Description */}
-            <input name="short_description" placeholder="Short Description" onChange={handleChange} className={inputClass} />
-            <textarea name="full_description" placeholder="Full Description" onChange={handleChange} className={inputClass} />
+              <select name="sub_category" onChange={handleChange} className={inputClass}>
+                <option value="">Select subcategory</option>
+                {categoriesData
+                  .find(c => c.name === form.category)?.subcategories?.map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+              </select>
+            </div>
 
-            {/* Location */}
-            <input name="country" placeholder="Country" onChange={handleChange} className={inputClass} />
-            <input name="city" placeholder="City" onChange={handleChange} className={inputClass} />
-            <input name="address" placeholder="Address" onChange={handleChange} className={inputClass} />
-            <input name="postal_code" placeholder="Postal Code" onChange={handleChange} className={inputClass} />
+            {/* 🔹 DESCRIPTION */}
+            <div>
+              <h3 className="font-semibold mb-2">Description</h3>
+              <input name="short_description" placeholder="Short description" onChange={handleChange} className={inputClass} />
+              <textarea name="full_description" placeholder="Full description" onChange={handleChange} className={inputClass} />
+            </div>
 
-            {/* Contact */}
-            <input name="phone" placeholder="Phone" onChange={handleChange} className={inputClass} />
-            <input name="email" placeholder="Email" onChange={handleChange} className={inputClass} />
-            <input name="website" placeholder="Website" onChange={handleChange} className={inputClass} />
+            {/* 🔹 LOCATION */}
+            <div>
+              <h3 className="font-semibold mb-2">Location</h3>
+              <input name="country" placeholder="Country" onChange={handleChange} className={inputClass} />
+              <input name="city" placeholder="City" onChange={handleChange} className={inputClass} />
+              <input name="address" placeholder="Address" onChange={handleChange} className={inputClass} />
+              <input name="postal_code" placeholder="Postal Code" onChange={handleChange} className={inputClass} />
+              <input name="map_link" placeholder="Google Maps Link" onChange={handleChange} className={inputClass} />
+            </div>
 
-            {/* Map */}
-            <input name="location_map_url" placeholder="Google Maps URL" onChange={handleChange} className={inputClass} />
+            {/* 🔹 CONTACT */}
+            <div>
+              <h3 className="font-semibold mb-2">Contact</h3>
+              <input name="phone" placeholder="Phone" onChange={handleChange} className={inputClass} />
+              <input name="email" placeholder="Email" onChange={handleChange} className={inputClass} />
+              <input name="website" placeholder="Website" onChange={handleChange} className={inputClass} />
+            </div>
 
-            {/* Service */}
-            <input name="service_mode" placeholder="service_mode (on_site, remote...)" onChange={handleChange} className={inputClass} />
-            <input name="availability_type" placeholder="availability_type" onChange={handleChange} className={inputClass} />
-            <textarea name="availability_note" placeholder="Availability note" onChange={handleChange} className={inputClass} />
+            {/* 🔹 SOCIAL */}
+            <div>
+              <h3 className="font-semibold mb-2">Social Media</h3>
+              <input name="instagram_url" placeholder="Instagram URL" onChange={handleChange} className={inputClass} />
+              <input name="facebook_url" placeholder="Facebook URL" onChange={handleChange} className={inputClass} />
+              <input name="linkedin_url" placeholder="LinkedIn URL" onChange={handleChange} className={inputClass} />
+            </div>
 
-            {/* Arrays */}
-            <input name="services" placeholder="Services IDs (1,2,3)" onChange={handleChange} className={inputClass} />
-            <input name="tags" placeholder="Tags IDs (1,2,3)" onChange={handleChange} className={inputClass} />
+            {/* 🔹 FILES */}
+            <div>
+              <label>Proof of Ownership</label>
+              <input type="file" onChange={(e) => setOwnershipDoc(e.target.files[0])} required />
+            </div>
 
-            {/* Flags */}
-            <label className="flex gap-2">
-              <input type="checkbox" name="show_phone" checked={form.show_phone} onChange={handleChange} />
-              Show Phone
-            </label>
+            <div>
+              <label>Building Photo</label>
+              <input type="file" onChange={(e) => setBuildingImage(e.target.files[0])} required />
+            </div>
 
-            <label className="flex gap-2">
-              <input type="checkbox" name="show_email" checked={form.show_email} onChange={handleChange} />
-              Show Email
-            </label>
-
-            <label className="flex gap-2">
-              <input type="checkbox" name="is_public" checked={form.is_public} onChange={handleChange} />
-              Public
-            </label>
-
-            <label className="flex gap-2">
-              <input type="checkbox" name="allow_reviews" checked={form.allow_reviews} onChange={handleChange} />
-              Allow Reviews
-            </label>
-
-            {/* Files */}
-            <input type="file" onChange={(e) => setOwnershipDoc(e.target.files[0])} required />
-            <input type="file" onChange={(e) => setBuildingImage(e.target.files[0])} required />
-
-            {/* Confirm */}
+            {/* 🔹 CONFIRM */}
             <label className="flex gap-2 text-sm">
               <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} />
-              Confirm data is correct
+              I confirm that the information provided above is accurate.
             </label>
 
             <button type="submit" disabled={loading} className="w-full bg-turquoise py-3 rounded-lg">
