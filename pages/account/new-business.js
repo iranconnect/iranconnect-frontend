@@ -30,6 +30,25 @@ export default function NewBusinessRequest() {
 
     services: [],
     tags: [],
+    service_mode: "",
+    availability_type: "",
+    availability_note: "",
+    location_map_url: "",
+    base_location_map_url: "",
+    service_radius_km: "",
+    address: "",
+    phone: "",
+    email: "",
+    website: "",
+    show_phone: false,
+    show_email: false,
+    instagram_url: "",
+    facebook_url: "",
+    linkedin_url: "",
+    twitter_url: "",
+    telegram_url: "",
+    whatsapp_number: "",
+    allow_reviews: true,
   });
 
   const [categories, setCategories] = useState([]);
@@ -127,20 +146,32 @@ export default function NewBusinessRequest() {
 
   const validateField = (name, value) => {
     let error = "";
-
-    if (name === "name" && value.trim().length < 3) {
+  
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\+\d{6,15}$/;
+    const urlRegex = /^(https?:\/\/)/;
+  
+    if (name === "name" && value.trim().length < 3)
       error = "Minimum 3 characters required";
-    }
-
-    if (name === "short_description") {
-      if (value.length > 160) error = "Max 160 characters";
-    }
-
-    if (name === "full_description") {
-      if (value.trim().length < 50)
-        error = "Minimum 50 characters required";
-    }
-
+  
+    if (name === "short_description" && value.length > 160)
+      error = "Max 160 characters";
+  
+    if (name === "full_description" && value.trim().length < 50)
+      error = "Minimum 50 characters required";
+  
+    if (name === "email" && value && !emailRegex.test(value))
+      error = "Invalid email format";
+  
+    if (name === "phone" && value && !phoneRegex.test(value))
+      error = "Use format +33712345678";
+  
+    if (name === "website" && value && !urlRegex.test(value))
+      error = "Must start with https://";
+  
+    if (name === "location_map_url" && value && !value.startsWith("https://maps"))
+      error = "Invalid Google Maps link";
+  
     setErrors(prev => ({ ...prev, [name]: error }));
   };
 
@@ -159,7 +190,15 @@ const handleSubmit = async (e) => {
   const hasErrors = Object.values(errors).some((e) => e);
   if (hasErrors) return setMsg("⚠️ Please fix validation errors before submitting.");
   if (!confirm) return setMsg("Please confirm that your information is accurate.");
-
+  if (!form.name || !form.category_id)
+    return setMsg("Please fill required fields");
+  
+  if (!ownershipDoc)
+    return setMsg("Business logo is required");
+  
+  if (!buildingImage)
+    return setMsg("Building image is required");
+  
   setLoading(true);
 
   try {
@@ -179,6 +218,8 @@ const handleSubmit = async (e) => {
     setMsg("✅ Your new business request has been submitted successfully!");
     setTicket(res.data?.ticket_code || "");
 
+    setTimeout(() => window.location.reload(), 8000);
+
     setForm(prev => ({
       ...prev,
       name: "",
@@ -193,6 +234,7 @@ const handleSubmit = async (e) => {
       tags: [],
     }));
 
+    setErrors({});
     setOwnershipDoc(null);
     setBuildingImage(null);
     setConfirm(false);
@@ -214,7 +256,12 @@ const sectionStyle = {
 
 const labelClass = "block text-sm font-medium mb-1";
 const fieldWrap = "mb-4";
-
+  
+const inputClass =
+  "w-full p-3 rounded-lg border shadow-inner focus:outline-none focus:ring-2 focus:ring-turquoise transition-all duration-200 " +
+  (theme === "dark"
+    ? "bg-[#153b78] text-white placeholder-gray-300 border-gray-600"
+    : "bg-[#f5f7fa] text-gray-900 border-gray-300 placeholder-gray-500");
 /* ================= UI ================= */
 
 return (
