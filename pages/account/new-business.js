@@ -151,7 +151,59 @@ export default function NewBusinessRequest() {
   };
 
 /* ================= UI HELPERS ================= */
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setMsg("");
+  setTicket("");
 
+  const hasErrors = Object.values(errors).some((e) => e);
+  if (hasErrors) return setMsg("⚠️ Please fix validation errors before submitting.");
+  if (!confirm) return setMsg("Please confirm that your information is accurate.");
+
+  setLoading(true);
+
+  try {
+    const fd = new FormData();
+
+    fd.append("request_type", "new");
+    fd.append("payload", JSON.stringify(form));
+
+    if (ownershipDoc) fd.append("files", ownershipDoc);
+    if (buildingImage) fd.append("files", buildingImage);
+
+    const res = await apiClient.post("/requests", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+      withCredentials: true,
+    });
+
+    setMsg("✅ Your new business request has been submitted successfully!");
+    setTicket(res.data?.ticket_code || "");
+
+    setForm(prev => ({
+      ...prev,
+      name: "",
+      category_id: "",
+      subcategory_ids: [],
+      legal_name: "",
+      business_type: "",
+      year_established: "",
+      short_description: "",
+      full_description: "",
+      services: [],
+      tags: [],
+    }));
+
+    setOwnershipDoc(null);
+    setBuildingImage(null);
+    setConfirm(false);
+
+  } catch (err) {
+    console.error(err);
+    setMsg(err.response?.data?.error || "Error submitting request.");
+  }
+
+  setLoading(false);
+};
 const sectionStyle = {
   border: "1px solid rgba(0,0,0,0.06)",
   borderRadius: "16px",
