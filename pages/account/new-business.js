@@ -1,75 +1,47 @@
 //frontend/pages/account/new-business.js
 'use client';
+
 import { useState, useEffect } from "react";
 import AccountLayout from "../../components/account/AccountLayout";
 import apiClient from "../../utils/apiClient";
 
+const BUSINESS_TYPES = [
+  { value: "freelancer", label: "Freelancer / Self-employed" },
+  { value: "company", label: "Registered Company" },
+  { value: "clinic", label: "Clinic / Office" },
+  { value: "shop", label: "Physical Shop" },
+  { value: "online", label: "Online Business" },
+];
+
 export default function NewBusinessRequest() {
 
-  /* ================================
-     STATE
-  ================================= */
+  /* ================= STATE ================= */
+
+  const [form, setForm] = useState({
+    name: "",
+    category_id: "",
+    subcategory_ids: [],
+
+    legal_name: "",
+    business_type: "",
+    year_established: "",
+    short_description: "",
+    full_description: "",
+
+    services: [],
+    tags: [],
+  });
+
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [services, setServices] = useState([]);
   const [tags, setTags] = useState([]);
 
-  const [form, setForm] = useState({
-    name: "",
-    category: "",
-    sub_category: "",
-    subcategory_ids: [],
-    services: [],
-    tags: [],
-
-    legal_name: "",
-    business_type: "",
-    year_established: "",
-
-    short_description: "",
-    full_description: "",
-
-    country: "",
-    city: "",
-    address: "",
-    postal_code: "",
-    map_link: "",
-
-    phone: "",
-    email: "",
-    website: "",
-
-    instagram_url: "",
-    facebook_url: "",
-    linkedin_url: "",
-    twitter_url: "",
-    telegram_url: "",
-    whatsapp_number: "",
-
-    service_mode: "",
-    availability_type: "",
-    availability_note: "",
-
-    service_radius_km: "",
-
-    show_phone: true,
-    show_email: true,
-    is_public: true,
-    allow_reviews: true,
-  });
-
   const [errors, setErrors] = useState({});
-  const [ownershipDoc, setOwnershipDoc] = useState(null);
-  const [buildingImage, setBuildingImage] = useState(null);
-  const [confirm, setConfirm] = useState(false);
   const [theme, setTheme] = useState("light");
-  const [msg, setMsg] = useState("");
-  const [ticket, setTicket] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  /* ================================
-     THEME (UNCHANGED)
-  ================================= */
+  /* ================= THEME ================= */
+
   useEffect(() => {
     const current = document.documentElement.getAttribute("data-theme") || "light";
     setTheme(current);
@@ -87,239 +59,531 @@ export default function NewBusinessRequest() {
     return () => obs.disconnect();
   }, []);
 
-  /* ================================
-     LOAD DATA (ADMIN APIs)
-  ================================= */
+  /* ================= LOAD DATA ================= */
+
   useEffect(() => {
     apiClient.get("/admin/categories/all")
       .then(res => setCategories(res.data?.data || []))
-      .catch(()=>{});
+      .catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {
-    if (!form.category) return;
+    if (!form.category_id) {
+      setSubcategories([]);
+      return;
+    }
 
     apiClient.get("/admin/subcategories", {
-      params: { category_id: form.category }
-    }).then(res => setSubcategories(res.data?.data || []))
-      .catch(()=>{});
-  }, [form.category]);
+      params: { category_id: form.category_id }
+    })
+      .then(res => setSubcategories(res.data?.data || []))
+      .catch(() => setSubcategories([]));
+  }, [form.category_id]);
 
   useEffect(() => {
-    if (!form.subcategory_ids.length) return;
+    if (!form.subcategory_ids.length) {
+      setServices([]);
+      return;
+    }
 
     apiClient.get("/admin/services", {
       params: { subcategory_ids: form.subcategory_ids }
-    }).then(res => setServices(res.data?.data || []))
-      .catch(()=>{});
+    })
+      .then(res => setServices(res.data?.data || []))
+      .catch(() => setServices([]));
   }, [form.subcategory_ids]);
 
   useEffect(() => {
     apiClient.get("/admin/tags/for-business")
       .then(res => setTags(res.data?.data || []))
-      .catch(()=>{});
+      .catch(() => setTags([]));
   }, []);
 
-  /* ================================
-     VALIDATION (UNCHANGED + EXTENDED)
-  ================================= */
-  const validateField = (name, value) => {
-    let error = "";
+  /* ================= HELPERS ================= */
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\+\d{6,15}$/;
-    const urlRegex = /^https?:\/\//;
-
-    if (name === "email" && value && !emailRegex.test(value))
-      error = "Invalid email format";
-
-    if (name === "phone" && value && !phoneRegex.test(value))
-      error = "Use +337 format";
-
-    if ((name === "website" || name.includes("_url")) && value && !urlRegex.test(value))
-      error = "Must start with https://";
-
-    if (name === "name" && value.trim().length < 3)
-      error = "Min 3 characters";
-
-    setErrors((prev) => ({ ...prev, [name]: error }));
-  };
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    const val = type === "checkbox" ? checked : value;
-
-    setForm((p) => ({ ...p, [name]: val }));
-    validateField(name, val);
-  };
-
-  const toggleArray = (field, id) => {
+  const setField = (key, value) => {
     setForm(prev => ({
       ...prev,
-      [field]: prev[field].includes(id)
-        ? prev[field].filter(x => x !== id)
-        : [...prev[field], id]
+      [key]: value
     }));
   };
 
-  /* ================================
-     SUBMIT (UNCHANGED)
-  ================================= */
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setMsg("");
-    setTicket("");
+  const toggleArray = (key, id) => {
+    setForm(prev => ({
+      ...prev,
+      [key]: prev[key].includes(id)
+        ? prev[key].filter(x => x !== id)
+        : [...prev[key], id]
+    }));
+  };
 
-    const hasErrors = Object.values(errors).some((e) => e);
-    if (hasErrors) return setMsg("⚠️ Please fix validation errors before submitting.");
-    if (!confirm) return setMsg("Please confirm that your information is accurate.");
-    if (!ownershipDoc || !buildingImage) return setMsg("Please upload both required files.");
+  /* ================= VALIDATION ================= */
 
-    setLoading(true);
+  const validateField = (name, value) => {
+    let error = "";
 
-    try {
-      const fd = new FormData();
-      fd.append("request_type", "new");
-      fd.append("payload", JSON.stringify(form));
-      fd.append("files", ownershipDoc);
-      fd.append("files", buildingImage);
-
-      const res = await apiClient.post("/requests", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-        withCredentials: true,
-      });
-
-      setMsg("✅ Your new business request has been submitted successfully!");
-      setTicket(res.data.ticket_code);
-
-      setTimeout(() => window.location.reload(), 10000);
-
-    } catch (err) {
-      console.error(err);
-      setMsg(err.response?.data?.error || "Error submitting request.");
+    if (name === "name" && value.trim().length < 3) {
+      error = "Minimum 3 characters required";
     }
 
-    setLoading(false);
-  }
+    if (name === "short_description") {
+      if (value.length > 160) error = "Max 160 characters";
+    }
 
-  /* ================================
-     UI (UNCHANGED STYLE)
-  ================================= */
-  const cardStyle = {
-    background: theme === "dark" ? "#0b2149" : "#ffffff",
-    color: theme === "dark" ? "#ffffff" : "#0a1b2a",
+    if (name === "full_description") {
+      if (value.trim().length < 50)
+        error = "Minimum 50 characters required";
+    }
+
+    setErrors(prev => ({ ...prev, [name]: error }));
   };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setField(name, value);
+    validateField(name, value);
+  };
+
+  /* ================= UI ================= */
 
   const inputClass =
     "w-full p-3 rounded-lg border shadow-inner focus:outline-none focus:ring-2 focus:ring-turquoise transition-all duration-200 " +
     (theme === "dark"
-      ? "bg-[#153b78] text-white placeholder-gray-300 border-gray-600"
-      : "bg-[#f5f7fa] text-gray-900 border-gray-300 placeholder-gray-500");
+      ? "bg-[#153b78] text-white"
+      : "bg-[#f5f7fa] text-gray-900");
 
-  /* ================================
-     RENDER
-  ================================= */
   return (
     <AccountLayout>
       <main className="flex-1 flex items-center justify-center p-6">
-        <div className="rounded-2xl p-8 w-full max-w-xl border" style={cardStyle}>
+        <div className="rounded-2xl p-8 w-full max-w-xl border">
 
           <h2 className="text-2xl font-semibold text-center mb-6">
-            🆕 Add New Business Request
+            Add New Business Request
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form className="space-y-6">
 
-            {/* BASIC */}
+            {/* ================= BASIC INFO ================= */}
+
             <div>
               <h3 className="font-semibold mb-3">Basic Information</h3>
-              <div className="space-y-3">
-                <input name="name" placeholder="Business Name" onChange={handleChange} className={inputClass}/>
-                <input name="legal_name" placeholder="Legal Name" onChange={handleChange} className={inputClass}/>
-                <input name="business_type" placeholder="Business Type" onChange={handleChange} className={inputClass}/>
-              </div>
+
+              {/* Business Name */}
+              <input
+                name="name"
+                placeholder="Business name *"
+                value={form.name}
+                onChange={handleChange}
+                className={inputClass}
+              />
+
+              {/* Category */}
+              <select
+                className={inputClass}
+                value={form.category_id}
+                onChange={(e) => {
+                  setForm(prev => ({
+                    ...prev,
+                    category_id: e.target.value,
+                    subcategory_ids: []
+                  }));
+                }}
+              >
+                <option value="">Select category *</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Subcategories */}
+              {form.category_id && (
+                <div className="space-y-2">
+                  {subcategories.map(sub => (
+                    <label key={sub.id} className="flex gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={form.subcategory_ids.includes(sub.id)}
+                        onChange={() => toggleArray("subcategory_ids", sub.id)}
+                      />
+                      {sub.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {/* Legal Name */}
+              <input
+                name="legal_name"
+                placeholder="Legal name"
+                value={form.legal_name}
+                onChange={handleChange}
+                className={inputClass}
+              />
+
+              {/* Business Type */}
+              <select
+                className={inputClass}
+                value={form.business_type}
+                onChange={(e) => setField("business_type", e.target.value)}
+              >
+                <option value="">Business type *</option>
+                {BUSINESS_TYPES.map(t => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+
+              {/* Year */}
+              <input
+                type="number"
+                placeholder="Year established"
+                className={inputClass}
+                value={form.year_established}
+                onChange={(e) => setField("year_established", e.target.value)}
+              />
+
+              {/* Short description */}
+              <textarea
+                name="short_description"
+                maxLength={160}
+                placeholder="Short description (max 160)"
+                value={form.short_description}
+                onChange={handleChange}
+                className={inputClass}
+              />
+
+              <p className="text-xs">
+                {form.short_description.length}/160
+              </p>
+
+              {/* Full description */}
+              <textarea
+                name="full_description"
+                placeholder="Full description (min 50)"
+                value={form.full_description}
+                onChange={handleChange}
+                className={inputClass}
+              />
+
+              {form.full_description.length < 50 && (
+                <p className="text-red-500 text-sm">
+                  Minimum 50 characters required
+                </p>
+              )}
             </div>
 
-            {/* CATEGORY */}
-            <div>
-              <h3 className="font-semibold mb-3">Category</h3>
-              <div className="space-y-3">
-                <select name="category" onChange={handleChange} className={inputClass}>
-                  <option value="">Select category</option>
-                  {categories.map(c=>(
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+            {/* ================= SERVICES ================= */}
 
-                {subcategories.map(s=>(
-                  <label key={s.id} className="flex gap-2 text-sm">
-                    <input type="checkbox"
-                      onChange={()=>toggleArray("subcategory_ids",s.id)}/>
-                    {s.name}
+            <div>
+              <h3 className="font-semibold mb-3">Services & Tags</h3>
+
+              {/* Services */}
+              {services.map(s => (
+                <label key={s.id} className="flex gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.services.includes(s.id)}
+                    onChange={() => toggleArray("services", s.id)}
+                  />
+                  {s.name}
+                </label>
+              ))}
+
+              {/* Tags */}
+              <div className="mt-3">
+                {tags.map(t => (
+                  <label key={t.id} className="flex gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.tags.includes(t.id)}
+                      onChange={() => toggleArray("tags", t.id)}
+                    />
+                    {t.name}
                   </label>
                 ))}
               </div>
             </div>
+            {/* ================= LOCATION ================= */}
 
-            {/* DESCRIPTION */}
             <div>
-              <h3 className="font-semibold mb-3">Description</h3>
-              <div className="space-y-3">
-                <textarea name="short_description" maxLength={160}
-                  onChange={handleChange} className={inputClass}/>
-                <p className="text-xs">{form.short_description.length}/160</p>
+              <h3 className="font-semibold mb-3">
+                Location, Availability & Contact
+              </h3>
 
-                <textarea name="full_description"
-                  onChange={handleChange} className={inputClass}/>
+              {/* Service Mode */}
+              <select
+                className={inputClass}
+                value={form.service_mode}
+                onChange={(e) => setField("service_mode", e.target.value)}
+              >
+                <option value="">Service mode *</option>
+                <option value="on_site">On-site</option>
+                <option value="at_home">At customer location</option>
+                <option value="remote">Remote</option>
+                <option value="hybrid">Hybrid</option>
+              </select>
+
+              {/* Availability Type */}
+              <select
+                className={inputClass}
+                value={form.availability_type}
+                onChange={(e) => setField("availability_type", e.target.value)}
+              >
+                <option value="">Availability type *</option>
+                <option value="always_open">Always open</option>
+                <option value="business_hours">Business hours</option>
+                <option value="appointment_only">Appointment only</option>
+              </select>
+
+              {/* Availability Note */}
+              <textarea
+                placeholder="Availability note"
+                className={inputClass}
+                value={form.availability_note}
+                onChange={(e) =>
+                  setField("availability_note", e.target.value)
+                }
+              />
+
+              {/* Location Map */}
+              {(form.service_mode === "on_site" ||
+                form.service_mode === "hybrid") && (
+                <input
+                  className={inputClass}
+                  placeholder="Google Maps link *"
+                  value={form.location_map_url}
+                  onChange={(e) =>
+                    setField("location_map_url", e.target.value)
+                  }
+                />
+              )}
+
+              {/* Base Location */}
+              {(form.service_mode === "at_home" ||
+                form.service_mode === "hybrid") && (
+                <>
+                  <input
+                    className={inputClass}
+                    placeholder="Service base location (Google Maps link) *"
+                    value={form.base_location_map_url}
+                    onChange={(e) =>
+                      setField("base_location_map_url", e.target.value)
+                    }
+                  />
+
+                  <p className="text-xs mt-1">
+                    This location will be shown as your service starting point.
+                    If you have privacy concerns, you may choose an approximate
+                    location on Google Maps.
+                  </p>
+                </>
+              )}
+
+              {/* Radius */}
+              {(form.service_mode === "at_home" ||
+                form.service_mode === "hybrid") && (
+                <input
+                  type="number"
+                  className={inputClass}
+                  placeholder="Service radius (km)"
+                  value={form.service_radius_km}
+                  onChange={(e) =>
+                    setField("service_radius_km", e.target.value)
+                  }
+                />
+              )}
+
+              {/* Address */}
+              {(form.service_mode === "on_site" ||
+                form.service_mode === "hybrid") && (
+                <>
+                  <textarea
+                    className={inputClass}
+                    placeholder="Address *"
+                    value={form.address}
+                    onChange={(e) => setField("address", e.target.value)}
+                  />
+
+                  <p className="text-xs text-red-500">
+                    Please enter the address in this order: Number & Street,
+                    Postal code, City, Country
+                    <br />
+                    Example: 3 Rue Barralis, 06000, Nice, France
+                  </p>
+                </>
+              )}
+
+              {/* Phone */}
+              <input
+                className={inputClass}
+                placeholder="Phone (+337...)"
+                value={form.phone}
+                onChange={(e) => setField("phone", e.target.value)}
+              />
+
+              {/* Email */}
+              <input
+                className={inputClass}
+                placeholder="Email"
+                value={form.email}
+                onChange={(e) => setField("email", e.target.value)}
+              />
+
+              {/* Website */}
+              <input
+                className={inputClass}
+                placeholder="Website (https://...)"
+                value={form.website}
+                onChange={(e) => setField("website", e.target.value)}
+              />
+
+              {/* Visibility */}
+              <div className="flex gap-4 mt-2">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={form.show_phone}
+                    onChange={(e) =>
+                      setField("show_phone", e.target.checked)
+                    }
+                  />
+                  Show phone number
+                </label>
+
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={form.show_email}
+                    onChange={(e) =>
+                      setField("show_email", e.target.checked)
+                    }
+                  />
+                  Show email
+                </label>
               </div>
+
+              {/* Socials */}
+              <input
+                className={inputClass}
+                placeholder="Instagram URL"
+                onChange={(e) =>
+                  setField("instagram_url", e.target.value)
+                }
+              />
+              <input
+                className={inputClass}
+                placeholder="Facebook URL"
+                onChange={(e) =>
+                  setField("facebook_url", e.target.value)
+                }
+              />
+              <input
+                className={inputClass}
+                placeholder="LinkedIn URL"
+                onChange={(e) =>
+                  setField("linkedin_url", e.target.value)
+                }
+              />
+              <input
+                className={inputClass}
+                placeholder="Twitter / X URL"
+                onChange={(e) =>
+                  setField("twitter_url", e.target.value)
+                }
+              />
+              <input
+                className={inputClass}
+                placeholder="Telegram URL"
+                onChange={(e) =>
+                  setField("telegram_url", e.target.value)
+                }
+              />
+              <input
+                className={inputClass}
+                placeholder="WhatsApp number"
+                onChange={(e) =>
+                  setField("whatsapp_number", e.target.value)
+                }
+              />
             </div>
 
-            {/* SERVICES */}
+            {/* ================= MEDIA ================= */}
+
             <div>
-              <h3 className="font-semibold mb-3">Services</h3>
-              {services.map(s=>(
-                <label key={s.id} className="flex gap-2 text-sm">
-                  <input type="checkbox"
-                    onChange={()=>toggleArray("services",s.id)}/>
-                  {s.name}
-                </label>
-              ))}
+              <h3 className="font-semibold mb-3">
+                Media, Visibility & Compliance
+              </h3>
+
+              {/* Logo */}
+              <div>
+                <label>Business logo *</label>
+                <input
+                  type="file"
+                  onChange={(e) => setOwnershipDoc(e.target.files[0])}
+                />
+                <p className="text-xs">Recommended size: 500x500</p>
+              </div>
+
+              {/* Cover */}
+              <div>
+                <label>Cover image</label>
+                <input
+                  type="file"
+                  onChange={(e) => setBuildingImage(e.target.files[0])}
+                />
+                <p className="text-xs">
+                  Recommended size: 900x1600
+                </p>
+              </div>
+
+              {/* Gallery */}
+              <div>
+                <label>Gallery images (max 10)</label>
+                <input type="file" multiple />
+                <p className="text-xs">
+                  Recommended size: 1200x1200
+                </p>
+              </div>
+
+              {/* Reviews */}
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.allow_reviews}
+                  onChange={(e) =>
+                    setField("allow_reviews", e.target.checked)
+                  }
+                />
+                Allow reviews
+              </label>
+
+              {/* Confirm */}
+              <label>
+                <input
+                  type="checkbox"
+                  checked={confirm}
+                  onChange={(e) => setConfirm(e.target.checked)}
+                />
+                I confirm that I am authorized to manage this business.
+              </label>
             </div>
 
-            {/* TAGS */}
-            <div>
-              <h3 className="font-semibold mb-3">Tags</h3>
-              {tags.map(t=>(
-                <label key={t.id} className="inline-flex gap-2 mr-3 text-sm">
-                  <input type="checkbox"
-                    onChange={()=>toggleArray("tags",t.id)}/>
-                  {t.name}
-                </label>
-              ))}
-            </div>
+            {/* ================= SUBMIT ================= */}
 
-            {/* FILES */}
-            <div>
-              <input type="file" onChange={(e)=>setOwnershipDoc(e.target.files[0])} required />
-              <input type="file" onChange={(e)=>setBuildingImage(e.target.files[0])} required />
-            </div>
-
-            <label className="flex gap-2 text-sm">
-              <input type="checkbox" onChange={(e)=>setConfirm(e.target.checked)} />
-              Confirm
-            </label>
-
-            <button type="submit" disabled={loading}
-              className="w-full bg-turquoise py-3 rounded-lg">
-              {loading ? "Submitting..." : "Submit"}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-turquoise py-3 rounded-lg mt-4"
+            >
+              {loading ? "Submitting..." : "Submit Request"}
             </button>
 
-            {msg && <p className="text-center">{msg}</p>}
-            {ticket && <p className="text-center">{ticket}</p>}
-
-          </form>
-        </div>
-      </main>
-    </AccountLayout>
-  );
-}
+            {msg && (
+              <p className="text-center mt-3">
+                {msg}
+                {ticket && <span>Ticket: {ticket}</span>}
+              </p>
+            )}
