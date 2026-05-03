@@ -683,4 +683,5 @@ return (
       </div>
     </main>
   </AccountLayout>
-);
+  );
+}
