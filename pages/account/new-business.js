@@ -39,6 +39,12 @@ export default function NewBusinessRequest() {
 
   const [errors, setErrors] = useState({});
   const [theme, setTheme] = useState("light");
+  const [confirm, setConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [ticket, setTicket] = useState("");
+  const [ownershipDoc, setOwnershipDoc] = useState(null);
+  const [buildingImage, setBuildingImage] = useState(null);
 
   /* ================= THEME ================= */
 
