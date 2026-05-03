@@ -150,40 +150,54 @@ export default function NewBusinessRequest() {
     validateField(name, value);
   };
 
-  /* ================= UI ================= */
+/* ================= UI HELPERS ================= */
 
-  const inputClass =
-    "w-full p-3 rounded-lg border shadow-inner focus:outline-none focus:ring-2 focus:ring-turquoise transition-all duration-200 " +
-    (theme === "dark"
-      ? "bg-[#153b78] text-white"
-      : "bg-[#f5f7fa] text-gray-900");
+const sectionStyle = {
+  border: "1px solid rgba(0,0,0,0.06)",
+  borderRadius: "16px",
+  padding: "20px",
+  marginBottom: "20px",
+  background: theme === "dark" ? "#0b2149" : "#ffffff",
+};
 
-  return (
-    <AccountLayout>
-      <main className="flex-1 flex items-center justify-center p-6">
-        <div className="rounded-2xl p-8 w-full max-w-xl border">
+const labelClass = "block text-sm font-medium mb-1";
+const fieldWrap = "mb-4";
 
-          <h2 className="text-2xl font-semibold text-center mb-6">
-            Add New Business Request
-          </h2>
+/* ================= UI ================= */
 
-          <form className="space-y-6">
+return (
+  <AccountLayout>
+    <main className="flex-1 flex items-center justify-center p-6">
+      <div className="w-full max-w-xl">
 
-            {/* ================= BASIC INFO ================= */}
+        <h2 className="text-2xl font-semibold text-center mb-6">
+          Add New Business Request
+        </h2>
 
-            <div>
-              <h3 className="font-semibold mb-3">Basic Information</h3>
+        <form onSubmit={handleSubmit}>
 
-              {/* Business Name */}
+          {/* ================= BASIC INFO ================= */}
+          <div style={sectionStyle}>
+            <h3 className="font-semibold mb-4">
+              Basic Information
+            </h3>
+
+            {/* Business Name */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>Business name *</label>
               <input
                 name="name"
-                placeholder="Business name *"
                 value={form.name}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} ${errors.name ? "border-red-500" : ""}`}
+                placeholder="Enter business name"
               />
+              {errors.name && <p className="text-red-400 text-sm">{errors.name}</p>}
+            </div>
 
-              {/* Category */}
+            {/* Category */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>Business category *</label>
               <select
                 className={inputClass}
                 value={form.category_id}
@@ -195,17 +209,21 @@ export default function NewBusinessRequest() {
                   }));
                 }}
               >
-                <option value="">Select category *</option>
+                <option value="">Select category</option>
                 {categories.map(c => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
               </select>
+            </div>
 
-              {/* Subcategories */}
-              {form.category_id && (
-                <div className="space-y-2">
+            {/* Subcategories */}
+            {form.category_id && (
+              <div className={fieldWrap}>
+                <label className={labelClass}>Subcategories *</label>
+
+                <div className="grid gap-2">
                   {subcategories.map(sub => (
                     <label key={sub.id} className="flex gap-2 text-sm">
                       <input
@@ -217,89 +235,122 @@ export default function NewBusinessRequest() {
                     </label>
                   ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Legal Name */}
+            {/* Legal Name */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>Legal name</label>
               <input
                 name="legal_name"
-                placeholder="Legal name"
                 value={form.legal_name}
                 onChange={handleChange}
                 className={inputClass}
               />
+            </div>
 
-              {/* Business Type */}
+            {/* Business Type */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>Business type *</label>
               <select
                 className={inputClass}
                 value={form.business_type}
                 onChange={(e) => setField("business_type", e.target.value)}
               >
-                <option value="">Business type *</option>
+                <option value="">Select type</option>
                 {BUSINESS_TYPES.map(t => (
                   <option key={t.value} value={t.value}>
                     {t.label}
                   </option>
                 ))}
               </select>
+            </div>
 
-              {/* Year */}
+            {/* Year */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>Year established</label>
               <input
                 type="number"
-                placeholder="Year established"
                 className={inputClass}
                 value={form.year_established}
                 onChange={(e) => setField("year_established", e.target.value)}
               />
+            </div>
 
-              {/* Short description */}
+            {/* Short description */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>
+                Short description * (max 160)
+              </label>
               <textarea
                 name="short_description"
                 maxLength={160}
-                placeholder="Short description (max 160)"
                 value={form.short_description}
                 onChange={handleChange}
                 className={inputClass}
               />
-
-              <p className="text-xs">
+              <p className="text-xs mt-1">
                 {form.short_description.length}/160
               </p>
+            </div>
 
-              {/* Full description */}
+            {/* Full description */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>
+                Full description * (min 50)
+              </label>
               <textarea
                 name="full_description"
-                placeholder="Full description (min 50)"
                 value={form.full_description}
                 onChange={handleChange}
                 className={inputClass}
               />
-
               {form.full_description.length < 50 && (
-                <p className="text-red-500 text-sm">
+                <p className="text-red-500 text-sm mt-1">
                   Minimum 50 characters required
                 </p>
               )}
             </div>
+          </div>
+          {/* ================= SERVICES & TAGS ================= */}
+          <div style={sectionStyle}>
+            <h3 className="font-semibold mb-4">
+              Services & Tags
+            </h3>
 
-            {/* ================= SERVICES ================= */}
+            {/* Services */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>
+                Services offered *
+              </label>
 
-            <div>
-              <h3 className="font-semibold mb-3">Services & Tags</h3>
+              {services.length === 0 ? (
+                <p className="text-sm opacity-60">
+                  Select subcategories first
+                </p>
+              ) : (
+                <div className="grid gap-2">
+                  {services.map(s => (
+                    <label key={s.id} className="flex gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={form.services.includes(s.id)}
+                        onChange={() => toggleArray("services", s.id)}
+                      />
+                      <span title={s.description}>{s.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
 
-              {/* Services */}
-              {services.map(s => (
-                <label key={s.id} className="flex gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={form.services.includes(s.id)}
-                    onChange={() => toggleArray("services", s.id)}
-                  />
-                  {s.name}
-                </label>
-              ))}
+            {/* Tags */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>
+                Tags (optional)
+              </label>
 
-              {/* Tags */}
-              <div className="mt-3">
+              <div className="flex flex-wrap gap-3">
                 {tags.map(t => (
                   <label key={t.id} className="flex gap-2 text-sm">
                     <input
@@ -312,250 +363,273 @@ export default function NewBusinessRequest() {
                 ))}
               </div>
             </div>
-            {/* ================= LOCATION ================= */}
+          </div>
 
-            <div>
-              <h3 className="font-semibold mb-3">
-                Location, Availability & Contact
-              </h3>
 
-              {/* Service Mode */}
+          {/* ================= LOCATION ================= */}
+          <div style={sectionStyle}>
+            <h3 className="font-semibold mb-4">
+              Location, Availability & Contact
+            </h3>
+
+            {/* Service Mode */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>Service mode *</label>
               <select
                 className={inputClass}
                 value={form.service_mode}
                 onChange={(e) => setField("service_mode", e.target.value)}
               >
-                <option value="">Service mode *</option>
+                <option value="">Select service mode</option>
                 <option value="on_site">On-site</option>
                 <option value="at_home">At customer location</option>
                 <option value="remote">Remote</option>
                 <option value="hybrid">Hybrid</option>
               </select>
+            </div>
 
-              {/* Availability Type */}
+            {/* Availability */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>Availability type *</label>
               <select
                 className={inputClass}
                 value={form.availability_type}
                 onChange={(e) => setField("availability_type", e.target.value)}
               >
-                <option value="">Availability type *</option>
+                <option value="">Select</option>
                 <option value="always_open">Always open</option>
                 <option value="business_hours">Business hours</option>
                 <option value="appointment_only">Appointment only</option>
               </select>
+            </div>
 
-              {/* Availability Note */}
+            {/* Availability Note */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>Availability note</label>
               <textarea
-                placeholder="Availability note"
                 className={inputClass}
                 value={form.availability_note}
                 onChange={(e) =>
                   setField("availability_note", e.target.value)
                 }
               />
+            </div>
 
-              {/* Location Map */}
-              {(form.service_mode === "on_site" ||
-                form.service_mode === "hybrid") && (
+            {/* Location Map */}
+            {(form.service_mode === "on_site" ||
+              form.service_mode === "hybrid") && (
+              <div className={fieldWrap}>
+                <label className={labelClass}>
+                  Business location (Google Maps link) *
+                </label>
                 <input
                   className={inputClass}
-                  placeholder="Google Maps link *"
                   value={form.location_map_url}
                   onChange={(e) =>
                     setField("location_map_url", e.target.value)
                   }
+                  placeholder="https://maps.google.com/..."
                 />
-              )}
+              </div>
+            )}
 
-              {/* Base Location */}
-              {(form.service_mode === "at_home" ||
-                form.service_mode === "hybrid") && (
-                <>
-                  <input
-                    className={inputClass}
-                    placeholder="Service base location (Google Maps link) *"
-                    value={form.base_location_map_url}
-                    onChange={(e) =>
-                      setField("base_location_map_url", e.target.value)
-                    }
-                  />
+            {/* Base Location */}
+            {(form.service_mode === "at_home" ||
+              form.service_mode === "hybrid") && (
+              <div className={fieldWrap}>
+                <label className={labelClass}>
+                  Service base location (Google Maps link) *
+                </label>
 
-                  <p className="text-xs mt-1">
-                    This location will be shown as your service starting point.
-                    If you have privacy concerns, you may choose an approximate
-                    location on Google Maps.
-                  </p>
-                </>
-              )}
+                <input
+                  className={inputClass}
+                  value={form.base_location_map_url}
+                  onChange={(e) =>
+                    setField("base_location_map_url", e.target.value)
+                  }
+                />
 
-              {/* Radius */}
-              {(form.service_mode === "at_home" ||
-                form.service_mode === "hybrid") && (
+                <p className="text-xs mt-1 opacity-70">
+                  This location will be shown as your service starting point.
+                  If you have privacy concerns, you may choose an approximate
+                  location on Google Maps.
+                </p>
+              </div>
+            )}
+
+            {/* Radius */}
+            {(form.service_mode === "at_home" ||
+              form.service_mode === "hybrid") && (
+              <div className={fieldWrap}>
+                <label className={labelClass}>
+                  Service radius (km)
+                </label>
                 <input
                   type="number"
                   className={inputClass}
-                  placeholder="Service radius (km)"
                   value={form.service_radius_km}
                   onChange={(e) =>
                     setField("service_radius_km", e.target.value)
                   }
                 />
-              )}
+              </div>
+            )}
 
-              {/* Address */}
-              {(form.service_mode === "on_site" ||
-                form.service_mode === "hybrid") && (
-                <>
-                  <textarea
-                    className={inputClass}
-                    placeholder="Address *"
-                    value={form.address}
-                    onChange={(e) => setField("address", e.target.value)}
-                  />
+            {/* Address */}
+            {(form.service_mode === "on_site" ||
+              form.service_mode === "hybrid") && (
+              <div className={fieldWrap}>
+                <label className={labelClass}>Address *</label>
+                <textarea
+                  className={inputClass}
+                  value={form.address}
+                  onChange={(e) =>
+                    setField("address", e.target.value)
+                  }
+                />
 
-                  <p className="text-xs text-red-500">
-                    Please enter the address in this order: Number & Street,
-                    Postal code, City, Country
-                    <br />
-                    Example: 3 Rue Barralis, 06000, Nice, France
-                  </p>
-                </>
-              )}
+                <p className="text-xs text-red-500 mt-1">
+                  Please enter the address in this order:
+                  Number & Street, Postal code, City, Country
+                  <br />
+                  Example: 3 Rue Barralis, 06000, Nice, France
+                </p>
+              </div>
+            )}
 
-              {/* Phone */}
+            {/* Phone */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>Phone</label>
               <input
                 className={inputClass}
-                placeholder="Phone (+337...)"
+                placeholder="National number (no leading 0)"
                 value={form.phone}
                 onChange={(e) => setField("phone", e.target.value)}
               />
+            </div>
 
-              {/* Email */}
+            {/* Email */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>Email</label>
               <input
                 className={inputClass}
-                placeholder="Email"
                 value={form.email}
                 onChange={(e) => setField("email", e.target.value)}
               />
+            </div>
 
-              {/* Website */}
+            {/* Website */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>Website</label>
               <input
                 className={inputClass}
-                placeholder="Website (https://...)"
+                placeholder="https://example.com"
                 value={form.website}
                 onChange={(e) => setField("website", e.target.value)}
               />
-
-              {/* Visibility */}
-              <div className="flex gap-4 mt-2">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={form.show_phone}
-                    onChange={(e) =>
-                      setField("show_phone", e.target.checked)
-                    }
-                  />
-                  Show phone number
-                </label>
-
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={form.show_email}
-                    onChange={(e) =>
-                      setField("show_email", e.target.checked)
-                    }
-                  />
-                  Show email
-                </label>
-              </div>
-
-              {/* Socials */}
-              <input
-                className={inputClass}
-                placeholder="Instagram URL"
-                onChange={(e) =>
-                  setField("instagram_url", e.target.value)
-                }
-              />
-              <input
-                className={inputClass}
-                placeholder="Facebook URL"
-                onChange={(e) =>
-                  setField("facebook_url", e.target.value)
-                }
-              />
-              <input
-                className={inputClass}
-                placeholder="LinkedIn URL"
-                onChange={(e) =>
-                  setField("linkedin_url", e.target.value)
-                }
-              />
-              <input
-                className={inputClass}
-                placeholder="Twitter / X URL"
-                onChange={(e) =>
-                  setField("twitter_url", e.target.value)
-                }
-              />
-              <input
-                className={inputClass}
-                placeholder="Telegram URL"
-                onChange={(e) =>
-                  setField("telegram_url", e.target.value)
-                }
-              />
-              <input
-                className={inputClass}
-                placeholder="WhatsApp number"
-                onChange={(e) =>
-                  setField("whatsapp_number", e.target.value)
-                }
-              />
             </div>
 
-            {/* ================= MEDIA ================= */}
-
-            <div>
-              <h3 className="font-semibold mb-3">
-                Media, Visibility & Compliance
-              </h3>
-
-              {/* Logo */}
-              <div>
-                <label>Business logo *</label>
+            {/* Visibility */}
+            <div className="flex gap-6 mt-2 mb-4">
+              <label className="flex gap-2 text-sm">
                 <input
-                  type="file"
-                  onChange={(e) => setOwnershipDoc(e.target.files[0])}
+                  type="checkbox"
+                  checked={form.show_phone}
+                  onChange={(e) =>
+                    setField("show_phone", e.target.checked)
+                  }
                 />
-                <p className="text-xs">Recommended size: 500x500</p>
-              </div>
+                Show phone number
+              </label>
 
-              {/* Cover */}
-              <div>
-                <label>Cover image</label>
+              <label className="flex gap-2 text-sm">
                 <input
-                  type="file"
-                  onChange={(e) => setBuildingImage(e.target.files[0])}
+                  type="checkbox"
+                  checked={form.show_email}
+                  onChange={(e) =>
+                    setField("show_email", e.target.checked)
+                  }
                 />
-                <p className="text-xs">
-                  Recommended size: 900x1600
-                </p>
-              </div>
+                Show email
+              </label>
+            </div>
 
-              {/* Gallery */}
-              <div>
-                <label>Gallery images (max 10)</label>
-                <input type="file" multiple />
-                <p className="text-xs">
-                  Recommended size: 1200x1200
-                </p>
-              </div>
+            {/* Socials */}
+            <div className="grid gap-3">
+              <input className={inputClass} placeholder="Instagram URL"
+                onChange={(e)=>setField("instagram_url", e.target.value)} />
+              <input className={inputClass} placeholder="Facebook URL"
+                onChange={(e)=>setField("facebook_url", e.target.value)} />
+              <input className={inputClass} placeholder="LinkedIn URL"
+                onChange={(e)=>setField("linkedin_url", e.target.value)} />
+              <input className={inputClass} placeholder="Twitter / X URL"
+                onChange={(e)=>setField("twitter_url", e.target.value)} />
+              <input className={inputClass} placeholder="Telegram URL"
+                onChange={(e)=>setField("telegram_url", e.target.value)} />
+              <input className={inputClass} placeholder="WhatsApp number"
+                onChange={(e)=>setField("whatsapp_number", e.target.value)} />
+            </div>
+          </div>
+          {/* ================= MEDIA ================= */}
+          <div style={sectionStyle}>
+            <h3 className="font-semibold mb-4">
+              Media, Visibility & Compliance
+            </h3>
 
-              {/* Reviews */}
-              <label>
+            {/* Logo */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>
+                Business logo *
+              </label>
+
+              <input
+                type="file"
+                onChange={(e) => setOwnershipDoc(e.target.files[0])}
+                className="w-full text-sm"
+              />
+
+              <p className="text-xs mt-1 opacity-70">
+                Recommended size: 500 × 500
+              </p>
+            </div>
+
+            {/* Cover */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>
+                Cover image
+              </label>
+
+              <input
+                type="file"
+                onChange={(e) => setBuildingImage(e.target.files[0])}
+                className="w-full text-sm"
+              />
+
+              <p className="text-xs mt-1 opacity-70">
+                Recommended size: 900 × 1600
+              </p>
+            </div>
+
+            {/* Gallery */}
+            <div className={fieldWrap}>
+              <label className={labelClass}>
+                Gallery images (max 10)
+              </label>
+
+              <input
+                type="file"
+                multiple
+                className="w-full text-sm"
+              />
+
+              <p className="text-xs mt-1 opacity-70">
+                Recommended size: 1200 × 1200
+              </p>
+            </div>
+
+            {/* Allow Reviews */}
+            <div className="mb-4">
+              <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   checked={form.allow_reviews}
@@ -565,9 +639,11 @@ export default function NewBusinessRequest() {
                 />
                 Allow reviews
               </label>
+            </div>
 
-              {/* Confirm */}
-              <label>
+            {/* Confirm */}
+            <div>
+              <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   checked={confirm}
@@ -576,26 +652,35 @@ export default function NewBusinessRequest() {
                 I confirm that I am authorized to manage this business.
               </label>
             </div>
+          </div>
 
-            {/* ================= SUBMIT ================= */}
+          {/* ================= SUBMIT ================= */}
+          <div style={sectionStyle}>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-turquoise py-3 rounded-lg mt-4"
+              className="w-full bg-turquoise py-3 rounded-lg font-medium hover:bg-turquoise/90 transition-all"
+              style={{ color: "#0b2149" }}
             >
-              {loading ? "Submitting..." : "Submit Request"}
+              {loading ? "Submitting..." : "Submit New Business Request"}
             </button>
 
             {msg && (
-              <p className="text-center mt-3">
+              <p className="text-center text-sm mt-3">
                 {msg}
-                {ticket && <span>Ticket: {ticket}</span>}
+                {ticket && (
+                  <span className="block font-semibold text-turquoise mt-1">
+                    Ticket: {ticket}
+                  </span>
+                )}
               </p>
             )}
-          </form>
-        </div>
-      </main>
-    </AccountLayout>
-  );
-}
+
+          </div>
+
+        </form>
+      </div>
+    </main>
+  </AccountLayout>
+);
