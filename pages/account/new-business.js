@@ -3,25 +3,19 @@
 import { useState, useEffect } from "react";
 import AccountLayout from "../../components/account/AccountLayout";
 import apiClient from "../../utils/apiClient";
-import categoriesData from "../../data/categories";
 
 export default function NewBusinessRequest() {
 
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [services, setServices] = useState([]);
+  const [tags, setTags] = useState([]);
+
   const [form, setForm] = useState({
     name: "",
-    category: "",
-    sub_category: "",
-    country: "",
-    city: "",
-    address: "",
-    postal_code: "",
-    phone: "",
-    email: "",
-    website: "",
-    map_link: "",
-    description: "",
+    category_id: "",
+    subcategory_ids: [],
 
-    // ✅ NEW FIELDS
     legal_name: "",
     business_type: "",
     year_established: "",
@@ -29,21 +23,23 @@ export default function NewBusinessRequest() {
     short_description: "",
     full_description: "",
 
-    instagram_url: "",
-    facebook_url: "",
-    linkedin_url: "",
-    twitter_url: "",
-    telegram_url: "",
-    whatsapp_number: "",
+    services: [],
+    tags: [],
 
     service_mode: "",
     availability_type: "",
     availability_note: "",
 
-    service_radius_km: "",
+    country: "",
+    city: "",
+    address: "",
+    postal_code: "",
+    location_map_url: "",
 
-    show_phone: true,
-    show_email: false,
+    phone: "",
+    email: "",
+    website: "",
+
     is_public: true,
     allow_reviews: true,
   });
@@ -52,71 +48,100 @@ export default function NewBusinessRequest() {
   const [ownershipDoc, setOwnershipDoc] = useState(null);
   const [buildingImage, setBuildingImage] = useState(null);
   const [confirm, setConfirm] = useState(false);
-  const [theme, setTheme] = useState("light");
   const [msg, setMsg] = useState("");
   const [ticket, setTicket] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /* 🎨 تم */
+  /* ================================
+     LOAD DATA (مثل ادمین)
+  ================================= */
   useEffect(() => {
-    const current = document.documentElement.getAttribute("data-theme") || "light";
-    setTheme(current);
-
-    const obs = new MutationObserver(() => {
-      const newTheme = document.documentElement.getAttribute("data-theme");
-      setTheme(newTheme);
-    });
-
-    obs.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
-
-    return () => obs.disconnect();
+    apiClient.get("/admin/categories/all")
+      .then(res => setCategories(res.data?.data || []));
   }, []);
 
-  /* ✅ ولیدیشن */
-  const validateField = (name, value) => {
-    let error = "";
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\+\d{6,15}$/;
-    const urlRegex = /^(https?:\/\/)/;
+  useEffect(() => {
+    if (!form.category_id) return;
 
-    if (name === "email" && value && !emailRegex.test(value))
-      error = "Invalid email format";
+    apiClient.get("/admin/subcategories", {
+      params: { category_id: form.category_id }
+    }).then(res => setSubcategories(res.data?.data || []));
+  }, [form.category_id]);
 
-    if (name === "phone" && value && !phoneRegex.test(value))
-      error = "Use +33712345678 format";
+  useEffect(() => {
+    if (!form.subcategory_ids.length) return;
 
-    if (name === "website" && value && !urlRegex.test(value))
-      error = "Website must start with https://";
+    apiClient.get("/admin/services", {
+      params: { subcategory_ids: form.subcategory_ids }
+    }).then(res => setServices(res.data?.data || []));
+  }, [form.subcategory_ids]);
 
-    if (name === "map_link" && value && !value.startsWith("https://maps"))
-      error = "Must be valid Google Maps link";
+  useEffect(() => {
+    apiClient.get("/admin/tags/for-business")
+      .then(res => setTags(res.data?.data || []));
+  }, []);
 
-    if (name === "name" && value.trim().length < 3)
-      error = "Business name must be at least 3 characters";
+  /* ================================
+     HANDLERS
+  ================================= */
+  function setField(k, v) {
+    setForm(prev => ({ ...prev, [k]: v }));
+  }
 
-    setErrors((prev) => ({ ...prev, [name]: error }));
-  };
+  function toggleArray(field, id) {
+    setForm(prev => ({
+      ...prev,
+      [field]: prev[field].includes(id)
+        ? prev[field].filter(x => x !== id)
+        : [...prev[field], id]
+    }));
+  }
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    const val = type === "checkbox" ? checked : value;
+  /* ================================
+     VALIDATION
+  ================================= */
+  function validate() {
+    let err = {};
 
-    setForm((p) => ({ ...p, [name]: val }));
-    validateField(name, val);
-  };
+    if (!form.name || form.name.length < 3)
+      err.name = "Minimum 3 characters";
 
+    if (!form.category_id)
+      err.category = "Required";
+
+    if (!form.subcategory_ids.length)
+      err.subcategory = "Select at least one";
+
+    if (!form.short_description || form.short_description.length < 20)
+      err.short_description = "Min 20 chars";
+
+    if (!form.full_description || form.full_description.length < 50)
+      err.full_description = "Min 50 chars";
+
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      err.email = "Invalid email";
+
+    if (form.website && !/^https?:\/\//.test(form.website))
+      err.website = "Must start with https://";
+
+    if (form.location_map_url && !form.location_map_url.includes("maps"))
+      err.map = "Invalid Google Maps link";
+
+    setErrors(err);
+    return Object.keys(err).length === 0;
+  }
+
+  /* ================================
+     SUBMIT (بدون تغییر)
+  ================================= */
   async function handleSubmit(e) {
     e.preventDefault();
-    setMsg("");
-    setTicket("");
+    setMsg(""); setTicket("");
 
-    const hasErrors = Object.values(errors).some((e) => e);
-    if (hasErrors) return setMsg("⚠️ Please fix validation errors before submitting.");
-    if (!confirm) return setMsg("Please confirm that your information is accurate.");
-    if (!ownershipDoc || !buildingImage) return setMsg("Please upload both required files.");
+    if (!validate()) return setMsg("Fix errors");
+    if (!confirm) return setMsg("Confirm data");
+    if (!ownershipDoc || !buildingImage)
+      return setMsg("Upload files");
 
     setLoading(true);
 
@@ -132,138 +157,116 @@ export default function NewBusinessRequest() {
         withCredentials: true,
       });
 
-      setMsg("✅ Your new business request has been submitted successfully!");
+      setMsg("✅ Submitted!");
       setTicket(res.data.ticket_code);
 
-      setTimeout(() => window.location.reload(), 10000);
-
-      setForm({
-        name: "", category: "", sub_category: "", country: "", city: "",
-        address: "", postal_code: "", phone: "", email: "", website: "", map_link: "", description: "",
-      });
-
-      setErrors({});
-      setOwnershipDoc(null);
-      setBuildingImage(null);
-      setConfirm(false);
-
     } catch (err) {
-      console.error(err);
-      setMsg(err.response?.data?.error || "Error submitting request.");
+      setMsg("Error submitting");
     }
 
     setLoading(false);
   }
 
-  const cardStyle = {
-    background: theme === "dark" ? "#0b2149" : "#ffffff",
-    color: theme === "dark" ? "#ffffff" : "#0a1b2a",
-  };
-
-  const inputClass =
-    "w-full p-3 rounded-lg border shadow-inner focus:outline-none focus:ring-2 focus:ring-turquoise " +
-    (theme === "dark"
-      ? "bg-[#153b78] text-white border-gray-600"
-      : "bg-[#f5f7fa] text-gray-900 border-gray-300");
+  /* ================================
+     UI
+  ================================= */
+  const input = "w-full p-3 rounded border mb-3";
 
   return (
     <AccountLayout>
-      <main className="flex-1 flex items-center justify-center p-6">
-        <div className="rounded-2xl p-8 w-full max-w-xl border" style={cardStyle}>
+      <main className="p-6 flex justify-center">
+        <div className="w-full max-w-xl p-6 bg-white rounded">
 
-          <h2 className="text-2xl font-semibold text-center mb-6">
-            🆕 Add New Business Request
-          </h2>
+          <h2 className="text-xl mb-6">Add Business</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit}>
 
-            {/* 🔹 BASIC */}
-            <div>
-              <h3 className="font-semibold mb-2">Basic Information</h3>
-              <input name="name" placeholder="Business Name" onChange={handleChange} className={inputClass} />
-              <input name="legal_name" placeholder="Legal Name" onChange={handleChange} className={inputClass} />
-              <input name="business_type" placeholder="Business Type" onChange={handleChange} className={inputClass} />
-            </div>
+            {/* BASIC */}
+            <section className="mb-6">
+              <h3 className="font-semibold mb-3">Basic</h3>
+              <input className={input} placeholder="Name" onChange={e=>setField("name",e.target.value)} />
+              <input className={input} placeholder="Legal name" onChange={e=>setField("legal_name",e.target.value)} />
+            </section>
 
-            {/* 🔹 CATEGORY */}
-            <div>
-              <h3 className="font-semibold mb-2">Category</h3>
-              <select name="category" onChange={handleChange} className={inputClass}>
-                <option value="">Select category</option>
-                {categoriesData.map((c) => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
+            {/* CATEGORY */}
+            <section className="mb-6">
+              <h3 className="font-semibold mb-3">Category</h3>
+
+              <select className={input} onChange={e=>setField("category_id",Number(e.target.value))}>
+                <option>Select</option>
+                {categories.map(c=>(
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
 
-              <select name="sub_category" onChange={handleChange} className={inputClass}>
-                <option value="">Select subcategory</option>
-                {categoriesData
-                  .find(c => c.name === form.category)?.subcategories?.map(s => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
-                  ))}
-              </select>
-            </div>
+              {subcategories.map(s=>(
+                <label key={s.id} className="block">
+                  <input type="checkbox"
+                    onChange={()=>toggleArray("subcategory_ids",s.id)} />
+                  {s.name}
+                </label>
+              ))}
+            </section>
 
-            {/* 🔹 DESCRIPTION */}
-            <div>
-              <h3 className="font-semibold mb-2">Description</h3>
-              <input name="short_description" placeholder="Short description" onChange={handleChange} className={inputClass} />
-              <textarea name="full_description" placeholder="Full description" onChange={handleChange} className={inputClass} />
-            </div>
+            {/* DESCRIPTION */}
+            <section className="mb-6">
+              <h3 className="font-semibold mb-3">Description</h3>
 
-            {/* 🔹 LOCATION */}
-            <div>
-              <h3 className="font-semibold mb-2">Location</h3>
-              <input name="country" placeholder="Country" onChange={handleChange} className={inputClass} />
-              <input name="city" placeholder="City" onChange={handleChange} className={inputClass} />
-              <input name="address" placeholder="Address" onChange={handleChange} className={inputClass} />
-              <input name="postal_code" placeholder="Postal Code" onChange={handleChange} className={inputClass} />
-              <input name="map_link" placeholder="Google Maps Link" onChange={handleChange} className={inputClass} />
-            </div>
+              <textarea className={input}
+                maxLength={160}
+                placeholder="Short (20-160 chars)"
+                onChange={e=>setField("short_description",e.target.value)} />
 
-            {/* 🔹 CONTACT */}
-            <div>
-              <h3 className="font-semibold mb-2">Contact</h3>
-              <input name="phone" placeholder="Phone" onChange={handleChange} className={inputClass} />
-              <input name="email" placeholder="Email" onChange={handleChange} className={inputClass} />
-              <input name="website" placeholder="Website" onChange={handleChange} className={inputClass} />
-            </div>
+              <small>{form.short_description.length}/160</small>
 
-            {/* 🔹 SOCIAL */}
-            <div>
-              <h3 className="font-semibold mb-2">Social Media</h3>
-              <input name="instagram_url" placeholder="Instagram URL" onChange={handleChange} className={inputClass} />
-              <input name="facebook_url" placeholder="Facebook URL" onChange={handleChange} className={inputClass} />
-              <input name="linkedin_url" placeholder="LinkedIn URL" onChange={handleChange} className={inputClass} />
-            </div>
+              <textarea className={input}
+                placeholder="Full (min 50 chars)"
+                onChange={e=>setField("full_description",e.target.value)} />
+            </section>
 
-            {/* 🔹 FILES */}
-            <div>
-              <label>Proof of Ownership</label>
-              <input type="file" onChange={(e) => setOwnershipDoc(e.target.files[0])} required />
-            </div>
+            {/* SERVICES */}
+            <section className="mb-6">
+              <h3 className="font-semibold mb-3">Services</h3>
 
-            <div>
-              <label>Building Photo</label>
-              <input type="file" onChange={(e) => setBuildingImage(e.target.files[0])} required />
-            </div>
+              {services.map(s=>(
+                <label key={s.id} className="block">
+                  <input type="checkbox"
+                    onChange={()=>toggleArray("services",s.id)} />
+                  {s.name}
+                </label>
+              ))}
+            </section>
 
-            {/* 🔹 CONFIRM */}
-            <label className="flex gap-2 text-sm">
-              <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} />
-              I confirm that the information provided above is accurate.
+            {/* TAGS */}
+            <section className="mb-6">
+              <h3 className="font-semibold mb-3">Tags</h3>
+
+              {tags.map(t=>(
+                <label key={t.id} className="inline-block mr-3">
+                  <input type="checkbox"
+                    onChange={()=>toggleArray("tags",t.id)} />
+                  {t.name}
+                </label>
+              ))}
+            </section>
+
+            {/* FILES */}
+            <section className="mb-6">
+              <input type="file" onChange={e=>setOwnershipDoc(e.target.files[0])} required />
+              <input type="file" onChange={e=>setBuildingImage(e.target.files[0])} required />
+            </section>
+
+            <label>
+              <input type="checkbox" onChange={e=>setConfirm(e.target.checked)} />
+              Confirm
             </label>
 
-            <button type="submit" disabled={loading} className="w-full bg-turquoise py-3 rounded-lg">
-              {loading ? "Submitting..." : "Submit Request"}
+            <button disabled={loading} className="w-full mt-4 bg-blue-500 text-white p-3">
+              Submit
             </button>
 
-            {msg && (
-              <p className="text-center mt-2">
-                {msg}
-                {ticket && <span className="block">Ticket: {ticket}</span>}
-              </p>
-            )}
+            {msg && <p>{msg}</p>}
+            {ticket && <p>{ticket}</p>}
 
           </form>
         </div>
