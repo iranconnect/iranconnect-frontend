@@ -587,3 +587,9 @@ export default function NewBusinessRequest() {
                 {ticket && <span>Ticket: {ticket}</span>}
               </p>
             )}
+          </form>
+        </div>
+      </main>
+    </AccountLayout>
+  );
+}
