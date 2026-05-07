@@ -77,30 +77,18 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
   /* ---------------------------------------------------------
      📎 Secure Download
   --------------------------------------------------------- */
-  async function handleDownload() {
-    try {
-      setDownloading(true);
-      const res = await apiClient.get(
-        `/admin/requests/${request.id}/download`,
-        {
-          responseType: "blob",
-          withCredentials: true,
-          headers: { "x-iranconnect-admin": "true" },
-        }
-      );
-
-      const url = window.URL.createObjectURL(res.data);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${details?.ticket_code || "request"}.zip`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("❌ Download failed:", err);
-      alert("❌ Download failed.");
-    } finally {
-      setDownloading(false);
+  function safeParseAttachments(attachments) {
+    if (!attachments) return [];
+  
+    if (typeof attachments === "string") {
+      try {
+        return JSON.parse(attachments);
+      } catch {
+        return [];
+      }
     }
+  
+    return attachments;
   }
 
   const renderPayload = (payload) => {
@@ -170,12 +158,21 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
               {renderPayload(details.payload)}
             </div>
 
-            {details.attachments?.length > 0 && (
+            {safeParseAttachments(details.attachments).length > 0 && (
               <div className="mt-4">
                 <h3 className="font-semibold mb-1">Attachments:</h3>
-                <ul className="list-disc pl-6">
-                  {details.attachments.map((f, i) => (
-                    <li key={i}>{f.filename}</li>
+                <ul className="space-y-2 mt-2">
+                  {safeParseAttachments(details.attachments).map((f, i) => (
+                    <li key={i} className="flex justify-between items-center">
+                      <span className="text-sm">{f.filename}</span>
+                
+                      <button
+                        className="text-turquoise text-sm"
+                        onClick={() => window.open(f.path, "_blank")}
+                      >
+                        View
+                      </button>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -183,11 +180,27 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
 
             <div className="flex justify-end mt-6">
               <button
-                onClick={handleDownload}
-                disabled={downloading}
+                onClick={() => {
+                  try {
+                    const files = safeParseAttachments(details.attachments);
+            
+                    if (!files.length) {
+                      alert("No attachments found");
+                      return;
+                    }
+            
+                    files.forEach(file => {
+                      window.open(file.path, "_blank");
+                    });
+            
+                  } catch (err) {
+                    console.error(err);
+                    alert("Failed to open files");
+                  }
+                }}
                 className="admin-btn admin-btn-primary text-sm px-4 py-2"
               >
-                {downloading ? "Downloading..." : "Download Data"}
+                Open Files
               </button>
             </div>
 
