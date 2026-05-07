@@ -63,6 +63,7 @@ export default function NewBusinessRequest() {
   const [msg, setMsg] = useState("");
   const [ticket, setTicket] = useState("");
   const [ownershipDoc, setOwnershipDoc] = useState(null);
+  const [galleryFiles, setGalleryFiles] = useState([]);
   const [buildingImage, setBuildingImage] = useState(null);
 
   /* ================= THEME ================= */
@@ -198,6 +199,22 @@ const handleSubmit = async (e) => {
   
   if (!buildingImage)
     return setMsg("Building image is required");
+
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  
+  if (ownershipDoc && !allowedTypes.includes(ownershipDoc.type)) {
+    return setMsg("Logo must be JPG, PNG or WEBP");
+  }
+  
+  if (buildingImage && !allowedTypes.includes(buildingImage.type)) {
+    return setMsg("Cover must be JPG, PNG or WEBP");
+  }
+  
+  for (const file of galleryFiles) {
+    if (!allowedTypes.includes(file.type)) {
+      return setMsg("Gallery images must be JPG, PNG or WEBP");
+    }
+  }  
   
   setLoading(true);
 
@@ -207,8 +224,17 @@ const handleSubmit = async (e) => {
     fd.append("request_type", "new");
     fd.append("payload", JSON.stringify(form));
 
-    if (ownershipDoc) fd.append("files", ownershipDoc);
-    if (buildingImage) fd.append("files", buildingImage);
+    if (ownershipDoc) {
+      fd.append("logo_file", ownershipDoc);
+    }
+    
+    if (buildingImage) {
+      fd.append("cover_file", buildingImage);
+    }
+    
+    galleryFiles.forEach(file => {
+      fd.append("gallery_files", file);
+    });
 
     const res = await apiClient.post("/requests", fd, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -718,7 +744,9 @@ return (
               <input
                 type="file"
                 multiple
+                accept="image/*"
                 className="w-full text-sm"
+                onChange={(e) => setGalleryFiles([...e.target.files])}
               />
 
               <p className="text-xs mt-1 opacity-70">
