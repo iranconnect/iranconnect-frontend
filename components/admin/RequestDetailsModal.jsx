@@ -185,21 +185,32 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
 
             <div className="flex justify-end mt-6">
               <button
-                onClick={() => {
-                  if (!files.length) {
-                    alert("No attachments found");
-                    return;
-                  }
+                onClick={async () => {
+                  try {
+                    const res = await apiClient.get(
+                      `/admin/requests/${request.id}/download`,
+                      {
+                        responseType: "blob",
+                        withCredentials: true,
+                        headers: { "x-iranconnect-admin": "true" },
+                      }
+                    );
                 
-                  files.forEach(file => {
-                    if (file?.path) {
-                      window.open(file.path, "_blank");
-                    }
-                  });
+                    const url = window.URL.createObjectURL(res.data);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${details.ticket_code}.zip`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                
+                  } catch (err) {
+                    console.error(err);
+                    alert("Download failed");
+                  }
                 }}
                 className="admin-btn admin-btn-primary text-sm px-4 py-2"
               >
-                Open Files
+                Download Files
               </button>
             </div>
 
