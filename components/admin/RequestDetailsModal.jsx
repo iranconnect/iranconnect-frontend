@@ -91,6 +91,10 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
     return attachments;
   }
 
+  if (!details && !loading) {
+    console.warn("⚠️ No details received from API");
+  }
+
   const renderPayload = (payload) => {
     if (!payload || typeof payload !== "object") return <p>—</p>;
     return (
@@ -110,6 +114,7 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
   };
 
   const isActionable = details?.status === "pending";
+  const files = safeParseAttachments(details?.attachments);
 
   /* ---------------------------------------------------------
      🖼 UI
@@ -158,11 +163,11 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
               {renderPayload(details.payload)}
             </div>
 
-            {safeParseAttachments(details.attachments).length > 0 && (
+            {files.length > 0 && (
               <div className="mt-4">
                 <h3 className="font-semibold mb-1">Attachments:</h3>
                 <ul className="space-y-2 mt-2">
-                  {safeParseAttachments(details.attachments).map((f, i) => (
+                  {files.map((f, i) => (
                     <li key={i} className="flex justify-between items-center">
                       <span className="text-sm">{f.filename}</span>
                 
@@ -181,22 +186,16 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
             <div className="flex justify-end mt-6">
               <button
                 onClick={() => {
-                  try {
-                    const files = safeParseAttachments(details.attachments);
-            
-                    if (!files.length) {
-                      alert("No attachments found");
-                      return;
-                    }
-            
-                    files.forEach(file => {
-                      window.open(file.path, "_blank");
-                    });
-            
-                  } catch (err) {
-                    console.error(err);
-                    alert("Failed to open files");
+                  if (!files.length) {
+                    alert("No attachments found");
+                    return;
                   }
+                
+                  files.forEach(file => {
+                    if (file?.path) {
+                      window.open(file.path, "_blank");
+                    }
+                  });
                 }}
                 className="admin-btn admin-btn-primary text-sm px-4 py-2"
               >
