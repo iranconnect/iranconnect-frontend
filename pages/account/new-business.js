@@ -695,23 +695,25 @@ return (
                 <select
                   value={countryCode}
                   onChange={(e) => setCountryCode(e.target.value)}
-                  className={`w-32 ${inputClass}`}
+                  className={`
+                    min-w-[140px] max-w-[160px]
+                    ${inputClass}
+                  `}
                 >
-                  <option value="+33">FR (+33)</option>
-                  <option value="+1">US (+1)</option>
-                  <option value="+44">UK (+44)</option>
-                  <option value="+49">DE (+49)</option>
-                  <option value="+971">UAE (+971)</option>
-                  <option value="+98">IR (+98)</option>
+                  {COUNTRIES.map(c => (
+                    <option key={c.code} value={c.dial_code}>
+                      {c.label}
+                    </option>
+                  ))}
                 </select>
-            
-                {/* Phone Number */}
+              
+                {/* Phone */}
                 <input
                   className={`flex-1 ${inputClass}`}
                   placeholder="National number (no leading 0)"
                   value={form.phone}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, ""); // فقط عدد
+                    const val = e.target.value.replace(/\D/g, "");
                     setField("phone", val);
                   }}
                 />
