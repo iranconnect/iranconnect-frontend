@@ -65,6 +65,7 @@ export default function NewBusinessRequest() {
   const [ownershipDoc, setOwnershipDoc] = useState(null);
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [buildingImage, setBuildingImage] = useState(null);
+  const [countryCode, setCountryCode] = useState("+33");
 
   /* ================= THEME ================= */
 
@@ -149,7 +150,9 @@ export default function NewBusinessRequest() {
     let error = "";
   
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\+\d{6,15}$/;
+    if (name === "phone" && value && !/^\d{6,15}$/.test(value)) {
+      error = "Invalid phone number";
+    }
     const urlRegex = /^(https?:\/\/)/;
   
     if (name === "name" && value.trim().length < 3)
@@ -240,7 +243,16 @@ const handleSubmit = async (e) => {
     const fd = new FormData();
 
     fd.append("request_type", "new");
-    fd.append("payload", JSON.stringify(form));
+    const finalPhone = form.phone
+      ? `${countryCode}${form.phone}`
+      : "";
+    
+    const payload = {
+      ...form,
+      phone: finalPhone,
+    };
+    
+    fd.append("payload", JSON.stringify(payload));
 
     if (ownershipDoc) {
       fd.append("logo_file", ownershipDoc);
@@ -676,12 +688,35 @@ return (
             {/* Phone */}
             <div className={fieldWrap}>
               <label className={labelClass}>Phone</label>
-              <input
-                className={inputClass}
-                placeholder="National number (no leading 0)"
-                value={form.phone}
-                onChange={(e) => setField("phone", e.target.value)}
-              />
+            
+              <div className="flex gap-2">
+                
+                {/* Country Code */}
+                <select
+                  value={countryCode}
+                  onChange={(e) => setCountryCode(e.target.value)}
+                  className={`w-32 ${inputClass}`}
+                >
+                  <option value="+33">FR (+33)</option>
+                  <option value="+1">US (+1)</option>
+                  <option value="+44">UK (+44)</option>
+                  <option value="+49">DE (+49)</option>
+                  <option value="+971">UAE (+971)</option>
+                  <option value="+98">IR (+98)</option>
+                </select>
+            
+                {/* Phone Number */}
+                <input
+                  className={`flex-1 ${inputClass}`}
+                  placeholder="National number (no leading 0)"
+                  value={form.phone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, ""); // فقط عدد
+                    setField("phone", val);
+                  }}
+                />
+            
+              </div>
             </div>
 
             {/* Email */}
