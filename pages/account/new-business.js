@@ -214,7 +214,25 @@ const handleSubmit = async (e) => {
     if (!allowedTypes.includes(file.type)) {
       return setMsg("Gallery images must be JPG, PNG or WEBP");
     }
-  }  
+  } 
+
+  // ✅ LIMIT GALLERY COUNT
+  if (galleryFiles.length > 10) {
+    return setMsg("⚠️ Maximum 10 gallery images allowed.");
+  }
+
+  // ✅ TOTAL SIZE VALIDATION (VERY IMPORTANT)
+  const MAX_TOTAL_SIZE = 20 * 1024 * 1024; // 20MB
+  
+  const totalSize =
+    (ownershipDoc?.size || 0) +
+    (buildingImage?.size || 0) +
+    galleryFiles.reduce((sum, f) => sum + f.size, 0);
+  
+  if (totalSize > MAX_TOTAL_SIZE) {
+    const mb = (totalSize / 1024 / 1024).toFixed(1);
+    return setMsg(`⚠️ Total size is ${mb}MB. Maximum allowed is 20MB.`);
+  }
   
   setLoading(true);
 
@@ -288,6 +306,22 @@ const inputClass =
   (theme === "dark"
     ? "bg-[#153b78] text-white placeholder-gray-300 border-gray-600"
     : "bg-[#f5f7fa] text-gray-900 border-gray-300 placeholder-gray-500");
+
+const calculateTotalSize = () => {
+  return (
+    (ownershipDoc?.size || 0) +
+    (buildingImage?.size || 0) +
+    galleryFiles.reduce((sum, f) => sum + f.size, 0)
+  );
+};
+
+const formatSize = (bytes) => {
+  if (!bytes) return "0 MB";
+  return (bytes / 1024 / 1024).toFixed(2) + " MB";
+};
+
+const totalSize = calculateTotalSize();
+const MAX_TOTAL_SIZE = 20 * 1024 * 1024;  
 /* ================= UI ================= */
 
 return (
@@ -753,6 +787,85 @@ return (
                 Recommended size: 1200 × 1200
               </p>
             </div>
+            <div className="text-xs mt-2 opacity-70 leading-5 bg-gray-50 dark:bg-[#153b78] p-3 rounded-lg">
+              <strong>Upload guidelines:</strong><br />
+              • Formats: JPG, PNG, WEBP<br />
+              • Max file size: 10MB each<br />
+              • Max total size: 20MB<br />
+              • Max gallery: 10 images<br />
+            </div>
+            <div className="mt-3 text-sm font-medium">
+              Total upload size:{" "}
+              <span
+                className={
+                  totalSize > MAX_TOTAL_SIZE
+                    ? "text-red-500 font-semibold"
+                    : "text-green-600"
+                }
+              >
+                {formatSize(totalSize)}
+              </span>
+            </div>
+
+            <div className="mt-4">
+              <div className="flex justify-between text-xs mb-1">
+                <span>Upload usage</span>
+                <span>
+                  {formatSize(totalSize)} / 20 MB
+                </span>
+              </div>
+            
+              <div className="w-full h-3 bg-gray-200 dark:bg-[#1c3f7a] rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ${
+                    totalSize > MAX_TOTAL_SIZE
+                      ? "bg-red-500"
+                      : "bg-gradient-to-r from-turquoise to-blue-500"
+                  }`}
+                  style={{
+                    width: `${Math.min((totalSize / MAX_TOTAL_SIZE) * 100, 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {(ownershipDoc || buildingImage || galleryFiles.length > 0) && (
+              <div className="mt-4 text-sm space-y-2">
+                
+                <div className="font-medium mb-1">Selected files:</div>
+            
+                {ownershipDoc && (
+                  <div className="flex justify-between items-center bg-gray-100 dark:bg-[#1c3f7a] px-3 py-2 rounded-lg">
+                    <span>✔ {ownershipDoc.name}</span>
+                    <span className="text-xs opacity-70">
+                      {formatSize(ownershipDoc.size)}
+                    </span>
+                  </div>
+                )}
+            
+                {buildingImage && (
+                  <div className="flex justify-between items-center bg-gray-100 dark:bg-[#1c3f7a] px-3 py-2 rounded-lg">
+                    <span>✔ {buildingImage.name}</span>
+                    <span className="text-xs opacity-70">
+                      {formatSize(buildingImage.size)}
+                    </span>
+                  </div>
+                )}
+            
+                {galleryFiles.map((file, i) => (
+                  <div
+                    key={i}
+                    className="flex justify-between items-center bg-gray-100 dark:bg-[#1c3f7a] px-3 py-2 rounded-lg"
+                  >
+                    <span>✔ {file.name}</span>
+                    <span className="text-xs opacity-70">
+                      {formatSize(file.size)}
+                    </span>
+                  </div>
+                ))}
+            
+              </div>
+            )}
 
             {/* Allow Reviews */}
             <div className="mb-4">
