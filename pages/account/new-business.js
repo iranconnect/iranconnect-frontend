@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import AccountLayout from "../../components/account/AccountLayout";
 import apiClient from "../../utils/apiClient";
+import { Country } from "country-state-city";
 
 const BUSINESS_TYPES = [
   { value: "freelancer", label: "Freelancer / Self-employed" },
@@ -66,6 +67,12 @@ export default function NewBusinessRequest() {
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [buildingImage, setBuildingImage] = useState(null);
   const [countryCode, setCountryCode] = useState("+33");
+
+  const countryOptions = Country.getAllCountries().map((c) => ({
+    code: c.isoCode,
+    dial_code: `+${c.phonecode}`,
+    label: `${c.name} (+${c.phonecode})`,
+  }));
 
   /* ================= THEME ================= */
 
@@ -167,7 +174,9 @@ export default function NewBusinessRequest() {
     if (name === "email" && value && !emailRegex.test(value))
       error = "Invalid email format";
   
-    if (name === "phone" && value && !phoneRegex.test(value))
+    if (name === "phone" && value && !/^\d{6,15}$/.test(value)) {
+      error = "Invalid phone number";
+    }
       error = "Use format +33712345678";
   
     if (name === "website" && value && !urlRegex.test(value))
@@ -700,7 +709,7 @@ return (
                     ${inputClass}
                   `}
                 >
-                  {COUNTRIES.map(c => (
+                  {countryOptions.map(c => (
                     <option key={c.code} value={c.dial_code}>
                       {c.label}
                     </option>
