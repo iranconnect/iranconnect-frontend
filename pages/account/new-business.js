@@ -17,7 +17,16 @@ const BUSINESS_TYPES = [
 export default function NewBusinessRequest() {
 
   /* ================= STATE ================= */
-
+  const WEEK_DAYS = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+  ];
+  
   const [form, setForm] = useState({
     name: "",
     category_id: "",
@@ -34,6 +43,7 @@ export default function NewBusinessRequest() {
     service_mode: "",
     availability_type: "",
     availability_note: "",
+    availability_hours: null,
     location_map_url: "",
     base_location_map_url: "",
     service_radius_km: "",
@@ -132,6 +142,31 @@ export default function NewBusinessRequest() {
       .then(res => setTags(res.data?.data || []))
       .catch(() => setTags([]));
   }, []);
+
+  /* ================= BUSINESS HOURS INIT ================= */
+  useEffect(() => {
+    if (form.availability_type !== "business_hours") {
+      if (form.availability_hours) {
+        setForm(prev => ({ ...prev, availability_hours: null }));
+      }
+      return;
+    }
+  
+    if (!form.availability_hours) {
+      const initial = {};
+      WEEK_DAYS.forEach((d) => {
+        initial[d] =
+          d === "saturday" || d === "sunday"
+            ? { closed: true }
+            : { open: "09:00", close: "18:00", closed: false };
+      });
+  
+      setForm(prev => ({
+        ...prev,
+        availability_hours: initial
+      }));
+    }
+  }, [form.availability_type]);
 
   /* ================= HELPERS ================= */
 
@@ -601,6 +636,89 @@ return (
             </div>
 
             {/* Availability Note */}
+
+            {form.availability_type === "business_hours" && form.availability_hours && (
+              <div className="mb-6">
+                <label className={labelClass}>Business hours</label>
+            
+                <div className="space-y-3 mt-2">
+                  {WEEK_DAYS.map((day) => {
+                    const dayData = form.availability_hours[day];
+            
+                    return (
+                      <div key={day} className="flex flex-wrap items-center gap-3">
+                        
+                        {/* Day */}
+                        <div className="w-[100px] capitalize">
+                          {day}
+                        </div>
+            
+                        {/* Closed */}
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={dayData.closed}
+                            onChange={(e) => {
+                              const updated = {
+                                ...form.availability_hours,
+                                [day]: {
+                                  ...dayData,
+                                  closed: e.target.checked,
+                                },
+                              };
+                              setField("availability_hours", updated);
+                            }}
+                          />
+                          Closed
+                        </label>
+            
+                        {/* Time inputs */}
+                        {!dayData.closed && (
+                          <>
+                            <input
+                              type="time"
+                              className={inputClass}
+                              style={{ width: 120 }}
+                              value={dayData.open}
+                              onChange={(e) => {
+                                const updated = {
+                                  ...form.availability_hours,
+                                  [day]: {
+                                    ...dayData,
+                                    open: e.target.value,
+                                  },
+                                };
+                                setField("availability_hours", updated);
+                              }}
+                            />
+            
+                            <span>to</span>
+            
+                            <input
+                              type="time"
+                              className={inputClass}
+                              style={{ width: 120 }}
+                              value={dayData.close}
+                              onChange={(e) => {
+                                const updated = {
+                                  ...form.availability_hours,
+                                  [day]: {
+                                    ...dayData,
+                                    close: e.target.value,
+                                  },
+                                };
+                                setField("availability_hours", updated);
+                              }}
+                            />
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className={fieldWrap}>
               <label className={labelClass}>Availability note</label>
               <textarea
