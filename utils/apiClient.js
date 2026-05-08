@@ -7,7 +7,7 @@ if (!API_BASE) throw new Error("NEXT_PUBLIC_API_BASE is not defined");
 const apiClient = axios.create({
   baseURL: API_BASE,
   withCredentials: true,
-  timeout: 15000,
+  timeout: 120000,
 });
 
 /* ================= REQUEST ================= */
