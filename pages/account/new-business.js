@@ -306,7 +306,24 @@ const inputClass =
   (theme === "dark"
     ? "bg-[#153b78] text-white placeholder-gray-300 border-gray-600"
     : "bg-[#f5f7fa] text-gray-900 border-gray-300 placeholder-gray-500");
+const boxStyle = {
+  background: theme === "dark" ? "#0f2a5c" : "#f8fafc",
+  border: theme === "dark"
+    ? "1px solid #1c3f7a"
+    : "1px solid #e5e7eb",
+  borderRadius: "12px",
+};
 
+const fileItemStyle = {
+  background: theme === "dark" ? "#0f2a5c" : "#f3f4f6",
+  border: theme === "dark"
+    ? "1px solid #1c3f7a"
+    : "1px solid #e5e7eb",
+};
+
+const progressBgStyle = {
+  background: theme === "dark" ? "#0f2a5c" : "#e5e7eb",
+};
 const calculateTotalSize = () => {
   return (
     (ownershipDoc?.size || 0) +
@@ -787,7 +804,10 @@ return (
                 Recommended size: 1200 × 1200
               </p>
             </div>
-            <div className="text-xs mt-2 opacity-70 leading-5 bg-gray-50 dark:bg-[#153b78] p-3 rounded-lg">
+            <div
+              style={boxStyle}
+              className="text-xs mt-2 opacity-80 leading-5 p-3"
+            >
               <strong>Upload guidelines:</strong><br />
               • Formats: JPG, PNG, WEBP<br />
               • Max file size: 10MB each<br />
@@ -799,8 +819,10 @@ return (
               <span
                 className={
                   totalSize > MAX_TOTAL_SIZE
-                    ? "text-red-500 font-semibold"
-                    : "text-green-600"
+                    ? "text-red-500"
+                    : theme === "dark"
+                      ? "text-green-400"
+                      : "text-green-600"
                 }
               >
                 {formatSize(totalSize)}
@@ -815,7 +837,10 @@ return (
                 </span>
               </div>
             
-              <div className="w-full h-3 bg-gray-200 dark:bg-[#1c3f7a] rounded-full overflow-hidden">
+              <div
+                className="w-full h-3 rounded-full overflow-hidden"
+                style={progressBgStyle}
+              >
                 <div
                   className={`h-full transition-all duration-500 ${
                     totalSize > MAX_TOTAL_SIZE
@@ -835,7 +860,10 @@ return (
                 <div className="font-medium mb-1">Selected files:</div>
             
                 {ownershipDoc && (
-                  <div className="flex justify-between items-center bg-gray-100 dark:bg-[#1c3f7a] px-3 py-2 rounded-lg">
+                  <div
+                    className="flex justify-between items-center px-3 py-2 rounded-lg"
+                    style={fileItemStyle}
+                  >
                     <span>✔ {ownershipDoc.name}</span>
                     <span className="text-xs opacity-70">
                       {formatSize(ownershipDoc.size)}
@@ -844,7 +872,10 @@ return (
                 )}
             
                 {buildingImage && (
-                  <div className="flex justify-between items-center bg-gray-100 dark:bg-[#1c3f7a] px-3 py-2 rounded-lg">
+                  <div
+                    className="flex justify-between items-center px-3 py-2 rounded-lg"
+                    style={fileItemStyle}
+                  >
                     <span>✔ {buildingImage.name}</span>
                     <span className="text-xs opacity-70">
                       {formatSize(buildingImage.size)}
@@ -855,7 +886,8 @@ return (
                 {galleryFiles.map((file, i) => (
                   <div
                     key={i}
-                    className="flex justify-between items-center bg-gray-100 dark:bg-[#1c3f7a] px-3 py-2 rounded-lg"
+                    className="flex justify-between items-center px-3 py-2 rounded-lg"
+                    style={fileItemStyle}
                   >
                     <span>✔ {file.name}</span>
                     <span className="text-xs opacity-70">
