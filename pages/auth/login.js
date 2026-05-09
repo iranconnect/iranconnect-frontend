@@ -16,7 +16,6 @@ export default function Login() {
   const [securityMsg, setSecurityMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [theme, setTheme] = useState("light");
   const [lang, setLang] = useState("en");
 
   const [showConsent, setShowConsent] = useState(false);
@@ -30,41 +29,17 @@ export default function Login() {
 
   const captchaRef = useRef(null);
 
-  /* ───────────────────────────────────────────────
-     🔵 Load auto-logout message from sessionStorage
-  ─────────────────────────────────────────────── */
-  useEffect(() => {
-    const saved = sessionStorage.getItem("iran_auto_logout_msg");
-    if (saved) {
-      setSecurityMsg(saved);
-      sessionStorage.removeItem("iran_auto_logout_msg");
-    }
-  }, []);
+
   
   /* ───────────────────────────────────────────────
      🔵 2) Theme & Language watcher
   ─────────────────────────────────────────────── */
   useEffect(() => {
-    const currentTheme =
-      document.documentElement.getAttribute("data-theme") || "light";
-    setTheme(currentTheme);
-
-    const initialLang = document.documentElement.getAttribute("lang") || "en";
+    const initialLang =
+      document.documentElement.getAttribute("lang") || "en";
+  
     setLang(initialLang);
-
-    const observer = new MutationObserver(() => {
-      const updated = document.documentElement.getAttribute("data-theme");
-      setTheme(updated);
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
-
-    return () => observer.disconnect();
   }, []);
-
   /* ───────────────────────────────────────────────
      🔵 3) Real-time CAPTCHA Sync with Backend
   ─────────────────────────────────────────────── */
@@ -227,16 +202,11 @@ export default function Login() {
         <div
           className="rounded-2xl p-8 w-full max-w-md border transition-all duration-300"
           style={{
-            background: theme === "dark" ? "#0b2149" : "#ffffff",
-            color: theme === "dark" ? "#ffffff" : "#0a1b2a",
-            borderColor:
-              theme === "dark"
-                ? "rgba(255,255,255,0.1)"
-                : "rgba(0,0,0,0.05)",
+            background: "var(--card-bg)",
+            color: "var(--text)",
+            borderColor: "var(--border)",
             boxShadow:
-              theme === "dark"
-                ? "10px 10px 25px rgba(0,0,0,0.4)"
-                : "6px 6px 15px rgba(0,0,0,0.1)",
+              "6px 6px 16px var(--shadow-dark), -6px -6px 16px var(--shadow-light)",
           }}
         >
           <h2 className="text-2xl font-semibold text-center mb-6">
@@ -296,7 +266,7 @@ export default function Login() {
           {msg && (
             <p
               className="text-sm text-center mt-4"
-              style={{ color: theme === "dark" ? "#e2e8f0" : "#333" }}
+              style={{ color: "var(--text)" }}
             >
               {msg}
             </p>
