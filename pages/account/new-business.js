@@ -865,15 +865,10 @@ return (
               <label className={labelClass}>Phone</label>
             
               <div className="flex gap-2">
-                
-                {/* Country Code */}
                 <select
                   value={countryCode}
                   onChange={(e) => setCountryCode(e.target.value)}
-                  className={`
-                    min-w-[140px] max-w-[160px]
-                    ${inputClass}
-                  `}
+                  className="min-w-[140px] max-w-[160px] " + inputClass
                 >
                   {countryOptions.map(c => (
                     <option key={c.code} value={c.dial_code}>
@@ -881,8 +876,7 @@ return (
                     </option>
                   ))}
                 </select>
-              
-                {/* Phone */}
+            
                 <input
                   className={`flex-1 ${inputClass} ${errors.phone ? "border-red-500" : ""}`}
                   placeholder="712345678 (no leading 0)"
@@ -893,14 +887,13 @@ return (
                     validateField("phone", val);
                   }}
                 />
-  
-                
-                {errors.phone && (
-                  <p className="text-red-500 text-sm">{errors.phone}</p>
-                )}  
-                
-            
               </div>
+            
+              {errors.phone && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.phone}
+                </p>
+              )}
             </div>
 
             {/* Email */}
@@ -1058,14 +1051,6 @@ return (
               
               </div>
             
-              
-              {errors.whatsapp_number && (
-                <p className="text-red-500 text-sm">
-                  {errors.whatsapp_number}
-                </p>
-              )}
-              
-
               
               {errors.whatsapp_number && (
                 <p className="text-red-500 text-sm">
