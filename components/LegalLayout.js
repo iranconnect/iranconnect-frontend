@@ -12,10 +12,10 @@ export default function LegalLayout({ texts }) {
       <Header />
 
       <main
-        className="flex-grow container mx-auto px-6 pt-10 pb-32"
+        className="flex-grow w-full max-w-5xl mx-auto px-4 md:px-2 pt-10 pb-32"
         style={{
           direction: lang === "fa" ? "rtl" : "ltr",
-          textAlign: lang === "fa" ? "right" : "left",
+          textAlign: "justify",
         }}
       >
         <LanguageToggle onChange={setLang} />
