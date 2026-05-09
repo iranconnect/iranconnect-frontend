@@ -77,6 +77,7 @@ export default function NewBusinessRequest() {
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [buildingImage, setBuildingImage] = useState(null);
   const [countryCode, setCountryCode] = useState("+33");
+  const [whatsappCountryCode, setWhatsappCountryCode] = useState("+33");
 
   const countryOptions = Country.getAllCountries().map((c) => ({
     code: c.isoCode,
@@ -192,35 +193,54 @@ export default function NewBusinessRequest() {
     let error = "";
   
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (name === "phone" && value && !/^\d{6,15}$/.test(value)) {
-      error = "Invalid phone number";
+    const urlRegex = /^https?:\/\/.+/i;
+  
+    // Email
+    if (name === "email" && value && !emailRegex.test(value)) {
+      error = "Invalid email (example: name@domain.com)";
     }
-    const urlRegex = /^(https?:\/\/)/;
   
-    if (name === "name" && value.trim().length < 3)
-      error = "Minimum 3 characters required";
-  
-    if (name === "short_description" && value.length > 160)
-      error = "Max 160 characters";
-  
-    if (name === "full_description" && value.trim().length < 50)
-      error = "Minimum 50 characters required";
-  
-    if (name === "email" && value && !emailRegex.test(value))
-      error = "Invalid email format";
-  
-    if (name === "phone" && value && !/^\d{6,15}$/.test(value)) {
-      error = "Invalid phone number";
+    // Phone
+    if (name === "phone" && value) {
+      if (!/^\d{6,15}$/.test(value)) {
+        error = "Phone must be 6–15 digits (no spaces)";
+      }
     }
-      error = "Use format +33712345678";
   
-    if (name === "website" && value && !urlRegex.test(value))
-      error = "Must start with https://";
+    // Website & social
+    if (
+      [
+        "website",
+        "instagram_url",
+        "facebook_url",
+        "linkedin_url",
+        "twitter_url",
+        "telegram_url",
+      ].includes(name)
+    ) {
+      if (value && !urlRegex.test(value)) {
+        error = "Must start with https://";
+      }
+    }
   
-    if (name === "location_map_url" && value && !value.startsWith("https://maps"))
-      error = "Invalid Google Maps link";
+    // Google Maps
+    if (
+      (name === "location_map_url" || name === "base_location_map_url") &&
+      value
+    ) {
+      const ok =
+        /^https:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(value);    
+      if (!ok) error = "Invalid Google Maps link";
+    }
+
+    //whatsapp 
+    if (name === "whatsapp_number" && value) {
+      if (!/^\d{6,15}$/.test(value)) {
+        error = "Invalid WhatsApp number";
+      }
+    }
   
-    setErrors(prev => ({ ...prev, [name]: error }));
+    setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
   const handleChange = (e) => {
@@ -287,13 +307,22 @@ const handleSubmit = async (e) => {
     const fd = new FormData();
 
     fd.append("request_type", "new");
-    const finalPhone = form.phone
-      ? `${countryCode}${form.phone}`
+    // 🔥 normalize phone
+    const normalizedPhone = form.phone.replace(/^0+/, "");
+    const finalPhone = normalizedPhone
+      ? `${countryCode}${normalizedPhone}`
+      : "";
+    
+    // 🔥 normalize whatsapp
+    const normalizedWhatsapp = form.whatsapp_number.replace(/^0+/, "");
+    const finalWhatsapp = normalizedWhatsapp
+      ? `${whatsappCountryCode}${normalizedWhatsapp}`
       : "";
     
     const payload = {
       ...form,
       phone: finalPhone,
+      whatsapp_number: finalWhatsapp,
     };
     
     fd.append("payload", JSON.stringify(payload));
@@ -723,6 +752,7 @@ return (
               <label className={labelClass}>Availability note</label>
               <textarea
                 className={inputClass}
+                placeholder="e.g. Available weekends, emergency calls accepted"
                 value={form.availability_note}
                 onChange={(e) =>
                   setField("availability_note", e.target.value)
@@ -738,13 +768,22 @@ return (
                   Business location (Google Maps link) *
                 </label>
                 <input
-                  className={inputClass}
+                  name="location_map_url"
+                  className={`${inputClass} ${errors.location_map_url ? "border-red-500" : ""}`}
                   value={form.location_map_url}
-                  onChange={(e) =>
-                    setField("location_map_url", e.target.value)
-                  }
+                  onChange={handleChange}
                   placeholder="https://maps.google.com/..."
                 />
+                
+                {!errors.location_map_url && (
+                  <p className="text-xs mt-1 opacity-60">
+                    Paste link copied from Google Maps
+                  </p>
+                )}
+                
+                {errors.location_map_url && (
+                  <p className="text-red-500 text-sm">{errors.location_map_url}</p>
+                )}
               </div>
             )}
 
@@ -755,14 +794,23 @@ return (
                 <label className={labelClass}>
                   Service base location (Google Maps link) *
                 </label>
-
                 <input
-                  className={inputClass}
+                  name="base_location_map_url"
+                  className={`${inputClass} ${errors.base_location_map_url ? "border-red-500" : ""}`}
                   value={form.base_location_map_url}
-                  onChange={(e) =>
-                    setField("base_location_map_url", e.target.value)
-                  }
+                  onChange={handleChange}
+                  placeholder="https://maps.google.com/..."
                 />
+                
+                {!errors.base_location_map_url && (
+                  <p className="text-xs mt-1 opacity-60">
+                    Paste link copied from Google Maps
+                  </p>
+                )}
+                
+                {errors.base_location_map_url && (
+                  <p className="text-red-500 text-sm">{errors.base_location_map_url}</p>
+                )}                    
 
                 <p className="text-xs mt-1 opacity-70">
                   This location will be shown as your service starting point.
@@ -836,14 +884,23 @@ return (
               
                 {/* Phone */}
                 <input
-                  className={`flex-1 ${inputClass}`}
-                  placeholder="National number (no leading 0)"
+                  className={`flex-1 ${inputClass} ${errors.phone ? "border-red-500" : ""}`}
+                  placeholder="712345678 (no leading 0)"
                   value={form.phone}
                   onChange={(e) => {
                     const val = e.target.value.replace(/\D/g, "");
                     setField("phone", val);
+                    validateField("phone", val);
                   }}
                 />
+                <p className="text-xs mt-1 opacity-60">
+                  Country code will be added automatically
+                </p>    
+                
+                {errors.phone && (
+                  <p className="text-red-500 text-sm">{errors.phone}</p>
+                )}  
+                
             
               </div>
             </div>
@@ -852,21 +909,44 @@ return (
             <div className={fieldWrap}>
               <label className={labelClass}>Email</label>
               <input
-                className={inputClass}
+                name="email"
+                className={`${inputClass} ${errors.email ? "border-red-500" : ""}`}
                 value={form.email}
-                onChange={(e) => setField("email", e.target.value)}
+                onChange={handleChange}
+                placeholder="name@domain.com"
               />
+              
+              {!errors.email && (
+                <p className="text-xs mt-1 opacity-60">
+                  Enter a valid business email address
+                </p>
+              )}
+              
+              {errors.email && (
+                <p className="text-red-500 text-sm">{errors.email}</p>
+              )}
             </div>
 
             {/* Website */}
             <div className={fieldWrap}>
               <label className={labelClass}>Website</label>
               <input
-                className={inputClass}
+                name="website"
+                className={`${inputClass} ${errors.website ? "border-red-500" : ""}`}
                 placeholder="https://example.com"
                 value={form.website}
-                onChange={(e) => setField("website", e.target.value)}
+                onChange={handleChange}
               />
+              
+              {!errors.website && (
+                <p className="text-xs mt-1 opacity-60">
+                  Must start with https://
+                </p>
+              )}
+              
+              {errors.website && (
+                <p className="text-red-500 text-sm">{errors.website}</p>
+              )}
             </div>
 
             {/* Visibility */}
@@ -896,18 +976,111 @@ return (
 
             {/* Socials */}
             <div className="grid gap-3">
-              <input className={inputClass} placeholder="Instagram URL"
-                onChange={(e)=>setField("instagram_url", e.target.value)} />
-              <input className={inputClass} placeholder="Facebook URL"
-                onChange={(e)=>setField("facebook_url", e.target.value)} />
-              <input className={inputClass} placeholder="LinkedIn URL"
-                onChange={(e)=>setField("linkedin_url", e.target.value)} />
-              <input className={inputClass} placeholder="Twitter / X URL"
-                onChange={(e)=>setField("twitter_url", e.target.value)} />
-              <input className={inputClass} placeholder="Telegram URL"
-                onChange={(e)=>setField("telegram_url", e.target.value)} />
-              <input className={inputClass} placeholder="WhatsApp number"
-                onChange={(e)=>setField("whatsapp_number", e.target.value)} />
+              <input
+                name="instagram_url"
+                className={`${inputClass} ${errors.instagram_url ? "border-red-500" : ""}`}
+                placeholder="https://instagram.com/username"
+                value={form.instagram_url}
+                onChange={handleChange}
+              />
+              
+              {errors.instagram_url && (
+                <p className="text-red-500 text-sm">{errors.instagram_url}</p>
+              )}
+              <input
+                name="facebook_url"
+                className={`${inputClass} ${errors.facebook_url ? "border-red-500" : ""}`}
+                placeholder="https://facebook.com/username"
+                value={form.facebook_url}
+                onChange={handleChange}
+              />
+              
+              {errors.facebook_url && (
+                <p className="text-red-500 text-sm">{errors.facebook_url}</p>
+              )}
+              <input
+                name="linkedin_url"
+                className={`${inputClass} ${errors.linkedin_url ? "border-red-500" : ""}`}
+                placeholder="https://linkedin.com/username"
+                value={form.linkedin_url}
+                onChange={handleChange}
+              />
+              
+              {errors.linkedin_url && (
+                <p className="text-red-500 text-sm">{errors.linkedin_url}</p>
+              )}
+              <input
+                name="twitter_url"
+                className={`${inputClass} ${errors.twitter_url ? "border-red-500" : ""}`}
+                placeholder="https://twitter.com/username"
+                value={form.twitter_url}
+                onChange={handleChange}
+              />
+              
+              {errors.twitter_url && (
+                <p className="text-red-500 text-sm">{errors.twitter_url}</p>
+              )}
+              <input
+                name="telegram_url"
+                className={`${inputClass} ${errors.telegram_url ? "border-red-500" : ""}`}
+                placeholder="https://t.me/username"
+                value={form.telegram_url}
+                onChange={handleChange}
+              />
+              
+              {errors.telegram_url && (
+                <p className="text-red-500 text-sm">{errors.telegram_url}</p>
+              )}
+              <div className="flex gap-2">
+              
+                {/* Country Code */}
+                <select
+                  value={whatsappCountryCode}
+                  onChange={(e) => setWhatsappCountryCode(e.target.value)}
+                  className={`min-w-[140px] max-w-[160px] ${inputClass}`}
+                >
+                  {countryOptions.map(c => (
+                    <option key={c.code} value={c.dial_code}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              
+                {/* WhatsApp Number */}
+                <input
+                  className={`flex-1 ${inputClass} ${errors.whatsapp_number ? "border-red-500" : ""}`}
+                  placeholder="712345678 (no leading 0)"
+                  value={form.whatsapp_number}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    setField("whatsapp_number", val);
+                    validateField("whatsapp_number", val);
+                  }}
+                />
+              
+              </div>
+              
+              <p className="text-xs mt-1 opacity-60">
+                Country code will be added automatically
+              </p>
+              
+              {errors.whatsapp_number && (
+                <p className="text-red-500 text-sm">
+                  {errors.whatsapp_number}
+                </p>
+              )}
+              
+              {!errors.whatsapp_number && (
+                <p className="text-xs mt-1 opacity-60">
+                  Include country code (e.g. +33...)
+                </p>
+              )}
+              
+              {errors.whatsapp_number && (
+                <p className="text-red-500 text-sm">
+                  {errors.whatsapp_number}
+                </p>
+              )}
             </div>
           </div>
           {/* ================= MEDIA ================= */}
