@@ -428,10 +428,16 @@ const MAX_TOTAL_SIZE = 20 * 1024 * 1024;
 
 return (
   <AccountLayout>
-    <main className="flex-1 flex items-center justify-center p-6">
-      <div className="w-full max-w-xl">
+    <main className="flex-1 px-4 py-6 md:py-8">
+      
+      <div className="mx-auto w-full max-w-5xl">
+        
+        <div className="w-full max-w-3xl mx-auto">
 
-        <h2 className="text-2xl font-semibold text-center mb-6">
+        <h2
+          className="text-2xl font-semibold text-center mb-6"
+          style={{ color: "#0A1D37" }}
+        >
           Add New Business Request
         </h2>
 
@@ -1264,9 +1270,12 @@ return (
 
           </div>
 
-        </form>
-      </div>
-    </main>
-  </AccountLayout>
+          </form>
+  
+          </div>
+        </div>
+  
+      </main>
+    </AccountLayout>
   );
 }
