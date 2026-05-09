@@ -116,7 +116,7 @@ export default function Header() {
   };
   return (
     <header className="site-header shadow-sm border-b border-[var(--border)] bg-[var(--bg)] transition">
-      <div className="container-mobile flex flex-wrap items-center justify-between py-3 px-4 md:px-6 gap-3">
+      <div className="mx-auto w-full max-w-5xl flex flex-wrap items-center justify-between py-3 px-4 md:px-2 gap-3">
 
         {/* Logo */}
         <Link
