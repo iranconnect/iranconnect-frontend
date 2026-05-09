@@ -24,7 +24,7 @@ export default function Footer() {
 
   return (
     <footer className="site-footer">
-      <div className="container-mobile">
+      <div className="mx-auto w-full max-w-5xl px-4 md:px-2">
         <div
           className="row"
           style={{
