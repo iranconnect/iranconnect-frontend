@@ -586,7 +586,7 @@ return (
               </label>
 
               {services.length === 0 ? (
-                <p className="text-sm opacity-60">
+                <p className="text-sm opacity-90">
                   Select subcategories first
                 </p>
               ) : (
@@ -776,7 +776,7 @@ return (
                 />
                 
                 {!errors.location_map_url && (
-                  <p className="text-xs mt-1 opacity-60">
+                  <p className="text-xs mt-1 opacity-90">
                     Paste link copied from Google Maps
                   </p>
                 )}
@@ -803,7 +803,7 @@ return (
                 />
                 
                 {!errors.base_location_map_url && (
-                  <p className="text-xs mt-1 opacity-60">
+                  <p className="text-xs mt-1 opacity-90">
                     Paste link copied from Google Maps
                   </p>
                 )}
@@ -893,9 +893,7 @@ return (
                     validateField("phone", val);
                   }}
                 />
-                <p className="text-xs mt-1 opacity-60">
-                  Country code will be added automatically
-                </p>    
+  
                 
                 {errors.phone && (
                   <p className="text-red-500 text-sm">{errors.phone}</p>
@@ -917,7 +915,7 @@ return (
               />
               
               {!errors.email && (
-                <p className="text-xs mt-1 opacity-60">
+                <p className="text-xs mt-1 opacity-90">
                   Enter a valid business email address
                 </p>
               )}
@@ -939,7 +937,7 @@ return (
               />
               
               {!errors.website && (
-                <p className="text-xs mt-1 opacity-60">
+                <p className="text-xs mt-1 opacity-90">
                   Must start with https://
                 </p>
               )}
@@ -1059,10 +1057,7 @@ return (
                 />
               
               </div>
-              
-              <p className="text-xs mt-1 opacity-60">
-                Country code will be added automatically
-              </p>
+            
               
               {errors.whatsapp_number && (
                 <p className="text-red-500 text-sm">
@@ -1071,7 +1066,7 @@ return (
               )}
               
               {!errors.whatsapp_number && (
-                <p className="text-xs mt-1 opacity-60">
+                <p className="text-xs mt-1 opacity-90">
                   Include country code (e.g. +33...)
                 </p>
               )}
