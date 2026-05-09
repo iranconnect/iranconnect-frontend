@@ -432,7 +432,7 @@ return (
       
       <div className="mx-auto w-full max-w-5xl">
         
-        <div className="w-full max-w-3xl mx-auto">
+        <div className="w-full">
 
         <h2
           className="text-2xl font-semibold text-center mb-6"
