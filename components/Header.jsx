@@ -16,9 +16,9 @@ export default function Header() {
 
   /* 🧩 بررسی وضعیت کاربر با HttpOnly cookie */
   useEffect(() => {
-    if (window.location.pathname.startsWith("/auth")) {
-      return;
-    }
+  
+    const isAuthPage =
+      window.location.pathname.startsWith("/auth");
   
     async function initUserState() {
       try {
@@ -73,7 +73,9 @@ export default function Header() {
       }
     }
   
-    initUserState();
+    if (!isAuthPage) {
+      initUserState();
+    }
   
     // 🎨 theme
     const savedTheme =
