@@ -1,12 +1,14 @@
 // frontend/pages/auth/login.js
+
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/router";
+import ReCAPTCHA from "react-google-recaptcha";
+
 import apiClient from "../../utils/apiClient";
+
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import ConsentModal from "../../components/ConsentModal";
-import ReCAPTCHA from "react-google-recaptcha";
-import { useRouter } from "next/router";
-
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -14,6 +16,7 @@ export default function Login() {
 
   const [msg, setMsg] = useState("");
   const [securityMsg, setSecurityMsg] = useState("");
+
   const [loading, setLoading] = useState(false);
 
   const [lang, setLang] = useState("en");
@@ -21,7 +24,7 @@ export default function Login() {
   const [showConsent, setShowConsent] = useState(false);
   const [userId, setUserId] = useState(null);
 
-  // ⚙️ CAPTCHA FLAGS
+  // ⚙️ CAPTCHA
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
 
@@ -29,19 +32,30 @@ export default function Login() {
 
   const captchaRef = useRef(null);
 
-
-  
   /* ───────────────────────────────────────────────
-     🔵 2) Theme & Language watcher
+     🔵 Load language
   ─────────────────────────────────────────────── */
   useEffect(() => {
     const initialLang =
       document.documentElement.getAttribute("lang") || "en";
-  
+
     setLang(initialLang);
   }, []);
+
   /* ───────────────────────────────────────────────
-     🔵 3) Real-time CAPTCHA Sync with Backend
+     🔵 Auto logout message
+  ─────────────────────────────────────────────── */
+  useEffect(() => {
+    const saved = sessionStorage.getItem("iran_auto_logout_msg");
+
+    if (saved) {
+      setSecurityMsg(saved);
+      sessionStorage.removeItem("iran_auto_logout_msg");
+    }
+  }, []);
+
+  /* ───────────────────────────────────────────────
+     🔵 CAPTCHA status sync
   ─────────────────────────────────────────────── */
   async function syncCaptchaStatus(typedEmail) {
     if (!typedEmail || typedEmail.length < 3) {
@@ -66,7 +80,9 @@ export default function Login() {
         setCaptchaToken(null);
 
         if (required) {
-          setTimeout(() => captchaRef.current?.reset(), 150);
+          setTimeout(() => {
+            captchaRef.current?.reset();
+          }, 150);
         }
       }
     } catch (err) {
@@ -74,18 +90,25 @@ export default function Login() {
     }
   }
 
-  // وقتی کاربر ایمیل تایپ می‌کند → Sync انجام بده
+  /* ───────────────────────────────────────────────
+     🔵 Sync while typing email
+  ─────────────────────────────────────────────── */
   useEffect(() => {
     if (!email) return;
-    const t = setTimeout(() => syncCaptchaStatus(email), 300);
+
+    const t = setTimeout(() => {
+      syncCaptchaStatus(email);
+    }, 300);
+
     return () => clearTimeout(t);
   }, [email]);
 
   /* ───────────────────────────────────────────────
-     🔵 4) Reset CAPTCHA on visibility change
+     🔵 Reset CAPTCHA
   ─────────────────────────────────────────────── */
   useEffect(() => {
     if (!showCaptcha) return;
+
     setCaptchaToken(null);
 
     setTimeout(() => {
@@ -94,81 +117,111 @@ export default function Login() {
   }, [showCaptcha]);
 
   /* ───────────────────────────────────────────────
-     🔵 5) SUBMIT Login
+     🔵 Submit Login
   ─────────────────────────────────────────────── */
   async function submit(e) {
     e.preventDefault();
+
     setLoading(true);
     setMsg("");
 
     try {
-      // اگر بک‌اند نیاز به کپچا دارد → بدون کپچا لاگین نکن
+      // 🚫 CAPTCHA required
       if (showCaptcha && !captchaToken) {
         setMsg("⚠️ Please complete the reCAPTCHA verification.");
+
         captchaRef.current?.reset();
         setCaptchaToken(null);
+
         setLoading(false);
         return;
       }
 
-      const payload = { email, password };
-      if (captchaToken) payload.recaptchaToken = captchaToken;
+      const payload = {
+        email,
+        password,
+      };
 
-      const res = await apiClient.post(`/auth/login`, payload, {
-        withCredentials: true,
-      });
+      if (captchaToken) {
+        payload.recaptchaToken = captchaToken;
+      }
+
+      const res = await apiClient.post(
+        "/auth/login",
+        payload,
+        {
+          withCredentials: true,
+        }
+      );
 
       /* 🚫 BLOCKED */
       if (res.data.blocked) {
         setMsg("Your account has been suspended. Please contact support.");
+
         setLoading(false);
         return;
       }
 
-      /* ✅ LOGIN SUCCESS */
-      if (res.data.message?.toLowerCase().includes("successful")) {
+      /* ✅ SUCCESS */
+      if (
+        res.data.message?.toLowerCase().includes("successful")
+      ) {
         setMsg("");
+
         setUserId(res.data.user_id);
 
         captchaRef.current?.reset();
+
         setCaptchaToken(null);
         setShowCaptcha(false);
 
         if (!res.data.all_consents_accepted) {
           setShowConsent(true);
         } else {
-          const redirect = new URLSearchParams(window.location.search).get(
-            "redirect"
-          );
+          const redirect =
+            new URLSearchParams(window.location.search).get(
+              "redirect"
+            );
+
           window.location.href = redirect || "/search";
         }
+
         return;
       }
 
-      /* ❌ Unexpected fail */
+      /* ❌ Fallback */
       await syncCaptchaStatus(email);
+
       setMsg("Invalid email or password.");
     } catch (err) {
       console.error("Login error:", err);
+
       const data = err.response?.data || {};
 
-      /* 🚫 Blocked user */
+      /* 🚫 BLOCKED */
       if (data.blocked) {
         setMsg("Your account has been suspended.");
+
         setLoading(false);
         return;
       }
 
-      /* 🚫 Requires consent */
+      /* 🚫 CONSENT REQUIRED */
       if (data.require_terms_agreement) {
         setUserId(data.user_id);
+
         setShowConsent(true);
-        setMsg("Please review and accept our updated policies.");
+
+        setMsg(
+          "Please review and accept our updated policies."
+        );
+
         setLoading(false);
         return;
       }
 
       setMsg(data.error || "Login failed.");
+
       syncCaptchaStatus(email);
     }
 
@@ -176,7 +229,7 @@ export default function Login() {
   }
 
   /* ───────────────────────────────────────────────
-     🔵 6) UI Rendering
+     🔵 UI
   ─────────────────────────────────────────────── */
   return (
     <div
@@ -200,7 +253,15 @@ export default function Login() {
         }}
       >
         <div
-          className="rounded-2xl p-8 w-full max-w-md border transition-all duration-300"
+          className="
+            rounded-2xl
+            p-8
+            w-full
+            max-w-md
+            border
+            transition-all
+            duration-300
+          "
           style={{
             background: "var(--card-bg)",
             color: "var(--text)",
@@ -216,18 +277,34 @@ export default function Login() {
           {securityMsg && (
             <div
               className="mb-4"
-              dangerouslySetInnerHTML={{ __html: securityMsg }}
+              dangerouslySetInnerHTML={{
+                __html: securityMsg,
+              }}
             />
           )}
 
-          <form onSubmit={submit} className="space-y-4">
+          <form
+            onSubmit={submit}
+            className="space-y-4"
+          >
             <input
               type="email"
               required
               placeholder="Email address"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 rounded-lg border bg-[#f5f7fa] text-gray-900 focus:ring-2 focus:ring-turquoise"
+              onChange={(e) =>
+                setEmail(e.target.value)
+              }
+              className="
+                w-full
+                p-3
+                rounded-lg
+                border
+                bg-[#f5f7fa]
+                text-gray-900
+                focus:ring-2
+                focus:ring-turquoise
+              "
             />
 
             <input
@@ -235,19 +312,39 @@ export default function Login() {
               required
               placeholder="Password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 rounded-lg border bg-[#f5f7fa] text-gray-900 focus:ring-2 focus:ring-turquoise"
+              onChange={(e) =>
+                setPassword(e.target.value)
+              }
+              className="
+                w-full
+                p-3
+                rounded-lg
+                border
+                bg-[#f5f7fa]
+                text-gray-900
+                focus:ring-2
+                focus:ring-turquoise
+              "
             />
 
             {showCaptcha && (
               <div className="flex justify-center my-3">
                 <ReCAPTCHA
                   ref={captchaRef}
-                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
-                  onChange={(token) => setCaptchaToken(token)}
+                  sitekey={
+                    process.env
+                      .NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+                  }
+                  onChange={(token) =>
+                    setCaptchaToken(token)
+                  }
                   onExpired={() => {
                     setCaptchaToken(null);
-                    setMsg("⚠️ reCAPTCHA expired. Please try again.");
+
+                    setMsg(
+                      "⚠️ reCAPTCHA expired. Please try again."
+                    );
+
                     captchaRef.current?.reset();
                   }}
                 />
@@ -257,16 +354,32 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-turquoise text-navy py-2 rounded-lg shadow-md hover:bg-turquoise/90"
+              className="
+                w-full
+                bg-turquoise
+                text-navy
+                py-2
+                rounded-lg
+                shadow-md
+                hover:bg-turquoise/90
+              "
             >
-              {loading ? "Logging in…" : "Login"}
+              {loading
+                ? "Logging in…"
+                : "Login"}
             </button>
           </form>
 
           {msg && (
             <p
-              className="text-sm text-center mt-4"
-              style={{ color: "var(--text)" }}
+              className="
+                text-sm
+                text-center
+                mt-4
+              "
+              style={{
+                color: "var(--text)",
+              }}
             >
               {msg}
             </p>
@@ -275,13 +388,26 @@ export default function Login() {
           <div className="mt-6 text-center text-sm">
             <p>
               Forgot your password?{" "}
-              <a href="/auth/forgot" className="text-turquoise font-medium">
+              <a
+                href="/auth/forgot"
+                className="
+                  text-turquoise
+                  font-medium
+                "
+              >
                 Recover it here
               </a>
             </p>
+
             <p className="mt-2">
               Don’t have an account?{" "}
-              <a href="/auth/register" className="text-turquoise font-medium">
+              <a
+                href="/auth/register"
+                className="
+                  text-turquoise
+                  font-medium
+                "
+              >
                 Sign up
               </a>
             </p>
@@ -297,7 +423,10 @@ export default function Login() {
           lang={lang}
           onClose={(accepted) => {
             setShowConsent(false);
-            if (accepted) window.location.href = "/search";
+
+            if (accepted) {
+              window.location.href = "/search";
+            }
           }}
         />
       )}
