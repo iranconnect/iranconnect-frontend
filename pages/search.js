@@ -195,109 +195,144 @@ function Home() {
     fetchList();
   };
 
-  const selectClass = 'input-default w-full';
+  const selectClass = 'input-default w-full h-11';
 
   return (
-    <div className="flex flex-col min-h-screen transition-colors" style={{ backgroundColor: '#ffffff' }}>
+    <div className="flex flex-col min-h-screen bg-[var(--bg)] transition-colors">
       <Header />
-
-      <main
-        className="flex-1 container-mobile"
-        style={{
-          paddingTop: '48px',
-          paddingBottom: '48px',
-          paddingLeft: '16px',
-          paddingRight: '16px',
-        }}
-      >
-        {/* Filters */}
-        <section style={{ marginBottom: 28 }}>
-          <form
-            onSubmit={handleSearch}
-            className="
-              grid grid-cols-1 gap-3 w-full
-              sm:grid-cols-4 sm:grid-rows-2 sm:gap-x-4 sm:gap-y-3
-            "
-          >
-            {/* Country */}
-            <select className={selectClass} value={country} onChange={handleCountryChange}>
-              <option value="">Country</option>
-              {countries.map((c, idx) => (
-                <option key={idx} value={c.country}>{c.country}</option>
-              ))}
-            </select>
-
-            {/* City */}
-            <select
-              className={selectClass}
-              value={city}
-              onChange={handleCityChange}
-              disabled={!country || loadingCities}
+  
+      <main className="flex-1 px-4 py-6 md:py-8">
+        <div className="mx-auto w-full max-w-5xl">
+  
+          {/* Filters */}
+          <section className="mb-8 md:mb-10">
+            <div
+              className="
+                rounded-2xl
+                border border-[var(--border)]
+                bg-[var(--card-bg)]
+                shadow-[6px_6px_16px_var(--shadow-dark),-6px_-6px_16px_var(--shadow-light)]
+                p-4 md:p-5
+              "
             >
-              <option value="">{loadingCities ? 'Loading cities...' : 'City'}</option>
-              {cities.map((ct, idx) => (
-                <option key={idx} value={ct.city}>{ct.city}</option>
-              ))}
-            </select>
-
-            {/* Category */}
-            <select
-              className={selectClass}
-              value={category}
-              onChange={handleCategoryChange}
-              disabled={!city}
-            >
-              <option value="">Category</option>
-              {categories.map((cat, idx) => (
-                <option key={idx} value={cat.category}>{cat.category}</option>
-              ))}
-            </select>
-
-            {/* Subcategory */}
-            <select
-              className={selectClass}
-              value={subcategory}
-              onChange={(e) => setSubcategory(e.target.value)}
-              disabled={!category}
-            >
-              <option value="">Subcategory</option>
-              {subcategories.map((sub, idx) => (
-                <option key={idx} value={sub.sub_category}>{sub.sub_category}</option>
-              ))}
-            </select>
-
-            {/* Search input */}
-            <input
-              className="input-default w-full sm:col-span-3 sm:row-start-2"
-              placeholder="Search by name or address"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
-
-            {/* Search button */}
-            <button className="btn-primary w-full sm:col-span-1 sm:row-start-2" type="submit">
-              Search
-            </button>
-          </form>
-        </section>
-
-        {/* Results */}
-        <section>
-          {loading ? (
-            <p>Loading...</p>
-          ) : businesses.length === 0 ? (
-            <p className="text-muted">No results found.</p>
-          ) : (
-            <div className="space-y-4">
-              {businesses.slice(0, 10).map((b) => (
-                <BusinessCard key={b.id} b={b} />
-              ))}
+              <form
+                onSubmit={handleSearch}
+                className="
+                  grid grid-cols-1 gap-4 w-full
+                  sm:grid-cols-4 sm:grid-rows-2 sm:gap-4
+                "
+              >
+  
+                {/* Country */}
+                <select
+                  className={selectClass}
+                  value={country}
+                  onChange={handleCountryChange}
+                >
+                  <option value="">Country</option>
+  
+                  {countries.map((c, idx) => (
+                    <option key={idx} value={c.country}>
+                      {c.country}
+                    </option>
+                  ))}
+                </select>
+  
+                {/* City */}
+                <select
+                  className={selectClass}
+                  value={city}
+                  onChange={handleCityChange}
+                  disabled={!country || loadingCities}
+                >
+                  <option value="">
+                    {loadingCities ? 'Loading cities...' : 'City'}
+                  </option>
+  
+                  {cities.map((ct, idx) => (
+                    <option key={idx} value={ct.city}>
+                      {ct.city}
+                    </option>
+                  ))}
+                </select>
+  
+                {/* Category */}
+                <select
+                  className={selectClass}
+                  value={category}
+                  onChange={handleCategoryChange}
+                  disabled={!city}
+                >
+                  <option value="">Category</option>
+  
+                  {categories.map((cat, idx) => (
+                    <option key={idx} value={cat.category}>
+                      {cat.category}
+                    </option>
+                  ))}
+                </select>
+  
+                {/* Subcategory */}
+                <select
+                  className={selectClass}
+                  value={subcategory}
+                  onChange={(e) => setSubcategory(e.target.value)}
+                  disabled={!category}
+                >
+                  <option value="">Subcategory</option>
+  
+                  {subcategories.map((sub, idx) => (
+                    <option key={idx} value={sub.sub_category}>
+                      {sub.sub_category}
+                    </option>
+                  ))}
+                </select>
+  
+                {/* Search input */}
+                <input
+                  className="
+                    input-default w-full h-11
+                    sm:col-span-3 sm:row-start-2
+                  "
+                  placeholder="Search by name or address"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                />
+  
+                {/* Search button */}
+                <button
+                  className="
+                    btn-primary w-full h-11
+                    sm:col-span-1 sm:row-start-2
+                  "
+                  type="submit"
+                >
+                  Search
+                </button>
+  
+              </form>
             </div>
-          )}
-        </section>
+          </section>
+  
+          {/* Results */}
+          <section>
+            {loading ? (
+              <p>Loading...</p>
+            ) : businesses.length === 0 ? (
+              <p className="text-muted">No results found.</p>
+            ) : (
+              <div className="space-y-5">
+                {businesses.slice(0, 10).map((b) => (
+                  <BusinessCard key={b.id} b={b} />
+                ))}
+              </div>
+            )}
+          </section>
+  
+        </div>
       </main>
-
+  
       <Footer />
     </div>
   );
-}
+
