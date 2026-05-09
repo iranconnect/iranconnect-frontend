@@ -198,7 +198,7 @@ function Home() {
   const selectClass = 'input-default w-full h-11';
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--bg)] transition-colors">
+    <div className="flex flex-col min-h-screen bg-white transition-colors">
       <Header />
   
       <main className="flex-1 px-4 py-6 md:py-8">
