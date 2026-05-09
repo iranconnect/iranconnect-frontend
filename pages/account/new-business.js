@@ -868,7 +868,7 @@ return (
                 <select
                   value={countryCode}
                   onChange={(e) => setCountryCode(e.target.value)}
-                  className="min-w-[140px] max-w-[160px] " + inputClass
+                  className={`min-w-[140px] max-w-[160px] ${inputClass}`}
                 >
                   {countryOptions.map(c => (
                     <option key={c.code} value={c.dial_code}>
