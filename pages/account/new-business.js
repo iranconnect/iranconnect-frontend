@@ -1065,11 +1065,7 @@ return (
                 </p>
               )}
               
-              {!errors.whatsapp_number && (
-                <p className="text-xs mt-1 opacity-90">
-                  Include country code (e.g. +33...)
-                </p>
-              )}
+
               
               {errors.whatsapp_number && (
                 <p className="text-red-500 text-sm">
