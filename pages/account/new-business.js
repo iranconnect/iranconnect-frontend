@@ -381,6 +381,11 @@ const sectionStyle = {
   padding: "20px",
   marginBottom: "20px",
   background: theme === "dark" ? "#0b2149" : "#ffffff",
+
+  boxShadow:
+    theme === "dark"
+      ? "10px 10px 25px rgba(0,0,0,0.4), -10px -10px 25px rgba(255,255,255,0.05)"
+      : "6px 6px 15px rgba(0,0,0,0.1), -6px -6px 15px rgba(255,255,255,0.4)",
 };
 
 const labelClass = "block text-sm font-medium mb-1";
