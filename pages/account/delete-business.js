@@ -123,7 +123,7 @@ export default function DeleteBusinessRequest() {
           <div className="w-full max-w-5xl mx-auto">
         
             <h2
-              className="text-3xl font-bold text-center mb-8"
+              className="text-2xl font-bold text-center mb-8"
               style={{ color: "#000000" }}
             >
               🗑️ Request Business Deletion
