@@ -168,102 +168,116 @@ export default function UpdateBusinessRequest() {
 
   return (
     <AccountLayout>
-      <main className="flex-1 flex items-center justify-center p-6">
-        <div
-          className="rounded-2xl p-8 w-full max-w-xl border transition-all duration-300"
-          style={cardStyle}
-        >
-          <h2 className="text-2xl font-semibold text-center mb-6">
-            ✏️ Update Your Business Information
-          </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block font-medium mb-1">Business Name</label>
-              <select
-                name="business_id"
-                value={selectedBusiness}
-                onChange={(e) => setSelectedBusiness(e.target.value)}
-                className={`${inputClass} appearance-none pr-8`}
-                required
-              >
-                {businesses.length === 0 ? (
-                  <option>No verified businesses found for your account</option>
-                ) : (
-                  <>
-                    <option value="">Select a business...</option>
-                    {businesses.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name} ({b.city})
-                      </option>
-                    ))}
-                  </>
-                )}
-              </select>
-            </div>
-
-            {/* فیلدهای فرم */}
-            {Object.keys(form).map((f) => (
-              <div key={f}>
-                <label className="block font-medium capitalize mb-1">
-                  {f.replace("_", " ")}
-                </label>
-                <input
-                  name={f}
-                  value={form[f]}
-                  onChange={handleChange}
-                  className={`${inputClass} ${errors[f] ? "border-red-500" : ""}`}
-                  placeholder={`Enter ${f.replace("_", " ")}`}
-                />
-                {errors[f] && (
-                  <p className="text-red-400 text-sm mt-1">{errors[f]}</p>
-                )}
-              </div>
-            ))}
-
-            <div>
-              <label className="block font-medium mb-1">
-                Building Photo (optional)
-              </label>
-              <input
-                type="file"
-                onChange={(e) => setBuildingImage(e.target.files[0])}
-                className="w-full text-sm"
-                accept="image/*"
-              />
-            </div>
-
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={confirm}
-                onChange={(e) => setConfirm(e.target.checked)}
-              />
-              I confirm that the information entered above is accurate.
-            </label>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-turquoise py-3 rounded-lg font-medium hover:bg-turquoise/90 transition-all mt-4"
-              style={{ color: "#0b2149" }}
+      <main className="flex-1 px-4 py-6 md:py-8">
+  
+        <div className="mx-auto w-full max-w-5xl">
+  
+          <div className="w-full max-w-5xl mx-auto">
+  
+            <h2
+              className="text-2xl font-bold text-center mb-8"
+              style={{ color: "#000000" }}
             >
-              {loading ? "Submitting..." : "Submit Update Request"}
-            </button>
-
-            {msg && (
-              <p className="text-center text-sm mt-3 text-[var(--text)]">
-                {msg}
-                {ticket && (
-                  <span className="block font-semibold text-turquoise mt-1">
-                    Ticket: {ticket}
-                  </span>
+              ✏️ Update Your Business Information
+            </h2>
+  
+            <div
+              className="rounded-2xl p-8 border transition-all duration-300"
+              style={cardStyle}
+            >
+  
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block font-medium mb-1">Business Name</label>
+                  <select
+                    name="business_id"
+                    value={selectedBusiness}
+                    onChange={(e) => setSelectedBusiness(e.target.value)}
+                    className={`${inputClass} appearance-none pr-8`}
+                    required
+                  >
+                    {businesses.length === 0 ? (
+                      <option>No verified businesses found for your account</option>
+                    ) : (
+                      <>
+                        <option value="">Select a business...</option>
+                        {businesses.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name} ({b.city})
+                          </option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+                </div>
+  
+                {/* فیلدهای فرم */}
+                {Object.keys(form).map((f) => (
+                  <div key={f}>
+                    <label className="block font-medium capitalize mb-1">
+                      {f.replace("_", " ")}
+                    </label>
+                    <input
+                      name={f}
+                      value={form[f]}
+                      onChange={handleChange}
+                      className={`${inputClass} ${errors[f] ? "border-red-500" : ""}`}
+                      placeholder={`Enter ${f.replace("_", " ")}`}
+                    />
+                    {errors[f] && (
+                      <p className="text-red-400 text-sm mt-1">{errors[f]}</p>
+                    )}
+                  </div>
+                ))}
+  
+                <div>
+                  <label className="block font-medium mb-1">
+                    Building Photo (optional)
+                  </label>
+                  <input
+                    type="file"
+                    onChange={(e) => setBuildingImage(e.target.files[0])}
+                    className="w-full text-sm"
+                    accept="image/*"
+                  />
+                </div>
+  
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={confirm}
+                    onChange={(e) => setConfirm(e.target.checked)}
+                  />
+                  I confirm that the information entered above is accurate.
+                </label>
+  
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-turquoise py-3 rounded-lg font-medium hover:bg-turquoise/90 transition-all mt-4"
+                  style={{ color: "#0b2149" }}
+                >
+                  {loading ? "Submitting..." : "Submit Update Request"}
+                </button>
+  
+                {msg && (
+                  <p className="text-center text-sm mt-3 text-[var(--text)]">
+                    {msg}
+                    {ticket && (
+                      <span className="block font-semibold text-turquoise mt-1">
+                        Ticket: {ticket}
+                      </span>
+                    )}
+                  </p>
                 )}
-              </p>
-            )}
-          </form>
+              </form>
+  
+            </div>
+  
+          </div>
+  
         </div>
+  
       </main>
     </AccountLayout>
   );
-}
