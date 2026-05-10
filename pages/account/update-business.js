@@ -182,13 +182,17 @@ export default function UpdateBusinessRequest() {
             </h2>
   
             <div
-              className="rounded-2xl p-8 border transition-all duration-300"
+              className="rounded-2xl p-8 w-full border transition-all duration-300"
               style={cardStyle}
             >
   
               <form onSubmit={handleSubmit} className="space-y-4">
+  
                 <div>
-                  <label className="block font-medium mb-1">Business Name</label>
+                  <label className="block font-medium mb-1">
+                    Business Name
+                  </label>
+  
                   <select
                     name="business_id"
                     value={selectedBusiness}
@@ -197,10 +201,13 @@ export default function UpdateBusinessRequest() {
                     required
                   >
                     {businesses.length === 0 ? (
-                      <option>No verified businesses found for your account</option>
+                      <option>
+                        No verified businesses found for your account
+                      </option>
                     ) : (
                       <>
                         <option value="">Select a business...</option>
+  
                         {businesses.map((b) => (
                           <option key={b.id} value={b.id}>
                             {b.name} ({b.city})
@@ -217,15 +224,21 @@ export default function UpdateBusinessRequest() {
                     <label className="block font-medium capitalize mb-1">
                       {f.replace("_", " ")}
                     </label>
+  
                     <input
                       name={f}
                       value={form[f]}
                       onChange={handleChange}
-                      className={`${inputClass} ${errors[f] ? "border-red-500" : ""}`}
+                      className={`${inputClass} ${
+                        errors[f] ? "border-red-500" : ""
+                      }`}
                       placeholder={`Enter ${f.replace("_", " ")}`}
                     />
+  
                     {errors[f] && (
-                      <p className="text-red-400 text-sm mt-1">{errors[f]}</p>
+                      <p className="text-red-400 text-sm mt-1">
+                        {errors[f]}
+                      </p>
                     )}
                   </div>
                 ))}
@@ -234,6 +247,7 @@ export default function UpdateBusinessRequest() {
                   <label className="block font-medium mb-1">
                     Building Photo (optional)
                   </label>
+  
                   <input
                     type="file"
                     onChange={(e) => setBuildingImage(e.target.files[0])}
@@ -248,6 +262,7 @@ export default function UpdateBusinessRequest() {
                     checked={confirm}
                     onChange={(e) => setConfirm(e.target.checked)}
                   />
+  
                   I confirm that the information entered above is accurate.
                 </label>
   
@@ -263,6 +278,7 @@ export default function UpdateBusinessRequest() {
                 {msg && (
                   <p className="text-center text-sm mt-3 text-[var(--text)]">
                     {msg}
+  
                     {ticket && (
                       <span className="block font-semibold text-turquoise mt-1">
                         Ticket: {ticket}
@@ -270,6 +286,7 @@ export default function UpdateBusinessRequest() {
                     )}
                   </p>
                 )}
+  
               </form>
   
             </div>
