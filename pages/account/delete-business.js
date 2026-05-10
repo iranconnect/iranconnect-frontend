@@ -117,16 +117,24 @@ export default function DeleteBusinessRequest() {
 
   return (
     <AccountLayout>
-      <main className="flex-1 flex items-center justify-center p-6">
-        <div
-          className="rounded-2xl p-8 w-full max-w-xl border transition-all duration-300"
-          style={cardStyle}
-        >
-          <h2 className="text-2xl font-semibold text-center mb-6">
-            🗑️ Request Business Deletion
-          </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
+      <main className="flex-1 px-4 py-6 md:py-8">
+        <div className="mx-auto w-full max-w-5xl">
+        
+          <div className="w-full max-w-4xl mx-auto">
+        
+            <h2
+              className="text-3xl font-bold text-center mb-8"
+              style={{ color: "#000000" }}
+            >
+              🗑️ Request Business Deletion
+            </h2>
+        
+            <div
+              className="rounded-2xl p-8 border transition-all duration-300"
+              style={cardStyle}
+            >
+        
+              <form onSubmit={handleSubmit} className="space-y-4">
             {/* Select Business */}
             <div>
               <label className="block font-medium mb-1">Business Name</label>
@@ -228,8 +236,14 @@ export default function DeleteBusinessRequest() {
               </p>
             )}
           </form>
+
         </div>
-      </main>
+
+      </div>
+
+    </div>
+
+  </main>
     </AccountLayout>
   );
 }
