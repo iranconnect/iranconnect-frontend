@@ -120,7 +120,7 @@ export default function DeleteBusinessRequest() {
       <main className="flex-1 px-4 py-6 md:py-8">
         <div className="mx-auto w-full max-w-5xl">
         
-          <div className="w-full max-w-4xl mx-auto">
+          <div className="w-full max-w-5xl mx-auto">
         
             <h2
               className="text-3xl font-bold text-center mb-8"
