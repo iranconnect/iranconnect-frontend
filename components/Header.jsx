@@ -10,7 +10,7 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [theme, setTheme] = useState('light');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [hasPendingClaim, setHasPendingClaim] = useState(false);
+  const [hasRequests, setHasRequests] = useState(false);
   const [hasBusiness, setHasBusiness] = useState(false);
   const [email, setEmail] = useState('');
 
@@ -42,17 +42,17 @@ export default function Header() {
           });
           
           if (ownership.status === 200) {
-            setHasPendingClaim(!!ownership.data?.has_pending_claim);
+            setHasRequests(!!me.data?.has_requests);
             setHasBusiness(!!ownership.data?.has_verified_business);
           
           } else if (ownership.status === 404) {
             // 🟡 API هنوز deploy نشده
-            setHasPendingClaim(false);
+            setHasRequests(false);
             setHasBusiness(false);
           
           } else {
             // ❌ سایر خطاها
-            setHasPendingClaim(false);
+            setHasRequests(false);
             setHasBusiness(false);
           }
   
@@ -60,7 +60,7 @@ export default function Header() {
           setIsLoggedIn(false);
           setIsAdmin(false);
           setEmail("");
-          setHasPendingClaim(false);
+          setHasRequests(false);
           setHasBusiness(false);
         }
   
@@ -68,7 +68,7 @@ export default function Header() {
         setIsLoggedIn(false);
         setIsAdmin(false);
         setEmail("");
-        setHasPendingClaim(false);
+        setHasRequests(false);
         setHasBusiness(false);
       }
     }
@@ -168,7 +168,7 @@ export default function Header() {
           {isLoggedIn && (
             <ProfileMenu
               role={isAdmin ? 'admin' : 'user'}
-              hasPendingClaim={hasPendingClaim}
+              hasRequests={hasRequests}
               hasBusiness={hasBusiness}
             />
           )}
