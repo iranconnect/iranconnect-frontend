@@ -266,7 +266,7 @@ export default function Header() {
           {isLoggedIn && (
             <>
               {/* Requests */}
-              {hasPendingClaim && (
+              {hasRequests && (
                 <Link
                   href="/account/requests"
                   onClick={() => setMenuOpen(false)}
