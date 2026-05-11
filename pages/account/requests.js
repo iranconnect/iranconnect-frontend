@@ -109,18 +109,23 @@ export default function RequestHistory() {
         : "6px 6px 15px rgba(0,0,0,0.1), -6px -6px 15px rgba(255,255,255,0.4)",
   };
 
-  const closeModal = () => setSelectedRequest(null);
 
   return (
     <AccountLayout>
       <main className="flex-1 px-4 py-10 w-full max-w-5xl mx-auto">
-        <div
-          className="rounded-2xl p-6 border transition-all duration-300"
-          style={cardStyle}
-        >
-          <h1 className="text-2xl font-semibold text-center mb-6">
+        <div className="w-full">
+        
+          <h1
+            className="text-2xl font-bold text-center mb-8"
+            style={{ color: "#000000" }}
+          >
             📋 My Business Requests
           </h1>
+        
+          <div
+            className="rounded-2xl p-6 border transition-all duration-300"
+            style={cardStyle}
+          >
 
           {/* 🔎 نوار جستجو */}
           
@@ -329,7 +334,7 @@ export default function RequestHistory() {
             </table>
           </div>
         </div>
-
+      </div>
         {/* 📄 مودال جزئیات */}
         {selectedRequest && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
