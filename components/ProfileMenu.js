@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { User } from 'lucide-react';
 import apiClient from '../utils/apiClient';
 
-export default function ProfileMenu({ role, hasPendingClaim, hasBusiness }) {
+export default function ProfileMenu({ role, hasRequests, hasBusiness }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [email, setEmail] = useState('');
   const menuRef = useRef(null);
@@ -101,7 +101,7 @@ export default function ProfileMenu({ role, hasPendingClaim, hasBusiness }) {
 
 
           {/* Business features */}
-          {(hasPendingClaim || hasBusiness) && (
+          {hasRequests && (
             <a
               href="/account/requests"
               className="block text-sm text-turquoise hover:underline mb-2"
