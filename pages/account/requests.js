@@ -112,8 +112,10 @@ export default function RequestHistory() {
 
   return (
     <AccountLayout>
-      <main className="mx-auto w-full max-w-5xl">
-        <div className="w-full">
+      <main className="flex-1 px-4 py-6 md:py-8">
+        <div className="mx-auto w-full max-w-5xl">
+
+          <div className="w-full max-w-5xl mx-auto">
         
           <h1
             className="text-2xl font-bold text-center mb-8"
