@@ -485,7 +485,346 @@ return ( <AccountLayout>
             <div style={sectionStyle}>
 
               <h3 className="font-semibold mb-4">
-                Media
+                Categories & Services
+              </h3>
+            
+              {/* CATEGORY */}
+            
+              <div className="mb-4">
+            
+                <label className="block text-sm font-medium mb-1">
+                  Category
+                </label>
+            
+                <select
+                  className={inputClass}
+                  value={form.category_id}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      category_id: e.target.value,
+                      subcategory_ids: [],
+                      services: [],
+                    }))
+                  }
+                >
+                  <option value="">
+                    Select category
+                  </option>
+            
+                  {categories.map((cat) => (
+                    <option
+                      key={cat.id}
+                      value={cat.id}
+                    >
+                      {cat.name}
+                    </option>
+                  ))}
+            
+                </select>
+            
+              </div>
+            
+              {/* SUBCATEGORIES */}
+            
+              {!!subcategories.length && (
+            
+                <div className="mb-4">
+            
+                  <label className="block text-sm font-medium mb-2">
+                    Subcategories
+                  </label>
+            
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            
+                    {subcategories.map((sub) => (
+            
+                      <label
+                        key={sub.id}
+                        className="flex items-center gap-2 text-sm"
+                      >
+            
+                        <input
+                          type="checkbox"
+                          checked={form.subcategory_ids.includes(sub.id)}
+                          onChange={() => {
+            
+                            const exists =
+                              form.subcategory_ids.includes(sub.id);
+            
+                            setForm((prev) => ({
+                              ...prev,
+                              subcategory_ids: exists
+                                ? prev.subcategory_ids.filter(
+                                    (x) => x !== sub.id
+                                  )
+                                : [...prev.subcategory_ids, sub.id],
+                            }));
+                          }}
+                        />
+            
+                        {sub.name}
+            
+                      </label>
+            
+                    ))}
+            
+                  </div>
+            
+                </div>
+            
+              )}
+            
+              {/* SERVICES */}
+            
+              {!!services.length && (
+            
+                <div className="mb-4">
+            
+                  <label className="block text-sm font-medium mb-2">
+                    Services
+                  </label>
+            
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            
+                    {services.map((srv) => (
+            
+                      <label
+                        key={srv.id}
+                        className="flex items-center gap-2 text-sm"
+                      >
+            
+                        <input
+                          type="checkbox"
+                          checked={form.services.includes(srv.id)}
+                          onChange={() => {
+            
+                            const exists =
+                              form.services.includes(srv.id);
+            
+                            setForm((prev) => ({
+                              ...prev,
+                              services: exists
+                                ? prev.services.filter(
+                                    (x) => x !== srv.id
+                                  )
+                                : [...prev.services, srv.id],
+                            }));
+                          }}
+                        />
+            
+                        {srv.name}
+            
+                      </label>
+            
+                    ))}
+            
+                  </div>
+            
+                </div>
+            
+              )}
+            
+              {/* TAGS */}
+            
+              {!!tags.length && (
+            
+                <div className="mb-4">
+            
+                  <label className="block text-sm font-medium mb-2">
+                    Tags
+                  </label>
+            
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            
+                    {tags.map((tag) => (
+            
+                      <label
+                        key={tag.id}
+                        className="flex items-center gap-2 text-sm"
+                      >
+            
+                        <input
+                          type="checkbox"
+                          checked={form.tags.includes(tag.id)}
+                          onChange={() => {
+            
+                            const exists =
+                              form.tags.includes(tag.id);
+            
+                            setForm((prev) => ({
+                              ...prev,
+                              tags: exists
+                                ? prev.tags.filter(
+                                    (x) => x !== tag.id
+                                  )
+                                : [...prev.tags, tag.id],
+                            }));
+                          }}
+                        />
+            
+                        {tag.name}
+            
+                      </label>
+            
+                    ))}
+            
+                  </div>
+            
+                </div>
+            
+              )}
+            
+            </div>
+            
+            <div style={sectionStyle}>
+            
+              <h3 className="font-semibold mb-4">
+                Location & Contact
+              </h3>
+            
+              <div className="mb-4">
+            
+                <label className="block text-sm font-medium mb-1">
+                  Address
+                </label>
+            
+                <input
+                  name="address"
+                  value={form.address}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+            
+              </div>
+            
+              <div className="mb-4">
+            
+                <label className="block text-sm font-medium mb-1">
+                  Phone
+                </label>
+            
+                <input
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+            
+              </div>
+            
+              <div className="mb-4">
+            
+                <label className="block text-sm font-medium mb-1">
+                  Email
+                </label>
+            
+                <input
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+            
+              </div>
+            
+              <div className="mb-4">
+            
+                <label className="block text-sm font-medium mb-1">
+                  Website
+                </label>
+            
+                <input
+                  name="website"
+                  value={form.website}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+            
+              </div>
+            
+            </div>
+            
+            <div style={sectionStyle}>
+            
+              <h3 className="font-semibold mb-4">
+                Social & Visibility
+              </h3>
+            
+              <div className="mb-4">
+            
+                <label className="block text-sm font-medium mb-1">
+                  Instagram URL
+                </label>
+            
+                <input
+                  name="instagram_url"
+                  value={form.instagram_url}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+            
+              </div>
+            
+              <div className="mb-4">
+            
+                <label className="block text-sm font-medium mb-1">
+                  Facebook URL
+                </label>
+            
+                <input
+                  name="facebook_url"
+                  value={form.facebook_url}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+            
+              </div>
+            
+              <div className="flex flex-col gap-3">
+            
+                <label className="flex items-center gap-2 text-sm">
+            
+                  <input
+                    type="checkbox"
+                    checked={form.show_phone}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        show_phone: e.target.checked,
+                      }))
+                    }
+                  />
+            
+                  Show phone publicly
+            
+                </label>
+            
+                <label className="flex items-center gap-2 text-sm">
+            
+                  <input
+                    type="checkbox"
+                    checked={form.show_email}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        show_email: e.target.checked,
+                      }))
+                    }
+                  />
+            
+                  Show email publicly
+            
+                </label>
+            
+              </div>
+            
+            </div>        
+
+            <div style={sectionStyle}>
+
+              <h3 className="font-semibold mb-4">
+                Media, Visibility & Compliance
               </h3>
 
               <div className="mb-4">
