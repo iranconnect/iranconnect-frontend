@@ -88,19 +88,20 @@ export default function StepLocationContact({
   setData,
   onNext,
   onBack,
+  mode,
 }) {
   function setField(key, value) {
     setData((prev) => ({ ...prev, [key]: value }));
   }
 
-  const mode = data.service_mode;
+  const serviceMode = data.service_mode;
 
   /* ─────────────────────────────
      Visibility rules (unchanged logic)
   ───────────────────────────── */
-  const needsPhysicalAddress = mode === "on_site" || mode === "hybrid";
-  const needsServiceRadius = mode === "at_home" || mode === "hybrid";
-  const needsContactInfo = !!mode;
+  const needsPhysicalAddress = serviceMode === "on_site" || serviceMode === "hybrid";
+  const needsServiceRadius = serviceMode === "at_home" || serviceMode === "hybrid";
+  const needsContactInfo = !!serviceMode;
 
   /* ─────────────────────────────
      Validation state
@@ -251,7 +252,7 @@ export default function StepLocationContact({
     let ok = true;
 
     // on_site / hybrid
-    if (mode === "on_site" || mode === "hybrid") {
+    if (serviceMode === "on_site" || serviceMode === "hybrid") {
       const v = validateLocationMapUrl(
         data.location_map_url || "",
         true
@@ -274,7 +275,7 @@ export default function StepLocationContact({
     }
     
     // at_home / hybrid
-    if (mode === "at_home" || mode === "hybrid") {
+    if (serviceMode === "at_home" || serviceMode === "hybrid") {
       const v = validateBaseLocationMapUrl(
         data.base_location_map_url || "",
         true
@@ -357,7 +358,7 @@ export default function StepLocationContact({
         </label>
         <select
           className="admin-input"
-          value={mode || ""}
+          value={serviceMode || ""}
           onChange={(e) =>
             setField("service_mode", e.target.value)
           }
@@ -535,7 +536,7 @@ export default function StepLocationContact({
       {/* ─────────────────────────────
          Base location (for at customer location)
       ───────────────────────────── */}
-      {(mode === "at_home" || mode === "hybrid") && (
+      {(serviceMode === "at_home" || serviceMode === "hybrid") && (
         <div className="mb-6">
           <label className="admin-label">
             Service base location (Google Maps link) *
@@ -616,46 +617,51 @@ export default function StepLocationContact({
             </p>
           </div>
           
+          {mode !== "user-update" && (
+            <div className="mb-5">
+              <label className="admin-label">
+                Country *
+              </label>
+              <input
+                className="admin-input"
+                value={data.country || ""}
+                onChange={(e) => setField("country", e.target.value)}
+              />
+  
+            </div>
+          )}
 
-          <div className="mb-5">
-            <label className="admin-label">
-              Country *
-            </label>
-            <input
-              className="admin-input"
-              value={data.country || ""}
-              onChange={(e) => setField("country", e.target.value)}
-            />
+          {mode !== "user-update" && (
+            <div className="mb-5">
+              <label className="admin-label">
+                City *
+              </label>
+              <input
+                className="admin-input"
+                value={data.city || ""}
+                onChange={(e) => setField("city", e.target.value)}
+              />
+  
+            </div>
+          )}
 
-          </div>
-
-          <div className="mb-5">
-            <label className="admin-label">
-              City *
-            </label>
-            <input
-              className="admin-input"
-              value={data.city || ""}
-              onChange={(e) => setField("city", e.target.value)}
-            />
-
-          </div>
-
-          <div className="mb-6">
-            <label className="admin-label">
-              Postal code *
-            </label>
-            <input
-              className="admin-input"
-              value={data.postal_code || ""}
-              onChange={(e) => setField("postal_code", e.target.value)}
-            />
-
-            {errors.postal_code && (
-              <p className="admin-error">{errors.postal_code}</p>
-            )}
-
-          </div>
+          {mode !== "user-update" && (
+            <div className="mb-6">
+              <label className="admin-label">
+                Postal code *
+              </label>
+              <input
+                className="admin-input"
+                value={data.postal_code || ""}
+                onChange={(e) => setField("postal_code", e.target.value)}
+              />
+  
+              {errors.postal_code && (
+                <p className="admin-error">{errors.postal_code}</p>
+              )}
+  
+            </div>
+          )}
         </>
       )}
 
