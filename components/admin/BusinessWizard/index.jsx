@@ -208,6 +208,7 @@ export default function BusinessWizard({
           setData={setData}
           onNext={next}
           onBack={back}
+          mode={mode}
         />
       )}
 
