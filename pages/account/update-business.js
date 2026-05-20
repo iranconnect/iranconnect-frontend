@@ -10,13 +10,70 @@ export default function UpdateBusinessRequest() {
 const [businesses, setBusinesses] = useState([]);
 const [selectedBusiness, setSelectedBusiness] = useState("");
 
+const WEEK_DAYS = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+];
+
 const [form, setForm] = useState({
-name: "",
-short_description: "",
-full_description: "",
+  name: "",
+  category_id: "",
+  subcategory_ids: [],
+
+  legal_name: "",
+  business_type: "",
+  year_established: "",
+
+  short_description: "",
+  full_description: "",
+
+  services: [],
+  tags: [],
+
+  service_mode: "",
+  availability_type: "",
+  availability_note: "",
+  availability_hours: null,
+
+  location_map_url: "",
+  base_location_map_url: "",
+  service_radius_km: "",
+
+  address: "",
+
+  phone: "",
+  email: "",
+  website: "",
+
+  show_phone: false,
+  show_email: false,
+
+  instagram_url: "",
+  facebook_url: "",
+  linkedin_url: "",
+  twitter_url: "",
+  telegram_url: "",
+  whatsapp_number: "",
+
+  allow_reviews: true,
 });
 
 const [theme, setTheme] = useState("light");
+
+const [categories, setCategories] = useState([]);
+const [subcategories, setSubcategories] = useState([]);
+const [services, setServices] = useState([]);
+const [tags, setTags] = useState([]);
+
+const [errors, setErrors] = useState({});
+
+const [countryCode, setCountryCode] = useState("+33");
+const [whatsappCountryCode, setWhatsappCountryCode] = useState("+33");  
 
 const [loading, setLoading] = useState(false);
 const [msg, setMsg] = useState("");
@@ -63,22 +120,47 @@ return () => obs.disconnect();
 /* ============================================================
 LOAD OWNED BUSINESSES
 ============================================================ */
+useEffect(() => {
+  apiClient.get("/admin/categories/all")
+    .then(res => setCategories(res.data?.data || []))
+    .catch(() => setCategories([]));
+}, []);
 
 useEffect(() => {
 
+  if (!form.category_id) {
+    setSubcategories([]);
+    return;
+  }
 
-apiClient
-  .get("/requests/owned-businesses")
-  .then((res) => {
-    setBusinesses(res.data || []);
+  apiClient.get("/admin/subcategories", {
+    params: { category_id: form.category_id }
   })
-  .catch(() => {
-    setBusinesses([]);
-  });
+    .then(res => setSubcategories(res.data?.data || []))
+    .catch(() => setSubcategories([]));
 
+}, [form.category_id]);
 
+useEffect(() => {
+
+  if (!form.subcategory_ids.length) {
+    setServices([]);
+    return;
+  }
+
+  apiClient.get("/admin/services", {
+    params: { subcategory_ids: form.subcategory_ids }
+  })
+    .then(res => setServices(res.data?.data || []))
+    .catch(() => setServices([]));
+
+}, [form.subcategory_ids]);
+
+useEffect(() => {
+  apiClient.get("/admin/tags/for-business")
+    .then(res => setTags(res.data?.data || []))
+    .catch(() => setTags([]));
 }, []);
-
 /* ============================================================
 LOAD BUSINESS PREFILL
 ============================================================ */
