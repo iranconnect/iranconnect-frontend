@@ -34,7 +34,6 @@ name: "",
 category_id: "",
 subcategory_ids: [],
 
-```
 legal_name: "",
 business_type: "",
 year_established: "",
@@ -71,9 +70,8 @@ telegram_url: "",
 whatsapp_number: "",
 
 allow_reviews: true,
-```
-
 });
+
 
 const [categories, setCategories] = useState([]);
 const [subcategories, setSubcategories] = useState([]);
@@ -280,17 +278,17 @@ HELPERS
 
 const setField = (key, value) => {
 setForm(prev => ({
-...prev,
+prev,
 [key]: value
 }));
 };
 
 const toggleArray = (key, id) => {
 setForm(prev => ({
-...prev,
+prev,
 [key]: prev[key].includes(id)
 ? prev[key].filter(x => x !== id)
-: [...prev[key], id]
+: [prev[key], id]
 }));
 };
 
@@ -310,7 +308,7 @@ if (name === "email" && value && !emailRegex.test(value)) {
 }
 
 setErrors((prev) => ({
-  ...prev,
+  prev,
   [name]: error
 }));
 ```
@@ -576,7 +574,7 @@ return ( <AccountLayout>
                   type="file"
                   multiple
                   onChange={(e) =>
-                    setGalleryFiles([...e.target.files])
+                    setGalleryFiles([e.target.files])
                   }
                 />
 
@@ -609,7 +607,7 @@ return ( <AccountLayout>
                 style={{ color: "#0b2149" }}
               >
                 {loading
-                  ? "Submitting..."
+                  ? "Submitting"
                   : "Submit Update Request"}
               </button>
 
