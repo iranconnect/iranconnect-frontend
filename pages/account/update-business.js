@@ -120,6 +120,20 @@ return () => obs.disconnect();
 /* ============================================================
 LOAD OWNED BUSINESSES
 ============================================================ */
+
+useEffect(() => {
+
+  apiClient
+    .get("/requests/owned-businesses")
+    .then((res) => {
+      setBusinesses(res.data || []);
+    })
+    .catch(() => {
+      setBusinesses([]);
+    });
+
+}, []);  
+  
 useEffect(() => {
   apiClient.get("/admin/categories/all")
     .then(res => setCategories(res.data?.data || []))
