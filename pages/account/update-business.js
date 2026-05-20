@@ -34,30 +34,31 @@ THEME
 
 useEffect(() => {
 
-```
 const current =
-  document.documentElement.getAttribute("data-theme") || "light";
+document.documentElement.getAttribute("data-theme") || "light";
 
 setTheme(current);
 
 const obs = new MutationObserver(() => {
 
-  const newTheme =
-    document.documentElement.getAttribute("data-theme") || "light";
 
-  setTheme(newTheme);
+const newTheme =
+  document.documentElement.getAttribute("data-theme") || "light";
+
+setTheme(newTheme);
+
 
 });
 
 obs.observe(document.documentElement, {
-  attributes: true,
-  attributeFilter: ["data-theme"],
+attributes: true,
+attributeFilter: ["data-theme"],
 });
 
 return () => obs.disconnect();
-```
 
 }, []);
+
 
 /* ============================================================
 LOAD OWNED BUSINESSES
@@ -65,7 +66,7 @@ LOAD OWNED BUSINESSES
 
 useEffect(() => {
 
-```
+
 apiClient
   .get("/requests/owned-businesses")
   .then((res) => {
@@ -74,7 +75,7 @@ apiClient
   .catch(() => {
     setBusinesses([]);
   });
-```
+
 
 }, []);
 
@@ -84,34 +85,73 @@ LOAD BUSINESS PREFILL
 
 useEffect(() => {
 
-```
 if (!selectedBusiness) return;
 
 async function loadBusiness() {
 
-  try {
 
-    const res = await apiClient.get(
-      `/requests/business-prefill/${selectedBusiness}`
-    );
+try {
 
-    const data = res.data;
+  const res = await apiClient.get(
+    `/requests/business-prefill/${selectedBusiness}`
+  );
 
-    setForm({
-      name: data.name || "",
-      short_description: data.short_description || "",
-      full_description: data.full_description || "",
-    });
+  const data = res.data;
 
-  } catch (err) {
-    console.error(err);
-  }
+  setForm({
+    name: data.name || "",
+    category_id: data.category_id || "",
+    subcategory_ids: data.subcategory_ids || [],
+
+    legal_name: data.legal_name || "",
+    business_type: data.business_type || "",
+    year_established: data.year_established || "",
+
+    short_description: data.short_description || "",
+    full_description: data.full_description || "",
+
+    services: data.services || [],
+    tags: data.tags || [],
+
+    service_mode: data.service_mode || "",
+    availability_type: data.availability_type || "",
+    availability_note: data.availability_note || "",
+    availability_hours: data.availability_hours || null,
+
+    location_map_url: data.location_map_url || "",
+    base_location_map_url: data.base_location_map_url || "",
+    service_radius_km: data.service_radius_km || "",
+
+    address: data.address || "",
+
+    phone: data.phone || "",
+    email: data.email || "",
+    website: data.website || "",
+
+    show_phone: !!data.show_phone,
+    show_email: !!data.show_email,
+
+    instagram_url: data.instagram_url || "",
+    facebook_url: data.facebook_url || "",
+    linkedin_url: data.linkedin_url || "",
+    twitter_url: data.twitter_url || "",
+    telegram_url: data.telegram_url || "",
+    whatsapp_number: data.whatsapp_number || "",
+
+    allow_reviews: !!data.allow_reviews,
+  });
+
+} catch (err) {
+  console.error(err);
+}
+
+
 }
 
 loadBusiness();
-```
 
 }, [selectedBusiness]);
+
 
 /* ============================================================
 HELPERS
@@ -119,14 +159,14 @@ HELPERS
 
 const handleChange = (e) => {
 
-```
+
 const { name, value } = e.target;
 
 setForm((prev) => ({
   ...prev,
   [name]: value,
 }));
-```
+
 
 };
 
@@ -136,7 +176,7 @@ SUBMIT
 
 const handleSubmit = async (e) => {
 
-```
+
 e.preventDefault();
 
 setMsg("");
@@ -205,7 +245,7 @@ try {
 }
 
 setLoading(false);
-```
+
 
 };
 
@@ -223,12 +263,12 @@ theme === "dark"
 ? "#0b2149"
 : "#ffffff",
 
-```
+
 boxShadow:
   theme === "dark"
     ? "10px 10px 25px rgba(0,0,0,0.4), -10px -10px 25px rgba(255,255,255,0.05)"
     : "6px 6px 15px rgba(0,0,0,0.1), -6px -6px 15px rgba(255,255,255,0.4)",
-```
+
 
 };
 
@@ -246,7 +286,7 @@ UI
 
 return ( <AccountLayout>
 
-```
+
   <main className="flex-1 px-4 py-6 md:py-8">
 
     <div className="mx-auto w-full max-w-5xl">
@@ -459,7 +499,7 @@ return ( <AccountLayout>
   </main>
 
 </AccountLayout>
-```
+
 
 );
 }
