@@ -248,6 +248,56 @@ export default function StepLocationContact({
      - keeps UX stable, improves engineering safety
   ───────────────────────────── */
   function validateStep() {
+
+    // =========================
+    // USER UPDATE MODE
+    // =========================
+    if (mode === "user-update") {
+  
+      let ok = true;
+  
+      // فقط validation syntax
+      // بدون required enforcement
+  
+      if (
+        data.location_map_url &&
+        !validateLocationMapUrl(
+          data.location_map_url,
+          false
+        )
+      ) {
+        ok = false;
+      }
+  
+      if (
+        data.base_location_map_url &&
+        !validateBaseLocationMapUrl(
+          data.base_location_map_url,
+          false
+        )
+      ) {
+        ok = false;
+      }
+  
+      if (
+        data.email &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+          data.email
+        )
+      ) {
+        ok = false;
+      }
+  
+      if (
+        phoneNational &&
+        errors.phone
+      ) {
+        ok = false;
+      }
+  
+      return ok;
+    }
+    
     // reset only step-critical errors if needed
     let ok = true;
 
