@@ -190,7 +190,7 @@ export default function BusinessWizard({
   return (
     <>
       {step === 0 && (
-        <StepBasicInfo data={data} setData={setData} onNext={next} />
+        <StepBasicInfo data={data} setData={setData} onNext={next} mode={mode} />
       )}
 
       {step === 1 && (
@@ -199,6 +199,7 @@ export default function BusinessWizard({
           setData={setData}
           onNext={next}
           onBack={back}
+          mode={mode}
         />
       )}
 
@@ -228,6 +229,7 @@ export default function BusinessWizard({
           onBack={back}
           onSubmit={submit}
           loading={loading}
+          mode={mode}
         />
       )}
 
