@@ -703,12 +703,20 @@ export default function StepMediaReview({
           </div>
         </div>
       )}
-
-      
-      
       
       <div>
 
+        <p
+          className="admin-hint"
+          style={{
+            marginBottom: 10,
+            fontWeight: 600,
+            opacity: .9,
+          }}
+        >
+          Upload new logo
+        </p>
+        
         <div
           style={{
             minHeight: 24,
@@ -893,7 +901,7 @@ export default function StepMediaReview({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "320px 320px 320px",
+          "220px 220px 220px",
         gap: 28,
         alignItems: "start",
         marginBottom: 12,
@@ -918,7 +926,7 @@ export default function StepMediaReview({
           <div
             style={{
               position: "relative",
-              width: 260,
+              width: 160,
               height: 160,
             }}
           >
@@ -1034,7 +1042,7 @@ export default function StepMediaReview({
         <label
           style={{
             width: 220,
-            height: 135,
+            height: 140,
             border: "2px dashed rgba(255,255,255,.15)",
             borderRadius: 14,
             display: "flex",
@@ -1084,7 +1092,7 @@ export default function StepMediaReview({
           <div
             style={{
               position: "relative",
-              width: 260,
+              width: 160,
               height: 160,
             }}
           >
@@ -1278,7 +1286,21 @@ export default function StepMediaReview({
     )}         
 
     <p className="admin-hint mb-3">
-      Upload gallery images
+      Upload gallery images (
+      {MAX_GALLERY_IMAGES -
+        (
+          (
+            Array.isArray(data.gallery)
+              ? data.gallery.length
+              : 0
+          ) +
+          (
+            Array.isArray(data.gallery_files)
+              ? data.gallery_files.length
+              : 0
+          )
+        )}{" "}
+      slots remaining)
     </p>
     
     {(
