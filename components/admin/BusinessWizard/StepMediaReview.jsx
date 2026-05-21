@@ -617,8 +617,8 @@ export default function StepMediaReview({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "repeat(auto-fit,minmax(180px,1fr))",
-        gap: 20,
+          "220px 220px 220px",
+        gap: 28,
         alignItems: "start",
         marginBottom: 12,
       }}
@@ -707,58 +707,78 @@ export default function StepMediaReview({
       
       
       
-      {isRemoved(
-        "logo",
-        { url: data.logo_url }
-      ) && !data.logo_file && (
-        <p
-          className="admin-error mt-2"
-          style={{ color: "#ef4444" }}
-        >
-          Please upload a new logo.
-        </p>
-      )}
-      <label
-        style={{
-          width: 220,
-          height: 140,
-          border: "2px dashed rgba(255,255,255,.15)",
-          borderRadius: 14,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          background: "rgba(255,255,255,.025)",
-          transition: "all .18s ease",
-          boxShadow: "inset 0 0 0 1px rgba(255,255,255,.03)",
-        }}
-      >
-        <span style={{ fontSize: 28 }}>
-          +
-        </span>
-      
-        <span
+      <div>
+
+        <div
           style={{
-            fontSize: 13,
-            opacity: 0.85,
+            minHeight: 24,
+            marginBottom: 10,
           }}
         >
-          Upload image
-        </span>
+          {isRemoved(
+            "logo",
+            { url: data.logo_url }
+          ) &&
+            !data.logo_file && (
+              <p
+                className="admin-error"
+                style={{
+                  color: "#ef4444",
+                  fontSize: 13,
+                  margin: 0,
+                }}
+              >
+                Please upload a new logo.
+              </p>
+            )}
+        </div>
       
-        <input
-          hidden
-          type="file"
-          accept={ACCEPT_ATTR}
-          onChange={(e) =>
-            handleSingleMediaUpload(
-              e.target.files?.[0],
-              "logo"
-            )
-          }
-        />
-      </label>
+        <label
+          style={{
+            width: 220,
+            height: 140,
+            border:
+              "2px dashed rgba(255,255,255,.15)",
+            borderRadius: 14,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            background:
+              "rgba(255,255,255,.025)",
+            transition: "all .18s ease",
+            boxShadow:
+              "inset 0 0 0 1px rgba(255,255,255,.03)",
+          }}
+        >
+          <span style={{ fontSize: 28 }}>
+            +
+          </span>
+      
+          <span
+            style={{
+              fontSize: 13,
+              opacity: 0.85,
+            }}
+          >
+            Upload image
+          </span>
+      
+          <input
+            hidden
+            type="file"
+            accept={ACCEPT_ATTR}
+            onChange={(e) =>
+              handleSingleMediaUpload(
+                e.target.files?.[0],
+                "logo"
+              )
+            }
+          />
+        </label>
+      
+      </div>
       {logoPreview && (
         <div>
           <p
@@ -873,8 +893,8 @@ export default function StepMediaReview({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "repeat(auto-fit,minmax(260px,1fr))",
-        gap: 20,
+          "320px 320px 320px",
+        gap: 28,
         alignItems: "start",
         marginBottom: 12,
       }}
@@ -984,7 +1004,33 @@ export default function StepMediaReview({
         >
           Upload new cover
         </p>
-  
+
+        <div
+          style={{
+            minHeight: 24,
+            marginBottom: 10,
+          }}
+        >
+          {isRemoved(
+            "cover",
+            {
+              url: data.cover_image_url,
+            }
+          ) &&
+            !data.cover_file && (
+              <p
+                className="admin-error"
+                style={{
+                  color: "#ef4444",
+                  fontSize: 13,
+                  margin: 0,
+                }}
+              >
+                Please upload a new cover image.
+              </p>
+            )}
+        </div>
+        
         <label
           style={{
             width: 220,
@@ -1124,22 +1170,7 @@ export default function StepMediaReview({
         </div>
       )}
 
-      {isRemoved(
-        "cover",
-        {
-          url: data.cover_image_url,
-        }
-      ) && !data.cover_file && (
-        <div style={{ gridColumn: "1 / -1" }}>
-          <p
-            className="admin-error mt-2"
-            style={{ color: "#ef4444" }}
-          >
-            Please upload a new cover image.
-          </p>
-        </div>
-      )}
-  
+        
     </div>
   </div>
   </div>
@@ -1293,6 +1324,7 @@ export default function StepMediaReview({
       
         <input
           hidden
+          multiple
           type="file"
           accept={ACCEPT_ATTR}
           onChange={(e) =>
