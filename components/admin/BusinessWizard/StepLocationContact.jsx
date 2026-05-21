@@ -376,6 +376,7 @@ export default function StepLocationContact({
 
     if (data.website) validateUrl("website", data.website);
     if (data.instagram_url) validateUrl("instagram_url", data.instagram_url);
+    if (data.facebook_url) validateUrl("facebook_url", data.facebook_url);
     if (data.linkedin_url) validateUrl("linkedin_url", data.linkedin_url);
     if (data.twitter_url) validateUrl("twitter_url", data.twitter_url);
     if (data.telegram_url) validateUrl("telegram_url", data.telegram_url);
