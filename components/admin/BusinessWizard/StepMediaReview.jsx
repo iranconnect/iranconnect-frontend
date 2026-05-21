@@ -527,13 +527,43 @@ export default function StepMediaReview({
     // =========================
 
     if (mode === "user-update") {
-
+    
+      const removingCurrentLogo =
+        isRemoved("logo", {
+          url: data.logo_url,
+        });
+    
+      const hasReplacementLogo =
+        !!data.logo_file;
+    
+      const removingCurrentCover =
+        isRemoved("cover", {
+          url: data.cover_image_url,
+        });
+    
+      const hasReplacementCover =
+        !!data.cover_file;
+    
+      if (
+        removingCurrentLogo &&
+        !hasReplacementLogo
+      ) {
+        return false;
+      }
+    
+      if (
+        removingCurrentCover &&
+        !hasReplacementCover
+      ) {
+        return false;
+      }
+    
       return (
         normalized.owner_confirmed ===
           true &&
         busy === false
       );
-
+    
     }
 
     // =========================
@@ -576,64 +606,20 @@ export default function StepMediaReview({
     <label className="admin-label">Business logo *</label>
 
     <div className="flex items-start gap-4 mb-3">
-      <div
-        style={{
-          width: 72,
-          minHeight: 72,
-          borderRadius: 12,
-          border: "1px solid var(--border)",
-          background: "var(--bg-soft)",
-          display: "flex",
-          alignItems: "center",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
-        {logoPreview ? (
-          <>
-
-            <img
-              src={logoPreview}
-              alt="Logo preview"
-              style={{
-                width: "100%",
-                height: 72,
-                objectFit: "cover",
-              }}
-            />
-            <p
-              style={{
-                fontSize: 11,
-                color: "#16a34a",
-                marginTop: 4,
-                paddingBottom: 4,
-                textAlign: "center",
-              }}
-            >
-              New logo selected
-            </p>
-          </>   
-        ) : (
-          <span className="admin-hint text-xs" style={{ padding: 12, textAlign: "center", width: "100%", }}>No logo</span>
-        )}
-      </div>
-
       {mode === "user-update" &&
         data.logo_url && (
-     
         <div>
-     
           <p className="admin-hint mb-2">
             Current logo
           </p>
-     
+      
           <div
             style={{
               position: "relative",
-              width: 110,
+              width: 140,
+              height: 140,
             }}
           >
-     
             <img
               src={data.logo_url}
               alt=""
@@ -641,17 +627,19 @@ export default function StepMediaReview({
                 setZoomImage(data.logo_url)
               }
               style={{
-                width: 110,
-                height: 110,
+                width: "100%",
+                height: "100%",
                 objectFit: "cover",
                 borderRadius: 12,
                 cursor: "zoom-in",
+      
                 border: isRemoved(
                   "logo",
                   { url: data.logo_url }
                 )
                   ? "4px solid #ef4444"
                   : "2px solid var(--border)",
+      
                 opacity: isRemoved(
                   "logo",
                   { url: data.logo_url }
@@ -665,8 +653,12 @@ export default function StepMediaReview({
               type="button"
               className="admin-btn admin-btn-secondary"
               style={{
-                marginTop: 8,
-                width: "100%",
+                position: "absolute",
+                bottom: 6,
+                left: 6,
+                right: 6,
+                fontSize: 11,
+                padding: "4px 6px",
               }}
               onClick={() =>
                 toggleRemovedMedia(
@@ -679,16 +671,112 @@ export default function StepMediaReview({
                 "logo",
                 { url: data.logo_url }
               )
-                ? "Undo remove"
-                : "Select for removal"}
+                ? "Undo"
+                : "Remove"}
             </button>
-     
           </div>
-     
         </div>
-      )}           
+      )}
 
+      
+      
+      {logoPreview && (
+        <div>
+          <p className="admin-hint mb-2">
+            New logo
+          </p>
+      
+          <div
+            style={{
+              position: "relative",
+              width: 140,
+              height: 140,
+            }}
+          >
+            <img
+              src={logoPreview}
+              alt=""
+              onClick={() =>
+                setZoomImage(logoPreview)
+              }
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                borderRadius: 12,
+                cursor: "zoom-in",
+                border:
+                  "2px solid var(--border)",
+              }}
+            />
+      
+            <button
+              type="button"
+              className="admin-btn admin-btn-secondary"
+              style={{
+                position: "absolute",
+                top: 6,
+                right: 6,
+                padding: "4px 6px",
+                fontSize: 11,
+              }}
+              onClick={() => {
+                revokeIfBlob(logoPreview);
+      
+                setLogoPreview(null);
+      
+                setField("logo_file", null);
+      
+                bumpInputKey("logo");
+              }}
+            >
+              Remove
+            </button>
+      
+            <label
+              style={{
+                position: "absolute",
+                bottom: 6,
+                right: 6,
+                fontSize: 11,
+                padding: "4px 6px",
+                borderRadius: 6,
+                background: "rgba(0,0,0,.6)",
+                color: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              Change
+      
+              <input
+                className="admin-input"
+                type="file"
+                accept={ACCEPT_ATTR}
+                hidden
+                onChange={(e) =>
+                  handleSingleMediaUpload(
+                    e.target.files?.[0],
+                    "logo"
+                  )
+                }
+              />
+            </label>
+          </div>
+        </div>
+      )}
+      {isRemoved(
+        "logo",
+        { url: data.logo_url }
+      ) && !data.logo_file && (
+        <p
+          className="admin-error mt-2"
+          style={{ color: "#ef4444" }}
+        >
+          Please upload a new logo.
+        </p>
+      )}
       <input
+        className="admin-input"
         key={`logo-${inputKey.logo}`}
         type="file"
         accept={ACCEPT_ATTR}
@@ -704,60 +792,27 @@ export default function StepMediaReview({
 
   {/* COVER */}
   <div className="mb-8">
-    <label className="admin-label">Cover image</label>
-
-    <div className="flex items-start gap-4 mb-3">
-      <div
-        style={{
-          width: 200,
-          minHeight: 96,
-          borderRadius: 12,
-          border: "1px solid var(--border)",
-          background: "var(--bg-soft)",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
-        {coverPreview ? (
-          <>
-            <img
-              src={coverPreview}
-              alt="Cover preview"
-              style={{
-                width: "100%",
-                height: 96,
-                objectFit: "cover",
-              }}
-            />
-            <p
-              style={{
-                fontSize: 11,
-                color: "#16a34a",
-                marginTop: 4,
-                paddingBottom: 4,
-                textAlign: "center",
-              }}
-            >
-              New cover selected
-            </p>
-          </>
-        ) : (
-          <span className="admin-hint text-xs" style={{ padding: 12, textAlign: "center", width: "100%", }}> No cover</span>
-        )}
-      </div>
-
+    <label className="admin-label">
+      Cover image
+    </label>
+  
+    <div className="flex items-start gap-4 mb-3 flex-wrap">
+  
+      {/* CURRENT COVER */}
       {mode === "user-update" &&
         data.cover_image_url && (
-      
         <div>
-     
           <p className="admin-hint mb-2">
-            Current cover image
+            Current cover
           </p>
-     
-          <div style={{ position: "relative" }}>
-     
+  
+          <div
+            style={{
+              position: "relative",
+              width: 220,
+              height: 120,
+            }}
+          >
             <img
               src={data.cover_image_url}
               alt=""
@@ -767,11 +822,12 @@ export default function StepMediaReview({
                 )
               }
               style={{
-                width: 260,
-                height: 140,
+                width: "100%",
+                height: "100%",
                 objectFit: "cover",
                 borderRadius: 12,
                 cursor: "zoom-in",
+  
                 border: isRemoved(
                   "cover",
                   {
@@ -780,6 +836,7 @@ export default function StepMediaReview({
                 )
                   ? "4px solid #ef4444"
                   : "2px solid var(--border)",
+  
                 opacity: isRemoved(
                   "cover",
                   {
@@ -790,10 +847,18 @@ export default function StepMediaReview({
                   : 1,
               }}
             />
-      
+  
             <button
               type="button"
-              className="admin-btn admin-btn-secondary mt-2"
+              className="admin-btn admin-btn-secondary"
+              style={{
+                position: "absolute",
+                bottom: 6,
+                left: 6,
+                right: 6,
+                fontSize: 11,
+                padding: "4px 6px",
+              }}
               onClick={() =>
                 toggleRemovedMedia(
                   "cover",
@@ -809,26 +874,147 @@ export default function StepMediaReview({
                   url: data.cover_image_url,
                 }
               )
-                ? "Undo remove"
-                : "Select for removal"}
+                ? "Undo"
+                : "Remove"}
             </button>
-      
           </div>
-     
         </div>
-      )}           
+      )}
+  
+      {/* FILE INPUT */}
+      <div>
+        <p className="admin-hint mb-2">
+          Upload new cover
+        </p>
+  
+        <input
+          className="admin-input"
+          key={`cover-${inputKey.cover}`}
+          type="file"
+          accept={ACCEPT_ATTR}
+          disabled={busy}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+  
+            handleSingleMediaUpload(
+              file,
+              "cover"
+            );
+          }}
+        />
+      </div>
+  
+      {/* NEW COVER */}
+      {coverPreview && (
+        <div>
+          <p className="admin-hint mb-2">
+            New cover
+          </p>
+  
+          <div
+            style={{
+              position: "relative",
+              width: 220,
+              height: 120,
+            }}
+          >
+            <img
+              src={coverPreview}
+              alt=""
+              onClick={() =>
+                setZoomImage(
+                  coverPreview
+                )
+              }
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                borderRadius: 12,
+                cursor: "zoom-in",
+                border:
+                  "2px solid var(--border)",
+              }}
+            />
+  
+            <button
+              type="button"
+              className="admin-btn admin-btn-secondary"
+              style={{
+                position: "absolute",
+                top: 6,
+                right: 6,
+                padding: "4px 6px",
+                fontSize: 11,
+              }}
+              onClick={() => {
+  
+                revokeIfBlob(
+                  coverPreview
+                );
+  
+                setCoverPreview(null);
+  
+                setField(
+                  "cover_file",
+                  null
+                );
+  
+                bumpInputKey("cover");
+  
+              }}
+            >
+              Remove
+            </button>
+  
+            <label
+              style={{
+                position: "absolute",
+                bottom: 6,
+                right: 6,
+                fontSize: 11,
+                padding: "4px 6px",
+                borderRadius: 6,
+                background:
+                  "rgba(0,0,0,.6)",
+                color: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              Change
+  
+              <input
+                className="admin-input"
+                type="file"
+                accept={ACCEPT_ATTR}
+                hidden
+                onChange={(e) =>
+                  handleSingleMediaUpload(
+                    e.target.files?.[0],
+                    "cover"
+                  )
+                }
+              />
+            </label>
+          </div>
+        </div>
+      )}
 
-      <input
-        key={`cover-${inputKey.cover}`}
-        type="file"
-        accept={ACCEPT_ATTR}
-        disabled={busy}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          handleSingleMediaUpload(file, "cover");
-        }}
-      />
+      {isRemoved(
+        "cover",
+        {
+          url: data.cover_image_url,
+        }
+      ) && !data.cover_file && (
+        <p
+          className="admin-error mt-2"
+          style={{ color: "#ef4444" }}
+        >
+          Please upload a new cover image.
+        </p>
+      )}
+  
     </div>
   </div>
 
@@ -923,6 +1109,33 @@ export default function StepMediaReview({
       </div>
     )}         
 
+    
+    {(
+      (
+        Array.isArray(data.gallery)
+          ? data.gallery.length
+          : 0
+      ) +
+      (
+        Array.isArray(data.gallery_files)
+          ? data.gallery_files.length
+          : 0
+      )
+    ) < MAX_GALLERY_IMAGES && (
+      <input
+        className="mt-2" 
+        key={`gallery-${inputKey.gallery}`}
+        type="file"
+        accept={ACCEPT_ATTR}
+        multiple
+        disabled={busy}
+        onChange={(e) => {
+          const files = Array.from(e.target.files || []);
+          e.target.value = "";
+          handleGalleryUpload(files);
+        }}
+      />
+    )}
     {galleryPreview.length > 0 && (
       <>
         <p className="admin-hint mb-3">
@@ -938,12 +1151,13 @@ export default function StepMediaReview({
                 src={item.url}
                 alt=""
                 onClick={() => setZoomImage(item.url)} 
-                className="rounded border"
                 style={{
                   width: "100%",
                   height: 120,
                   objectFit: "cover",
                   cursor: "zoom-in", 
+                  border: "2px solid var(--border)",
+                  borderRadius: 10,
                 }}
               />
            
@@ -995,32 +1209,6 @@ export default function StepMediaReview({
       </>   
     )}
 
-    {(
-      (
-        Array.isArray(data.gallery)
-          ? data.gallery.length
-          : 0
-      ) +
-      (
-        Array.isArray(data.gallery_files)
-          ? data.gallery_files.length
-          : 0
-      )
-    ) < MAX_GALLERY_IMAGES && (
-      <input
-        className="mt-2" 
-        key={`gallery-${inputKey.gallery}`}
-        type="file"
-        accept={ACCEPT_ATTR}
-        multiple
-        disabled={busy}
-        onChange={(e) => {
-          const files = Array.from(e.target.files || []);
-          e.target.value = "";
-          handleGalleryUpload(files);
-        }}
-      />
-    )}
   </div>
 
   {/* VISIBILITY */}
