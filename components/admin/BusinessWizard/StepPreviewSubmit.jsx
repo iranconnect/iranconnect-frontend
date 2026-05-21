@@ -5,6 +5,7 @@ export default function StepPreviewSubmit({
   onBack,
   onSubmit,
   loading,
+  mode,
 }) {
   return (
     <div className="admin-section">
@@ -162,7 +163,13 @@ export default function StepPreviewSubmit({
           onClick={onSubmit}
           disabled={loading}
         >
-          {loading ? "Creating business…" : "Submit & Create Business"}
+          {loading
+            ? mode === "user-update"
+              ? "Submitting update request…"
+              : "Creating business…"
+            : mode === "user-update"
+              ? "Submit Update Request"
+              : "Submit & Create Business"}
         </button>
       </div>
     </div>
