@@ -350,12 +350,33 @@ export default function StepMediaReview({
      🧠 STEP VALIDATION
   ====================================================== */
   const canProceed = useMemo(() => {
+
+    // =========================
+    // UPDATE BUSINESS MODE
+    // =========================
+    if (mode === "user-update") {
+
+      return (
+        normalized.owner_confirmed === true &&
+        busy === false
+      );
+    }
+
+    // =========================
+    // CREATE BUSINESS MODE
+    // =========================
     return (
       !!data.logo_file &&
       normalized.owner_confirmed === true &&
       busy === false
     );
-  }, [data.logo_file, normalized.owner_confirmed, busy]);
+
+  }, [
+    mode,
+    data.logo_file,
+    normalized.owner_confirmed,
+    busy,
+  ]);
   /* ======================================================
      🧱 RENDER — UI ONLY
   ====================================================== */
