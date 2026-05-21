@@ -10,7 +10,7 @@ const BUSINESS_TYPES = [
   { value: "online", label: "Online Business" },
 ];
 
-export default function StepBasicInfo({ data, setData, onNext }) {
+export default function StepBasicInfo({ data, setData, onNext, mode,}) {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
@@ -71,15 +71,30 @@ export default function StepBasicInfo({ data, setData, onNext }) {
     });
   }
 
-    const canProceed =
-      data?.name?.trim() &&
-      categoryId &&
-      selectedSubcategories.length > 0 &&
-      data?.short_description &&
-      data.short_description.trim().length >= 20 &&
-      data.short_description.trim().length <= 160 &&
-      data?.full_description &&
-      data.full_description.trim().length >= 50;
+    const canProceed = (() => {
+    
+      // =========================
+      // USER UPDATE MODE
+      // =========================
+      if (mode === "user-update") {
+        return true;
+      }
+    
+      // =========================
+      // ADMIN CREATE MODE
+      // =========================
+      return (
+        data?.name?.trim() &&
+        categoryId &&
+        selectedSubcategories.length > 0 &&
+        data?.short_description &&
+        data.short_description.trim().length >= 20 &&
+        data.short_description.trim().length <= 160 &&
+        data?.full_description &&
+        data.full_description.trim().length >= 50
+      );
+    
+    })();
 
   /* ─────────────────────────────
      Render
