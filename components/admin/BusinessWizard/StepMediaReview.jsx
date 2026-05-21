@@ -751,7 +751,12 @@ export default function StepMediaReview({
           hidden
           type="file"
           accept={ACCEPT_ATTR}
-          onChange={...}
+          onChange={(e) =>
+            handleSingleMediaUpload(
+              e.target.files?.[0],
+              "logo"
+            )
+          }
         />
       </label>
       {logoPreview && (
@@ -1013,7 +1018,12 @@ export default function StepMediaReview({
             hidden
             type="file"
             accept={ACCEPT_ATTR}
-            onChange={...}
+            onChange={(e) =>
+              handleSingleMediaUpload(
+                e.target.files?.[0],
+                "cover"
+              )
+            }
           />
         </label>
       </div>
@@ -1285,7 +1295,13 @@ export default function StepMediaReview({
           hidden
           type="file"
           accept={ACCEPT_ATTR}
-          onChange={...}
+          onChange={(e) =>
+            handleGalleryUpload(
+              Array.from(
+                e.target.files || []
+              )
+            )
+          }
         />
       </label>
     )}
