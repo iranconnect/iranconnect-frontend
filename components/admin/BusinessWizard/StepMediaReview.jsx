@@ -600,24 +600,48 @@ export default function StepMediaReview({
           Step 4 of 4 — Upload media, configure visibility settings, and confirm business ownership.
         </p>
       </div>
-   
+  <div
+    style={{
+      border: "1px solid rgba(255,255,255,.08)",
+      borderRadius: 18,
+      padding: 20,
+      background: "rgba(255,255,255,.02)",
+      marginBottom: 24,
+    }}
+  > 
   {/* LOGO */}
   <div className="mb-8">
     <label className="admin-label">Business logo *</label>
 
-    <div className="flex items-start gap-4 mb-3">
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns:
+          "repeat(auto-fit,minmax(180px,1fr))",
+        gap: 20,
+        alignItems: "start",
+        marginBottom: 12,
+      }}
+    >
       {mode === "user-update" &&
         data.logo_url && (
         <div>
-          <p className="admin-hint mb-2">
+          <p
+            className="admin-hint"
+            style={{
+              marginBottom: 10,
+              fontWeight: 600,
+              opacity: .9,
+            }}
+          >
             Current logo
           </p>
       
           <div
             style={{
               position: "relative",
-              width: 140,
-              height: 140,
+              width: 160,
+              height: 160,
             }}
           >
             <img
@@ -654,11 +678,13 @@ export default function StepMediaReview({
               className="admin-btn admin-btn-secondary"
               style={{
                 position: "absolute",
-                bottom: 6,
-                left: 6,
-                right: 6,
+                top: 8,
+                right: 8,
                 fontSize: 11,
-                padding: "4px 6px",
+                padding: "4px 8px",
+                backdropFilter: "blur(6px)",
+                background: "rgba(0,0,0,.72)",
+                border: "1px solid rgba(255,255,255,.12)",
               }}
               onClick={() =>
                 toggleRemovedMedia(
@@ -680,17 +706,72 @@ export default function StepMediaReview({
 
       
       
+      
+      {isRemoved(
+        "logo",
+        { url: data.logo_url }
+      ) && !data.logo_file && (
+        <p
+          className="admin-error mt-2"
+          style={{ color: "#ef4444" }}
+        >
+          Please upload a new logo.
+        </p>
+      )}
+      <label
+        style={{
+          width: 220,
+          height: 140,
+          border: "2px dashed rgba(255,255,255,.15)",
+          borderRadius: 14,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          background: "rgba(255,255,255,.025)",
+          transition: "all .18s ease",
+          boxShadow: "inset 0 0 0 1px rgba(255,255,255,.03)",
+        }}
+      >
+        <span style={{ fontSize: 28 }}>
+          +
+        </span>
+      
+        <span
+          style={{
+            fontSize: 13,
+            opacity: 0.85,
+          }}
+        >
+          Upload image
+        </span>
+      
+        <input
+          hidden
+          type="file"
+          accept={ACCEPT_ATTR}
+          onChange={...}
+        />
+      </label>
       {logoPreview && (
         <div>
-          <p className="admin-hint mb-2">
+          <p
+            className="admin-hint"
+            style={{
+              marginBottom: 10,
+              fontWeight: 600,
+              opacity: .9,
+            }}
+          >
             New logo
           </p>
       
           <div
             style={{
               position: "relative",
-              width: 140,
-              height: 140,
+              width: 160,
+              height: 160,
             }}
           >
             <img
@@ -764,53 +845,56 @@ export default function StepMediaReview({
           </div>
         </div>
       )}
-      {isRemoved(
-        "logo",
-        { url: data.logo_url }
-      ) && !data.logo_file && (
-        <p
-          className="admin-error mt-2"
-          style={{ color: "#ef4444" }}
-        >
-          Please upload a new logo.
-        </p>
-      )}
-      <input
-        className="admin-input"
-        key={`logo-${inputKey.logo}`}
-        type="file"
-        accept={ACCEPT_ATTR}
-        disabled={busy}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          handleSingleMediaUpload(file, "logo");
-        }}
-      />
     </div>
   </div>
+  </div>
 
+  <div
+    style={{
+      border: "1px solid rgba(255,255,255,.08)",
+      borderRadius: 18,
+      padding: 20,
+      background: "rgba(255,255,255,.02)",
+      marginBottom: 24,
+    }}
+  >    
   {/* COVER */}
   <div className="mb-8">
     <label className="admin-label">
       Cover image
     </label>
   
-    <div className="flex items-start gap-4 mb-3 flex-wrap">
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns:
+          "repeat(auto-fit,minmax(260px,1fr))",
+        gap: 20,
+        alignItems: "start",
+        marginBottom: 12,
+      }}
+    >
   
       {/* CURRENT COVER */}
       {mode === "user-update" &&
         data.cover_image_url && (
         <div>
-          <p className="admin-hint mb-2">
+          <p
+            className="admin-hint"
+            style={{
+              marginBottom: 10,
+              fontWeight: 600,
+              opacity: .9,
+            }}
+          >
             Current cover
           </p>
   
           <div
             style={{
               position: "relative",
-              width: 220,
-              height: 120,
+              width: 260,
+              height: 160,
             }}
           >
             <img
@@ -853,11 +937,13 @@ export default function StepMediaReview({
               className="admin-btn admin-btn-secondary"
               style={{
                 position: "absolute",
-                bottom: 6,
-                left: 6,
-                right: 6,
+                top: 8,
+                right: 8,
                 fontSize: 11,
-                padding: "4px 6px",
+                padding: "4px 8px",
+                backdropFilter: "blur(6px)",
+                background: "rgba(0,0,0,.72)",
+                border: "1px solid rgba(255,255,255,.12)",
               }}
               onClick={() =>
                 toggleRemovedMedia(
@@ -883,26 +969,53 @@ export default function StepMediaReview({
   
       {/* FILE INPUT */}
       <div>
-        <p className="admin-hint mb-2">
+        <p
+          className="admin-hint"
+          style={{
+            marginBottom: 10,
+            fontWeight: 600,
+            opacity: .9,
+          }}
+        >
           Upload new cover
         </p>
   
-        <input
-          className="admin-input"
-          key={`cover-${inputKey.cover}`}
-          type="file"
-          accept={ACCEPT_ATTR}
-          disabled={busy}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            e.target.value = "";
-  
-            handleSingleMediaUpload(
-              file,
-              "cover"
-            );
+        <label
+          style={{
+            width: 220,
+            height: 135,
+            border: "2px dashed rgba(255,255,255,.15)",
+            borderRadius: 14,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            background: "rgba(255,255,255,.025)",
+            transition: "all .18s ease",
+            boxShadow: "inset 0 0 0 1px rgba(255,255,255,.03)",
           }}
-        />
+        >
+          <span style={{ fontSize: 28 }}>
+            +
+          </span>
+        
+          <span
+            style={{
+              fontSize: 13,
+              opacity: 0.85,
+            }}
+          >
+            Upload image
+          </span>
+        
+          <input
+            hidden
+            type="file"
+            accept={ACCEPT_ATTR}
+            onChange={...}
+          />
+        </label>
       </div>
   
       {/* NEW COVER */}
@@ -915,8 +1028,8 @@ export default function StepMediaReview({
           <div
             style={{
               position: "relative",
-              width: 220,
-              height: 120,
+              width: 260,
+              height: 160,
             }}
           >
             <img
@@ -1007,17 +1120,29 @@ export default function StepMediaReview({
           url: data.cover_image_url,
         }
       ) && !data.cover_file && (
-        <p
-          className="admin-error mt-2"
-          style={{ color: "#ef4444" }}
-        >
-          Please upload a new cover image.
-        </p>
+        <div style={{ gridColumn: "1 / -1" }}>
+          <p
+            className="admin-error mt-2"
+            style={{ color: "#ef4444" }}
+          >
+            Please upload a new cover image.
+          </p>
+        </div>
       )}
   
     </div>
   </div>
+  </div>
 
+  <div
+    style={{
+      border: "1px solid rgba(255,255,255,.08)",
+      borderRadius: 18,
+      padding: 20,
+      background: "rgba(255,255,255,.02)",
+      marginBottom: 24,
+    }}
+  >    
   {/* GALLERY */}
   <div className="mb-8">
     <label className="admin-label">
@@ -1053,7 +1178,7 @@ export default function StepMediaReview({
                 }
                 style={{
                   width: "100%",
-                  height: 120,
+                  height: 140,
                   objectFit: "cover",
                   borderRadius: 10,
                   cursor: "zoom-in",
@@ -1079,11 +1204,13 @@ export default function StepMediaReview({
                 className="admin-btn admin-btn-secondary"
                 style={{
                   position: "absolute",
-                  bottom: 6,
-                  left: 6,
-                  right: 6,
+                  top: 8,
+                  right: 8,
                   fontSize: 11,
-                  padding: "4px 6px",
+                  padding: "4px 8px",
+                  backdropFilter: "blur(6px)",
+                  background: "rgba(0,0,0,.72)",
+                  border: "1px solid rgba(255,255,255,.12)",
                 }}
                 onClick={() =>
                   toggleRemovedMedia(
@@ -1109,6 +1236,9 @@ export default function StepMediaReview({
       </div>
     )}         
 
+    <p className="admin-hint mb-3">
+      Upload gallery images
+    </p>
     
     {(
       (
@@ -1122,19 +1252,42 @@ export default function StepMediaReview({
           : 0
       )
     ) < MAX_GALLERY_IMAGES && (
-      <input
-        className="mt-2" 
-        key={`gallery-${inputKey.gallery}`}
-        type="file"
-        accept={ACCEPT_ATTR}
-        multiple
-        disabled={busy}
-        onChange={(e) => {
-          const files = Array.from(e.target.files || []);
-          e.target.value = "";
-          handleGalleryUpload(files);
+      <label
+        style={{
+          width: 220,
+          height: 120,
+          border: "2px dashed rgba(255,255,255,.15)",
+          borderRadius: 14,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          background: "rgba(255,255,255,.025)",
+          transition: "all .18s ease",
+          boxShadow: "inset 0 0 0 1px rgba(255,255,255,.03)",
         }}
-      />
+      >
+        <span style={{ fontSize: 28 }}>
+          +
+        </span>
+      
+        <span
+          style={{
+            fontSize: 13,
+            opacity: 0.85,
+          }}
+        >
+          Upload image
+        </span>
+      
+        <input
+          hidden
+          type="file"
+          accept={ACCEPT_ATTR}
+          onChange={...}
+        />
+      </label>
     )}
     {galleryPreview.length > 0 && (
       <>
@@ -1153,7 +1306,7 @@ export default function StepMediaReview({
                 onClick={() => setZoomImage(item.url)} 
                 style={{
                   width: "100%",
-                  height: 120,
+                  height: 140,
                   objectFit: "cover",
                   cursor: "zoom-in", 
                   border: "2px solid var(--border)",
@@ -1210,6 +1363,17 @@ export default function StepMediaReview({
     )}
 
   </div>
+  </div>  
+
+  <div
+    style={{
+      border: "1px solid rgba(255,255,255,.08)",
+      borderRadius: 18,
+      padding: 20,
+      background: "rgba(255,255,255,.02)",
+      marginBottom: 24,
+    }}
+  >    
 
   {/* VISIBILITY */}
   <div className="mb-8">
@@ -1253,7 +1417,7 @@ export default function StepMediaReview({
       I confirm that I am authorized to manage this business.
     </label>
   </div>
-
+  </div>
   {error && <p className="admin-error mb-3">{error}</p>}
 
   {zoomImage && (
