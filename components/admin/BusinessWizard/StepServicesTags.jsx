@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../../utils/apiClient";
 
-export default function StepServicesTags({ data, setData, onNext, onBack }) {
+export default function StepServicesTags({ data, setData, onNext, onBack, mode, }) {
   const [services, setServices] = useState([]);
   const [tags, setTags] = useState([]);
   const [loadingServices, setLoadingServices] = useState(false);
@@ -69,7 +69,10 @@ export default function StepServicesTags({ data, setData, onNext, onBack }) {
     }));
   }
 
-  const canProceed = selectedServices.length > 0;
+  const canProceed =
+    mode === "user-update"
+      ? true
+      : selectedServices.length > 0;
 
   /* ─────────────────────────────
      Render
