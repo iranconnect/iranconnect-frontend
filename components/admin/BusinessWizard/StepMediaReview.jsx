@@ -54,6 +54,7 @@ export default function StepMediaReview({
   setData,
   onNext,
   onBack,
+  mode,
 }) {
   /* --------------------------------------------------
      🔐 NORMALIZED DATA
@@ -95,6 +96,7 @@ export default function StepMediaReview({
   const [logoPreview, setLogoPreview] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
   const [galleryPreview, setGalleryPreview] = useState([]);
+  const [zoomImage, setZoomImage] = useState(null); 
 
   useEffect(() => {
     if (
@@ -155,6 +157,45 @@ export default function StepMediaReview({
     },
     [safeSetData]
   );
+
+  function toggleRemovedMedia(type, media) {
+
+    if (!media) return;
+
+    safeSetData((prev) => {
+
+      const current =
+        prev.removed_media?.[type] || [];
+
+      const exists = current.some(
+        (x) => x.url === media.url
+      );
+
+      return {
+        ...prev,
+        removed_media: {
+          ...prev.removed_media,
+
+          [type]: exists
+            ? current.filter(
+                (x) => x.url !== media.url
+              )
+            : [...current, media],
+        },
+      };
+
+    });
+  } 
+
+  function isRemoved(type, media) {
+
+    const arr =
+      data.removed_media?.[type] || [];
+
+    return arr.some(
+      (x) => x.url === media.url
+    );
+  } 
 
   function revokeIfBlob(url) {
     try {
@@ -360,6 +401,76 @@ export default function StepMediaReview({
             )}
           </div>
 
+          {mode === "user-update" &&
+            data.logo_url && (
+         
+            <div className="mb-4">
+         
+              <p className="admin-hint mb-2">
+                Current logo
+              </p>
+         
+              <div
+                style={{
+                  position: "relative",
+                  width: 110,
+                }}
+              >
+         
+                <img
+                  src={data.logo_url}
+                  alt=""
+                  onClick={() =>
+                    setZoomImage(data.logo_url)
+                  }
+                  style={{
+                    width: 110,
+                    height: 110,
+                    objectFit: "cover",
+                    borderRadius: 12,
+                    cursor: "zoom-in",
+                    border: isRemoved(
+                      "logo",
+                      { url: data.logo_url }
+                    )
+                      ? "4px solid #ef4444"
+                      : "2px solid var(--border)",
+                    opacity: isRemoved(
+                      "logo",
+                      { url: data.logo_url }
+                    )
+                      ? 0.55
+                      : 1,
+                  }}
+                />
+          
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-secondary"
+                  style={{
+                    marginTop: 8,
+                    width: "100%",
+                  }}
+                  onClick={() =>
+                    toggleRemovedMedia(
+                      "logo",
+                      { url: data.logo_url }
+                    )
+                  }
+                >
+                  {isRemoved(
+                    "logo",
+                    { url: data.logo_url }
+                  )
+                    ? "Undo remove"
+                    : "Select for removal"}
+                </button>
+         
+              </div>
+         
+            </div>
+          )}           
+
           <input
             key={`logo-${inputKey.logo}`}
             type="file"
@@ -402,6 +513,77 @@ export default function StepMediaReview({
             )}
           </div>
 
+          {mode === "user-update" &&
+            data.cover_image_url && (
+          
+            <div className="mb-4">
+         
+              <p className="admin-hint mb-2">
+                Current cover image
+              </p>
+         
+              <div style={{ position: "relative" }}>
+         
+                <img
+                  src={data.cover_image_url}
+                  alt=""
+                  onClick={() =>
+                    setZoomImage(
+                      data.cover_image_url
+                    )
+                  }
+                  style={{
+                    width: 260,
+                    height: 140,
+                    objectFit: "cover",
+                    borderRadius: 12,
+                    cursor: "zoom-in",
+                    border: isRemoved(
+                      "cover",
+                      {
+                        url: data.cover_image_url,
+                      }
+                    )
+                      ? "4px solid #ef4444"
+                      : "2px solid var(--border)",
+                    opacity: isRemoved(
+                      "cover",
+                      {
+                        url: data.cover_image_url,
+                      }
+                    )
+                      ? 0.55
+                      : 1,
+                  }}
+                />
+          
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-secondary mt-2"
+                  onClick={() =>
+                    toggleRemovedMedia(
+                      "cover",
+                      {
+                        url: data.cover_image_url,
+                      }
+                    )
+                  }
+                >
+                  {isRemoved(
+                    "cover",
+                    {
+                      url: data.cover_image_url,
+                    }
+                  )
+                    ? "Undo remove"
+                    : "Select for removal"}
+                </button>
+          
+              </div>
+         
+            </div>
+          )}           
+
           <input
             key={`cover-${inputKey.cover}`}
             type="file"
@@ -421,6 +603,91 @@ export default function StepMediaReview({
         <label className="admin-label">
           Gallery images (max {MAX_GALLERY_IMAGES})
         </label>
+
+        {mode === "user-update" &&
+          Array.isArray(data.gallery) &&
+          data.gallery.length > 0 && (
+      
+          <div className="mb-5">
+      
+            <p className="admin-hint mb-3">
+              Current gallery images
+            </p>
+      
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      
+              {data.gallery.map((img, index) => (
+      
+                <div
+                  key={img.url || index}
+                  style={{
+                    position: "relative",
+                  }}
+                >
+      
+                  <img
+                    src={img.url}
+                    alt=""
+                    onClick={() =>
+                      setZoomImage(img.url)
+                    }
+                    style={{
+                      width: "100%",
+                      height: 120,
+                      objectFit: "cover",
+                      borderRadius: 10,
+                      cursor: "zoom-in",
+      
+                      border: isRemoved(
+                        "gallery",
+                        img
+                      )
+                        ? "4px solid #ef4444"
+                        : "2px solid var(--border)",
+      
+                      opacity: isRemoved(
+                        "gallery",
+                        img
+                      )
+                        ? 0.55
+                        : 1,
+                    }}
+                  />
+      
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-secondary"
+                    style={{
+                      position: "absolute",
+                      bottom: 6,
+                      left: 6,
+                      right: 6,
+                      fontSize: 11,
+                      padding: "4px 6px",
+                    }}
+                    onClick={() =>
+                      toggleRemovedMedia(
+                        "gallery",
+                        img
+                      )
+                    }
+                  > 
+                    {isRemoved(
+                      "gallery",
+                      img
+                    )
+                      ? "Undo"
+                      : "Remove"}
+                  </button>
+      
+                </div>
+      
+              ))}
+      
+            </div>
+      
+          </div>
+        )}         
 
         {galleryPreview.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -548,6 +815,41 @@ export default function StepMediaReview({
       </div>
 
       {error && <p className="admin-error mb-3">{error}</p>}
+
+      {zoomImage && (
+      
+        <div
+          onClick={() =>
+            setZoomImage(null)
+          }
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,.82)",
+            zIndex: 9999,
+      
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+      
+            padding: 20,
+            cursor: "zoom-out",
+          }}
+        >
+      
+          <img
+            src={zoomImage}
+            alt=""
+            style={{
+              maxWidth: "95vw",
+              maxHeight: "95vh",
+              borderRadius: 14,
+            }}
+          />
+      
+        </div>
+      
+      )}       
 
       {/* NAVIGATION */}
       <div className="flex justify-between">
