@@ -586,6 +586,25 @@ export default function StepMediaReview({
     busy,
   ]);
 
+  const activeGalleryCount =
+    (
+      Array.isArray(data.gallery)
+        ? data.gallery.filter(
+            (img) =>
+              !isRemoved("gallery", img)
+          ).length
+        : 0
+    ) +
+    (
+      Array.isArray(data.gallery_files)
+        ? data.gallery_files.length
+        : 0
+    );
+  
+  const remainingGallerySlots =
+    MAX_GALLERY_IMAGES -
+    activeGalleryCount;
+  
   /* ======================================================
   🧱 RENDER — UI ONLY
   ====================================================== */
@@ -619,7 +638,7 @@ export default function StepMediaReview({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "repeat(auto-fit, minmax(180px, 1fr))",
+          "repeat(auto-fit, minmax(220px, 220px))"
         gap: 24,
         alignItems: "start",
         marginBottom: 12,
@@ -721,30 +740,6 @@ export default function StepMediaReview({
         >
           Upload new logo
         </p>
-        
-        <div
-          style={{
-            minHeight: 24,
-            marginBottom: 10,
-          }}
-        >
-          {isRemoved(
-            "logo",
-            { url: data.logo_url }
-          ) &&
-            !data.logo_file && (
-              <p
-                className="admin-error"
-                style={{
-                  color: "#ef4444",
-                  fontSize: 13,
-                  margin: 0,
-                }}
-              >
-                Please upload a new logo.
-              </p>
-            )}
-        </div>
       
         <label
           style={{
@@ -790,6 +785,30 @@ export default function StepMediaReview({
             }
           />
         </label>
+
+        <div
+          style={{
+            minHeight: 24,
+            marginBottom: 10,
+          }}
+        >
+          {isRemoved(
+            "logo",
+            { url: data.logo_url }
+          ) &&
+            !data.logo_file && (
+              <p
+                className="admin-error"
+                style={{
+                  color: "#ef4444",
+                  fontSize: 13,
+                  margin: 0,
+                }}
+              >
+                Please upload a new logo.
+              </p>
+            )}
+        </div>
       
       </div>
       {logoPreview && (
@@ -910,7 +929,7 @@ export default function StepMediaReview({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "repeat(auto-fit, minmax(180px, 1fr))",
+          "repeat(auto-fit, minmax(220px, 220px))"
         gap: 24,
         alignItems: "start",
         marginBottom: 12,
@@ -1025,31 +1044,7 @@ export default function StepMediaReview({
           Upload new cover
         </p>
 
-        <div
-          style={{
-            minHeight: 24,
-            marginBottom: 10,
-          }}
-        >
-          {isRemoved(
-            "cover",
-            {
-              url: data.cover_image_url,
-            }
-          ) &&
-            !data.cover_file && (
-              <p
-                className="admin-error"
-                style={{
-                  color: "#ef4444",
-                  fontSize: 13,
-                  margin: 0,
-                }}
-              >
-                Please upload a new cover image.
-              </p>
-            )}
-        </div>
+        
         
         <label
           style={{
@@ -1092,6 +1087,32 @@ export default function StepMediaReview({
             }
           />
         </label>
+
+        <div
+          style={{
+            minHeight: 24,
+            marginBottom: 10,
+          }}
+        >
+          {isRemoved(
+            "cover",
+            {
+              url: data.cover_image_url,
+            }
+          ) &&
+            !data.cover_file && (
+              <p
+                className="admin-error"
+                style={{
+                  color: "#ef4444",
+                  fontSize: 13,
+                  margin: 0,
+                }}
+              >
+                Please upload a new cover image.
+              </p>
+            )}
+        </div>  
       </div>
   
       {/* NEW COVER */}
@@ -1306,40 +1327,11 @@ export default function StepMediaReview({
 
     <p className="admin-hint mb-3">
       Upload gallery images (
-      {MAX_GALLERY_IMAGES -
-      (
-        (
-          Array.isArray(data.gallery)
-            ? data.gallery.filter(
-                (img) =>
-                  !isRemoved("gallery", img)
-              ).length
-            : 0
-        ) +
-        (
-          Array.isArray(data.gallery_files)
-            ? data.gallery_files.length
-            : 0
-        )
-      )}{" "}
+      {remainingGallerySlots}{" "}
       slots remaining)
     </p>
     
-    {(
-       (
-         Array.isArray(data.gallery)
-           ? data.gallery.filter(
-               (img) =>
-                 !isRemoved("gallery", img)
-             ).length
-           : 0
-       ) +
-       (
-         Array.isArray(data.gallery_files)
-           ? data.gallery_files.length
-           : 0
-       )
-     ) < MAX_GALLERY_IMAGES && (
+    {remainingGallerySlots > 0 && (
       <label
         style={{
           width: MEDIA_BOX_SIZE,
