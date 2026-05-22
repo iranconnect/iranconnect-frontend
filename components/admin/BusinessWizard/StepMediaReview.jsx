@@ -22,6 +22,8 @@ const ACCEPTED_IMAGE_TYPES = [
 const ACCEPT_ATTR =
   ACCEPTED_IMAGE_TYPES.join(",");
 
+const MEDIA_BOX_SIZE = 160;
+
 /* ======================================================
 🧠 SAFE NORMALIZERS
 ====================================================== */
@@ -617,8 +619,8 @@ export default function StepMediaReview({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "220px 220px 220px",
-        gap: 28,
+          "repeat(auto-fit, minmax(180px, 1fr))",
+        gap: 24,
         alignItems: "start",
         marginBottom: 12,
       }}
@@ -640,8 +642,8 @@ export default function StepMediaReview({
           <div
             style={{
               position: "relative",
-              width: 160,
-              height: 160,
+              width: MEDIA_BOX_SIZE,
+              height: MEDIA_BOX_SIZE,
             }}
           >
             <img
@@ -683,8 +685,11 @@ export default function StepMediaReview({
                 fontSize: 11,
                 padding: "4px 8px",
                 backdropFilter: "blur(6px)",
-                background: "rgba(0,0,0,.72)",
-                border: "1px solid rgba(255,255,255,.12)",
+                background: "rgba(15,23,42,.92)",
+                color: "#fff",
+                border: "1px solid rgba(255,255,255,.18)",
+                boxShadow: "0 4px 10px rgba(0,0,0,.22)",
+                fontWeight: 600,
               }}
               onClick={() =>
                 toggleRemovedMedia(
@@ -743,8 +748,8 @@ export default function StepMediaReview({
       
         <label
           style={{
-            width: 220,
-            height: 140,
+            width: MEDIA_BOX_SIZE,
+            height: MEDIA_BOX_SIZE,
             border:
               "2px dashed rgba(255,255,255,.15)",
             borderRadius: 14,
@@ -803,8 +808,8 @@ export default function StepMediaReview({
           <div
             style={{
               position: "relative",
-              width: 160,
-              height: 160,
+              width: MEDIA_BOX_SIZE,
+              height: MEDIA_BOX_SIZE,
             }}
           >
             <img
@@ -831,8 +836,10 @@ export default function StepMediaReview({
                 position: "absolute",
                 top: 6,
                 right: 6,
-                padding: "4px 6px",
+                padding: "5px 9px",
                 fontSize: 11,
+                fontWeight: 600,
+                borderRadius: 8,
               }}
               onClick={() => {
                 revokeIfBlob(logoPreview);
@@ -852,8 +859,10 @@ export default function StepMediaReview({
                 position: "absolute",
                 bottom: 6,
                 right: 6,
+                padding: "5px 9px",
                 fontSize: 11,
-                padding: "4px 6px",
+                fontWeight: 600,
+                borderRadius: 8,
                 borderRadius: 6,
                 background: "rgba(0,0,0,.6)",
                 color: "#fff",
@@ -901,8 +910,8 @@ export default function StepMediaReview({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "220px 220px 220px",
-        gap: 28,
+          "repeat(auto-fit, minmax(180px, 1fr))",
+        gap: 24,
         alignItems: "start",
         marginBottom: 12,
       }}
@@ -926,8 +935,8 @@ export default function StepMediaReview({
           <div
             style={{
               position: "relative",
-              width: 160,
-              height: 160,
+              width: MEDIA_BOX_SIZE,
+              height: MEDIA_BOX_SIZE,
             }}
           >
             <img
@@ -975,8 +984,11 @@ export default function StepMediaReview({
                 fontSize: 11,
                 padding: "4px 8px",
                 backdropFilter: "blur(6px)",
-                background: "rgba(0,0,0,.72)",
-                border: "1px solid rgba(255,255,255,.12)",
+                background: "rgba(15,23,42,.92)",
+                color: "#fff",
+                border: "1px solid rgba(255,255,255,.18)",
+                boxShadow: "0 4px 10px rgba(0,0,0,.22)",
+                fontWeight: 600,
               }}
               onClick={() =>
                 toggleRemovedMedia(
@@ -1041,8 +1053,8 @@ export default function StepMediaReview({
         
         <label
           style={{
-            width: 220,
-            height: 140,
+            width: MEDIA_BOX_SIZE,
+            height: MEDIA_BOX_SIZE,
             border: "2px dashed rgba(255,255,255,.15)",
             borderRadius: 14,
             display: "flex",
@@ -1092,8 +1104,8 @@ export default function StepMediaReview({
           <div
             style={{
               position: "relative",
-              width: 160,
-              height: 160,
+              width: MEDIA_BOX_SIZE,
+              height: MEDIA_BOX_SIZE,
             }}
           >
             <img
@@ -1122,8 +1134,10 @@ export default function StepMediaReview({
                 position: "absolute",
                 top: 6,
                 right: 6,
-                padding: "4px 6px",
+                padding: "5px 9px",
                 fontSize: 11,
+                fontWeight: 600,
+                borderRadius: 8,
               }}
               onClick={() => {
   
@@ -1150,8 +1164,10 @@ export default function StepMediaReview({
                 position: "absolute",
                 bottom: 6,
                 right: 6,
+                padding: "5px 9px",
                 fontSize: 11,
-                padding: "4px 6px",
+                fontWeight: 600,
+                borderRadius: 8,
                 borderRadius: 6,
                 background:
                   "rgba(0,0,0,.6)",
@@ -1258,8 +1274,11 @@ export default function StepMediaReview({
                   fontSize: 11,
                   padding: "4px 8px",
                   backdropFilter: "blur(6px)",
-                  background: "rgba(0,0,0,.72)",
-                  border: "1px solid rgba(255,255,255,.12)",
+                  background: "rgba(15,23,42,.92)",
+                  color: "#fff",
+                  border: "1px solid rgba(255,255,255,.18)",
+                  boxShadow: "0 4px 10px rgba(0,0,0,.22)",
+                  fontWeight: 600,
                 }}
                 onClick={() =>
                   toggleRemovedMedia(
@@ -1288,37 +1307,43 @@ export default function StepMediaReview({
     <p className="admin-hint mb-3">
       Upload gallery images (
       {MAX_GALLERY_IMAGES -
+      (
         (
-          (
-            Array.isArray(data.gallery)
-              ? data.gallery.length
-              : 0
-          ) +
-          (
-            Array.isArray(data.gallery_files)
-              ? data.gallery_files.length
-              : 0
-          )
-        )}{" "}
+          Array.isArray(data.gallery)
+            ? data.gallery.filter(
+                (img) =>
+                  !isRemoved("gallery", img)
+              ).length
+            : 0
+        ) +
+        (
+          Array.isArray(data.gallery_files)
+            ? data.gallery_files.length
+            : 0
+        )
+      )}{" "}
       slots remaining)
     </p>
     
     {(
-      (
-        Array.isArray(data.gallery)
-          ? data.gallery.length
-          : 0
-      ) +
-      (
-        Array.isArray(data.gallery_files)
-          ? data.gallery_files.length
-          : 0
-      )
-    ) < MAX_GALLERY_IMAGES && (
+       (
+         Array.isArray(data.gallery)
+           ? data.gallery.filter(
+               (img) =>
+                 !isRemoved("gallery", img)
+             ).length
+           : 0
+       ) +
+       (
+         Array.isArray(data.gallery_files)
+           ? data.gallery_files.length
+           : 0
+       )
+     ) < MAX_GALLERY_IMAGES && (
       <label
         style={{
-          width: 220,
-          height: 120,
+          width: MEDIA_BOX_SIZE,
+          height: MEDIA_BOX_SIZE,
           border: "2px dashed rgba(255,255,255,.15)",
           borderRadius: 14,
           display: "flex",
@@ -1392,8 +1417,10 @@ export default function StepMediaReview({
                   position: "absolute",
                   top: 6,
                   right: 6,
-                  padding: "4px 6px",
+                  padding: "5px 9px",
                   fontSize: 11,
+                  fontWeight: 600,
+                  borderRadius: 8,
                 }}
                 onClick={() => removeGalleryItem(index)}
                 disabled={busy}
@@ -1407,8 +1434,10 @@ export default function StepMediaReview({
                   position: "absolute",
                   bottom: 6,
                   right: 6,
+                  padding: "5px 9px",
                   fontSize: 11,
-                  padding: "4px 6px",
+                  fontWeight: 600,
+                  borderRadius: 8,
                   borderRadius: 6,
                   background: "rgba(0,0,0,.6)",
                   color: "#fff",
