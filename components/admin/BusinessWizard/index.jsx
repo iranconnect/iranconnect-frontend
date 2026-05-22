@@ -98,6 +98,15 @@ export default function BusinessWizard({
   }));
 
   useEffect(() => {
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  
+  }, [step]);
+
+  useEffect(() => {
     if (!initialData) return;
   
     setData((prev) => ({
