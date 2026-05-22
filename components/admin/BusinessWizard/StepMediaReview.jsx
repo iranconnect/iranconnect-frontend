@@ -642,7 +642,7 @@ export default function StepMediaReview({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "repeat(auto-fit, minmax(220px, 220px))"
+          "repeat(auto-fit, minmax(220px, 220px))",
         gap: 24,
         alignItems: "start",
         marginBottom: 12,
@@ -933,7 +933,7 @@ export default function StepMediaReview({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "repeat(auto-fit, minmax(220px, 220px))"
+          "repeat(auto-fit, minmax(220px, 220px))",
         gap: 24,
         alignItems: "start",
         marginBottom: 12,
