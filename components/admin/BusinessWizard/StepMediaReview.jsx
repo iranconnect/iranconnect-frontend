@@ -582,6 +582,10 @@ export default function StepMediaReview({
   }, [
     mode,
     data.logo_file,
+    data.cover_file,
+    data.logo_url,
+    data.cover_image_url,
+    data.removed_media,
     normalized.owner_confirmed,
     busy,
   ]);
@@ -789,7 +793,7 @@ export default function StepMediaReview({
         <div
           style={{
             minHeight: 24,
-            marginBottom: 10,
+            marginTop: 10,
           }}
         >
           {isRemoved(
@@ -1091,7 +1095,7 @@ export default function StepMediaReview({
         <div
           style={{
             minHeight: 24,
-            marginBottom: 10,
+            marginTop: 10,
           }}
         >
           {isRemoved(
