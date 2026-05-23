@@ -2,6 +2,59 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../../utils/apiClient";
 
+const FIELD_RULES = {
+
+  // REQUIRED
+  name: {
+    required: true,
+    type: "string",
+  },
+
+  category_id: {
+    required: true,
+    type: "number",
+  },
+
+  subcategory_ids: {
+    required: true,
+    type: "array",
+    minItems: 1,
+  },
+
+  short_description: {
+    required: true,
+    type: "string",
+    min: 20,
+    max: 160,
+  },
+
+  full_description: {
+    required: true,
+    type: "string",
+    min: 50,
+  },
+
+  // OPTIONAL BUT TRACKED
+  legal_name: {
+    required: false,
+    type: "string",
+    trackRemoval: true,
+  },
+
+  business_type: {
+    required: true,
+    type: "string",
+    trackRemoval: true,
+  },
+
+  year_established: {
+    required: false,
+    type: "number",
+    trackRemoval: true,
+  },
+
+};
+
 const BUSINESS_TYPES = [
   { value: "freelancer", label: "Freelancer / Self-employed" },
   { value: "company", label: "Registered Company" },
@@ -10,7 +63,7 @@ const BUSINESS_TYPES = [
   { value: "online", label: "Online Business" },
 ];
 
-export default function StepBasicInfo({ data, setData, onNext, mode,}) {
+export default function StepBasicInfo({ data, setData, onNext, mode, initialData,}) {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
@@ -71,13 +124,120 @@ export default function StepBasicInfo({ data, setData, onNext, mode,}) {
     });
   }
 
+  const validationErrors = new Set();
+
+  /* ==================================================
+     UNIVERSAL FIELD VALIDATION
+  ================================================== */
+  Object.entries(FIELD_RULES).forEach(
+    ([field, rules]) => {
+  
+      const value = data?.[field];
+  
+      /* =========================
+         REQUIRED VALIDATION
+      ========================= */
+      if (rules.required) {
+  
+        // STRING
+        if (rules.type === "string") {
+  
+          const trimmed =
+            String(value || "").trim();
+  
+          if (!trimmed) {
+            validationErrors.add(field);
+            return;
+          }
+  
+          if (
+            rules.min &&
+            trimmed.length < rules.min
+          ) {
+            validationErrors.add(field);
+            return;
+          }
+  
+          if (
+            rules.max &&
+            trimmed.length > rules.max
+          ) {
+            validationErrors.add(field);
+            return;
+          }
+  
+        }
+  
+        // NUMBER
+        if (rules.type === "number") {
+  
+          if (
+            value === undefined ||
+            value === null ||
+            value === ""
+          ) {
+            validationErrors.add(field);
+            return;
+          }
+  
+        }
+  
+        // ARRAY
+        if (rules.type === "array") {
+  
+          if (
+            !Array.isArray(value) ||
+            value.length <
+              (rules.minItems || 1)
+          ) {
+            validationErrors.add(field);
+            return;
+          }
+  
+        }
+  
+      }
+  
+      /* =========================
+         REMOVAL TRACKING
+      ========================= */
+      if (
+        mode === "user-update" &&
+        rules.trackRemoval
+      ) {
+  
+        const original =
+          initialData?.[field];
+  
+        const hadOriginalValue =
+          original !== undefined &&
+          original !== null &&
+          original !== "";
+  
+        const removedNow =
+          value === undefined ||
+          value === null ||
+          value === "";
+  
+        if (
+          hadOriginalValue &&
+          removedNow
+        ) {
+          validationErrors.add(field);
+        }
+  
+      }
+  
+    }
+  );
+
     const canProceed = (() => {
     
       // =========================
       // USER UPDATE MODE
       // =========================
       if (mode === "user-update") {
-        return true;
+        return validationErrors.size === 0;
       }
     
       // =========================
@@ -87,6 +247,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode,}) {
         data?.name?.trim() &&
         categoryId &&
         selectedSubcategories.length > 0 &&
+        data?.business_type?.trim() &&
         data?.short_description &&
         data.short_description.trim().length >= 20 &&
         data.short_description.trim().length <= 160 &&
@@ -122,6 +283,11 @@ export default function StepBasicInfo({ data, setData, onNext, mode,}) {
           placeholder="e.g. Tehran Legal Services"
           required
         />
+        {validationErrors.has("name") && (
+          <p className="text-red-500 text-sm mt-1">
+            Please complete this field.
+          </p>
+        )}
       </div>
 
       {/* Category */}
@@ -151,6 +317,13 @@ export default function StepBasicInfo({ data, setData, onNext, mode,}) {
             </option>
           ))}
         </select>
+        
+        {validationErrors.has("category_id") && (
+          <p className="text-red-500 text-sm mt-1">
+            Please complete this field.
+          </p>
+        )}
+        
       </div>
 
       {/* Subcategories */}
@@ -167,21 +340,29 @@ export default function StepBasicInfo({ data, setData, onNext, mode,}) {
               No subcategories available.
             </p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {subcategories.map((sub) => (
-                <label
-                  key={sub.id}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedSubcategories.includes(sub.id)}
-                    onChange={() => toggleSubcategory(sub.id)}
-                  />
-                  {sub.name}
-                </label>
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {subcategories.map((sub) => (
+                  <label
+                    key={sub.id}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedSubcategories.includes(sub.id)}
+                      onChange={() => toggleSubcategory(sub.id)}
+                    />
+                    {sub.name}
+                  </label>
+                ))}
+              </div>
+          
+              {validationErrors.has("subcategory_ids") && (
+                <p className="text-red-500 text-sm mt-2">
+                  Please complete this field.
+                </p>
+              )}
+            </>
           )}
         </div>
       )}
@@ -200,12 +381,20 @@ export default function StepBasicInfo({ data, setData, onNext, mode,}) {
           }
           placeholder="Registered legal entity name"
         />
+
+        {validationErrors.has("legal_name") && (
+          <p className="text-red-500 text-sm mt-1">
+            Please complete this field.
+          </p>
+        )}
+
+        
       </div>
 
       {/* Business type */}
       <div className="mb-5">
         <label className="admin-label">
-          Business type
+          Business type *
         </label>
         <select
           className="admin-input"
@@ -221,6 +410,13 @@ export default function StepBasicInfo({ data, setData, onNext, mode,}) {
             </option>
           ))}
         </select>
+
+        {validationErrors.has("business_type") && (
+          <p className="text-red-500 text-sm mt-1">
+            Please complete this field.
+          </p>
+        )}
+        
       </div>
 
       {/* Year established */}
@@ -238,6 +434,13 @@ export default function StepBasicInfo({ data, setData, onNext, mode,}) {
             setField("year_established", e.target.value)
           }
         />
+
+        {validationErrors.has("year_established") && (
+          <p className="text-red-500 text-sm mt-1">
+            Please complete this field.
+          </p>
+        )}
+        
       </div>
 
       {/* Short description */}
@@ -259,6 +462,19 @@ export default function StepBasicInfo({ data, setData, onNext, mode,}) {
         <p className="text-xs text-gray-400 mt-1">
           {(data?.short_description?.length || 0)} / 160 characters
         </p>
+        {data?.short_description?.trim()?.length > 0 &&
+          data.short_description.trim().length < 20 && (
+            <p className="text-red-500 text-sm mt-1">
+              Minimum 20 characters required
+            </p>
+        )}
+
+        {validationErrors.has("short_description") && (
+          <p className="text-red-500 text-sm mt-1">
+            Please complete this field.
+          </p>
+        )}
+        
       </div>
 
       {/* Full description */}
@@ -279,16 +495,23 @@ export default function StepBasicInfo({ data, setData, onNext, mode,}) {
         />
         
         {/* 🔴 Validation */}
-        {data?.full_description &&
+        {data?.full_description?.trim()?.length > 0 &&
           data.full_description.trim().length < 50 && (
             <p className="text-red-500 text-sm mt-1">
               Minimum 50 characters required
             </p>
         )}
+
+        {validationErrors.has("full_description") &&
+          !data?.full_description?.trim() && (
+            <p className="text-red-500 text-sm mt-1">
+              Please complete this field.
+            </p>
+        )}
         
         {/* 🔵 Character counter */}
         <p className="text-xs text-gray-400 mt-1">
-          {(data?.full_description?.length || 0)} / 50 characters
+          {(data?.full_description?.length || 0)} characters entered
         </p>
       </div>
 
