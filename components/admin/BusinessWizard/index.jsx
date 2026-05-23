@@ -199,7 +199,7 @@ export default function BusinessWizard({
   return (
     <>
       {step === 0 && (
-        <StepBasicInfo data={data} setData={setData} onNext={next} mode={mode} />
+        <StepBasicInfo data={data} setData={setData} onNext={next} mode={mode} initialData={initialData} />
       )}
 
       {step === 1 && (
