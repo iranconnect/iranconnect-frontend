@@ -174,7 +174,8 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
           if (
             value === undefined ||
             value === null ||
-            value === ""
+            value === "" ||
+            Number(value) <= 0
           ) {
             validationErrors.add(field);
             return;
@@ -427,12 +428,18 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
         <input
           type="number"
           min="1900"
+          inputMode="numeric"
+          pattern="[0-9]*"
           max={new Date().getFullYear()}
           className="admin-input"
           value={data?.year_established || ""}
-          onChange={(e) =>
-            setField("year_established", e.target.value)
-          }
+          onChange={(e) => {
+            const value = e.target.value;
+          
+            if (/^\d*$/.test(value)) {
+              setField("year_established", value);
+            }
+          }}
         />
 
         {validationErrors.has("year_established") && (
