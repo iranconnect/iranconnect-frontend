@@ -2,7 +2,25 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../../utils/apiClient";
 
-export default function StepServicesTags({ data, setData, onNext, onBack, mode, }) {
+const FIELD_RULES = {
+
+  // REQUIRED
+  services: {
+    required: true,
+    type: "array",
+    minItems: 1,
+  },
+
+  // OPTIONAL BUT TRACKED
+  tags: {
+    required: false,
+    type: "array",
+    trackRemoval: true,
+  },
+
+};
+
+export default function StepServicesTags({ data, setData, onNext, onBack, mode, initialData, }) {
   const [services, setServices] = useState([]);
   const [tags, setTags] = useState([]);
   const [loadingServices, setLoadingServices] = useState(false);
@@ -11,6 +29,8 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   const selectedServices = data.services || [];
   const selectedTags = data.tags || [];
   const subcategoryIds = data.subcategory_ids || [];
+
+  
 
   /* ─────────────────────────────
      Load services (by subcategories)
@@ -52,27 +72,109 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
      Handlers
   ───────────────────────────── */
   function toggleService(id) {
-    setData((prev) => ({
-      ...prev,
-      services: prev.services.includes(id)
-        ? prev.services.filter((x) => x !== id)
-        : [...prev.services, id],
-    }));
+    setData((prev) => {
+  
+      const current = prev.services || [];
+  
+      return {
+        ...prev,
+        services: current.includes(id)
+          ? current.filter((x) => x !== id)
+          : [...current, id],
+      };
+  
+    });
   }
-
+  
   function toggleTag(id) {
-    setData((prev) => ({
-      ...prev,
-      tags: prev.tags.includes(id)
-        ? prev.tags.filter((x) => x !== id)
-        : [...prev.tags, id],
-    }));
+    setData((prev) => {
+  
+      const current = prev.tags || [];
+  
+      return {
+        ...prev,
+        tags: current.includes(id)
+          ? current.filter((x) => x !== id)
+          : [...current, id],
+      };
+  
+    });
   }
 
+  const validationErrors = new Set();
+
+  /* ==================================================
+     UNIVERSAL FIELD VALIDATION
+  ================================================== */
+  Object.entries(FIELD_RULES).forEach(
+    ([field, rules]) => {
+  
+      const value = data?.[field];
+  
+      /* =========================
+         REQUIRED VALIDATION
+      ========================= */
+      if (rules.required) {
+  
+        // ARRAY
+        if (rules.type === "array") {
+  
+          if (
+            !Array.isArray(value) ||
+            value.length <
+              (rules.minItems || 1)
+          ) {
+            validationErrors.add(field);
+            return;
+          }
+  
+        }
+  
+      }
+  
+      /* =========================
+         REMOVAL TRACKING
+      ========================= */
+      if (
+        mode === "user-update" &&
+        rules.trackRemoval
+      ) {
+  
+        const original =
+          initialData?.[field];
+  
+        const hadOriginalValue =
+          Array.isArray(original)
+            ? original.length > 0
+            : (
+                original !== undefined &&
+                original !== null &&
+                original !== ""
+              );
+  
+        const removedNow =
+          Array.isArray(value)
+            ? value.length === 0
+            : (
+                value === undefined ||
+                value === null ||
+                value === ""
+              );
+  
+        if (
+          hadOriginalValue &&
+          removedNow
+        ) {
+          validationErrors.add(field);
+        }
+  
+      }
+  
+    }
+  );
+  
   const canProceed =
-    mode === "user-update"
-      ? true
-      : selectedServices.length > 0;
+    validationErrors.size === 0;
 
   /* ─────────────────────────────
      Render
@@ -101,40 +203,45 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
             No services available for selected subcategories.
           </p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {services.map((s) => (
-              <div key={s.id} className="text-sm">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedServices.includes(s.id)}
-                    onChange={() => toggleService(s.id)}
-                  />
-            
-                  {/* نام سرویس + Tooltip */}
-                  <span title={s.description}>
-                    {s.name}
-                  </span>
-                </label>
-            
-                {/* 🔹 تگ‌های اختصاصی سرویس */}
-                {s.service_tags?.length > 0 && (
-                  <div className="ml-6 mt-1 flex flex-wrap gap-2">
-                    {s.service_tags.map((tag) => (
-                      <span
-                        key={tag.id}
-                        title={tag.description}
-                        className="text-xs bg-slate-100 px-2 py-0.5 rounded"
-                      >
-                        #{tag.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {services.map((s) => (
+                <div key={s.id} className="text-sm">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedServices.includes(s.id)}
+                      onChange={() => toggleService(s.id)}
+                    />
+        
+                    <span title={s.description}>
+                      {s.name}
+                    </span>
+                  </label>
+        
+                  {s.service_tags?.length > 0 && (
+                    <div className="ml-6 mt-1 flex flex-wrap gap-2">
+                      {s.service_tags.map((tag) => (
+                        <span
+                          key={tag.id}
+                          title={tag.description}
+                          className="text-xs bg-slate-100 px-2 py-0.5 rounded"
+                        >
+                          #{tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+        
+            {validationErrors.has("services") && (
+              <p className="text-red-500 text-sm mt-2">
+                Please complete this field.
+              </p>
+            )}
+          </>
         )}
       </div>
 
@@ -149,23 +256,31 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
             Loading tags…
           </p>
         ) : (
-          <div className="flex flex-wrap gap-3">
-            {tags.map((t) => (
-              <label
-                key={t.id}
-                className="flex items-center gap-2 text-sm cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedTags.includes(t.id)}
-                  onChange={() => toggleTag(t.id)}
-                />
-                <span title={t.seo_description}>
-                  {t.name}
-                </span>
-              </label>
-            ))}
-          </div>
+          <>
+            <div className="flex flex-wrap gap-3">
+              {tags.map((t) => (
+                <label
+                  key={t.id}
+                  className="flex items-center gap-2 text-sm cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTags.includes(t.id)}
+                    onChange={() => toggleTag(t.id)}
+                  />
+                  <span title={t.seo_description}>
+                    {t.name}
+                  </span>
+                </label>
+              ))}
+            </div>
+        
+            {validationErrors.has("tags") && (
+              <p className="text-red-500 text-sm mt-2 w-full">
+                Please complete this field.
+              </p>
+            )}
+          </>
         )}
       </div>
 
