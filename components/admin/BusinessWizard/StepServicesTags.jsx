@@ -104,11 +104,17 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   
       const current = prev.tags || [];
   
+      const nextTags = current.includes(id)
+        ? current.filter((x) => x !== id)
+        : [...current, id];
+  
+      if (nextTags.length > 0) {
+        setConfirmNoTags(false);
+      }
+  
       return {
         ...prev,
-        tags: current.includes(id)
-          ? current.filter((x) => x !== id)
-          : [...current, id],
+        tags: nextTags,
       };
   
     });
@@ -299,7 +305,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
       </div>
 
       {shouldConfirmTagRemoval && (
-        <div className="mt-4 border border-red-500 bg-red-50 rounded-lg p-4">
+        <div className="mt-4 mb-6 border border-red-500 bg-red-50 rounded-lg p-4">
       
           <p className="text-sm text-red-700 font-medium mb-3">
             You are about to remove all business tags.
