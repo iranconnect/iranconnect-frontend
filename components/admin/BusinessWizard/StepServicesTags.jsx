@@ -1,5 +1,5 @@
 //components/admin/BusinessWizard/StepServicesTags.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import apiClient from "../../../utils/apiClient";
 
 const FIELD_RULES = {
@@ -15,7 +15,6 @@ const FIELD_RULES = {
   tags: {
     required: false,
     type: "array",
-    trackRemoval: true,
   },
 
 };
@@ -30,8 +29,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   const selectedTags = data.tags || [];
   const subcategoryIds = data.subcategory_ids || [];
 
-  console.log("initialData.tags =", initialData?.tags);
-  console.log("data.tags =", data?.tags);
+  const initialTagsRef = useRef(data.tags || []);
 
   
 
@@ -144,7 +142,9 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
       ) {
   
         const original =
-          initialData?.[field];
+          field === "tags"
+            ? initialTagsRef.current
+            : initialData?.[field];
   
         const hadOriginalValue =
           Array.isArray(original)
@@ -178,6 +178,38 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   
   const canProceed =
     validationErrors.size === 0;
+
+  function handleNext() {
+
+    const hadInitialTags =
+      initialTagsRef.current.length > 0;
+  
+    const removedAllTags =
+      selectedTags.length === 0;
+  
+    if (
+      mode === "user-update" &&
+      hadInitialTags &&
+      removedAllTags
+    ) {
+  
+      const confirmed = window.confirm(
+        `You are about to remove all business tags.
+  
+  Tags help users discover your business more easily.
+  
+  Do you want to continue without any tags?`
+      );
+  
+      if (!confirmed) {
+        return;
+      }
+  
+    }
+  
+    onNext();
+  
+  }
 
   /* ─────────────────────────────
      Render
@@ -277,12 +309,6 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
                 </label>
               ))}
             </div>
-        
-            {validationErrors.has("tags") && (
-              <p className="text-red-500 text-sm mt-2 w-full">
-                Please complete this field.
-              </p>
-            )}
           </>
         )}
       </div>
@@ -298,7 +324,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
 
         <button
           className="admin-btn admin-btn-primary"
-          onClick={onNext}
+          onClick={handleNext}
           disabled={!canProceed}
         >
           Next
