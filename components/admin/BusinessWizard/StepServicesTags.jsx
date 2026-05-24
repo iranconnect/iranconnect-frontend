@@ -30,6 +30,9 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   const selectedTags = data.tags || [];
   const subcategoryIds = data.subcategory_ids || [];
 
+  console.log("initialData.tags =", initialData?.tags);
+  console.log("data.tags =", data?.tags);
+
   
 
   /* ─────────────────────────────
