@@ -24,12 +24,24 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   const [tags, setTags] = useState([]);
   const [loadingServices, setLoadingServices] = useState(false);
   const [loadingTags, setLoadingTags] = useState(false);
+  const [confirmNoTags, setConfirmNoTags] = useState(false);
 
   const selectedServices = data.services || [];
   const selectedTags = data.tags || [];
   const subcategoryIds = data.subcategory_ids || [];
 
   const initialTagsRef = useRef(data.tags || []);
+
+  const hadInitialTags =
+    initialTagsRef.current.length > 0;
+  
+  const removedAllTags =
+    selectedTags.length === 0;
+  
+  const shouldConfirmTagRemoval =
+    mode === "user-update" &&
+    hadInitialTags &&
+    removedAllTags;
 
   
 
@@ -177,40 +189,13 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   );
   
   const canProceed =
-    validationErrors.size === 0;
+    validationErrors.size === 0 &&
+    (
+      !shouldConfirmTagRemoval ||
+      confirmNoTags
+    );
 
-  function handleNext() {
-
-    const hadInitialTags =
-      initialTagsRef.current.length > 0;
   
-    const removedAllTags =
-      selectedTags.length === 0;
-  
-    if (
-      mode === "user-update" &&
-      hadInitialTags &&
-      removedAllTags
-    ) {
-  
-      const confirmed = window.confirm(
-        `You are about to remove all business tags.
-  
-  Tags help users discover your business more easily.
-  
-  Do you want to continue without any tags?`
-      );
-  
-      if (!confirmed) {
-        return;
-      }
-  
-    }
-  
-    onNext();
-  
-  }
-
   /* ─────────────────────────────
      Render
   ───────────────────────────── */
@@ -313,6 +298,33 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
         )}
       </div>
 
+      {shouldConfirmTagRemoval && (
+        <div className="mt-4 border border-red-500 bg-red-50 rounded-lg p-4">
+      
+          <p className="text-sm text-red-700 font-medium mb-3">
+            You are about to remove all business tags.
+            Tags help users discover your business more easily.
+            Do you want to continue without any tags?
+          </p>
+      
+          <label className="flex items-start gap-2 text-sm text-red-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={confirmNoTags}
+              onChange={(e) =>
+                setConfirmNoTags(e.target.checked)
+              }
+              className="mt-1"
+            />
+      
+            <span>
+              I understand that removing all tags may reduce business discoverability.
+            </span>
+          </label>
+      
+        </div>
+      )}
+
       {/* NAVIGATION */}
       <div className="flex justify-between">
         <button
@@ -324,7 +336,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
 
         <button
           className="admin-btn admin-btn-primary"
-          onClick={handleNext}
+          onClick={onNext}
           disabled={!canProceed}
         >
           Next
