@@ -915,15 +915,14 @@ export default function StepLocationContact({
   
   const blockingValidationFields = [
 
-  // required fields only
-  "service_mode",
-  "location_map_url",
-  "address",
-  "base_location_map_url",
-  "service_radius_km",
-  "phone",
-
-];
+    // required fields only
+    "service_mode",
+    "location_map_url",
+    "address",
+    "service_radius_km",
+    "phone",
+  
+  ];
 
   const hasBlockingErrors =
   
