@@ -373,10 +373,47 @@ export default function StepLocationContact({
             return String(v).trim();
           };
         
-          const currentValue =
-            field === "whatsapp_number"
-              ? whatsAppNational
-              : value;
+          const currentValue = (() => {
+
+            // WhatsApp local state
+            if (field === "whatsapp_number") {
+              return whatsAppNational;
+            }
+          
+            // Availability select
+            if (field === "availability_type") {
+              return data?.availability_type || "";
+            }
+          
+            // Availability note
+            if (field === "availability_note") {
+              return data?.availability_note || "";
+            }
+          
+            // Email
+            if (field === "email") {
+              return data?.email || "";
+            }
+          
+            // Website
+            if (field === "website") {
+              return data?.website || "";
+            }
+          
+            // Social URLs
+            if (
+              field === "instagram_url" ||
+              field === "facebook_url" ||
+              field === "linkedin_url" ||
+              field === "twitter_url" ||
+              field === "telegram_url"
+            ) {
+              return data?.[field] || "";
+            }
+          
+            return value;
+          
+          })();
         
           const originalNormalized =
             normalizeValue(original);
