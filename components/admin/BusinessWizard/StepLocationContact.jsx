@@ -266,7 +266,28 @@ export default function StepLocationContact({
   
         }
 
-        /* =========================
+        
+  
+        // NUMBER
+        if (rules.type === "number") {
+  
+          if (
+            value === undefined ||
+            value === null ||
+            value === "" ||
+            Number(value) <= 0
+          ) {
+            validationErrors.add(field);
+            return;
+          }
+  
+        }
+
+        
+  
+      }
+
+      /* =========================
            REMOVAL TRACKING
         ========================= */
         if (
@@ -342,23 +363,6 @@ export default function StepLocationContact({
           }
         
         }
-  
-        // NUMBER
-        if (rules.type === "number") {
-  
-          if (
-            value === undefined ||
-            value === null ||
-            value === "" ||
-            Number(value) <= 0
-          ) {
-            validationErrors.add(field);
-            return;
-          }
-  
-        }
-  
-      }
 
     }
   );
