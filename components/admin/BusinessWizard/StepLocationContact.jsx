@@ -79,6 +79,124 @@ const WEEK_DAYS = [
   "sunday",
 ];
 
+const FIELD_RULES = {
+
+  /* ========================================
+     REQUIRED
+  ======================================== */
+
+  service_mode: {
+    required: true,
+    type: "string",
+  },
+
+  location_map_url: {
+    required: true,
+    type: "string",
+    condition: (ctx) => ctx.needsPhysicalAddress,
+  },
+
+  address: {
+    required: true,
+    type: "string",
+    condition: (ctx) => ctx.needsPhysicalAddress,
+  },
+
+  base_location_map_url: {
+    required: true,
+    type: "string",
+    condition: (ctx) => ctx.needsServiceRadius,
+  },
+
+  service_radius_km: {
+    required: true,
+    type: "number",
+    condition: (ctx) => ctx.needsServiceRadius,
+  },
+
+  phone: {
+    required: true,
+    type: "string",
+  },
+
+  /* ========================================
+     OPTIONAL BUT TRACKED
+  ======================================== */
+
+  availability_type: {
+    required: false,
+    type: "string",
+    trackRemoval: true,
+  },
+
+  availability_note: {
+    required: false,
+    type: "string",
+    trackRemoval: true,
+  },
+
+  email: {
+    required: false,
+    type: "string",
+    trackRemoval: true,
+  },
+
+  website: {
+    required: false,
+    type: "string",
+    trackRemoval: true,
+  },
+
+  show_phone: {
+    required: false,
+    type: "boolean",
+    trackRemoval: true,
+  },
+  
+  show_email: {
+    required: false,
+    type: "boolean",
+    trackRemoval: true,
+  },
+
+  instagram_url: {
+    required: false,
+    type: "string",
+    trackRemoval: true,
+  },
+
+  facebook_url: {
+    required: false,
+    type: "string",
+    trackRemoval: true,
+  },
+
+  linkedin_url: {
+    required: false,
+    type: "string",
+    trackRemoval: true,
+  },
+
+  twitter_url: {
+    required: false,
+    type: "string",
+    trackRemoval: true,
+  },
+
+  telegram_url: {
+    required: false,
+    type: "string",
+    trackRemoval: true,
+  },
+
+  whatsapp_number: {
+    required: false,
+    type: "string",
+    trackRemoval: true,
+  },
+
+};
+
 
 /* ======================================================
    Component
@@ -89,6 +207,7 @@ export default function StepLocationContact({
   onNext,
   onBack,
   mode,
+  initialData,
 }) {
   function setField(key, value) {
     setData((prev) => ({ ...prev, [key]: value }));
@@ -102,6 +221,70 @@ export default function StepLocationContact({
   const needsPhysicalAddress = serviceMode === "on_site" || serviceMode === "hybrid";
   const needsServiceRadius = serviceMode === "at_home" || serviceMode === "hybrid";
   const needsContactInfo = !!serviceMode;
+
+  const validationErrors = new Set();
+
+  /* ==================================================
+     UNIVERSAL VALIDATION TRACKING
+  ================================================== */
+  Object.entries(FIELD_RULES).forEach(
+    ([field, rules]) => {
+  
+      const value = data?.[field];
+  
+      const shouldValidate =
+        typeof rules.condition === "function"
+          ? rules.condition({
+              needsPhysicalAddress,
+              needsServiceRadius,
+              needsContactInfo,
+              mode,
+              data,
+            })
+          : true;
+  
+      if (!shouldValidate) {
+        return;
+      }
+  
+      /* =========================
+         REQUIRED
+      ========================= */
+      if (rules.required) {
+  
+        // STRING
+        if (rules.type === "string") {
+  
+          const trimmed =
+            String(value || "").trim();
+  
+          if (!trimmed) {
+            validationErrors.add(field);
+            return;
+          }
+  
+        }
+  
+        // NUMBER
+        if (rules.type === "number") {
+  
+          if (
+            value === undefined ||
+            value === null ||
+            value === "" ||
+            Number(value) <= 0
+          ) {
+            validationErrors.add(field);
+            return;
+          }
+  
+        }
+  
+      }
+
+    }
+  );
+     
 
   /* ─────────────────────────────
      Validation state
@@ -192,6 +375,9 @@ export default function StepLocationContact({
   const [phoneCountry, setPhoneCountry] = useState("FR");
   const [phoneNational, setPhoneNational] = useState("");
 
+  const [whatsAppCountry, setWhatsAppCountry] = useState("FR");
+  const [whatsAppNational, setWhatsAppNational] = useState("");
+
   useEffect(() => {
     if (data.availability_type !== "business_hours") {
       if (data.availability_hours) setField("availability_hours", null);
@@ -222,9 +408,33 @@ export default function StepLocationContact({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!data.whatsapp_number) return;
+  
+    const parsed =
+      parsePhoneNumberFromString(
+        data.whatsapp_number
+      );
+  
+    if (parsed) {
+      setWhatsAppCountry(
+        parsed.country || "FR"
+      );
+  
+      setWhatsAppNational(
+        parsed.nationalNumber || ""
+      );
+    }
+  
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function updatePhone(country, raw) {
     const digits = raw.replace(/\D+/g, "").replace(/^0+/, "");
     setPhoneNational(digits);
+    if (!digits) {
+      setError("phone", "");
+    }
 
     if (!digits) {
       setField("phone", "");
@@ -241,6 +451,59 @@ export default function StepLocationContact({
 
     setError("phone", "");
     setField("phone", parsed.number); // E.164
+  }
+
+  function updateWhatsApp(country, raw) {
+
+    const digits =
+      raw
+        .replace(/\D+/g, "")
+        .replace(/^0+/, "");
+  
+    setWhatsAppNational(digits);
+
+    
+  
+    if (!digits) {
+  
+      setField("whatsapp_number", "");
+  
+      setError(
+        "whatsapp_number",
+        ""
+      );
+  
+      return;
+    }
+  
+    const parsed =
+      parsePhoneNumberFromString(
+        digits,
+        country
+      );
+  
+    if (
+      !parsed ||
+      !parsed.isValid()
+    ) {
+  
+      setError(
+        "whatsapp_number",
+        "Invalid WhatsApp number for selected country"
+      );
+  
+      return;
+    }
+  
+    setError(
+      "whatsapp_number",
+      ""
+    );
+  
+    setField(
+      "whatsapp_number",
+      parsed.number
+    );
   }
 
   /* ─────────────────────────────
@@ -287,10 +550,59 @@ export default function StepLocationContact({
       ) {
         ok = false;
       }
+
+      if (
+        data.website &&
+        !/^https?:\/\/.+/i.test(data.website)
+      ) {
+        ok = false;
+      }
+      
+      if (
+        data.instagram_url &&
+        !/^https?:\/\/.+/i.test(data.instagram_url)
+      ) {
+        ok = false;
+      }
+      
+      if (
+        data.facebook_url &&
+        !/^https?:\/\/.+/i.test(data.facebook_url)
+      ) {
+        ok = false;
+      }
+      
+      if (
+        data.linkedin_url &&
+        !/^https?:\/\/.+/i.test(data.linkedin_url)
+      ) {
+        ok = false;
+      }
+      
+      if (
+        data.twitter_url &&
+        !/^https?:\/\/.+/i.test(data.twitter_url)
+      ) {
+        ok = false;
+      }
+      
+      if (
+        data.telegram_url &&
+        !/^https?:\/\/.+/i.test(data.telegram_url)
+      ) {
+        ok = false;
+      }
   
       if (
         phoneNational &&
         errors.phone
+      ) {
+        ok = false;
+      }
+
+      if (
+        whatsAppNational &&
+        errors.whatsapp_number
       ) {
         ok = false;
       }
@@ -367,27 +679,189 @@ export default function StepLocationContact({
       }
     }
 
-    
-    // Optional validations that can still show errors (but not block next)
+    // Optional fields with syntax validation
+    // Invalid values still block proceeding
     if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       ok = false;
     }
 
 
-    if (data.website) validateUrl("website", data.website);
-    if (data.instagram_url) validateUrl("instagram_url", data.instagram_url);
-    if (data.facebook_url) validateUrl("facebook_url", data.facebook_url);
-    if (data.linkedin_url) validateUrl("linkedin_url", data.linkedin_url);
-    if (data.twitter_url) validateUrl("twitter_url", data.twitter_url);
-    if (data.telegram_url) validateUrl("telegram_url", data.telegram_url);
+    if (
+      data.website &&
+      !/^https?:\/\/.+/i.test(data.website)
+    ) {
+      validateUrl("website", data.website);
+      ok = false;
+    }
+    
+    if (
+      data.instagram_url &&
+      !/^https?:\/\/.+/i.test(data.instagram_url)
+    ) {
+      validateUrl("instagram_url", data.instagram_url);
+      ok = false;
+    }
+    
+    if (
+      data.facebook_url &&
+      !/^https?:\/\/.+/i.test(data.facebook_url)
+    ) {
+      validateUrl("facebook_url", data.facebook_url);
+      ok = false;
+    }
+    
+    if (
+      data.linkedin_url &&
+      !/^https?:\/\/.+/i.test(data.linkedin_url)
+    ) {
+      validateUrl("linkedin_url", data.linkedin_url);
+      ok = false;
+    }
+    
+    if (
+      data.twitter_url &&
+      !/^https?:\/\/.+/i.test(data.twitter_url)
+    ) {
+      validateUrl("twitter_url", data.twitter_url);
+      ok = false;
+    }
+    
+    if (
+      data.telegram_url &&
+      !/^https?:\/\/.+/i.test(data.telegram_url)
+    ) {
+      validateUrl("telegram_url", data.telegram_url);
+      ok = false;
+    }
 
     // If phone entered but invalid, block
     if (phoneNational && errors.phone) ok = false;
 
+    // If WhatsApp entered but invalid, block
+    if ( whatsAppNational && errors.whatsapp_number ) { ok = false;}
+
     return ok;
   }
 
-  const canProceed = !!mode;
+  const hasInvalidEmail =
+    data.email &&
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email);
+  
+  const hasInvalidUrl = (value) =>
+    value &&
+    !/^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(value);
+  
+  const hasBlockingErrors =
+  
+    // Required-field validation
+    validationErrors.size > 0 ||
+  
+    // Phone validation
+    (
+      phoneNational &&
+      !!errors.phone
+    ) ||
+
+    // WhatsApp validation
+    (
+      whatsAppNational &&
+      !!errors.whatsapp_number
+    ) ||
+  
+    // Email validation
+    hasInvalidEmail ||
+  
+    // URL validations
+    hasInvalidUrl(data.website) ||
+    hasInvalidUrl(data.instagram_url) ||
+    hasInvalidUrl(data.facebook_url) ||
+    hasInvalidUrl(data.linkedin_url) ||
+    hasInvalidUrl(data.twitter_url) ||
+    hasInvalidUrl(data.telegram_url) ||
+  
+    // Google Maps validations
+    !!errors.location_map_url ||
+    !!errors.base_location_map_url ||
+  
+    // Radius / address validations
+    !!errors.service_radius_km ||
+    !!errors.address ||
+    !!errors.postal_code;
+  
+  const canProceed = !hasBlockingErrors;
+
+  function getFieldWarning(field) {
+
+    const rules = FIELD_RULES[field];
+  
+    if (!rules) {
+      return "";
+    }
+  
+    const value = data?.[field];
+    const trimmed = rules.type === "boolean" ? value : String(value || "").trim();
+  
+    const shouldValidate =
+      typeof rules.condition === "function"
+        ? rules.condition({
+            needsPhysicalAddress,
+            needsServiceRadius,
+            needsContactInfo,
+            mode,
+            data,
+          })
+        : true;
+  
+    if (!shouldValidate) {
+      return "";
+    }
+  
+    // REQUIRED
+    if (
+      rules.required &&
+      !trimmed
+    ) {
+      return "Please complete this field.";
+    }
+  
+    // REMOVAL TRACKING
+    if (
+      mode === "user-update" &&
+      rules.trackRemoval
+    ) {
+  
+      const original =
+        initialData?.[field];
+  
+      const hadOriginalValue =
+        original !== undefined &&
+        original !== null &&
+        String(original).trim() !== "";
+  
+      if (rules.type === "boolean") {
+
+        if (original !== value) {
+          return "You changed the visibility setting for this field.";
+        }
+      
+      } else {
+      
+        if (
+          hadOriginalValue &&
+          !trimmed
+        ) {
+          return field === "whatsapp_number"
+            ? "You removed the existing WhatsApp number."
+            : "You removed an existing value from this field.";
+        }
+      
+      }
+  
+    }
+  
+    return "";
+  }
+  
   /* ─────────────────────────────
      Render — Main Form
   ───────────────────────────── */
@@ -429,6 +903,11 @@ export default function StepLocationContact({
             Hybrid
           </option>
         </select>
+        {getFieldWarning("service_mode") && (
+          <p className="text-red-500 text-sm mt-1">
+            {getFieldWarning("service_mode")}
+          </p>
+        )}
       </div>
 
       {/* ─────────────────────────────
@@ -450,6 +929,11 @@ export default function StepLocationContact({
           <option value="business_hours">Business hours</option>
           <option value="appointment_only">Appointment only</option>
         </select>
+        {getFieldWarning("availability_type") && (
+          <p className="text-red-500 text-sm mt-1">
+            {getFieldWarning("availability_type")}
+          </p>
+        )}
       </div>
 
       <div className="mb-6">
@@ -465,6 +949,11 @@ export default function StepLocationContact({
           }
           placeholder="e.g. Available weekends, emergency calls accepted"
         />
+        {getFieldWarning("availability_note") && (
+          <p className="text-red-500 text-sm mt-1">
+            {getFieldWarning("availability_note")}
+          </p>
+        )}
       </div>
 
       {data.availability_type === "business_hours" && data.availability_hours && (
@@ -581,6 +1070,7 @@ export default function StepLocationContact({
               {errors.location_map_url}
             </p>
           )}
+          
         </div>
       )}
 
@@ -616,6 +1106,7 @@ export default function StepLocationContact({
               {errors.base_location_map_url}
             </p>
           )}
+          
         </div>
       )}
     
@@ -660,6 +1151,7 @@ export default function StepLocationContact({
             {errors.address && (
               <p className="admin-error">{errors.address}</p>
             )}
+            
             <p className="text-sm text-red-600 mt-1">
               Please enter the address in this order: 
               Number & Street, Postal code, City, Country
@@ -722,7 +1214,7 @@ export default function StepLocationContact({
       {needsServiceRadius && (
         <div className="mb-6">
           <label className="admin-label">
-            Service radius (km)
+            Service radius (km) *
           </label>
           <input
             type="number"
@@ -740,6 +1232,7 @@ export default function StepLocationContact({
               {errors.service_radius_km}
             </p>
           )}
+          
         </div>
       )}
 
@@ -752,10 +1245,10 @@ export default function StepLocationContact({
           {/* Phone */}
           <div className="mb-6">
             <label className="admin-label">
-              Phone
+              Phone *
             </label>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col md:flex-row gap-3">
               <div style={{ minWidth: 260 }}>
                 <Select
                   styles={countrySelectStyles}
@@ -789,6 +1282,7 @@ export default function StepLocationContact({
                 {errors.phone}
               </p>
             )}
+            
           </div>
 
           {/* Email */}
@@ -809,6 +1303,11 @@ export default function StepLocationContact({
             {errors.email && (
               <p className="admin-error">
                 {errors.email}
+              </p>
+            )}
+            {getFieldWarning("email") && (
+              <p className="text-red-500 text-sm mt-1">
+                {getFieldWarning("email")}
               </p>
             )}
           </div>
@@ -833,6 +1332,11 @@ export default function StepLocationContact({
                 {errors.website}
               </p>
             )}
+            {getFieldWarning("website") && (
+              <p className="text-red-500 text-sm mt-1">
+                {getFieldWarning("website")}
+              </p>
+            )}
           </div>
         </>
       )}
@@ -840,28 +1344,48 @@ export default function StepLocationContact({
          Contact visibility
       ───────────────────────────── */}
       {needsContactInfo && (
-        <div className="mb-6 flex gap-6">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={data.show_phone ?? true}
-              onChange={(e) =>
-                setField("show_phone", e.target.checked)
-              }
-            />
-            Show phone number
-          </label>
+        <div className="mb-6 flex flex-col gap-4">
 
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={data.show_email ?? true}
-              onChange={(e) =>
-                setField("show_email", e.target.checked)
-              }
-            />
-            Show email
-          </label>
+          {/* Show phone */}
+          <div>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={data.show_phone ?? true}
+                onChange={(e) =>
+                  setField("show_phone", e.target.checked)
+                }
+              />
+              Show phone number
+            </label>
+        
+            {getFieldWarning("show_phone") && (
+              <p className="text-red-500 text-sm mt-1 ml-6">
+                {getFieldWarning("show_phone")}
+              </p>
+            )}
+          </div>
+        
+          {/* Show email */}
+          <div>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={data.show_email ?? true}
+                onChange={(e) =>
+                  setField("show_email", e.target.checked)
+                }
+              />
+              Show email
+            </label>
+        
+            {getFieldWarning("show_email") && (
+              <p className="text-red-500 text-sm mt-1 ml-6">
+                {getFieldWarning("show_email")}
+              </p>
+            )}
+          </div>
+        
         </div>
       )}
 
@@ -884,6 +1408,11 @@ export default function StepLocationContact({
             {errors.instagram_url && (
               <p className="admin-error">{errors.instagram_url}</p>
             )}
+            {getFieldWarning("instagram_url") && (
+              <p className="text-red-500 text-sm mt-1">
+                {getFieldWarning("instagram_url")}
+              </p>
+            )}
           </div>
           
           {/* Facebook (NEW) */}
@@ -899,6 +1428,11 @@ export default function StepLocationContact({
             />
             {errors.facebook_url && (
               <p className="admin-error">{errors.facebook_url}</p>
+            )}
+            {getFieldWarning("facebook_url") && (
+              <p className="text-red-500 text-sm mt-1">
+                {getFieldWarning("facebook_url")}
+              </p>
             )}
           </div>
 
@@ -919,6 +1453,11 @@ export default function StepLocationContact({
                 {errors.linkedin_url}
               </p>
             )}
+            {getFieldWarning("linkedin_url") && (
+              <p className="text-red-500 text-sm mt-1">
+                {getFieldWarning("linkedin_url")}
+              </p>
+            )}
           </div>
 
           {/* Twitter / X */}
@@ -935,6 +1474,11 @@ export default function StepLocationContact({
             {errors.twitter_url && (
               <p className="admin-error">
                 {errors.twitter_url}
+              </p>
+            )}
+            {getFieldWarning("twitter_url") && (
+              <p className="text-red-500 text-sm mt-1">
+                {getFieldWarning("twitter_url")}
               </p>
             )}
           </div>
@@ -955,18 +1499,76 @@ export default function StepLocationContact({
                 {errors.telegram_url}
               </p>
             )}
+            {getFieldWarning("telegram_url") && (
+              <p className="text-red-500 text-sm mt-1">
+                {getFieldWarning("telegram_url")}
+              </p>
+            )}
           </div>
 
           {/* WhatsApp */}
           <div className="md:col-span-2">
-            <input
-              className="admin-input"
-              placeholder="WhatsApp number (optional)"
-              value={data.whatsapp_number || ""}
-              onChange={(e) =>
-                setField("whatsapp_number", e.target.value)
-              }
-            />
+          
+            <label className="admin-label">
+              WhatsApp number
+            </label>
+          
+            <div className="flex flex-col md:flex-row gap-3">
+          
+              <div style={{ minWidth: 260 }}>
+                <Select
+                  styles={countrySelectStyles}
+                  options={countryOptions}
+                  value={countryOptions.find(
+                    (o) =>
+                      o.value === whatsAppCountry
+                  )}
+                  onChange={(opt) => {
+          
+                    const nextCountry =
+                      opt?.value || "FR";
+          
+                    setWhatsAppCountry(
+                      nextCountry
+                    );
+          
+                    updateWhatsApp(
+                      nextCountry,
+                      whatsAppNational
+                    );
+                  }}
+                  isSearchable
+                  placeholder="Country code"
+                />
+              </div>
+          
+              <input
+                className="admin-input"
+                value={whatsAppNational}
+                onChange={(e) =>
+                  updateWhatsApp(
+                    whatsAppCountry,
+                    e.target.value
+                  )
+                }
+                placeholder="WhatsApp number (no leading 0)"
+                inputMode="numeric"
+              />
+          
+            </div>
+          
+            {errors.whatsapp_number && (
+              <p className="admin-error">
+                {errors.whatsapp_number}
+              </p>
+            )}
+          
+            {getFieldWarning("whatsapp_number") && (
+              <p className="text-red-500 text-sm mt-1">
+                {getFieldWarning("whatsapp_number")}
+              </p>
+            )}
+          
           </div>
         </div>
       )}
