@@ -105,6 +105,7 @@ const FIELD_RULES = {
   base_location_map_url: {
     required: true,
     type: "string",
+    trackRemoval: true,
     condition: (ctx) => ctx.needsServiceRadius,
   },
 
@@ -865,17 +866,27 @@ export default function StepLocationContact({
       const original =
         initialData?.[field];
   
-      const originalTrimmed =
-        String(original || "").trim();
-  
+      const normalizeValue = (v) => {
+
+        if (v === undefined || v === null) {
+          return "";
+        }
+      
+        return String(v).trim();
+      };
+      
+      const originalNormalized =
+        normalizeValue(original);
+      
+      const currentNormalized =
+        normalizeValue(value);
+      
       const hadOriginalValue =
-        original !== undefined &&
-        original !== null &&
-        originalTrimmed !== "";
+        originalNormalized !== "";
   
       if (
         hadOriginalValue &&
-        !trimmed
+        currentNormalized === ""
       ) {
   
         return field === "whatsapp_number"
@@ -1136,6 +1147,12 @@ export default function StepLocationContact({
           {errors.base_location_map_url && (
             <p className="admin-error">
               {errors.base_location_map_url}
+            </p>
+          )}
+
+          {getFieldWarning("base_location_map_url") && (
+            <p className="text-red-500 text-sm mt-1">
+              {getFieldWarning("base_location_map_url")}
             </p>
           )}
           
