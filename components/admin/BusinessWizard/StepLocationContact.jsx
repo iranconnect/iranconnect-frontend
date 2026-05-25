@@ -231,25 +231,7 @@ export default function StepLocationContact({
   Object.entries(FIELD_RULES).forEach(
     ([field, rules]) => {
   
-      const value = (() => {
-
-        // WhatsApp uses separate UI state
-        if (field === "whatsapp_number") {
-          return whatsAppNational;
-        }
-      
-        // Phone visibility booleans
-        if (
-          field === "show_phone" ||
-          field === "show_email"
-        ) {
-          return data?.[field];
-        }
-      
-        // Everything else
-        return data?.[field];
-      
-      })();
+      const value = data?.[field];
   
       const shouldValidate =
         typeof rules.condition === "function"
@@ -855,7 +837,7 @@ export default function StepLocationContact({
       return "";
     }
   
-    const value = data?.[field];
+    
   
     const shouldValidate =
       typeof rules.condition === "function"
@@ -871,6 +853,16 @@ export default function StepLocationContact({
     if (!shouldValidate) {
       return "";
     }
+
+    const value = (() => {
+
+      if (field === "whatsapp_number") {
+        return whatsAppNational;
+      }
+    
+      return data?.[field];
+    
+    })();
   
     
   
