@@ -223,6 +223,58 @@ export default function StepLocationContact({
   const needsServiceRadius = serviceMode === "at_home" || serviceMode === "hybrid";
   const needsContactInfo = !!serviceMode;
 
+  
+     
+
+  /* ─────────────────────────────
+     Validation state
+  ───────────────────────────── */
+  const [errors, setErrors] = useState({});
+
+  const [initialSnapshot] = useState(() => ({
+    availability_type:
+      initialData?.availability_type ?? "",
+  
+    availability_note:
+      initialData?.availability_note ?? "",
+  
+    email:
+      initialData?.email ?? "",
+  
+    website:
+      initialData?.website ?? "",
+  
+    show_phone:
+      initialData?.show_phone ?? true,
+  
+    show_email:
+      initialData?.show_email ?? true,
+  
+    instagram_url:
+      initialData?.instagram_url ?? "",
+  
+    facebook_url:
+      initialData?.facebook_url ?? "",
+  
+    linkedin_url:
+      initialData?.linkedin_url ?? "",
+  
+    twitter_url:
+      initialData?.twitter_url ?? "",
+  
+    telegram_url:
+      initialData?.telegram_url ?? "",
+  
+    whatsapp_number:
+      initialData?.whatsapp_number ?? "",
+  }));
+
+  const [phoneCountry, setPhoneCountry] = useState("FR");
+  const [phoneNational, setPhoneNational] = useState("");
+
+  const [whatsAppCountry, setWhatsAppCountry] = useState("FR");
+  const [whatsAppNational, setWhatsAppNational] = useState("");
+
   const validationErrors = new Set();
 
   /* ==================================================
@@ -366,56 +418,6 @@ export default function StepLocationContact({
 
     }
   );
-     
-
-  /* ─────────────────────────────
-     Validation state
-  ───────────────────────────── */
-  const [errors, setErrors] = useState({});
-
-  const [initialSnapshot] = useState(() => ({
-    availability_type:
-      initialData?.availability_type ?? "",
-  
-    availability_note:
-      initialData?.availability_note ?? "",
-  
-    email:
-      initialData?.email ?? "",
-  
-    website:
-      initialData?.website ?? "",
-  
-    show_phone:
-      initialData?.show_phone ?? true,
-  
-    show_email:
-      initialData?.show_email ?? true,
-  
-    instagram_url:
-      initialData?.instagram_url ?? "",
-  
-    facebook_url:
-      initialData?.facebook_url ?? "",
-  
-    linkedin_url:
-      initialData?.linkedin_url ?? "",
-  
-    twitter_url:
-      initialData?.twitter_url ?? "",
-  
-    telegram_url:
-      initialData?.telegram_url ?? "",
-  
-    whatsapp_number:
-      initialData?.whatsapp_number ?? "",
-  }));
-
-  const [phoneCountry, setPhoneCountry] = useState("FR");
-  const [phoneNational, setPhoneNational] = useState("");
-
-  const [whatsAppCountry, setWhatsAppCountry] = useState("FR");
-  const [whatsAppNational, setWhatsAppNational] = useState("");
 
   const setError = (field, message) => {
     setErrors((p) => ({ ...p, [field]: message || "" }));
