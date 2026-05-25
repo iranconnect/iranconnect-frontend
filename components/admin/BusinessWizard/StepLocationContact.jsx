@@ -913,17 +913,32 @@ export default function StepLocationContact({
     value &&
     !/^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(value);
   
+  const blockingValidationFields = [
+
+  // required fields only
+  "service_mode",
+  "location_map_url",
+  "address",
+  "base_location_map_url",
+  "service_radius_km",
+  "phone",
+
+];
+
   const hasBlockingErrors =
   
-    // Required-field validation
-    validationErrors.size > 0 ||
+    // Only REQUIRED validation errors block next
+    [...validationErrors].some(
+      (field) =>
+        blockingValidationFields.includes(field)
+    ) ||
   
     // Phone validation
     (
       phoneNational &&
       !!errors.phone
     ) ||
-
+  
     // WhatsApp validation
     (
       whatsAppNational &&
