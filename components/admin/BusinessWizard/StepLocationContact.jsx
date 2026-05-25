@@ -265,6 +265,83 @@ export default function StepLocationContact({
           }
   
         }
+
+        /* =========================
+           REMOVAL TRACKING
+        ========================= */
+        if (
+          mode === "user-update" &&
+          rules.trackRemoval
+        ) {
+        
+          const original =
+            initialSnapshot?.[field];
+        
+          const normalizeValue = (v) => {
+        
+            if (
+              v === undefined ||
+              v === null
+            ) {
+              return "";
+            }
+        
+            if (
+              v === "null" ||
+              v === "undefined"
+            ) {
+              return "";
+            }
+        
+            if (typeof v === "boolean") {
+              return String(v);
+            }
+        
+            return String(v).trim();
+          };
+        
+          const currentValue =
+            field === "whatsapp_number"
+              ? whatsAppNational
+              : value;
+        
+          const originalNormalized =
+            normalizeValue(original);
+        
+          const currentNormalized =
+            normalizeValue(currentValue);
+        
+          const hadOriginalValue =
+            originalNormalized !== "";
+        
+          // BOOLEAN CHANGE TRACKING
+          if (
+            hadOriginalValue &&
+            rules.type === "boolean"
+          ) {
+        
+            if (
+              originalNormalized !==
+              currentNormalized
+            ) {
+              validationErrors.add(field);
+            }
+        
+          }
+        
+          // STRING / NUMBER REMOVAL
+          if (
+            hadOriginalValue &&
+            (
+              currentNormalized === "" ||
+              currentNormalized === "null" ||
+              currentNormalized === "undefined"
+            )
+          ) {
+            validationErrors.add(field);
+          }
+        
+        }
   
         // NUMBER
         if (rules.type === "number") {
@@ -882,88 +959,7 @@ export default function StepLocationContact({
       return "Please complete this field.";
     }
   
-    // =========================
-    // REMOVAL TRACKING
-    // =========================
-    if (
-      mode === "user-update" &&
-      rules.trackRemoval
-    ) {
-  
-      const original =
-        initialSnapshot?.[field];
-  
-      const normalizeValue = (v) => {
-
-        if (
-          v === undefined ||
-          v === null
-        ) {
-          return "";
-        }
-      
-        // normalize weird backend values
-        if (
-          v === "null" ||
-          v === "undefined"
-        ) {
-          return "";
-        }
-      
-        // booleans
-        if (typeof v === "boolean") {
-          return String(v);
-        }
-      
-        return String(v).trim();
-      };
-      
-      const originalNormalized =
-        normalizeValue(original);
-      
-      const currentNormalized =
-        normalizeValue(value);
-      
-      const hadOriginalValue =
-        originalNormalized !== "";
-  
-      if (hadOriginalValue) {
-
-        // BOOLEAN CHANGE TRACKING
-        if (rules.type === "boolean") {
-      
-          if (
-            originalNormalized !==
-            currentNormalized
-          ) {
-            return "You changed the visibility setting for this field.";
-          }
-      
-          return "";
-        }
-      
-        // STRING / NUMBER REMOVAL
-        const wasRemoved =
-        
-          originalNormalized !== "" &&
-        
-          (
-            currentNormalized === "" ||
-            currentNormalized === "null" ||
-            currentNormalized === "undefined"
-          );
-        
-        if (wasRemoved) {
-        
-          return field === "whatsapp_number"
-            ? "You removed the existing WhatsApp number."
-            : "You removed an existing value from this field.";
-        
-        }
-      
-      }
-  
-    }
+    
   
     return "";
   }
@@ -1035,9 +1031,9 @@ export default function StepLocationContact({
           <option value="business_hours">Business hours</option>
           <option value="appointment_only">Appointment only</option>
         </select>
-        {getFieldWarning("availability_type") && (
+        {validationErrors.has("availability_type") && (
           <p className="text-red-500 text-sm mt-1">
-            {getFieldWarning("availability_type")}
+            You removed an existing value from this field.
           </p>
         )}
       </div>
@@ -1055,9 +1051,9 @@ export default function StepLocationContact({
           }
           placeholder="e.g. Available weekends, emergency calls accepted"
         />
-        {getFieldWarning("availability_note") && (
+        {validationErrors.has("availability_note") && (
           <p className="text-red-500 text-sm mt-1">
-            {getFieldWarning("availability_note")}
+            You removed an existing value from this field.
           </p>
         )}
       </div>
@@ -1440,9 +1436,9 @@ export default function StepLocationContact({
                 {errors.email}
               </p>
             )}
-            {getFieldWarning("email") && (
+            {validationErrors.has("email") && (
               <p className="text-red-500 text-sm mt-1">
-                {getFieldWarning("email")}
+                You removed an existing value from this field.
               </p>
             )}
           </div>
@@ -1467,9 +1463,9 @@ export default function StepLocationContact({
                 {errors.website}
               </p>
             )}
-            {getFieldWarning("website") && (
+            {validationErrors.has("website") && (
               <p className="text-red-500 text-sm mt-1">
-                {getFieldWarning("website")}
+                You removed an existing value from this field.
               </p>
             )}
           </div>
@@ -1494,9 +1490,9 @@ export default function StepLocationContact({
               Show phone number
             </label>
         
-            {getFieldWarning("show_phone") && (
+            {validationErrors.has("show_phone") && (
               <p className="text-red-500 text-sm mt-1 ml-6">
-                {getFieldWarning("show_phone")}
+                You changed the visibility setting for this field.
               </p>
             )}
           </div>
@@ -1514,9 +1510,9 @@ export default function StepLocationContact({
               Show email
             </label>
         
-            {getFieldWarning("show_email") && (
+            {validationErrors.has("show_email") && (
               <p className="text-red-500 text-sm mt-1 ml-6">
-                {getFieldWarning("show_email")}
+                You changed the visibility setting for this field.
               </p>
             )}
           </div>
@@ -1543,9 +1539,9 @@ export default function StepLocationContact({
             {errors.instagram_url && (
               <p className="admin-error">{errors.instagram_url}</p>
             )}
-            {getFieldWarning("instagram_url") && (
+            {validationErrors.has("instagram_url") && (
               <p className="text-red-500 text-sm mt-1">
-                {getFieldWarning("instagram_url")}
+                You removed an existing value from this field.
               </p>
             )}
           </div>
@@ -1564,9 +1560,9 @@ export default function StepLocationContact({
             {errors.facebook_url && (
               <p className="admin-error">{errors.facebook_url}</p>
             )}
-            {getFieldWarning("facebook_url") && (
+            {validationErrors.has("facebook_url") && (
               <p className="text-red-500 text-sm mt-1">
-                {getFieldWarning("facebook_url")}
+                You removed an existing value from this field.
               </p>
             )}
           </div>
@@ -1588,9 +1584,9 @@ export default function StepLocationContact({
                 {errors.linkedin_url}
               </p>
             )}
-            {getFieldWarning("linkedin_url") && (
+            {validationErrors.has("linkedin_url") && (
               <p className="text-red-500 text-sm mt-1">
-                {getFieldWarning("linkedin_url")}
+                You removed an existing value from this field.
               </p>
             )}
           </div>
@@ -1611,9 +1607,9 @@ export default function StepLocationContact({
                 {errors.twitter_url}
               </p>
             )}
-            {getFieldWarning("twitter_url") && (
+            {validationErrors.has("twitter_url") && (
               <p className="text-red-500 text-sm mt-1">
-                {getFieldWarning("twitter_url")}
+                You removed an existing value from this field.
               </p>
             )}
           </div>
@@ -1634,9 +1630,9 @@ export default function StepLocationContact({
                 {errors.telegram_url}
               </p>
             )}
-            {getFieldWarning("telegram_url") && (
+            {validationErrors.has("telegram_url") && (
               <p className="text-red-500 text-sm mt-1">
-                {getFieldWarning("telegram_url")}
+                You removed an existing value from this field.
               </p>
             )}
           </div>
@@ -1698,9 +1694,9 @@ export default function StepLocationContact({
               </p>
             )}
           
-            {getFieldWarning("whatsapp_number") && (
+            {validationErrors.has("whatsapp_number") && (
               <p className="text-red-500 text-sm mt-1">
-                {getFieldWarning("whatsapp_number")}
+                You removed the existing WhatsApp number.
               </p>
             )}
           
