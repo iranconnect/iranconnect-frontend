@@ -799,7 +799,6 @@ export default function StepLocationContact({
     }
   
     const value = data?.[field];
-    const trimmed = rules.type === "boolean" ? value : String(value || "").trim();
   
     const shouldValidate =
       typeof rules.condition === "function"
@@ -816,7 +815,38 @@ export default function StepLocationContact({
       return "";
     }
   
+    // =========================
+    // BOOLEAN
+    // =========================
+    if (rules.type === "boolean") {
+  
+      if (mode !== "user-update") {
+        return "";
+      }
+  
+      const original =
+        initialData?.[field];
+  
+      // فقط اگر user واقعاً تغییر داده
+      if (
+        original !== undefined &&
+        original !== value
+      ) {
+        return "You changed the visibility setting for this field.";
+      }
+  
+      return "";
+    }
+  
+    // =========================
+    // STRING / NUMBER
+    // =========================
+    const trimmed =
+      String(value || "").trim();
+  
+    // =========================
     // REQUIRED
+    // =========================
     if (
       rules.required &&
       !trimmed
@@ -824,7 +854,9 @@ export default function StepLocationContact({
       return "Please complete this field.";
     }
   
+    // =========================
     // REMOVAL TRACKING
+    // =========================
     if (
       mode === "user-update" &&
       rules.trackRemoval
@@ -833,28 +865,23 @@ export default function StepLocationContact({
       const original =
         initialData?.[field];
   
+      const originalTrimmed =
+        String(original || "").trim();
+  
       const hadOriginalValue =
         original !== undefined &&
         original !== null &&
-        String(original).trim() !== "";
+        originalTrimmed !== "";
   
-      if (rules.type === "boolean") {
-
-        if (original !== value) {
-          return "You changed the visibility setting for this field.";
-        }
-      
-      } else {
-      
-        if (
-          hadOriginalValue &&
-          !trimmed
-        ) {
-          return field === "whatsapp_number"
-            ? "You removed the existing WhatsApp number."
-            : "You removed an existing value from this field.";
-        }
-      
+      if (
+        hadOriginalValue &&
+        !trimmed
+      ) {
+  
+        return field === "whatsapp_number"
+          ? "You removed the existing WhatsApp number."
+          : "You removed an existing value from this field.";
+  
       }
   
     }
@@ -1070,6 +1097,11 @@ export default function StepLocationContact({
               {errors.location_map_url}
             </p>
           )}
+          {getFieldWarning("location_map_url") && (
+            <p className="text-red-500 text-sm mt-1">
+              {getFieldWarning("location_map_url")}
+            </p>
+          )}
           
         </div>
       )}
@@ -1150,6 +1182,12 @@ export default function StepLocationContact({
 
             {errors.address && (
               <p className="admin-error">{errors.address}</p>
+            )}
+
+            {getFieldWarning("address") && (
+              <p className="text-red-500 text-sm mt-1">
+                {getFieldWarning("address")}
+              </p>
             )}
             
             <p className="text-sm text-red-600 mt-1">
@@ -1232,6 +1270,12 @@ export default function StepLocationContact({
               {errors.service_radius_km}
             </p>
           )}
+
+          {getFieldWarning("service_radius_km") && (
+            <p className="text-red-500 text-sm mt-1">
+              {getFieldWarning("service_radius_km")}
+            </p>
+          )}
           
         </div>
       )}
@@ -1280,6 +1324,12 @@ export default function StepLocationContact({
             {errors.phone && (
               <p className="admin-error">
                 {errors.phone}
+              </p>
+            )}
+
+            {getFieldWarning("phone") && (
+              <p className="text-red-500 text-sm mt-1">
+                {getFieldWarning("phone")}
               </p>
             )}
             
