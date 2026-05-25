@@ -232,43 +232,44 @@ export default function StepLocationContact({
   const [errors, setErrors] = useState({});
 
   const [initialSnapshot] = useState(() => ({
+
     availability_type:
-      initialData?.availability_type ?? "",
+      data?.availability_type ?? "",
   
     availability_note:
-      initialData?.availability_note ?? "",
+      data?.availability_note ?? "",
   
     email:
-      initialData?.email ?? "",
+      data?.email ?? "",
   
     website:
-      initialData?.website ?? "",
+      data?.website ?? "",
   
     show_phone:
-      initialData?.show_phone ?? true,
+      data?.show_phone ?? true,
   
     show_email:
-      initialData?.show_email ?? true,
+      data?.show_email ?? true,
   
     instagram_url:
-      initialData?.instagram_url ?? "",
+      data?.instagram_url ?? "",
   
     facebook_url:
-      initialData?.facebook_url ?? "",
+      data?.facebook_url ?? "",
   
     linkedin_url:
-      initialData?.linkedin_url ?? "",
+      data?.linkedin_url ?? "",
   
     twitter_url:
-      initialData?.twitter_url ?? "",
+      data?.twitter_url ?? "",
   
     telegram_url:
-      initialData?.telegram_url ?? "",
+      data?.telegram_url ?? "",
   
     whatsapp_number:
-      initialData?.whatsapp_number ?? "",
+      data?.whatsapp_number ?? "",
+  
   }));
-
   const [phoneCountry, setPhoneCountry] = useState("FR");
   const [phoneNational, setPhoneNational] = useState("");
 
