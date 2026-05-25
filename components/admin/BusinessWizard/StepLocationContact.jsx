@@ -125,7 +125,7 @@ const FIELD_RULES = {
   ======================================== */
 
   availability_type: {
-    required: false,
+    required: true,
     type: "string",
     trackRemoval: true,
   },
@@ -823,7 +823,14 @@ export default function StepLocationContact({
       const hours = data.availability_hours;
     
       if (!hours) {
+
         ok = false;
+      
+        setError(
+          "availability_hours",
+          "Business hours are required"
+        );
+      
       } else {
         for (const day of WEEK_DAYS) {
           const d = hours[day];
@@ -834,11 +841,19 @@ export default function StepLocationContact({
           if (!d.closed) {
             if (!d.open || !d.close || d.open >= d.close) {
               ok = false;
+              setError(
+                "availability_hours",
+                "Please enter valid business hours"
+              );
               break;
             }
           }
         }
       }
+    }
+
+    else {
+      setError("availability_hours", "");
     }
 
     // Optional fields with syntax validation
@@ -917,6 +932,7 @@ export default function StepLocationContact({
 
     // required fields only
     "service_mode",
+    "availability_type",
     "location_map_url",
     "address",
     "service_radius_km",
@@ -1267,7 +1283,14 @@ console.log(
               );
             })}
           </div>
+        {errors.availability_hours && (
+          <p className="admin-error mt-2">
+            {errors.availability_hours}
+          </p>
+        )}
+        
         </div>
+        
       )}
 
       
