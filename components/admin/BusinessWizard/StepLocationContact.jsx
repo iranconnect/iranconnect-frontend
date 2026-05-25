@@ -934,6 +934,7 @@ export default function StepLocationContact({
     "service_mode",
     "availability_type",
     "location_map_url",
+    "base_location_map_url",
     "address",
     "service_radius_km",
     "phone",
