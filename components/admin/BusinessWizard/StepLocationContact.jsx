@@ -292,6 +292,44 @@ export default function StepLocationContact({
   ───────────────────────────── */
   const [errors, setErrors] = useState({});
 
+  const [initialSnapshot] = useState(() => ({
+    availability_type:
+      initialData?.availability_type ?? "",
+  
+    availability_note:
+      initialData?.availability_note ?? "",
+  
+    email:
+      initialData?.email ?? "",
+  
+    website:
+      initialData?.website ?? "",
+  
+    show_phone:
+      initialData?.show_phone ?? true,
+  
+    show_email:
+      initialData?.show_email ?? true,
+  
+    instagram_url:
+      initialData?.instagram_url ?? "",
+  
+    facebook_url:
+      initialData?.facebook_url ?? "",
+  
+    linkedin_url:
+      initialData?.linkedin_url ?? "",
+  
+    twitter_url:
+      initialData?.twitter_url ?? "",
+  
+    telegram_url:
+      initialData?.telegram_url ?? "",
+  
+    whatsapp_number:
+      initialData?.whatsapp_number ?? "",
+  }));
+
   const setError = (field, message) => {
     setErrors((p) => ({ ...p, [field]: message || "" }));
   };
@@ -816,28 +854,7 @@ export default function StepLocationContact({
       return "";
     }
   
-    // =========================
-    // BOOLEAN
-    // =========================
-    if (rules.type === "boolean") {
-  
-      if (mode !== "user-update") {
-        return "";
-      }
-  
-      const original =
-        initialData?.[field];
-  
-      // فقط اگر user واقعاً تغییر داده
-      if (
-        original !== undefined &&
-        original !== value
-      ) {
-        return "You changed the visibility setting for this field.";
-      }
-  
-      return "";
-    }
+    
   
     // =========================
     // STRING / NUMBER
@@ -864,12 +881,28 @@ export default function StepLocationContact({
     ) {
   
       const original =
-        initialData?.[field];
+        initialSnapshot?.[field];
   
       const normalizeValue = (v) => {
 
-        if (v === undefined || v === null) {
+        if (
+          v === undefined ||
+          v === null
+        ) {
           return "";
+        }
+      
+        // normalize weird backend values
+        if (
+          v === "null" ||
+          v === "undefined"
+        ) {
+          return "";
+        }
+      
+        // booleans
+        if (typeof v === "boolean") {
+          return String(v);
         }
       
         return String(v).trim();
@@ -884,15 +917,30 @@ export default function StepLocationContact({
       const hadOriginalValue =
         originalNormalized !== "";
   
-      if (
-        hadOriginalValue &&
-        currentNormalized === ""
-      ) {
-  
-        return field === "whatsapp_number"
-          ? "You removed the existing WhatsApp number."
-          : "You removed an existing value from this field.";
-  
+      if (hadOriginalValue) {
+
+        // BOOLEAN CHANGE TRACKING
+        if (rules.type === "boolean") {
+      
+          if (
+            originalNormalized !==
+            currentNormalized
+          ) {
+            return "You changed the visibility setting for this field.";
+          }
+      
+          return "";
+        }
+      
+        // STRING / NUMBER REMOVAL
+        if (currentNormalized === "") {
+      
+          return field === "whatsapp_number"
+            ? "You removed the existing WhatsApp number."
+            : "You removed an existing value from this field.";
+      
+        }
+      
       }
   
     }
@@ -997,7 +1045,7 @@ export default function StepLocationContact({
       {data.availability_type === "business_hours" && data.availability_hours && (
         <div className="mb-8">
           <label className="admin-label mb-3 block">
-            Business hours
+            Business hours *
           </label>
       
           <div className="space-y-3">
