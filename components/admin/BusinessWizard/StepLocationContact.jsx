@@ -411,6 +411,12 @@ export default function StepLocationContact({
       initialData?.whatsapp_number ?? "",
   }));
 
+  const [phoneCountry, setPhoneCountry] = useState("FR");
+  const [phoneNational, setPhoneNational] = useState("");
+
+  const [whatsAppCountry, setWhatsAppCountry] = useState("FR");
+  const [whatsAppNational, setWhatsAppNational] = useState("");
+
   const setError = (field, message) => {
     setErrors((p) => ({ ...p, [field]: message || "" }));
   };
@@ -492,11 +498,7 @@ export default function StepLocationContact({
     }));
   }, []);
 
-  const [phoneCountry, setPhoneCountry] = useState("FR");
-  const [phoneNational, setPhoneNational] = useState("");
-
-  const [whatsAppCountry, setWhatsAppCountry] = useState("FR");
-  const [whatsAppNational, setWhatsAppNational] = useState("");
+  
 
   useEffect(() => {
     if (data.availability_type !== "business_hours") {
