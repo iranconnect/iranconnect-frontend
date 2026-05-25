@@ -231,7 +231,25 @@ export default function StepLocationContact({
   Object.entries(FIELD_RULES).forEach(
     ([field, rules]) => {
   
-      const value = data?.[field];
+      const value = (() => {
+
+        // WhatsApp uses separate UI state
+        if (field === "whatsapp_number") {
+          return whatsAppNational;
+        }
+      
+        // Phone visibility booleans
+        if (
+          field === "show_phone" ||
+          field === "show_email"
+        ) {
+          return data?.[field];
+        }
+      
+        // Everything else
+        return data?.[field];
+      
+      })();
   
       const shouldValidate =
         typeof rules.condition === "function"
@@ -933,12 +951,22 @@ export default function StepLocationContact({
         }
       
         // STRING / NUMBER REMOVAL
-        if (currentNormalized === "") {
-      
+        const wasRemoved =
+        
+          originalNormalized !== "" &&
+        
+          (
+            currentNormalized === "" ||
+            currentNormalized === "null" ||
+            currentNormalized === "undefined"
+          );
+        
+        if (wasRemoved) {
+        
           return field === "whatsapp_number"
             ? "You removed the existing WhatsApp number."
             : "You removed an existing value from this field.";
-      
+        
         }
       
       }
