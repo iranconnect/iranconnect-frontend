@@ -906,3 +906,33 @@ function Section({ title, children }) {
     </div>
   );
 }
+
+function Item({ label, value, multiline }) {
+
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  return (
+    <div>
+      <strong>{label}:</strong>{" "}
+
+      {multiline ? (
+        <div
+          style={{
+            whiteSpace: "pre-line",
+            marginTop: 4,
+          }}
+        >
+          {value}
+        </div>
+      ) : (
+        <span>{value}</span>
+      )}
+    </div>
+  );
+}
