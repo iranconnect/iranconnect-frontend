@@ -1,5 +1,8 @@
 // components/admin/BusinessWizard/StepPreviewSubmit.jsx
 
+import { useEffect, useState } from "react";
+import apiClient from "../../../utils/apiClient";
+
 const BUSINESS_TYPE_LABELS = {
   freelancer: "Freelancer / Self-employed",
   company: "Registered Company",
@@ -61,6 +64,146 @@ export default function StepPreviewSubmit({
   loading,
   mode,
 }) {
+
+  const [categoryName, setCategoryName] = useState("");
+
+  const [subcategoryNames, setSubcategoryNames] = useState([]);
+  
+  const [serviceNames, setServiceNames] = useState([]);
+  
+  const [tagNames, setTagNames] = useState([]);
+  
+  useEffect(() => {
+  
+    async function loadPreviewLabels() {
+  
+      try {
+  
+        /* CATEGORY */
+        if (data.category_id) {
+  
+          const categoryRes = await apiClient.get(
+            "/admin/categories/all"
+          );
+  
+          const categories =
+            categoryRes.data?.data || [];
+  
+          const foundCategory =
+            categories.find(
+              (c) =>
+                Number(c.id) ===
+                Number(data.category_id)
+            );
+  
+          setCategoryName(
+            foundCategory?.name || ""
+          );
+        }
+  
+        /* SUBCATEGORIES */
+        if (
+          data.category_id &&
+          Array.isArray(data.subcategory_ids)
+        ) {
+  
+          const subRes =
+            await apiClient.get(
+              "/admin/subcategories",
+              {
+                params: {
+                  category_id:
+                    data.category_id,
+                },
+              }
+            );
+  
+          const allSubs =
+            subRes.data?.data || [];
+  
+          const matchedSubs =
+            allSubs
+              .filter((s) =>
+                data.subcategory_ids.includes(s.id)
+              )
+              .map((s) => s.name);
+  
+          setSubcategoryNames(matchedSubs);
+        }
+  
+        /* SERVICES */
+        if (
+          Array.isArray(data.services) &&
+          data.services.length > 0
+        ) {
+  
+          const serviceRes =
+            await apiClient.get(
+              "/admin/services",
+              {
+                params: {
+                  subcategory_ids:
+                    data.subcategory_ids || [],
+                },
+              }
+            );
+  
+          const allServices =
+            serviceRes.data?.data || [];
+  
+          const matchedServices =
+            allServices
+              .filter((s) =>
+                data.services.includes(s.id)
+              )
+              .map((s) => s.name);
+  
+          setServiceNames(matchedServices);
+        }
+  
+        /* TAGS */
+        if (
+          Array.isArray(data.tags)
+        ) {
+  
+          const tagRes =
+            await apiClient.get(
+              "/admin/tags/for-business"
+            );
+  
+          const allTags =
+            tagRes.data?.data || [];
+  
+          const matchedTags =
+            allTags
+              .filter((t) =>
+                data.tags.includes(t.id)
+              )
+              .map((t) => t.name);
+  
+          setTagNames(matchedTags);
+        }
+  
+      } catch (err) {
+  
+        console.error(
+          "Preview label loading failed",
+          err
+        );
+  
+      }
+  
+    }
+  
+    loadPreviewLabels();
+  
+  }, [
+    data.category_id,
+    data.subcategory_ids,
+    data.services,
+    data.tags,
+  ]);
+  
   return (
     <div className="admin-section">
       <h2 className="admin-title mb-1">
@@ -82,14 +225,14 @@ export default function StepPreviewSubmit({
       
         <Item
           label="Business category"
-          value={data.category_name}
+          value={categoryName}
         />
       
         <Item
           label="Subcategories"
           value={
-            Array.isArray(data.subcategory_names)
-              ? data.subcategory_names.join(", ")
+            subcategoryNames.length > 0
+              ? subcategoryNames.join(", ")
               : null
           }
           multiline
@@ -136,8 +279,8 @@ export default function StepPreviewSubmit({
         <Item
           label="Services offered"
           value={
-            Array.isArray(data.service_names)
-              ? data.service_names.join(", ")
+            serviceNames.length > 0
+              ? serviceNames.join(", ")
               : null
           }
           multiline
@@ -146,8 +289,8 @@ export default function StepPreviewSubmit({
         <Item
           label="Tags"
           value={
-            Array.isArray(data.tag_names)
-              ? data.tag_names.join(", ")
+            tagNames.length > 0
+              ? tagNames.join(", ")
               : null
           }
           multiline
