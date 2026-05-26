@@ -908,22 +908,3 @@ function Section({ title, children }) {
     </div>
   );
 }
-  return (
-    <div className="mb-8">
-      <h3 className="font-semibold mb-3">{title}</h3>
-      <div className="grid gap-2">{children}</div>
-    </div>
-  );
-}
-
-function Item({ label, value, multiline }) {
-  if (value === undefined || value === null || value === "") return null;
-
-  return (
-    <div className="text-sm">
-      <strong>{label}:</strong>{" "}
-      {multiline ? <div>{value}</div> : value}
-    </div>
-  );
-}
-
