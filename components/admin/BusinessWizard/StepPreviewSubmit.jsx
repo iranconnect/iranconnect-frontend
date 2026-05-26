@@ -1,5 +1,59 @@
 // components/admin/BusinessWizard/StepPreviewSubmit.jsx
 
+const BUSINESS_TYPE_LABELS = {
+  freelancer: "Freelancer / Self-employed",
+  company: "Registered Company",
+  clinic: "Clinic / Office",
+  shop: "Physical Shop",
+  online: "Online Business",
+};
+
+const SERVICE_MODE_LABELS = {
+  on_site: "On-site (customers visit)",
+  at_home: "At customer location",
+  remote: "Remote / Online",
+  hybrid: "Hybrid",
+};
+
+const AVAILABILITY_LABELS = {
+  always_open: "Always open",
+  business_hours: "Business hours",
+  appointment_only: "Appointment only",
+};
+
+function formatBusinessHours(hours) {
+  if (!hours || typeof hours !== "object") {
+    return null;
+  }
+
+  const WEEK_DAYS = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+  ];
+
+  return WEEK_DAYS.map((day) => {
+    const value = hours[day];
+
+    if (!value) return null;
+
+    const label =
+      day.charAt(0).toUpperCase() + day.slice(1);
+
+    if (value.closed) {
+      return `${label}: Closed`;
+    }
+
+    return `${label}: ${value.open} - ${value.close}`;
+  })
+    .filter(Boolean)
+    .join("\n");
+}
+
 export default function StepPreviewSubmit({
   data,
   onBack,
@@ -17,92 +71,248 @@ export default function StepPreviewSubmit({
       </p>
 
       {/* ─────────────────────────
-         BASIC INFO
+         BASIC BUSINESS INFORMATION
       ───────────────────────── */}
-      <Section title="Business Information">
-        <Item label="Name" value={data.name} />
-        <Item label="Legal name" value={data.legal_name} />
-        <Item label="Business type" value={data.business_type} />
-        <Item label="Year established" value={data.year_established} />
+      <Section title="Basic Business Information">
+      
+        <Item
+          label="Business name"
+          value={data.name}
+        />
+      
+        <Item
+          label="Business category"
+          value={data.category_name}
+        />
+      
+        <Item
+          label="Subcategories"
+          value={
+            Array.isArray(data.subcategory_names)
+              ? data.subcategory_names.join(", ")
+              : null
+          }
+          multiline
+        />
+      
+        <Item
+          label="Legal name"
+          value={data.legal_name}
+        />
+      
+        <Item
+          label="Business type"
+          value={
+            BUSINESS_TYPE_LABELS[data.business_type] ||
+            data.business_type
+          }
+        />
+      
+        <Item
+          label="Year established"
+          value={data.year_established}
+        />
+      
+        <Item
+          label="Short description"
+          value={data.short_description}
+          multiline
+        />
+      
+        <Item
+          label="Full description"
+          value={data.full_description}
+          multiline
+        />
+      
       </Section>
 
-      {/* ─────────────────────────
-         DESCRIPTIONS
-      ───────────────────────── */}
-      <Section title="Descriptions">
-        <Item label="Short description" value={data.short_description} />
-        <Item label="Full description" value={data.full_description} multiline />
-      </Section>
 
       {/* ─────────────────────────
          SERVICES & TAGS
       ───────────────────────── */}
       <Section title="Services & Tags">
+      
         <Item
-          label="Subcategories"
-          value={(data.subcategory_ids || []).length + " selected"}
-        />
-
-        <Item
-          label="Services"
-          value={(data.services || []).length + " selected"}
-        />
-        <Item
-          label="Tags"
-          value={(data.tags || []).length + " selected"}
-        />
-      </Section>
-
-      {/* ─────────────────────────
-         LOCATION
-      ───────────────────────── */}
-      <Section title="Location & Availability">
-        <Item label="Service mode" value={data.service_mode} />
-        <Item
-          label="Business location (Google Maps)"
-          value={data.location_map_url}
-        />
-        
-        <Item
-          label="Base location (Google Maps)"
-          value={data.base_location_map_url}
-        />
-
-        <Item label="Address" value={data.address} />
-        <Item label="City" value={data.city} />
-        <Item label="Country" value={data.country} />
-        <Item label="Service radius (km)" value={data.service_radius_km} />
-        <Item label="Availability type" value={data.availability_type} />
-        <Item label="Availability note" value={data.availability_note} />
-        <Item
-          label="Availability hours"
+          label="Services offered"
           value={
-            data.availability_hours
-              ? JSON.stringify(data.availability_hours)
+            Array.isArray(data.service_names)
+              ? data.service_names.join(", ")
               : null
           }
           multiline
         />
-
+      
+        <Item
+          label="Tags"
+          value={
+            Array.isArray(data.tag_names)
+              ? data.tag_names.join(", ")
+              : null
+          }
+          multiline
+        />
+      
       </Section>
-
       {/* ─────────────────────────
-         CONTACT
+         LOCATION, AVAILABILITY & CONTACT
       ───────────────────────── */}
-      <Section title="Contact & Visibility">
-        <Item label="Phone" value={data.phone} />
-        <Item label="Email" value={data.email} />
-        <Item label="Website" value={data.website} />
-        <Item label="Public profile" value={data.is_public ? "Yes" : "No"} />
-        <Item label="Allow reviews" value={data.allow_reviews ? "Yes" : "No"} />
-        <Item label="Instagram" value={data.instagram_url} />
-        <Item label="Facebook" value={data.facebook_url} />
-        <Item label="LinkedIn" value={data.linkedin_url} />
-        <Item label="Twitter / X" value={data.twitter_url} />
-        <Item label="Telegram" value={data.telegram_url} />
-        <Item label="WhatsApp" value={data.whatsapp_number} />
+      <Section title="Location, Availability & Contact">
+      
+        {/* Service mode */}
+        <Item
+          label="Service mode"
+          value={
+            SERVICE_MODE_LABELS[data.service_mode] ||
+            data.service_mode
+          }
+        />
+      
+        {/* Availability type */}
+        <Item
+          label="Availability type"
+          value={
+            AVAILABILITY_LABELS[data.availability_type] ||
+            data.availability_type
+          }
+        />
+      
+        {/* Availability note */}
+        <Item
+          label="Availability note"
+          value={data.availability_note}
+          multiline
+        />
+      
+        {/* Business hours */}
+        <Item
+          label="Business hours"
+          value={formatBusinessHours(data.availability_hours)}
+          multiline
+        />
+      
+        {/* Business location */}
+        <Item
+          label="Business location (Google Maps link)"
+          value={data.location_map_url}
+        />
+      
+        {/* Base location */}
+        <Item
+          label="Service base location (Google Maps link)"
+          value={data.base_location_map_url}
+        />
+      
+        {/* Address */}
+        <Item
+          label="Address"
+          value={data.address}
+          multiline
+        />
+      
+        {/* Country */}
+        <Item
+          label="Country"
+          value={data.country}
+        />
+      
+        {/* City */}
+        <Item
+          label="City"
+          value={data.city}
+        />
+      
+        {/* Postal code */}
+        <Item
+          label="Postal code"
+          value={data.postal_code}
+        />
+      
+        {/* Service radius */}
+        <Item
+          label="Service radius (km)"
+          value={data.service_radius_km}
+        />
+      
+        {/* Phone */}
+        <Item
+          label="Phone"
+          value={data.phone}
+        />
+      
+        {/* Email */}
+        <Item
+          label="Email"
+          value={data.email}
+        />
+      
+        {/* Website */}
+        <Item
+          label="Website"
+          value={data.website}
+        />
+      
+        {/* Show phone */}
+        <Item
+          label="Show phone number"
+          value={
+            data.show_phone === true
+              ? "Yes"
+              : data.show_phone === false
+                ? "No"
+                : null
+          }
+        />
+      
+        {/* Show email */}
+        <Item
+          label="Show email"
+          value={
+            data.show_email === true
+              ? "Yes"
+              : data.show_email === false
+                ? "No"
+                : null
+          }
+        />
+      
+        {/* Instagram */}
+        <Item
+          label="Instagram"
+          value={data.instagram_url}
+        />
+      
+        {/* Facebook */}
+        <Item
+          label="Facebook"
+          value={data.facebook_url}
+        />
+      
+        {/* LinkedIn */}
+        <Item
+          label="LinkedIn"
+          value={data.linkedin_url}
+        />
+      
+        {/* Twitter / X */}
+        <Item
+          label="Twitter / X"
+          value={data.twitter_url}
+        />
+      
+        {/* Telegram */}
+        <Item
+          label="Telegram"
+          value={data.telegram_url}
+        />
+      
+        {/* WhatsApp */}
+        <Item
+          label="WhatsApp"
+          value={data.whatsapp_number}
+        />
+      
       </Section>
-
       {/* ─────────────────────────
          MEDIA
       ───────────────────────── */}
