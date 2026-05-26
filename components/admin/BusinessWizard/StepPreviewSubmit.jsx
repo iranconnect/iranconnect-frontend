@@ -529,6 +529,31 @@ export default function StepPreviewSubmit({
                   </div>
               
                   <img
+                    src={data.logo_url}
+                    alt="Current logo"
+                    style={{
+                      width: 90,
+                      height: 90,
+                      objectFit: "cover",
+                      borderRadius: 10,
+                      border: isRemoved(
+                        "logo",
+                        data.logo_url,
+                        data.removed_media
+                      )
+                        ? "3px solid #ef4444"
+                        : "1px solid #cbd5e1",
+                      opacity: isRemoved(
+                        "logo",
+                        data.logo_url,
+                        data.removed_media
+                      )
+                        ? 0.5
+                        : 1,
+                    }}
+                  />
+                </div>
+              )}
       
               {/* New logo */}
               {data.logo_file && (
@@ -618,6 +643,29 @@ export default function StepPreviewSubmit({
                   </div>
               
                   <img
+                    src={data.cover_image_url}
+                    alt="Current cover"
+                    style={{
+                      width: 180,
+                      borderRadius: 10,
+                      border: isRemoved(
+                        "cover",
+                        data.cover_image_url,
+                        data.removed_media
+                      )
+                        ? "3px solid #ef4444"
+                        : "1px solid #cbd5e1",
+                      opacity: isRemoved(
+                        "cover",
+                        data.cover_image_url,
+                        data.removed_media
+                      )
+                        ? 0.5
+                        : 1,
+                    }}
+                  />
+                </div>
+              )}
       
               {/* New cover */}
               {data.cover_file && (
