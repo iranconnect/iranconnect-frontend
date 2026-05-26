@@ -57,6 +57,18 @@ function formatBusinessHours(hours) {
     .join("\n");
 }
 
+function isRemoved(type, url, removedMedia) {
+
+  if (!removedMedia?.[type]) {
+    return false;
+  }
+
+  return removedMedia[type].some(
+    (item) => item.url === url
+  );
+
+}
+
 export default function StepPreviewSubmit({
   data,
   onBack,
@@ -457,48 +469,301 @@ export default function StepPreviewSubmit({
       
       </Section>
       {/* ─────────────────────────
-         MEDIA
+         MEDIA, VISIBILITY & COMPLIANCE
       ───────────────────────── */}
-      <Section title="Media Preview">
-        {data.logo_file && (
-          <div>
-            <strong>Logo:</strong>
-            <img
-              src={URL.createObjectURL(data.logo_file)}
-              alt="Logo preview"
-              style={{ width: 80, borderRadius: 8, marginTop: 6 }}
-            />
-          </div>
-        )}
+      <Section title="Media, Visibility & Compliance">
       
-        {data.cover_file && (
-          <div style={{ marginTop: 12 }}>
-            <strong>Cover image:</strong>
-            <img
-              src={URL.createObjectURL(data.cover_file)}
-              alt="Cover preview"
-              style={{ width: "100%", maxWidth: 300, borderRadius: 8, marginTop: 6 }}
-            />
-          </div>
-        )}
+        {/* LOGO */}
+        {(data.logo_url || data.logo_file) && (
+          <div style={{ marginBottom: 24 }}>
       
-        {Array.isArray(data.gallery_files) && data.gallery_files.length > 0 && (
-          <div style={{ marginTop: 12 }}>
-            <strong>Gallery:</strong>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-              {data.gallery_files.map((file, idx) => (
-                <img
-                  key={idx}
-                  src={URL.createObjectURL(file)}
-                  alt={`Gallery ${idx + 1}`}
-                  style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 6 }}
-                />
-              ))}
+            <strong>Business logo:</strong>
+      
+            <div
+              style={{
+                display: "flex",
+                gap: 16,
+                flexWrap: "wrap",
+                marginTop: 10,
+              }}
+            >
+      
+              {/* Current logo */}
+              {data.logo_url && (
+                <div>
+      
+                  <img
+                    src={data.logo_url}
+                    alt="Current logo"
+                    style={{
+                      width: 90,
+                      height: 90,
+                      objectFit: "cover",
+                      borderRadius: 10,
+                      border: isRemoved(
+                        "logo",
+                        data.logo_url,
+                        data.removed_media
+                      )
+                        ? "3px solid #ef4444"
+                        : "1px solid #cbd5e1",
+                      opacity: isRemoved(
+                        "logo",
+                        data.logo_url,
+                        data.removed_media
+                      )
+                        ? 0.5
+                        : 1,
+                    }}
+                  />
+                </div>
+              )}
+      
+              {/* New logo */}
+              {data.logo_file && (
+                <div>
+      
+                  <div
+                    style={{
+                      fontSize: 12,
+                      marginBottom: 6,
+                      color: "#16a34a",
+                    }}
+                  >
+                    New uploaded logo
+                  </div>
+      
+                  <img
+                    src={URL.createObjectURL(data.logo_file)}
+                    alt="New logo"
+                    style={{
+                      width: 90,
+                      height: 90,
+                      objectFit: "cover",
+                      borderRadius: 10,
+                      border: "2px solid #16a34a",
+                    }}
+                  />
+                </div>
+              )}
+      
             </div>
           </div>
         )}
+      
+        {/* COVER */}
+        {(data.cover_image_url || data.cover_file) && (
+          <div style={{ marginBottom: 24 }}>
+      
+            <strong>Cover image:</strong>
+      
+            <div
+              style={{
+                display: "flex",
+                gap: 16,
+                flexWrap: "wrap",
+                marginTop: 10,
+              }}
+            >
+      
+              {/* Current cover */}
+              {data.cover_image_url && (
+                <div>
+                  <img
+                    src={data.cover_image_url}
+                    alt="Current cover"
+                    style={{
+                      width: 180,
+                      borderRadius: 10,
+                      border: isRemoved(
+                        "cover",
+                        data.cover_image_url,
+                        data.removed_media
+                      )
+                        ? "3px solid #ef4444"
+                        : "1px solid #cbd5e1",
+                      opacity: isRemoved(
+                        "cover",
+                        data.cover_image_url,
+                        data.removed_media
+                      )
+                        ? 0.5
+                        : 1,
+                    }}
+                  />
+                </div>
+              )}
+      
+              {/* New cover */}
+              {data.cover_file && (
+                <div>
+      
+                  <div
+                    style={{
+                      fontSize: 12,
+                      marginBottom: 6,
+                      color: "#16a34a",
+                    }}
+                  >
+                    New uploaded cover
+                  </div>
+      
+                  <img
+                    src={URL.createObjectURL(data.cover_file)}
+                    alt="New cover"
+                    style={{
+                      width: 180,
+                      borderRadius: 10,
+                      border: "2px solid #16a34a",
+                    }}
+                  />
+                </div>
+              )}
+      
+            </div>
+          </div>
+        )}
+      
+        {/* GALLERY */}
+        {(
+          (Array.isArray(data.gallery) &&
+            data.gallery.length > 0) ||
+          (Array.isArray(data.gallery_files) &&
+            data.gallery_files.length > 0)
+        ) && (
+          <div style={{ marginBottom: 24 }}>
+      
+            <strong>Gallery images:</strong>
+      
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                flexWrap: "wrap",
+                marginTop: 10,
+              }}
+            >
+      
+              {/* Existing gallery */}
+              {Array.isArray(data.gallery) &&
+                data.gallery.map((img, idx) => {
+      
+                  const removed = isRemoved(
+                    "gallery",
+                    img.url,
+                    data.removed_media
+                  );
+      
+                  return (
+                    <div key={`existing-${idx}`}>
+                      {removed && (
+                        <div
+                          style={{
+                            fontSize: 11,
+                            marginBottom: 6,
+                            color: "#ef4444",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Marked for removal
+                        </div>
+                      )}
+                      <img
+                        src={img.url}
+                        alt=""
+                        style={{
+                          width: 90,
+                          height: 90,
+                          objectFit: "cover",
+                          borderRadius: 8,
+                          border: removed
+                            ? "3px solid #ef4444"
+                            : "1px solid #cbd5e1",
+                          opacity: removed
+                            ? 0.5
+                            : 1,
+                        }}
+                      />
+                    </div>
+                  );
+      
+                })}
+      
+              {/* New gallery uploads */}
+              {Array.isArray(data.gallery_files) &&
+                data.gallery_files.map(
+                  (file, idx) => (
+                    <div key={`new-${idx}`}>
+      
+                      <div
+                        style={{
+                          fontSize: 11,
+                          marginBottom: 6,
+                          color: "#16a34a",
+                        }}
+                      >
+                        New upload
+                      </div>
+      
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt=""
+                        style={{
+                          width: 90,
+                          height: 90,
+                          objectFit: "cover",
+                          borderRadius: 8,
+                          border:
+                            "2px solid #16a34a",
+                        }}
+                      />
+                    </div>
+                  )
+                )}
+      
+            </div>
+          </div>
+        )}
+      
+        {/* VISIBILITY */}
+        <div style={{ marginBottom: 18 }}>
+      
+          <strong>Visibility settings:</strong>
+      
+          <div style={{ marginTop: 8 }}>
+      
+            <div>
+              {data.is_public
+                ? "✓ Public profile enabled"
+                : "✗ Public profile disabled"}
+            </div>
+      
+            <div>
+              {data.allow_reviews
+                ? "✓ Reviews allowed"
+                : "✗ Reviews disabled"}
+            </div>
+      
+          </div>
+        </div>
+      
+        {/* COMPLIANCE */}
+        <div>
+      
+          <strong>Compliance confirmation:</strong>
+      
+          <div style={{ marginTop: 8 }}>
+      
+            <div>
+              {data.owner_confirmed
+                ? "✓ Ownership confirmed"
+                : "✗ Ownership not confirmed"}
+            </div>
+      
+          </div>
+        </div>
+      
       </Section>
-
 
       {/* ─────────────────────────
          ACTIONS
