@@ -729,25 +729,23 @@ export default function StepPreviewSubmit({
       
                   return (
                     <div key={`existing-${idx}`} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", }}>
-                      {removed && (
-                        <div
-                          style={{
-                            fontSize: 11,
-                            marginBottom: 6,
-                            minHeight: 18,
-                            color: removed
-                              ? "#ef4444"
-                              : "#64748b",
-                            fontWeight: removed
-                              ? 600
-                              : 500,
-                          }}
-                        >
-                          {removed
-                            ? "Marked for removal"
-                            : "Current image"}
-                        </div>
-                      )}
+                      <div
+                        style={{
+                          fontSize: 11,
+                          marginBottom: 6,
+                          minHeight: 18,
+                          color: removed
+                            ? "#ef4444"
+                            : "#64748b",
+                          fontWeight: removed
+                            ? 600
+                            : 500,
+                        }}
+                      >
+                        {removed
+                          ? "Marked for removal"
+                          : "Current image"}
+                      </div>
                       <img
                         src={img.url}
                         alt=""
