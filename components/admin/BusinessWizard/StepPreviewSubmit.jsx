@@ -1,4 +1,4 @@
-// components/admin/BusinessWizard/StepPreviewSubmit.jsx 
+// components/admin/BusinessWizard/StepPreviewSubmit.jsx
 
 import { useEffect, useState } from "react";
 import apiClient from "../../../utils/apiClient";
