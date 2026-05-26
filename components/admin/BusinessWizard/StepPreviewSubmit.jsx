@@ -878,6 +878,37 @@ export default function StepPreviewSubmit({
 ───────────────────────── */
 function Section({ title, children }) {
   return (
+    <div
+      style={{
+        paddingBottom: 28,
+        marginBottom: 28,
+        borderBottom: "1px solid #f1f5f9",
+        paddingTop: 4,
+      }}
+    >
+      <h3
+        style={{
+          fontSize: 22,
+          fontWeight: 700,
+          marginBottom: 18,
+          color: "#0f172a",
+        }}
+      >
+        {title}
+      </h3>
+
+      <div
+        style={{
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+  return (
     <div className="mb-8">
       <h3 className="font-semibold mb-3">{title}</h3>
       <div className="grid gap-2">{children}</div>
