@@ -880,7 +880,7 @@ function Section({ title, children }) {
       style={{
         paddingBottom: 28,
         marginBottom: 28,
-        borderBottom: "1px solid rgba(148, 163, 184, 0.35)",
+        borderBottom: "1px solid var(--border-color, rgba(148, 163, 184, 0.35))",
         paddingTop: 4,
       }}
     >
@@ -889,7 +889,7 @@ function Section({ title, children }) {
           fontSize: 22,
           fontWeight: 700,
           marginBottom: 18,
-          color: "rgba(15, 23, 42, 0.92)",
+          color: "var(--text)",
         }}
       >
         {title}
