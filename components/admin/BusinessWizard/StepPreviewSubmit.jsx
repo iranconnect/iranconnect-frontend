@@ -889,7 +889,7 @@ function Section({ title, children }) {
           fontSize: 22,
           fontWeight: 700,
           marginBottom: 18,
-          color: "var(--admin-text, #f8fafc)",
+          color: "rgba(15, 23, 42, 0.92)",
         }}
       >
         {title}
