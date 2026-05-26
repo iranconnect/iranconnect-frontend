@@ -490,34 +490,45 @@ export default function StepPreviewSubmit({
       
               {/* Current logo */}
               {data.logo_url && (
-                <div>
-      
-                  <img
-                    src={data.logo_url}
-                    alt="Current logo"
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                  }}
+                >
+              
+                  <div
                     style={{
-                      width: 90,
-                      height: 90,
-                      objectFit: "cover",
-                      borderRadius: 10,
-                      border: isRemoved(
+                      fontSize: 12,
+                      marginBottom: 6,
+                      minHeight: 18,
+                      color: isRemoved(
                         "logo",
                         data.logo_url,
                         data.removed_media
                       )
-                        ? "3px solid #ef4444"
-                        : "1px solid #cbd5e1",
-                      opacity: isRemoved(
+                        ? "#ef4444"
+                        : "#64748b",
+                      fontWeight: isRemoved(
                         "logo",
                         data.logo_url,
                         data.removed_media
                       )
-                        ? 0.5
-                        : 1,
+                        ? 600
+                        : 500,
                     }}
-                  />
-                </div>
-              )}
+                  >
+                    {isRemoved(
+                      "logo",
+                      data.logo_url,
+                      data.removed_media
+                    )
+                      ? "Marked for removal"
+                      : "Current image"}
+                  </div>
+              
+                  <img
       
               {/* New logo */}
               {data.logo_file && (
@@ -530,7 +541,7 @@ export default function StepPreviewSubmit({
                       color: "#16a34a",
                     }}
                   >
-                    New uploaded logo
+                    New logo
                   </div>
       
                   <img
@@ -568,31 +579,45 @@ export default function StepPreviewSubmit({
       
               {/* Current cover */}
               {data.cover_image_url && (
-                <div>
-                  <img
-                    src={data.cover_image_url}
-                    alt="Current cover"
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                  }}
+                >
+              
+                  <div
                     style={{
-                      width: 180,
-                      borderRadius: 10,
-                      border: isRemoved(
+                      fontSize: 12,
+                      marginBottom: 6,
+                      minHeight: 18,
+                      color: isRemoved(
                         "cover",
                         data.cover_image_url,
                         data.removed_media
                       )
-                        ? "3px solid #ef4444"
-                        : "1px solid #cbd5e1",
-                      opacity: isRemoved(
+                        ? "#ef4444"
+                        : "#64748b",
+                      fontWeight: isRemoved(
                         "cover",
                         data.cover_image_url,
                         data.removed_media
                       )
-                        ? 0.5
-                        : 1,
+                        ? 600
+                        : 500,
                     }}
-                  />
-                </div>
-              )}
+                  >
+                    {isRemoved(
+                      "cover",
+                      data.cover_image_url,
+                      data.removed_media
+                    )
+                      ? "Marked for removal"
+                      : "Current image"}
+                  </div>
+              
+                  <img
       
               {/* New cover */}
               {data.cover_file && (
@@ -605,7 +630,7 @@ export default function StepPreviewSubmit({
                       color: "#16a34a",
                     }}
                   >
-                    New uploaded cover
+                    New cover
                   </div>
       
                   <img
@@ -655,17 +680,24 @@ export default function StepPreviewSubmit({
                   );
       
                   return (
-                    <div key={`existing-${idx}`}>
+                    <div key={`existing-${idx}`} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", }}>
                       {removed && (
                         <div
                           style={{
                             fontSize: 11,
                             marginBottom: 6,
-                            color: "#ef4444",
-                            fontWeight: 600,
+                            minHeight: 18,
+                            color: removed
+                              ? "#ef4444"
+                              : "#64748b",
+                            fontWeight: removed
+                              ? 600
+                              : 500,
                           }}
                         >
-                          Marked for removal
+                          {removed
+                            ? "Marked for removal"
+                            : "Current image"}
                         </div>
                       )}
                       <img
@@ -693,8 +725,7 @@ export default function StepPreviewSubmit({
               {Array.isArray(data.gallery_files) &&
                 data.gallery_files.map(
                   (file, idx) => (
-                    <div key={`new-${idx}`}>
-      
+                    <div key={`new-${idx}`} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start",}}>      
                       <div
                         style={{
                           fontSize: 11,
@@ -702,7 +733,7 @@ export default function StepPreviewSubmit({
                           color: "#16a34a",
                         }}
                       >
-                        New upload
+                        New image
                       </div>
       
                       <img
