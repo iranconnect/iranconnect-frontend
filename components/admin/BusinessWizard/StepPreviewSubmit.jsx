@@ -95,7 +95,7 @@ export default function StepPreviewSubmit({
   
   try {
   
-  ```
+  
   const fd = new FormData();
   
   fd.append("request_type", "update");
@@ -104,61 +104,52 @@ export default function StepPreviewSubmit({
     fd.append("business_id", data.id);
   }
   
-  Object.entries(data).forEach(([k, v]) => {
+  /* --------------------------------------------------
+  FILE UPLOADS
+  -------------------------------------------------- */
   
-    /* gallery uploads */
-    if (
-      k === "gallery_files" &&
-      Array.isArray(v)
-    ) {
+  /* gallery uploads */
+  if (
+  Array.isArray(data.gallery_files)
+  ) {
   
-      v.forEach((file) => {
-        fd.append("gallery_files", file);
-      });
-  
-      return;
-    }
-  
-    /* single uploads */
-    if (
-      k === "logo_file" ||
-      k === "cover_file"
-    ) {
-  
-      if (v) {
-        fd.append(k, v);
-      }
-  
-      return;
-    }
-  
-    /* arrays */
-    if (Array.isArray(v)) {
-  
-      fd.append(k, JSON.stringify(v));
-      return;
-    }
-  
-    /* objects */
-    if (
-      typeof v === "object" &&
-      v !== null
-    ) {
-  
-      fd.append(k, JSON.stringify(v));
-      return;
-    }
-  
-    /* primitive values */
-    if (
-      v !== null &&
-      v !== undefined
-    ) {
-  
-      fd.append(k, v);
-    }
-  
+  data.gallery_files.forEach((file) => {
+  fd.append("gallery_files", file);
   });
+  
+  }
+  
+  /* single uploads */
+  if (data.logo_file) {
+  fd.append("logo_file", data.logo_file);
+  }
+  
+  if (data.cover_file) {
+  fd.append("cover_file", data.cover_file);
+  }
+  
+  /* --------------------------------------------------
+  CLEAN PAYLOAD
+  -------------------------------------------------- */
+  
+  const cleanPayload = { ...data };
+  
+  /* remove raw File objects */
+  delete cleanPayload.logo_file;
+  delete cleanPayload.cover_file;
+  delete cleanPayload.gallery_files;
+
+  delete cleanPayload.logo_preview_url;
+  delete cleanPayload.cover_preview_url;
+  delete cleanPayload.gallery_preview_urls;
+
+  
+  /* send payload exactly like legacy flow */
+  fd.append(
+  "payload",
+  JSON.stringify(cleanPayload)
+  );
+
   
   const res = await apiClient.post(
     "/requests",
@@ -174,22 +165,22 @@ export default function StepPreviewSubmit({
   if (onSubmit) {
     onSubmit(res.data);
   }
-  ```
+  
   
   } catch (err) {
   
-  ```
+  
   console.error(
     "Update request submit failed",
     err
   );
-  ```
+  
   
   } finally {
   
-  ```
+  
   setSubmitting(false);
-  ```
+  
   
   }
   
