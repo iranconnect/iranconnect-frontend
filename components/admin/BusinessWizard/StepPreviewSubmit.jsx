@@ -84,6 +84,117 @@ export default function StepPreviewSubmit({
   const [serviceNames, setServiceNames] = useState([]);
   
   const [tagNames, setTagNames] = useState([]);
+
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmitRequest = async () => {
+
+  if (submitting) return;
+  
+  setSubmitting(true);
+  
+  try {
+  
+  ```
+  const fd = new FormData();
+  
+  fd.append("request_type", "update");
+  
+  if (data.id) {
+    fd.append("business_id", data.id);
+  }
+  
+  Object.entries(data).forEach(([k, v]) => {
+  
+    /* gallery uploads */
+    if (
+      k === "gallery_files" &&
+      Array.isArray(v)
+    ) {
+  
+      v.forEach((file) => {
+        fd.append("gallery_files", file);
+      });
+  
+      return;
+    }
+  
+    /* single uploads */
+    if (
+      k === "logo_file" ||
+      k === "cover_file"
+    ) {
+  
+      if (v) {
+        fd.append(k, v);
+      }
+  
+      return;
+    }
+  
+    /* arrays */
+    if (Array.isArray(v)) {
+  
+      fd.append(k, JSON.stringify(v));
+      return;
+    }
+  
+    /* objects */
+    if (
+      typeof v === "object" &&
+      v !== null
+    ) {
+  
+      fd.append(k, JSON.stringify(v));
+      return;
+    }
+  
+    /* primitive values */
+    if (
+      v !== null &&
+      v !== undefined
+    ) {
+  
+      fd.append(k, v);
+    }
+  
+  });
+  
+  const res = await apiClient.post(
+    "/requests",
+    fd,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      withCredentials: true,
+    }
+  );
+  
+  if (onSubmit) {
+    onSubmit(res.data);
+  }
+  ```
+  
+  } catch (err) {
+  
+  ```
+  console.error(
+    "Update request submit failed",
+    err
+  );
+  ```
+  
+  } finally {
+  
+  ```
+  setSubmitting(false);
+  ```
+  
+  }
+  
+  };
+
   
   useEffect(() => {
   
@@ -855,10 +966,10 @@ export default function StepPreviewSubmit({
 
         <button
           className="admin-btn admin-btn-primary"
-          onClick={onSubmit}
-          disabled={loading}
+          onClick={handleSubmitRequest}
+          disabled={loading || submitting}
         >
-          {loading
+          {loading || submitting
             ? mode === "user-update"
               ? "Submitting update request…"
               : "Creating business…"
