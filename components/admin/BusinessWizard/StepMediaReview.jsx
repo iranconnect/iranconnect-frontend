@@ -1343,6 +1343,18 @@ export default function StepMediaReview({
       {remainingGallerySlots}{" "}
       slots remaining)
     </p>
+
+    {hasGalleryOverflow && (
+      <p
+        className="admin-error mb-3"
+        style={{
+          color: "#ef4444",
+        }}
+      >
+        Maximum of {MAX_GALLERY_IMAGES} gallery images allowed.
+        Please remove some images before continuing.
+      </p>
+    )}
     
     {remainingGallerySlots > 0 && (
       <label
@@ -1522,19 +1534,7 @@ export default function StepMediaReview({
     </label>
   </div>
   </div>
-  {error && <p className="admin-error mb-3">{error}</p>}
-
-  {hasGalleryOverflow && (
-    <p
-      className="admin-error mb-3"
-      style={{
-        color: "#ef4444",
-      }}
-    >
-      Maximum of {MAX_GALLERY_IMAGES} gallery images allowed.
-      Please remove some images before continuing.
-    </p>
-  )}    
+  {error && <p className="admin-error mb-3">{error}</p>}    
 
   {zoomImage && (
   
