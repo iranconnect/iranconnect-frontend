@@ -376,7 +376,10 @@ export default function StepMediaReview({
 
         const existingCount =
           Array.isArray(data.gallery)
-            ? data.gallery.length
+            ? data.gallery.filter(
+                (img) =>
+                  !isRemoved("gallery", img)
+              ).length
             : 0;
         
         const remainingSlots =
@@ -426,6 +429,7 @@ export default function StepMediaReview({
       [
         bumpInputKey,
         data.gallery_files,
+        data.gallery,
         safeSetData,
       ]
     );
