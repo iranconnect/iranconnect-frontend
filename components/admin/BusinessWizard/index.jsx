@@ -206,11 +206,90 @@ export default function BusinessWizard({
         `/business/${createdSlug}`;
   
     } catch (err) {
-      if (err.response?.status === 409) {
-        setDuplicate(err.response.data);
-      } else {
-        alert("Error creating business");
+
+      console.error(
+        "Business wizard submit failed",
+        err
+      );
+    
+      const status =
+        err?.response?.status;
+    
+      const serverMessage =
+        err?.response?.data?.error ||
+        err?.response?.data?.message;
+    
+      // ====================================
+      // DUPLICATE
+      // ====================================
+      if (status === 409) {
+    
+        setDuplicate(
+          err.response.data
+        );
+    
+        return;
       }
+    
+      // ====================================
+      // RATE LIMIT
+      // ====================================
+      if (status === 429) {
+    
+        alert(
+          serverMessage ||
+          "You recently submitted a similar request. Please wait before submitting again."
+        );
+    
+        return;
+      }
+    
+      // ====================================
+      // FORBIDDEN
+      // ====================================
+      if (status === 403) {
+    
+        alert(
+          serverMessage ||
+          "You do not have permission to perform this action."
+        );
+    
+        return;
+      }
+    
+      // ====================================
+      // VALIDATION
+      // ====================================
+      if (status === 400) {
+    
+        alert(
+          serverMessage ||
+          "Some submitted data is invalid."
+        );
+    
+        return;
+      }
+    
+      // ====================================
+      // SERVER ERROR
+      // ====================================
+      if (status >= 500) {
+    
+        alert(
+          "Server error. Please try again later."
+        );
+    
+        return;
+      }
+    
+      // ====================================
+      // FALLBACK
+      // ====================================
+      alert(
+        serverMessage ||
+        "Something went wrong while submitting."
+      );
+    
     } finally {
       setLoading(false);
     }
