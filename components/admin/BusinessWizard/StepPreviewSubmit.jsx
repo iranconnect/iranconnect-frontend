@@ -162,7 +162,7 @@ export default function StepPreviewSubmit({
     }
   );
   
-  if (onSubmit) {
+  if (typeof onSubmit === "function") {
     onSubmit(res.data);
   }
   
@@ -171,9 +171,20 @@ export default function StepPreviewSubmit({
   
   
   console.error(
-    "Update request submit failed",
-    err
+  "Update request submit failed",
+  err
   );
+  
+  console.log(
+  "STATUS:",
+  err?.response?.status
+  );
+  
+  console.log(
+  "RESPONSE DATA:",
+  err?.response?.data
+  );
+
   
   
   } finally {
