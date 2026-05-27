@@ -981,74 +981,7 @@ export default function StepLocationContact({
     !!errors.address ||
     !!errors.postal_code;
 
-  console.log("==== VALIDATION DEBUG ====");
 
-console.log("validationErrors", [...validationErrors]);
-
-console.log("errors", errors);
-
-console.log("hasInvalidEmail", hasInvalidEmail);
-
-console.log("website invalid", hasInvalidUrl(data.website));
-
-console.log(
-  "instagram invalid",
-  hasInvalidUrl(data.instagram_url)
-);
-
-console.log(
-  "facebook invalid",
-  hasInvalidUrl(data.facebook_url)
-);
-
-console.log(
-  "linkedin invalid",
-  hasInvalidUrl(data.linkedin_url)
-);
-
-console.log(
-  "twitter invalid",
-  hasInvalidUrl(data.twitter_url)
-);
-
-console.log(
-  "telegram invalid",
-  hasInvalidUrl(data.telegram_url)
-);
-
-console.log(
-  "phone error",
-  phoneNational,
-  errors.phone
-);
-
-console.log(
-  "whatsapp error",
-  whatsAppNational,
-  errors.whatsapp_number
-);
-
-console.log(
-  "location errors",
-  errors.location_map_url,
-  errors.base_location_map_url
-);
-
-console.log(
-  "address errors",
-  errors.address,
-  errors.postal_code
-);
-
-console.log(
-  "hasBlockingErrors",
-  hasBlockingErrors
-);
-
-console.log(
-  "canProceed",
-  !hasBlockingErrors
-);
   
   const canProceed = !hasBlockingErrors;
 
