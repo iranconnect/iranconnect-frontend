@@ -208,7 +208,9 @@ export default function StepPreviewSubmit({
         if (data.category_id) {
   
           const categoryRes = await apiClient.get(
-            "/admin/categories/all"
+            mode === "user-update"
+              ? "/businesses/categories"
+              : "/admin/categories/all"
           );
   
           const categories =
@@ -234,7 +236,9 @@ export default function StepPreviewSubmit({
   
           const subRes =
             await apiClient.get(
-              "/admin/subcategories",
+              mode === "user-update"
+                ? "/businesses/subcategories"
+                : "/admin/subcategories",
               {
                 params: {
                   category_id:
@@ -264,7 +268,9 @@ export default function StepPreviewSubmit({
   
           const serviceRes =
             await apiClient.get(
-              "/admin/services",
+              mode === "user-update"
+                ? "/businesses/services"
+                : "/admin/services",
               {
                 params: {
                   subcategory_ids:
@@ -293,7 +299,9 @@ export default function StepPreviewSubmit({
   
           const tagRes =
             await apiClient.get(
-              "/admin/tags/for-business"
+              mode === "user-update"
+                ? "/businesses/tags"
+                : "/admin/tags/for-business"
             );
   
           const allTags =
@@ -323,6 +331,7 @@ export default function StepPreviewSubmit({
     loadPreviewLabels();
   
   }, [
+    mode,
     data.category_id,
     data.subcategory_ids,
     data.services,
