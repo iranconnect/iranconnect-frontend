@@ -169,21 +169,41 @@ export default function BusinessWizard({
         }
       });
   
+      const endpoint =
+        mode === "user-update"
+          ? "/requests"
+          : "/admin/businesses/create-v2";
+      
       const res = await apiClient.post(
-        "/admin/businesses/create-v2",
+        endpoint,
         form,
         {
           timeout: 120000,
         }
       );
   
-      const createdSlug = res?.data?.slug;
-  
-      if (!createdSlug) {
-        throw new Error("Business created but slug was not returned.");
+      if (mode === "user-update") {
+
+        alert(
+          "Your update request has been submitted successfully."
+        );
+      
+        window.location.href =
+          "/account/requests";
+      
+        return;
       }
-  
-      window.location.href = `/business/${createdSlug}`;
+      
+      const createdSlug = res?.data?.slug;
+      
+      if (!createdSlug) {
+        throw new Error(
+          "Business created but slug was not returned."
+        );
+      }
+      
+      window.location.href =
+        `/business/${createdSlug}`;
   
     } catch (err) {
       if (err.response?.status === 409) {
