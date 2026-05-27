@@ -57,11 +57,17 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
     setLoadingServices(true);
 
     apiClient
-      .get("/admin/services", {
-        params: {
-          subcategory_ids: subcategoryIds, // ✅ ارسال Array
-        },
-      })
+      .get(
+        mode === "user-update"
+          ? "/businesses/services"
+          : "/admin/services",
+        {
+          params: {
+            subcategory_ids:
+              subcategoryIds.join(","),
+          },
+        }
+      )
       .then((res) => setServices(res.data?.data || []))
       .catch(() => setServices([]))
       .finally(() => setLoadingServices(false));
@@ -74,7 +80,11 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
     setLoadingTags(true);
 
     apiClient
-      .get("/admin/tags/for-business")
+      .get(
+        mode === "user-update"
+          ? "/businesses/tags"
+          : "/admin/tags/for-business"
+      )
       .then((res) => setTags(res.data?.data || []))
       .catch(() => setTags([]))
       .finally(() => setLoadingTags(false));
