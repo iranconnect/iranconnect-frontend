@@ -1145,8 +1145,21 @@ export default function StepLocationContact({
       
           <div className="space-y-3">
             {WEEK_DAYS.map((day) => {
-              const dayData = data.availability_hours[day];
-      
+
+              const rawDayData =
+                data?.availability_hours?.[day];
+            
+              const dayData = {
+                open:
+                  rawDayData?.open || "09:00",
+            
+                close:
+                  rawDayData?.close || "18:00",
+            
+                closed:
+                  rawDayData?.closed ?? false,
+              };
+            
               return (
                 <div
                   key={day}
