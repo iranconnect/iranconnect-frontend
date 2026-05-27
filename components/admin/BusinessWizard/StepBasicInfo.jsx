@@ -76,11 +76,45 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
      Load categories (no pagination)
   ───────────────────────────── */
   useEffect(() => {
-    apiClient
-      .get("/admin/categories/all")
-      .then((res) => setCategories(res.data?.data || []))
-      .catch(() => setCategories([]));
-  }, []);
+
+    const endpoint =
+    mode === "user-update"
+    ? "/businesses/categories"
+    : "/admin/categories/all";
+    
+    const request =
+    mode === "user-update"
+    ? apiClient.get(endpoint, {
+    params: {
+    country: data?.country,
+    city: data?.city,
+    },
+    })
+    : apiClient.get(endpoint);
+    
+    request
+    .then((res) => {
+    
+    
+      const rows =
+        res.data?.data ||
+        res.data ||
+        [];
+    
+      setCategories(rows);
+    
+    })
+    .catch(() => {
+      setCategories([]);
+    });
+    
+    
+    }, [
+    mode,
+    data?.country,
+    data?.city,
+    ]);
+
 
   /* ─────────────────────────────
      Load subcategories by category
@@ -94,7 +128,11 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
     setLoadingSubs(true);
 
     apiClient
-      .get("/admin/subcategories", {
+      .get(
+        mode === "user-update"
+          ? "/businesses/subcategories"
+          : "/admin/subcategories",
+        {
         params: { category_id: categoryId },
       })
       .then((res) => setSubcategories(res.data?.data || []))
