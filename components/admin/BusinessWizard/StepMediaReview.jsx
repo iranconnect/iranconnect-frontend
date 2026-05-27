@@ -431,6 +431,7 @@ export default function StepMediaReview({
         data.gallery_files,
         data.gallery,
         safeSetData,
+        isRemoved,
       ]
     );
 
@@ -612,6 +613,10 @@ export default function StepMediaReview({
   const remainingGallerySlots =
     MAX_GALLERY_IMAGES -
     activeGalleryCount;
+
+  const hasGalleryOverflow =
+  activeGalleryCount >
+  MAX_GALLERY_IMAGES;
   
   /* ======================================================
   🧱 RENDER — UI ONLY
@@ -1519,6 +1524,18 @@ export default function StepMediaReview({
   </div>
   {error && <p className="admin-error mb-3">{error}</p>}
 
+  {hasGalleryOverflow && (
+    <p
+      className="admin-error mb-3"
+      style={{
+        color: "#ef4444",
+      }}
+    >
+      Maximum of {MAX_GALLERY_IMAGES} gallery images allowed.
+      Please remove some images before continuing.
+    </p>
+  )}    
+
   {zoomImage && (
   
     <div
@@ -1569,7 +1586,10 @@ export default function StepMediaReview({
       type="button"
       className="admin-btn admin-btn-primary"
       onClick={onNext}
-      disabled={!canProceed}
+      disabled={
+        !canProceed ||
+        hasGalleryOverflow
+      }
     >
       Next
     </button>
