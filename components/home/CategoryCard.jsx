@@ -24,17 +24,18 @@ export default function CategoryCard({
       >
         <div
           className="
-            w-16 h-16
+            w-20 h-20
             rounded-xl
             flex items-center justify-center
-            bg-[rgba(64,224,208,0.12)]
-            border border-[rgba(64,224,208,0.25)]
+            bg-[rgba(64,224,208,0.18)]
+            border border-[rgba(64,224,208,0.35)]
+            shadow-[0_0_20px_rgba(64,224,208,0.08)]
           "
         >
           <img
             src={icon}
             alt={title}
-            className="w-9 h-9 object-contain"
+            className="w-12 h-12 object-contain"
             loading="lazy"
           />
         </div>
