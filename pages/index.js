@@ -1,3 +1,5 @@
+//iranconnect-frontend/pages/index.js
+
 import Layout from "../components/Layout";
 import HeroSection from "../components/home/HeroSection";
 
