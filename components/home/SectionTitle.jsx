@@ -27,7 +27,8 @@ export default function SectionTitle({
           className="
             mt-3
             text-base md:text-lg
-            text-muted
+            text-[var(--text)]
+            opacity-75
             max-w-2xl
             leading-relaxed
             mx-auto
