@@ -35,7 +35,7 @@ export default function CategoryCard({
           <img
             src={icon}
             alt={title}
-            className="w-12 h-12 object-contain"
+            className="w-15 h-15 object-contain"
             loading="lazy"
           />
         </div>
