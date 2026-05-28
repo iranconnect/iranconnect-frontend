@@ -15,7 +15,8 @@ export default function SectionTitle({
         className="
           text-2xl md:text-4xl
           font-bold
-          text-[var(--text)]
+          text-[#102139]
+          dark:text-[#102139]
           tracking-tight
         "
       >
@@ -27,8 +28,8 @@ export default function SectionTitle({
           className="
             mt-3
             text-base md:text-lg
-            text-[var(--text)]
-            opacity-75
+            text-[#334155]
+            dark:text-[#334155]
             max-w-2xl
             leading-relaxed
             mx-auto
