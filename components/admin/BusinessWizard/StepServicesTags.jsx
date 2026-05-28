@@ -50,7 +50,21 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   ───────────────────────────── */
   useEffect(() => {
     if (!subcategoryIds.length) {
+
       setServices([]);
+    
+      // =====================================
+      // Reset invalid selected services
+      // =====================================
+    
+      setData((prev) => ({
+    
+        ...prev,
+    
+        services: [],
+    
+      }));
+    
       return;
     }
 
@@ -77,20 +91,64 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
      Load tags (global)
   ───────────────────────────── */
   useEffect(() => {
-    setLoadingTags(true);
 
+    const categoryId =
+      data.category_id;
+  
+    const serviceIds =
+      data.services || [];
+  
+    if (!categoryId) {
+      setTags([]);
+      return;
+    }
+  
+    setLoadingTags(true);
+  
     apiClient
       .get(
-        mode === "user-update"
-          ? "/businesses/tags"
-          : "/admin/tags/for-business"
+        "/businesses/tags",
+        {
+          params: {
+            category_id: categoryId,
+            service_ids: serviceIds.join(","),
+          },
+        }
       )
-      .then((res) => setTags(res.data?.data || []))
+      .then((res) => {
+
+        const fetchedTags =
+          res.data?.data || [];
+      
+        setTags(fetchedTags);
+      
+        // =====================================
+        // Remove invalid selected tags
+        // =====================================
+      
+        setData((prev) => ({
+      
+          ...prev,
+      
+          tags: (prev.tags || []).filter(
+            (tagId) =>
+              fetchedTags.some(
+                (t) => t.id === tagId
+              )
+          ),
+      
+        }));
+      
+      })
       .catch(() => setTags([]))
-      .finally(() => setLoadingTags(false));
-
-  }, []);
-
+      .finally(() =>
+        setLoadingTags(false)
+      );
+  
+  }, [
+    data.category_id,
+    JSON.stringify(data.services || []),
+  ]);
   /* ─────────────────────────────
      Handlers
   ───────────────────────────── */
