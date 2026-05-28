@@ -5,7 +5,6 @@ import StepServicesTags from "./StepServicesTags";
 import StepLocationContact from "./StepLocationContact";
 import StepMediaReview from "./StepMediaReview";
 import StepPreviewSubmit from "./StepPreviewSubmit";
-import WizardFooter from "./WizardFooter";
 import DuplicateModal from "../DuplicateModal";
 import apiClient from "../../../utils/apiClient";
 
@@ -29,6 +28,7 @@ export default function BusinessWizard({
   const [submitMessage, setSubmitMessage] = useState("");
   const [submitError, setSubmitError] = useState(false);
   const [ticketCode, setTicketCode] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const defaultData = {
     name: "",
@@ -135,6 +135,7 @@ export default function BusinessWizard({
     setSubmitMessage("");
     setSubmitError(false);
     setTicketCode("");
+    setSubmitSuccess(false);
   
     setLoading(true);
   
@@ -201,6 +202,7 @@ export default function BusinessWizard({
         setTicketCode(
           res?.data?.ticket_code || ""
         );
+        setSubmitSuccess(true);
       
         return;
       }
@@ -363,6 +365,7 @@ export default function BusinessWizard({
           submitMessage={submitMessage}
           submitError={submitError}
           ticketCode={ticketCode}
+          submitSuccess={submitSuccess}
         />
       )}
 
