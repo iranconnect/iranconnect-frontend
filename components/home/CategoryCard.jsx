@@ -24,17 +24,17 @@ export default function CategoryCard({
       >
         <div
           className="
-            w-14 h-14
+            w-16 h-16
             rounded-xl
             flex items-center justify-center
-            bg-[rgba(64,224,208,0.08)]
-            border border-[rgba(64,224,208,0.15)]
+            bg-[rgba(64,224,208,0.12)]
+            border border-[rgba(64,224,208,0.25)]
           "
         >
           <img
             src={icon}
             alt={title}
-            className="w-7 h-7 object-contain"
+            className="w-9 h-9 object-contain"
             loading="lazy"
           />
         </div>
@@ -56,7 +56,8 @@ export default function CategoryCard({
           className="
             mt-3
             text-sm
-            text-muted
+            text-[var(--text)]
+            opacity-80
             leading-relaxed
           "
         >
