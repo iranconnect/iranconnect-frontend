@@ -85,118 +85,6 @@ export default function StepPreviewSubmit({
   
   const [tagNames, setTagNames] = useState([]);
 
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmitRequest = async () => {
-
-  if (submitting) return;
-  
-  setSubmitting(true);
-  
-  try {
-  
-  
-  const fd = new FormData();
-  
-  fd.append("request_type", "update");
-  
-  if (data.id) {
-    fd.append("business_id", data.id);
-  }
-  
-  /* --------------------------------------------------
-  FILE UPLOADS
-  -------------------------------------------------- */
-  
-  /* gallery uploads */
-  if (
-  Array.isArray(data.gallery_files)
-  ) {
-  
-  data.gallery_files.forEach((file) => {
-  fd.append("gallery_files", file);
-  });
-  
-  }
-  
-  /* single uploads */
-  if (data.logo_file) {
-  fd.append("logo_file", data.logo_file);
-  }
-  
-  if (data.cover_file) {
-  fd.append("cover_file", data.cover_file);
-  }
-  
-  /* --------------------------------------------------
-  CLEAN PAYLOAD
-  -------------------------------------------------- */
-  
-  const cleanPayload = { ...data };
-  
-  /* remove raw File objects */
-  delete cleanPayload.logo_file;
-  delete cleanPayload.cover_file;
-  delete cleanPayload.gallery_files;
-
-  delete cleanPayload.logo_preview_url;
-  delete cleanPayload.cover_preview_url;
-  delete cleanPayload.gallery_preview_urls;
-
-  
-  /* send payload exactly like legacy flow */
-  fd.append(
-  "payload",
-  JSON.stringify(cleanPayload)
-  );
-
-  
-  const res = await apiClient.post(
-    "/requests",
-    fd,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      withCredentials: true,
-    }
-  );
-  
-  if (typeof onSubmit === "function") {
-    onSubmit(res.data);
-  }
-  
-  
-  } catch (err) {
-  
-  
-  console.error(
-  "Update request submit failed",
-  err
-  );
-  
-  console.log(
-  "STATUS:",
-  err?.response?.status
-  );
-  
-  console.log(
-  "RESPONSE DATA:",
-  err?.response?.data
-  );
-
-  
-  
-  } finally {
-  
-  
-  setSubmitting(false);
-  
-  
-  }
-  
-  };
-
   
   useEffect(() => {
   
@@ -977,10 +865,10 @@ export default function StepPreviewSubmit({
 
         <button
           className="admin-btn admin-btn-primary"
-          onClick={handleSubmitRequest}
-          disabled={loading || submitting}
+          onClick={onSubmit}
+          disabled={loading}
         >
-          {loading || submitting
+          {loading
             ? mode === "user-update"
               ? "Submitting update request…"
               : "Creating business…"
