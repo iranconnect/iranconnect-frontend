@@ -38,10 +38,9 @@ export default function BusinessCard({ b }) {
           relative
           flex
           flex-col
-          sm:flex-row
-          items-center
           justify-between
-          gap-5
+          min-h-[280px]
+          rounded-3xl
           p-6
           transition-all
           duration-300
@@ -53,39 +52,61 @@ export default function BusinessCard({ b }) {
           group-hover:border-cyan-500/30
         "
       >
-        <img
-          src={imageSrc}
-          alt={`${safeText(b?.name)} logo`}
-          loading="lazy"
-          decoding="async"
-          onError={(e) => {
-            if (imgErrored.current) return;
-            imgErrored.current = true;
-            e.currentTarget.src = "/logo-light.png";
-          }}
-          className="
-            w-16
-            h-16
-            rounded-2xl
-            object-cover
-            border
-            border-slate-200
-            dark:border-cyan-800/40
-            mb-2
-            sm:mb-0
-            shrink-0
-            bg-white
-            p-1
-          "
-        />
-
-        <div className="flex flex-col flex-1 min-w-0 items-center sm:items-start">
+        <div className="flex items-start justify-between gap-4">
+          <img
+            src={imageSrc}
+            alt={`${safeText(b?.name)} logo`}
+            loading="lazy"
+            decoding="async"
+            onError={(e) => {
+              if (imgErrored.current) return;
+              imgErrored.current = true;
+              e.currentTarget.src = "/logo-light.png";
+            }}
+            className="
+              w-20
+              h-20
+              rounded-2xl
+              object-cover
+              border
+              border-slate-200
+              dark:border-cyan-800/40
+              bg-white
+              p-1
+              shrink-0
+            "
+          />
+        
+          <div className="flex flex-col items-end gap-2">
+            {b?.verified && (
+              <span
+                className="
+                  rounded-full
+                  bg-emerald-500/10
+                  px-3
+                  py-1
+                  text-xs
+                  font-semibold
+                  text-emerald-400
+                  border
+                  border-emerald-400/20
+                "
+              >
+                ✓ Verified
+              </span>
+            )}
+        
+            
+          </div>
+        </div>
+        
+        <div className="mt-5 flex flex-col">
           <h3
             className="
               text-[var(--text)]
               font-bold
-              text-lg
-              truncate
+              text-xl
+              leading-tight
               transition-colors
               duration-300
               group-hover:text-turquoise
@@ -93,23 +114,40 @@ export default function BusinessCard({ b }) {
           >
             {safeText(b?.name)}
           </h3>
-
+        
+          <p
+            className="
+              mt-3
+              text-sm
+              text-muted
+              leading-6
+            "
+          >
+            {safeText(b?.category)}
+            {b?.subcategory ? ` • ${safeText(b.subcategory)}` : ""}
+          </p>
+        
           <p
             className="
               mt-1
               text-sm
               text-muted
-              text-center
-              sm:text-left
-              leading-6
-              truncate
             "
           >
-            {safeText(b?.category)} • {safeText(b?.city)},{" "}
-            {safeText(b?.country)}
+            {safeText(b?.city)}, {safeText(b?.country)}
           </p>
         </div>
-
+        
+        <div
+          className="
+            mt-6
+            text-sm
+            text-slate-500
+            dark:text-slate-400
+          "
+        >
+          {b?.reviews_count || 0} reviews
+        </div>
         <div
           className="
             absolute
