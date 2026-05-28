@@ -75,6 +75,10 @@ export default function StepPreviewSubmit({
   onSubmit,
   loading,
   mode,
+  submitMessage,
+  submitError,
+  ticketCode,
+  submitSuccess,
 }) {
 
   const [categoryName, setCategoryName] = useState("");
@@ -852,6 +856,52 @@ export default function StepPreviewSubmit({
       
       </Section>
 
+      {submitMessage && (
+
+        <div
+          style={{
+            marginTop: 24,
+            marginBottom: 10,
+            padding: "14px 16px",
+            borderRadius: 12,
+            background:
+              submitError
+                ? "rgba(239,68,68,0.12)"
+                : "rgba(34,197,94,0.12)",
+            border:
+              submitError
+                ? "1px solid rgba(239,68,68,0.35)"
+                : "1px solid rgba(34,197,94,0.35)",
+            color:
+              submitError
+                ? "#dc2626"
+                : "#15803d",
+            fontWeight: 500,
+            lineHeight: 1.6,
+          }}
+        >
+      
+          <div>
+            {submitError ? "❌ " : "✅ "}
+            {submitMessage}
+          </div>
+      
+          {!submitError && ticketCode && (
+            <div
+              style={{
+                marginTop: 8,
+                fontSize: 14,
+                fontWeight: 700,
+              }}
+            >
+              Ticket Code: {ticketCode}
+            </div>
+          )}
+      
+        </div>
+      
+      )}
+
       {/* ─────────────────────────
          ACTIONS
       ───────────────────────── */}
@@ -866,7 +916,7 @@ export default function StepPreviewSubmit({
         <button
           className="admin-btn admin-btn-primary"
           onClick={onSubmit}
-          disabled={loading}
+          disabled={loading || submitSuccess}
         >
           {loading
             ? mode === "user-update"
