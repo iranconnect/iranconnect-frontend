@@ -26,6 +26,10 @@ export default function BusinessWizard({
   const [duplicate, setDuplicate] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const [submitMessage, setSubmitMessage] = useState("");
+  const [submitError, setSubmitError] = useState(false);
+  const [ticketCode, setTicketCode] = useState("");
+
   const defaultData = {
     name: "",
     category_id: "",
@@ -127,6 +131,10 @@ export default function BusinessWizard({
     if (externalSubmit) {
       return externalSubmit(data);
     }
+
+    setSubmitMessage("");
+    setSubmitError(false);
+    setTicketCode("");
   
     setLoading(true);
   
@@ -184,12 +192,15 @@ export default function BusinessWizard({
   
       if (mode === "user-update") {
 
-        alert(
-          "Your update request has been submitted successfully."
+        setSubmitError(false);
+      
+        setSubmitMessage(
+          "Business update request submitted successfully."
         );
       
-        window.location.href =
-          "/account/requests";
+        setTicketCode(
+          res?.data?.ticket_code || ""
+        );
       
         return;
       }
@@ -236,7 +247,9 @@ export default function BusinessWizard({
       // ====================================
       if (status === 429) {
     
-        alert(
+        setSubmitError(true);
+        
+        setSubmitMessage(
           serverMessage ||
           "You recently submitted a similar request. Please wait before submitting again."
         );
@@ -249,7 +262,9 @@ export default function BusinessWizard({
       // ====================================
       if (status === 403) {
     
-        alert(
+        setSubmitError(true);
+        
+        setSubmitMessage(
           serverMessage ||
           "You do not have permission to perform this action."
         );
@@ -262,7 +277,9 @@ export default function BusinessWizard({
       // ====================================
       if (status === 400) {
     
-        alert(
+        setSubmitError(true);
+        
+        setSubmitMessage(
           serverMessage ||
           "Some submitted data is invalid."
         );
@@ -275,7 +292,10 @@ export default function BusinessWizard({
       // ====================================
       if (status >= 500) {
     
-        alert(
+        setSubmitError(true);
+        
+        setSubmitMessage(
+          serverMessage ||
           "Server error. Please try again later."
         );
     
@@ -285,7 +305,9 @@ export default function BusinessWizard({
       // ====================================
       // FALLBACK
       // ====================================
-      alert(
+      setSubmitError(true);
+      
+      setSubmitMessage(
         serverMessage ||
         "Something went wrong while submitting."
       );
@@ -338,6 +360,9 @@ export default function BusinessWizard({
           onSubmit={submit}
           loading={loading}
           mode={mode}
+          submitMessage={submitMessage}
+          submitError={submitError}
+          ticketCode={ticketCode}
         />
       )}
 
