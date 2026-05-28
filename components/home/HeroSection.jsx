@@ -1,15 +1,13 @@
 //frontend/components/home/HeroSection.jsx
 import SectionWrapper from "./SectionWrapper";
+import SearchFilters from "./SearchFilters";
+import TrustStats from "./TrustStats";
+import HeroCTA from "./HeroCTA";
 
 export default function HeroSection() {
   return (
     <SectionWrapper className="pt-10 md:pt-16">
-      <div
-        className="
-          card
-          text-center
-        "
-      >
+      <div className="card text-center">
         <h1
           className="
             text-3xl md:text-5xl
@@ -31,9 +29,15 @@ export default function HeroSection() {
             leading-relaxed
           "
         >
-          Discover trusted professionals, local services, and Iranian-owned
-          businesses across Europe and North America.
+          Discover trusted professionals, local services, and
+          Iranian-owned businesses across Europe and North America.
         </p>
+
+        <SearchFilters />
+
+        <TrustStats />
+
+        <HeroCTA />
       </div>
     </SectionWrapper>
   );
