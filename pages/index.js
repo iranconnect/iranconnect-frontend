@@ -6,6 +6,7 @@ import FeaturedCategories from "../components/home/FeaturedCategories";
 import PopularCities from "../components/home/PopularCities";
 import FeaturedBusinesses from "../components/home/FeaturedBusinesses";
 import TestimonialsSection from "../components/home/TestimonialsSection";
+import CTASection from "../components/home/CTASection";
 
 export default function HomePage() {
   return (
@@ -19,6 +20,8 @@ export default function HomePage() {
       <FeaturedBusinesses />
 
       <TestimonialsSection />
+
+      <CTASection />
     </Layout>
   );
 }
