@@ -1,4 +1,5 @@
-//frontend/components/home/CTASection.jsx
+// frontend/components/home/CTASection.jsx
+
 import Link from "next/link";
 import SectionWrapper from "./SectionWrapper";
 
@@ -9,7 +10,8 @@ export default function CTASection() {
         className="
           admin-card
           overflow-hidden
-          p-8
+          p-6
+          md:p-8
           lg:p-12
         "
       >
@@ -17,16 +19,17 @@ export default function CTASection() {
           className="
             grid
             lg:grid-cols-2
-            gap-10
+            gap-8
+            lg:gap-12
             items-center
           "
         >
-          {/* IMAGE FIRST (Mobile) */}
+          {/* IMAGE */}
           <div
             className="
+              relative
               flex
               justify-center
-              relative
               order-1
               lg:order-2
             "
@@ -34,8 +37,12 @@ export default function CTASection() {
             <div
               className="
                 absolute
-                w-[420px]
-                h-[420px]
+                w-[280px]
+                h-[280px]
+                md:w-[380px]
+                md:h-[380px]
+                lg:w-[480px]
+                lg:h-[480px]
                 rounded-full
                 bg-turquoise/20
                 blur-[120px]
@@ -44,13 +51,18 @@ export default function CTASection() {
 
             <img
               src="/images/iranconnect-register-business-online.webp"
-              alt="Register your business on IranConnect"
+              alt="IranConnect business directory platform helping Iranian-owned businesses increase online visibility, attract customers, and grow across Europe and North America"
+              loading="lazy"
+              decoding="async"
               className="
                 relative
                 z-10
                 w-full
-                lg:w-[120%]
-                max-w-none
+                max-w-[340px]
+                sm:max-w-[460px]
+                md:max-w-[560px]
+                lg:max-w-[650px]
+                xl:max-w-[720px]
                 h-auto
               "
             />
@@ -82,7 +94,8 @@ export default function CTASection() {
 
             <h2
               className="
-                text-5xl
+                text-4xl
+                md:text-5xl
                 lg:text-6xl
                 font-bold
                 text-[var(--text)]
@@ -95,7 +108,8 @@ export default function CTASection() {
 
             <p
               className="
-                text-lg
+                text-base
+                md:text-lg
                 text-muted
                 max-w-xl
                 mb-8
@@ -136,7 +150,8 @@ export default function CTASection() {
                 items-center
                 justify-center
                 w-full
-                sm:w-fit
+                sm:w-auto
+                min-w-[220px]
                 px-10
                 py-4
               "
