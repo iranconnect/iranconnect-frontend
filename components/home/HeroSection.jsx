@@ -56,6 +56,23 @@ export default function HeroSection() {
               object-contain
             "
           />
+          {/* Mobile + Tablet */}
+          <img
+            src="/images/find-trusted-iranian-businesses-worldwide-mobile-version.webp"
+            alt="Find trusted Iranian businesses, local services, and professionals worldwide through the IranConnect global business directory"
+            loading="eager"
+            className="
+              block
+              xl:hidden
+        
+              w-full
+              max-w-[900px]
+              h-auto
+        
+              opacity-[0.10]
+              object-contain
+            "
+          />
         </div>
 
         {/* Content */}
