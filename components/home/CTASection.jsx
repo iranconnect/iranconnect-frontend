@@ -43,8 +43,8 @@ export default function CTASection() {
 
             <h2
               className="
-                text-4xl
-                md:text-5xl
+                text-5xl
+                lg:text-6xl
                 font-bold
                 text-[var(--text)]
                 leading-tight
@@ -76,9 +76,9 @@ export default function CTASection() {
                 font-medium
               "
             >
-              <span>120+ Businesses</span>
-              <span>15+ Categories</span>
-              <span>10+ Cities</span>
+              <span className="admin-card px-4 py-2">120+ Businesses</span>
+              <span className="admin-card px-4 py-2">15+ Categories</span>
+              <span className="admin-card px-4 py-2">10+ Cities</span>
             </div>
 
             <Link
@@ -86,8 +86,8 @@ export default function CTASection() {
               className="
                 btn-primary
                 inline-flex
-                px-8
-                py-4
+                w-fit
+                px-10
               "
             >
               Add Your Business
@@ -105,8 +105,8 @@ export default function CTASection() {
             <div
               className="
                 absolute
-                w-72
-                h-72
+                w-[420px]
+                h-[420px]
                 rounded-full
                 bg-turquoise/20
                 blur-3xl
@@ -120,7 +120,8 @@ export default function CTASection() {
                 relative
                 z-10
                 w-full
-                max-w-[560px]
+                max-w-none
+                w-[120%]
                 h-auto
               "
             />
