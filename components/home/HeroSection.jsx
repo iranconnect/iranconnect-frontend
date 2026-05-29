@@ -7,105 +7,84 @@ import HeroCTA from "./HeroCTA";
 export default function HeroSection() {
   return (
     <SectionWrapper className="pt-10 md:pt-16">
-      <div className="card overflow-hidden">
+      <div
+        className="
+          card
+          relative
+          overflow-hidden
+          text-center
+          py-12
+          md:py-16
+          lg:py-20
+        "
+      >
+        {/* Background Illustration */}
         <div
           className="
-            grid
-            lg:grid-cols-2
-            gap-10
+            absolute
+            inset-0
+            flex
             items-center
+            justify-center
+            pointer-events-none
           "
         >
-          {/* IMAGE FIRST ON MOBILE */}
-          <div
+          <img
+            src="/images/find-trusted-iranian-businesses-worldwide.webp"
+            alt="Find trusted Iranian businesses, local services, and professionals worldwide through the IranConnect global business directory"
+            loading="eager"
+            fetchPriority="high"
             className="
-              order-1
-              lg:order-2
-              relative
-              flex
-              justify-center
+              w-full
+              max-w-[1600px]
+              h-auto
+              opacity-100
+              object-contain
+            "
+          />
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 max-w-6xl mx-auto">
+          <h1
+            className="
+              text-5xl
+              md:text-6xl
+              lg:text-7xl
+              font-bold
+              text-[var(--text)]
+              leading-tight
             "
           >
-            <div
-              className="
-                absolute
-                w-[320px]
-                h-[320px]
-                md:w-[500px]
-                md:h-[500px]
-                rounded-full
-                bg-turquoise/10
-                blur-[140px]
-              "
-            />
+            Find trusted Iranian businesses worldwide
+          </h1>
 
-            <img
-              src="/images/find-trusted-iranian-businesses-worldwide.webp"
-              alt="Find trusted Iranian businesses, local services, and professionals worldwide through the IranConnect global business directory"
-              loading="eager"
-              fetchPriority="high"
-              className="
-                relative
-                z-10
-                w-full
-                max-w-[420px]
-                md:max-w-[620px]
-                lg:max-w-[760px]
-                h-auto
-              "
-            />
+          <p
+            className="
+              mt-6
+              text-lg
+              md:text-xl
+              text-muted
+              max-w-4xl
+              mx-auto
+              leading-relaxed
+            "
+          >
+            Discover trusted professionals, local services,
+            and Iranian-owned businesses across Europe and
+            North America.
+          </p>
+
+          <div className="mt-10 max-w-5xl mx-auto">
+            <SearchFilters />
           </div>
 
-          {/* CONTENT */}
-          <div
-            className="
-              order-2
-              lg:order-1
-              text-center
-              lg:text-left
-            "
-          >
-            <h1
-              className="
-                text-4xl
-                md:text-5xl
-                lg:text-6xl
-                font-bold
-                text-[var(--text)]
-                leading-tight
-              "
-            >
-              Find trusted Iranian businesses worldwide
-            </h1>
+          <div className="mt-10 flex justify-center">
+            <TrustStats />
+          </div>
 
-            <p
-              className="
-                mt-5
-                text-base
-                md:text-lg
-                text-muted
-                max-w-2xl
-                mx-auto
-                lg:mx-0
-                leading-relaxed
-              "
-            >
-              Discover trusted professionals, local services,
-              and Iranian-owned businesses across Europe and
-              North America.
-            </p>
-
-            <div className="mt-8">
-              <SearchFilters />
-            </div>
-
-            <div className="mt-8">
-              <TrustStats />
-            </div>
-
-            <div className="mt-8">
-              <HeroCTA />
-            </div>
+          <div className="mt-10 flex justify-center">
+            <HeroCTA />
           </div>
         </div>
       </div>
