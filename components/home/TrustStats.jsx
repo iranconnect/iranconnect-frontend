@@ -18,12 +18,18 @@ export default function TrustStats() {
   return (
     <div
       className="
-        mt-8
-        grid grid-cols-3
-        gap-4
-        max-w-xl
-        mx-auto
-      "
+      mt-8
+      grid
+      grid-cols-3
+      gap-2
+      sm:gap-4
+    
+      w-full
+      max-w-md
+      sm:max-w-xl
+    
+      mx-auto
+    "
     >
       {stats.map((item) => (
         <div
@@ -32,7 +38,7 @@ export default function TrustStats() {
             card
             text-center
             py-4
-            px-2
+            px-1
           "
         >
           <div
