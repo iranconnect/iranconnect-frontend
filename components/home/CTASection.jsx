@@ -1,5 +1,6 @@
 //frontend/components/home/CTASection.jsx
 import Link from "next/link";
+
 import SectionWrapper from "./SectionWrapper";
 
 export default function CTASection() {
@@ -8,44 +9,123 @@ export default function CTASection() {
       <div
         className="
           admin-card
-          text-center
-          py-14
-          px-6
+          overflow-hidden
+          p-8
+          lg:p-12
         "
       >
-        <h2
+        <div
           className="
-            text-3xl
-            md:text-4xl
-            font-bold
-            mb-4
-            text-[var(--text)]
+            grid
+            lg:grid-cols-2
+            gap-10
+            items-center
           "
         >
-          Ready to Grow Your Business?
-        </h2>
+          {/* LEFT */}
+          <div>
+            <span
+              className="
+                inline-flex
+                items-center
+                rounded-full
+                px-4
+                py-1
+                text-sm
+                font-medium
+                bg-turquoise/10
+                text-turquoise
+                mb-5
+              "
+            >
+              🚀 Business Growth
+            </span>
 
-        <p
-          className="
-            text-muted
-            max-w-2xl
-            mx-auto
-            mb-8
-          "
-        >
-          Join IranConnect today and connect with users across
-          Europe and North America.
-        </p>
+            <h2
+              className="
+                text-4xl
+                md:text-5xl
+                font-bold
+                text-[var(--text)]
+                leading-tight
+                mb-5
+              "
+            >
+              Ready to Reach More Customers?
+            </h2>
 
-        <Link
-          href="/account/new-business"
-          className="
-            btn-primary
-            inline-flex
-          "
-        >
-          Add Your Business
-        </Link>
+            <p
+              className="
+                text-lg
+                text-muted
+                max-w-xl
+                mb-8
+              "
+            >
+              Join hundreds of Iranian-owned businesses already
+              connecting with users across Europe and North America.
+            </p>
+
+            <div
+              className="
+                flex
+                flex-wrap
+                gap-6
+                mb-8
+                text-sm
+                font-medium
+              "
+            >
+              <span>120+ Businesses</span>
+              <span>15+ Categories</span>
+              <span>10+ Cities</span>
+            </div>
+
+            <Link
+              href="/account/new-business"
+              className="
+                btn-primary
+                inline-flex
+                px-8
+                py-4
+              "
+            >
+              Add Your Business
+            </Link>
+          </div>
+
+          {/* RIGHT */}
+          <div
+            className="
+              flex
+              justify-center
+              relative
+            "
+          >
+            <div
+              className="
+                absolute
+                w-72
+                h-72
+                rounded-full
+                bg-turquoise/20
+                blur-3xl
+              "
+            />
+          
+            <img
+              src="/images/iranconnect-register-business-online.webp"
+              alt="Register your business on IranConnect"
+              className="
+                relative
+                z-10
+                w-full
+                max-w-[560px]
+                h-auto
+              "
+            />
+          </div>
+        </div>
       </div>
     </SectionWrapper>
   );
