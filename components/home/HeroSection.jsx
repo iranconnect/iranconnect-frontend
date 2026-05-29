@@ -18,12 +18,12 @@ export default function HeroSection() {
           sm:pt-[280px]
           md:pt-[320px]
           lg:pt-[360px]
-          xl:pt-[400px]
+          xl:pt-[50px]
       
           pb-[280px]
           md:pb-[320px]
           lg:pb-[380px]
-          xl:pb-[450px]
+          xl:pb-[200px]
         "
       >
         {/* Background Illustration */}
