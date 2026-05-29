@@ -20,19 +20,22 @@ export default function HeroSection() {
           lg:pt-[360px]
           xl:pt-[400px]
       
-          pb-12
-          md:pb-16
-          lg:pb-20
+          pb-[280px]
+          md:pb-[320px]
+          lg:pb-[380px]
+          xl:pb-[450px]
         "
       >
         {/* Background Illustration */}
         <div
           className="
             absolute
-            inset-0
+            inset-x-0
+            bottom-0
+        
             flex
-            items-center
             justify-center
+        
             pointer-events-none
           "
         >
@@ -86,15 +89,11 @@ export default function HeroSection() {
             North America.
           </p>
 
-          <div className="mt-10 max-w-5xl mx-auto">
-            <SearchFilters />
-          </div>
-
-          <div className="mt-10 flex justify-center">
+          <div className="mt-14 flex justify-center">
             <TrustStats />
           </div>
-
-          <div className="mt-10 flex justify-center">
+          
+          <div className="mt-12 flex justify-center">
             <HeroCTA />
           </div>
         </div>
