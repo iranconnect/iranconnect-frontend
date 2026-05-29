@@ -1,6 +1,6 @@
 //frontend/components/home/HeroSection.jsx
+
 import SectionWrapper from "./SectionWrapper";
-import SearchFilters from "./SearchFilters";
 import TrustStats from "./TrustStats";
 import HeroCTA from "./HeroCTA";
 
@@ -13,13 +13,13 @@ export default function HeroSection() {
           relative
           overflow-hidden
           text-center
-      
-          pt-[240px]
-          sm:pt-[280px]
-          md:pt-[320px]
+
+          pt-[120px]
+          sm:pt-[160px]
+          md:pt-[220px]
           lg:pt-[360px]
           xl:pt-[50px]
-      
+
           pb-[280px]
           md:pb-[320px]
           lg:pb-[380px]
@@ -32,31 +32,34 @@ export default function HeroSection() {
             absolute
             inset-x-0
             bottom-0
-        
             flex
             justify-center
-        
             pointer-events-none
           "
         >
+          {/* Desktop Illustration */}
           <img
             src="/images/find-trusted-iranian-businesses-worldwide.webp"
             alt="Find trusted Iranian businesses, local services, and professionals worldwide through the IranConnect global business directory"
             loading="eager"
             fetchPriority="high"
             className="
+              hidden
+              xl:block
+
               w-full
               max-w-[1600px]
               h-auto
-            
+
               opacity-[0.12]
               md:opacity-[0.15]
               lg:opacity-[0.18]
-            
+
               object-contain
             "
           />
-          {/* Mobile + Tablet */}
+
+          {/* Mobile + Tablet Illustration */}
           <img
             src="/images/find-trusted-iranian-businesses-worldwide-mobile-version.webp"
             alt="Find trusted Iranian businesses, local services, and professionals worldwide through the IranConnect global business directory"
@@ -64,12 +67,13 @@ export default function HeroSection() {
             className="
               block
               xl:hidden
-        
+
               w-full
-              max-w-[900px]
+              max-w-[520px]
               h-auto
-        
-              opacity-[0.10]
+
+              opacity-[0.12]
+
               object-contain
             "
           />
@@ -109,7 +113,7 @@ export default function HeroSection() {
           <div className="mt-14 flex justify-center">
             <TrustStats />
           </div>
-          
+
           <div className="mt-12 flex justify-center">
             <HeroCTA />
           </div>
