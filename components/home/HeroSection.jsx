@@ -13,9 +13,16 @@ export default function HeroSection() {
           relative
           overflow-hidden
           text-center
-          py-12
-          md:py-16
-          lg:py-20
+      
+          pt-[240px]
+          sm:pt-[280px]
+          md:pt-[320px]
+          lg:pt-[360px]
+          xl:pt-[400px]
+      
+          pb-12
+          md:pb-16
+          lg:pb-20
         "
       >
         {/* Background Illustration */}
@@ -38,7 +45,11 @@ export default function HeroSection() {
               w-full
               max-w-[1600px]
               h-auto
-              opacity-100
+            
+              opacity-[0.12]
+              md:opacity-[0.15]
+              lg:opacity-[0.18]
+            
               object-contain
             "
           />
