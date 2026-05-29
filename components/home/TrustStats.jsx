@@ -36,9 +36,15 @@ export default function TrustStats() {
           key={item.label}
           className="
             card
-            text-center
             py-4
-            px-1
+            px-2
+        
+            flex
+            flex-col
+            items-center
+            justify-center
+        
+            text-center
           "
         >
           <div
@@ -54,8 +60,11 @@ export default function TrustStats() {
           <div
             className="
               mt-1
-              text-sm md:text-base
+              text-sm
+              md:text-base
               text-muted
+              w-full
+              text-center
             "
           >
             {item.label}
