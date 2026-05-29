@@ -60,13 +60,12 @@ export default function TrustStats() {
           <div
             className="
               mt-1
-              text-XS
+              text-xs
               md:text-base
               text-muted
               w-full
               text-center
-              border
-              border-red-500
+              font-sans
             "
           >
             {item.label}
