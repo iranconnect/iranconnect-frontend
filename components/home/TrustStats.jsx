@@ -25,7 +25,7 @@ export default function TrustStats() {
       sm:gap-4
     
       w-full
-      max-w-md
+      max-w-[520px]
       sm:max-w-xl
     
       mx-auto
@@ -60,11 +60,13 @@ export default function TrustStats() {
           <div
             className="
               mt-1
-              text-sm
+              text-XS
               md:text-base
               text-muted
               w-full
               text-center
+              border
+              border-red-500
             "
           >
             {item.label}
