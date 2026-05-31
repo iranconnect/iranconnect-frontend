@@ -14,7 +14,8 @@ const featuredCategories = [
     slug: "lawyers",
     description:
       "Connect with experienced Iranian lawyers and legal experts.",
-    icon: "/icons/lawyer.svg",
+    icon: "/images/iranian-lawyers-legal-services.webp",
+    alt: "Lawyers and legal professionals category illustration with scales of justice, law books and legal documents",
   },
 
   {
