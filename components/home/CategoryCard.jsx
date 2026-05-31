@@ -25,7 +25,7 @@ export default function CategoryCard({
         <div
           className="
             relative
-            h-36
+            h-52
             -mx-6
             -mt-6
             mb-5
