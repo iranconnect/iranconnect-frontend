@@ -23,7 +23,8 @@ const featuredCategories = [
     slug: "translators",
     description:
       "Professional Persian translators and interpretation services.",
-    icon: "/icons/translate.svg",
+    icon: "/images/iranian-translation-services.webp",
+    alt: "Iranian translation services category illustration featuring dictionaries, translation tools and global communication symbols",
   },
 
   {
