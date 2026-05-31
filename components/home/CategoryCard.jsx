@@ -51,7 +51,7 @@ export default function CategoryCard({
 
         <h3
           className="
-            mt-5
+            mt-3
             text-xl
             font-semibold
             text-[var(--text)]
@@ -64,7 +64,7 @@ export default function CategoryCard({
 
         <p
           className="
-            mt-3
+            mt-2
             text-sm
             text-[var(--text)]
             opacity-80
