@@ -6,6 +6,7 @@ export default function CategoryCard({
   description,
   icon,
   slug,
+  alt,
 }) {
   return (
     <Link
@@ -35,7 +36,7 @@ export default function CategoryCard({
         >
           <img
             src={icon}
-            alt={title}
+            alt={alt || title}
             className="
               w-full
               h-full
