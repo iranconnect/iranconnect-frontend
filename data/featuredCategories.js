@@ -5,7 +5,7 @@ const featuredCategories = [
     slug: "doctors",
     description:
       "Find trusted Iranian doctors and healthcare professionals.",
-    icon: "/images/iranian-doctors-medical-services.webp",
+    icon: "/images/iranians-doctors-healthcare-services.webp",
     alt: "Doctors and healthcare professionals category illustration with medical equipment",
   },
 
