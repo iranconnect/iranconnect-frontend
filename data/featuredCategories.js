@@ -1,4 +1,4 @@
-//frontend/data/featuredCategories.js
+//frontend/data/featuredCategories.js 
 const featuredCategories = [
   {
     title: "Doctors",
