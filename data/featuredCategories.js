@@ -32,7 +32,7 @@ const featuredCategories = [
     slug: "community-services",
     description:
       "Discover local Iranian-owned businesses and services.",
-    icon: "/icons/iranians-community-services.webp",
+    icon: "/images/iranians-community-services.webp",
     alt: "Iranian community services and local business support category illustration with storefront, community resources and digital services",
   },
 ];
