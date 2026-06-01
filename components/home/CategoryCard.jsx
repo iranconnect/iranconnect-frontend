@@ -26,21 +26,24 @@ export default function CategoryCard({
         <div
           className="
             relative
-            h-60
+            h-56
             -mx-6
             -mt-6
             mb-5
             overflow-hidden
             rounded-t-2xl
+            flex
+            items-center
+            justify-center
           "
         >
           <img
             src={icon}
             alt={alt || title}
             className="
-              w-full
-              h-full
-              object-cover
+              max-w-full
+              max-h-full
+              object-contain
               opacity-90
               transition-transform
               duration-500
