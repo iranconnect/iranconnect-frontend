@@ -76,28 +76,6 @@ export default function BusinessCard({ b }) {
               shrink-0
             "
           />
-        
-          <div className="flex flex-col items-end gap-2">
-            {b?.verified && (
-              <span
-                className="
-                  rounded-full
-                  bg-emerald-500/10
-                  px-3
-                  py-1
-                  text-xs
-                  font-semibold
-                  text-emerald-400
-                  border
-                  border-emerald-400/20
-                "
-              >
-                ✓ Verified
-              </span>
-            )}
-        
-            
-          </div>
         </div>
         
         <div className="mt-5 flex flex-col">
@@ -110,9 +88,35 @@ export default function BusinessCard({ b }) {
               transition-colors
               duration-300
               group-hover:text-turquoise
+              flex
+              items-center
+              gap-2
+              flex-wrap
             "
           >
-            {safeText(b?.name)}
+            <span>{safeText(b?.name)}</span>
+          
+            {b?.verified && (
+              <span
+                className="
+                  inline-flex
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-emerald-500/10
+                  border
+                  border-emerald-400/20
+                  px-2
+                  py-0.5
+                  text-[11px]
+                  font-semibold
+                  text-emerald-400
+                  whitespace-nowrap
+                "
+              >
+                ✓ Verified
+              </span>
+            )}
           </h3>
         
           <p
