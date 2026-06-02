@@ -1,11 +1,15 @@
 //frontend/components/home/CityCard.jsx
+
 import Link from "next/link";
+import Image from "next/image";
 
 export default function CityCard({
   city,
   country,
   slug,
   businesses,
+  image,
+  imageAlt,
 }) {
   return (
     <Link
@@ -26,9 +30,11 @@ export default function CityCard({
             flex
             items-center
             justify-between
+            gap-4
           "
         >
-          <div>
+          {/* Left Content */}
+          <div className="flex-1 min-w-0">
             <h3
               className="
                 text-xl
@@ -51,32 +57,36 @@ export default function CityCard({
             >
               {country}
             </p>
+
+            <div
+              className="
+                mt-5
+                text-sm
+                text-[var(--text)]
+                opacity-75
+              "
+            >
+              {businesses}
+            </div>
           </div>
 
+          {/* City Illustration */}
           <div
             className="
-              w-12 h-12
-              rounded-xl
-              flex items-center justify-center
-              bg-[rgba(64,224,208,0.12)]
-              border border-[rgba(64,224,208,0.25)]
-              text-turquoise
-              font-bold
+              relative
+              w-24
+              h-16
+              shrink-0
             "
           >
-            →
+            <Image
+              src={image}
+              alt={imageAlt}
+              fill
+              sizes="96px"
+              className="object-contain"
+            />
           </div>
-        </div>
-
-        <div
-          className="
-            mt-5
-            text-sm
-            text-[var(--text)]
-            opacity-75
-          "
-        >
-          {businesses}
         </div>
       </div>
     </Link>
