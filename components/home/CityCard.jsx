@@ -74,8 +74,8 @@ export default function CityCard({
           <div
             className="
               relative
-              w-24
-              h-16
+              w-40
+              h-28
               shrink-0
             "
           >
@@ -83,8 +83,14 @@ export default function CityCard({
               src={image}
               alt={imageAlt}
               fill
-              sizes="96px"
-              className="object-contain"
+              sizes="160px"
+              className="
+                object-contain
+                opacity-60
+                group-hover:opacity-100
+                transition-all
+                duration-300
+              "
             />
           </div>
         </div>
