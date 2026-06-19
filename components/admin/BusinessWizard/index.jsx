@@ -51,6 +51,7 @@ export default function BusinessWizard({
     availability_hours: null,
   
     country: "",
+    country_code: "",
     city: "",
     address: "",
     postal_code: "",
