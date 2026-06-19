@@ -1,6 +1,8 @@
 //components/admin/BusinessWizard/StepLocationContact.jsx
 import { useEffect, useMemo, useState } from "react";
 import Select from "react-select";
+import { Country, City } from "country-state-city";
+
 import {
   parsePhoneNumberFromString,
   getCountries,
@@ -46,28 +48,6 @@ const countrySelectStyles = {
   }),
 };
 
-function extractAddressParts(address = "") {
-  if (!address) return {};
-
-  const raw = address.replace(/\s+/g, " ").trim();
-
-  const parts = raw.split(",").map(p => p.trim());
-
-  // Contract:
-  // [0] Unit / Street
-  // [1] Postal code
-  // [2] City
-  // [3] Country
-  if (parts.length < 4) {
-    return {};
-  }
-
-  return {
-    postal_code: parts[1] || "",
-    city: parts[2] || "",
-    country: parts[3] || "",
-  };
-}
 
 const WEEK_DAYS = [
   "monday",
@@ -80,15 +60,39 @@ const WEEK_DAYS = [
 ];
 
 const FIELD_RULES = {
-
   /* ========================================
-     REQUIRED
+     REQUIRED FOR ALL SERVICE MODES
   ======================================== */
 
   service_mode: {
     required: true,
     type: "string",
   },
+
+  country: {
+    required: true,
+    type: "string",
+  },
+
+  country_code: {
+    required: true,
+    type: "string",
+  },
+
+  city: {
+    required: true,
+    type: "string",
+  },
+
+  availability_type: {
+    required: true,
+    type: "string",
+    trackRemoval: true,
+  },
+
+  /* ========================================
+     REQUIRED ONLY FOR ON_SITE / HYBRID
+  ======================================== */
 
   location_map_url: {
     required: true,
@@ -101,6 +105,16 @@ const FIELD_RULES = {
     type: "string",
     condition: (ctx) => ctx.needsPhysicalAddress,
   },
+
+  postal_code: {
+    required: true,
+    type: "string",
+    condition: (ctx) => ctx.needsPhysicalAddress,
+  },
+
+  /* ========================================
+     REQUIRED ONLY FOR AT_HOME / HYBRID
+  ======================================== */
 
   base_location_map_url: {
     required: true,
@@ -115,20 +129,9 @@ const FIELD_RULES = {
     condition: (ctx) => ctx.needsServiceRadius,
   },
 
-  phone: {
-    required: true,
-    type: "string",
-  },
-
   /* ========================================
      OPTIONAL BUT TRACKED
   ======================================== */
-
-  availability_type: {
-    required: true,
-    type: "string",
-    trackRemoval: true,
-  },
 
   availability_note: {
     required: false,
@@ -153,7 +156,7 @@ const FIELD_RULES = {
     type: "boolean",
     trackRemoval: true,
   },
-  
+
   show_email: {
     required: false,
     type: "boolean",
@@ -195,7 +198,6 @@ const FIELD_RULES = {
     type: "string",
     trackRemoval: true,
   },
-
 };
 
 
@@ -215,6 +217,51 @@ export default function StepLocationContact({
   }
 
   const serviceMode = data.service_mode;
+
+  const businessCountryOptions = useMemo(() => {
+    return Country.getAllCountries().map((country) => ({
+      value: country.isoCode,
+      label: country.name,
+    }));
+  }, []);
+  
+  const businessCityOptions = useMemo(() => {
+    if (!data.country_code) return [];
+  
+    return (City.getCitiesOfCountry(data.country_code) || []).map(
+      (city) => ({
+        value: city.name,
+        label: city.name,
+      })
+    );
+  }, [data.country_code]);
+  
+  const selectedBusinessCountry =
+    businessCountryOptions.find(
+      (item) => item.value === data.country_code
+    ) ||
+    businessCountryOptions.find(
+      (item) => item.label === data.country
+    ) ||
+    null;
+  
+  const selectedBusinessCity =
+    businessCityOptions.find(
+      (item) => item.value === data.city
+    ) || null;
+  
+  function handleBusinessCountryChange(option) {
+    setData((prev) => ({
+      ...prev,
+      country: option?.label || "",
+      country_code: option?.value || "",
+      city: "",
+    }));
+  }
+  
+  function handleBusinessCityChange(option) {
+    setField("city", option?.value || "");
+  }
 
   /* ─────────────────────────────
      Visibility rules (unchanged logic)
@@ -531,7 +578,7 @@ export default function StepLocationContact({
   /* ─────────────────────────────
      Phone (libphonenumber + react-select)
   ───────────────────────────── */
-  const countryOptions = useMemo(() => {
+  const phoneCountryOptions = useMemo(() => {
     return getCountries().map((cc) => ({
       value: cc,
       label: `${cc} (+${getCountryCallingCode(cc)})`,
@@ -673,107 +720,40 @@ export default function StepLocationContact({
      - keeps UX stable, improves engineering safety
   ───────────────────────────── */
   function validateStep() {
-
-    // =========================
-    // USER UPDATE MODE
-    // =========================
-    if (mode === "user-update") {
   
-      let ok = true;
-  
-      // فقط validation syntax
-      // بدون required enforcement
-  
-      if (
-        data.location_map_url &&
-        !validateLocationMapUrl(
-          data.location_map_url,
-          false
-        )
-      ) {
-        ok = false;
-      }
-  
-      if (
-        data.base_location_map_url &&
-        !validateBaseLocationMapUrl(
-          data.base_location_map_url,
-          false
-        )
-      ) {
-        ok = false;
-      }
-  
-      if (
-        data.email &&
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-          data.email
-        )
-      ) {
-        ok = false;
-      }
-
-      if (
-        data.website &&
-        !/^https?:\/\/.+/i.test(data.website)
-      ) {
-        ok = false;
-      }
-      
-      if (
-        data.instagram_url &&
-        !/^https?:\/\/.+/i.test(data.instagram_url)
-      ) {
-        ok = false;
-      }
-      
-      if (
-        data.facebook_url &&
-        !/^https?:\/\/.+/i.test(data.facebook_url)
-      ) {
-        ok = false;
-      }
-      
-      if (
-        data.linkedin_url &&
-        !/^https?:\/\/.+/i.test(data.linkedin_url)
-      ) {
-        ok = false;
-      }
-      
-      if (
-        data.twitter_url &&
-        !/^https?:\/\/.+/i.test(data.twitter_url)
-      ) {
-        ok = false;
-      }
-      
-      if (
-        data.telegram_url &&
-        !/^https?:\/\/.+/i.test(data.telegram_url)
-      ) {
-        ok = false;
-      }
-  
-      if (
-        phoneNational &&
-        errors.phone
-      ) {
-        ok = false;
-      }
-
-      if (
-        whatsAppNational &&
-        errors.whatsapp_number
-      ) {
-        ok = false;
-      }
-  
-      return ok;
-    }
-    
     // reset only step-critical errors if needed
     let ok = true;
+
+    if (!data.country?.trim()) {
+      setError("country", "Country is required");
+      ok = false;
+    } else {
+      setError("country", "");
+    }
+    
+    if (!data.country_code?.trim()) {
+      setError("country_code", "Country code is required");
+      ok = false;
+    } else {
+      setError("country_code", "");
+    }
+    
+    if (!data.city?.trim()) {
+      setError("city", "City is required");
+      ok = false;
+    } else {
+      setError("city", "");
+    }
+    
+    if (!data.availability_type?.trim()) {
+      setError(
+        "availability_type",
+        "Availability type is required"
+      );
+      ok = false;
+    } else {
+      setError("availability_type", "");
+    }
 
     // on_site / hybrid
     if (serviceMode === "on_site" || serviceMode === "hybrid") {
@@ -929,16 +909,16 @@ export default function StepLocationContact({
     !/^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(value);
   
   const blockingValidationFields = [
-
-    // required fields only
     "service_mode",
+    "country",
+    "country_code",
+    "city",
     "availability_type",
     "location_map_url",
     "base_location_map_url",
     "address",
+    "postal_code",
     "service_radius_km",
-    "phone",
-  
   ];
 
   const hasBlockingErrors =
@@ -1092,11 +1072,65 @@ export default function StepLocationContact({
       </div>
 
       {/* ─────────────────────────────
+         Business country & city
+      ───────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <label className="admin-label">
+            Country *
+          </label>
+      
+          <Select
+            styles={countrySelectStyles}
+            options={businessCountryOptions}
+            value={selectedBusinessCountry}
+            onChange={handleBusinessCountryChange}
+            isSearchable
+            isClearable
+            placeholder="Select country"
+          />
+      
+          {(errors.country || getFieldWarning("country")) && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.country || getFieldWarning("country")}
+            </p>
+          )}
+        </div>
+      
+        <div>
+          <label className="admin-label">
+            City *
+          </label>
+      
+          <Select
+            styles={countrySelectStyles}
+            options={businessCityOptions}
+            value={selectedBusinessCity}
+            onChange={handleBusinessCityChange}
+            isSearchable
+            isClearable
+            isDisabled={!data.country_code}
+            placeholder={
+              data.country_code
+                ? "Select city"
+                : "Select country first"
+            }
+          />
+      
+          {(errors.city || getFieldWarning("city")) && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.city || getFieldWarning("city")}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* ─────────────────────────────
          Availability
       ───────────────────────────── */}
       <div className="mb-6">
         <label className="admin-label">
-          Availability type
+          Availability type *
         </label>
         <select
           className="admin-input"
@@ -1110,6 +1144,17 @@ export default function StepLocationContact({
           <option value="business_hours">Business hours</option>
           <option value="appointment_only">Appointment only</option>
         </select>
+        {errors.availability_type && (
+          <p className="admin-error">
+            {errors.availability_type}
+          </p>
+        )}
+        
+        {getFieldWarning("availability_type") && (
+          <p className="text-red-500 text-sm mt-1">
+            {getFieldWarning("availability_type")}
+          </p>
+        )}
         {validationErrors.has("availability_type") && (
           <p className="text-red-500 text-sm mt-1">
             You removed an existing value from this field.
@@ -1339,23 +1384,7 @@ export default function StepLocationContact({
               rows={2}
               value={data.address || ""}
               onChange={(e) => {
-                const value = e.target.value;
-                setField("address", value);
-              }}
-              onBlur={(e) => {
-                const extracted = extractAddressParts(e.target.value);
-            
-                if (extracted.postal_code) {
-                  setField("postal_code", extracted.postal_code);
-                }
-            
-                if (extracted.city) {
-                  setField("city", extracted.city);
-                }
-            
-                if (extracted.country) {
-                  setField("country", extracted.country);
-                }
+                setField("address", e.target.value);
               }}
               placeholder="Street name and number (e.g. 10 Rue Masséna)"
             />
@@ -1370,59 +1399,37 @@ export default function StepLocationContact({
               </p>
             )}
             
-            <p className="text-sm text-red-600 mt-1">
-              Please enter the address in this order: 
-              Number & Street, Postal code, City, Country
-              <br />
-              Example: 3 Rue Barralis, 06000, Nice, France
+            <p className="admin-hint mt-1">
+              Enter the street address only.
+              Country, city and postal code are selected separately.
             </p>
           </div>
           
-          {mode !== "user-update" && (
-            <div className="mb-5">
-              <label className="admin-label">
-                Country *
-              </label>
-              <input
-                className="admin-input"
-                value={data.country || ""}
-                onChange={(e) => setField("country", e.target.value)}
-              />
-  
-            </div>
-          )}
-
-          {mode !== "user-update" && (
-            <div className="mb-5">
-              <label className="admin-label">
-                City *
-              </label>
-              <input
-                className="admin-input"
-                value={data.city || ""}
-                onChange={(e) => setField("city", e.target.value)}
-              />
-  
-            </div>
-          )}
-
-          {mode !== "user-update" && (
-            <div className="mb-6">
-              <label className="admin-label">
-                Postal code *
-              </label>
-              <input
-                className="admin-input"
-                value={data.postal_code || ""}
-                onChange={(e) => setField("postal_code", e.target.value)}
-              />
-  
-              {errors.postal_code && (
-                <p className="admin-error">{errors.postal_code}</p>
-              )}
-  
-            </div>
-          )}
+          <div className="mb-6">
+            <label className="admin-label">
+              Postal code *
+            </label>
+          
+            <input
+              className="admin-input"
+              value={data.postal_code || ""}
+              onChange={(e) =>
+                setField("postal_code", e.target.value)
+              }
+            />
+          
+            {errors.postal_code && (
+              <p className="admin-error">
+                {errors.postal_code}
+              </p>
+            )}
+          
+            {getFieldWarning("postal_code") && (
+              <p className="text-red-500 text-sm mt-1">
+                {getFieldWarning("postal_code")}
+              </p>
+            )}
+          </div>
         </>
       )}
 
@@ -1469,15 +1476,15 @@ export default function StepLocationContact({
           {/* Phone */}
           <div className="mb-6">
             <label className="admin-label">
-              Phone *
+              Phone
             </label>
 
             <div className="flex flex-col md:flex-row gap-3">
               <div style={{ minWidth: 260 }}>
                 <Select
                   styles={countrySelectStyles}
-                  options={countryOptions}
-                  value={countryOptions.find(
+                  options={phoneCountryOptions}
+                  value={phoneCountryOptions.find(
                     (o) => o.value === phoneCountry
                   )}
                   onChange={(opt) => {
@@ -1504,12 +1511,6 @@ export default function StepLocationContact({
             {errors.phone && (
               <p className="admin-error">
                 {errors.phone}
-              </p>
-            )}
-
-            {getFieldWarning("phone") && (
-              <p className="text-red-500 text-sm mt-1">
-                {getFieldWarning("phone")}
               </p>
             )}
             
@@ -1748,8 +1749,8 @@ export default function StepLocationContact({
               <div style={{ minWidth: 260 }}>
                 <Select
                   styles={countrySelectStyles}
-                  options={countryOptions}
-                  value={countryOptions.find(
+                  options={phoneCountryOptions}
+                  value={phoneCountryOptions.find(
                     (o) =>
                       o.value === whatsAppCountry
                   )}
