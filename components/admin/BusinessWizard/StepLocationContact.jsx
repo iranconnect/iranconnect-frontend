@@ -1807,6 +1807,12 @@ export default function StepLocationContact({
       {/* ─────────────────────────────
          Navigation
       ───────────────────────────── */}
+      {!canProceed && (
+        <p className="text-red-500 text-sm mb-3">
+          Please complete all required fields and correct any invalid values before continuing.
+        </p>
+      )}
+
       <div className="flex justify-between">
         <button
           type="button"
@@ -1819,10 +1825,13 @@ export default function StepLocationContact({
         <button
           type="button"
           className="admin-btn admin-btn-primary"
-          disabled={!canProceed}
           onClick={() => {
             const ok = validateStep();
-            if (!ok) return;
+
+            if (!ok) {
+              return;
+            }
+
             onNext();
           }}
         >
