@@ -130,9 +130,100 @@ export default function BusinessWizard({
 
   async function submit() {
     if (externalSubmit) {
-      return externalSubmit(data);
+      setSubmitMessage("");
+      setSubmitError(false);
+      setTicketCode("");
+      setSubmitSuccess(false);
+      setLoading(true);
+  
+      try {
+        const res = await externalSubmit(data);
+  
+        if (mode === "user-update") {
+          setSubmitError(false);
+  
+          setSubmitMessage(
+            "Your update request has been submitted successfully. Your secure media archive has been created."
+          );
+  
+          setTicketCode(
+            res?.data?.ticket_code || ""
+          );
+  
+          setSubmitSuccess(true);
+        }
+  
+        return res;
+      } catch (err) {
+        console.error(
+          "Business wizard external submit failed",
+          err
+        );
+  
+        const status = err?.response?.status;
+  
+        const serverMessage =
+          err?.response?.data?.error ||
+          err?.response?.data?.message;
+  
+        setSubmitError(true);
+  
+        if (status === 409) {
+          setSubmitMessage(
+            serverMessage ||
+            "You already have a pending request for this business."
+          );
+  
+          return;
+        }
+  
+        if (status === 429) {
+          setSubmitMessage(
+            serverMessage ||
+            "You recently submitted a similar request. Please wait before submitting again."
+          );
+  
+          return;
+        }
+  
+        if (status === 403) {
+          setSubmitMessage(
+            serverMessage ||
+            "You do not have permission to perform this action."
+          );
+  
+          return;
+        }
+  
+        if (status === 400) {
+          setSubmitMessage(
+            serverMessage ||
+            "Some submitted data is invalid."
+          );
+  
+          return;
+        }
+  
+        if (status >= 500) {
+          setSubmitMessage(
+            serverMessage ||
+            "The request could not be completed. Please try again later."
+          );
+  
+          return;
+        }
+  
+        setSubmitMessage(
+          serverMessage ||
+          "Something went wrong while submitting your request."
+        );
+      } finally {
+        setLoading(false);
+      }
+  
+      return;
     }
-
+  
     setSubmitMessage("");
     setSubmitError(false);
     setTicketCode("");
