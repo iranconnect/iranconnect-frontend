@@ -856,6 +856,30 @@ export default function StepPreviewSubmit({
       
       </Section>
 
+      {loading && (
+        <div
+          style={{
+            marginTop: 24,
+            marginBottom: 10,
+            padding: "14px 16px",
+            borderRadius: 12,
+            background: "rgba(64,224,208,0.12)",
+            border: "1px solid rgba(64,224,208,0.45)",
+            color: "var(--text)",
+            fontWeight: 500,
+            lineHeight: 1.7,
+          }}
+        >
+          <strong>Creating your secure request archive…</strong>
+      
+          <div style={{ marginTop: 4 }}>
+            Your business details and media are being securely archived.
+            This can take a few minutes when several images are included.
+            Please do not refresh, close, or submit the form again.
+          </div>
+        </div>
+      )}
+
       {submitMessage && (
 
         <div
