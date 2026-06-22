@@ -16,9 +16,7 @@ const [prefillData, setPrefillData] = useState(null);
 
 const [theme, setTheme] = useState("light");
 
-const [loading, setLoading] = useState(false);
-const [msg, setMsg] = useState("");
-const [ticket, setTicket] = useState("");
+
 
 
 
@@ -103,6 +101,66 @@ try {
 loadBusiness();
 
 }, [selectedBusiness]);
+
+async function submitUpdateRequest(wizardData) {
+  const fd = new FormData();
+
+  fd.append("request_type", "update");
+  fd.append("business_id", selectedBusiness);
+
+  Object.entries(wizardData).forEach(([key, value]) => {
+    if (
+      key === "gallery_files" &&
+      Array.isArray(value)
+    ) {
+      value.forEach((file) => {
+        fd.append("gallery_files", file);
+      });
+
+      return;
+    }
+
+    if (
+      key === "logo_file" ||
+      key === "cover_file"
+    ) {
+      if (value) {
+        fd.append(key, value);
+      }
+
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      fd.append(key, JSON.stringify(value));
+      return;
+    }
+
+    if (
+      typeof value === "object" &&
+      value !== null
+    ) {
+      fd.append(key, JSON.stringify(value));
+      return;
+    }
+
+    if (
+      value !== null &&
+      value !== undefined
+    ) {
+      fd.append(key, value);
+    }
+  });
+
+  return apiClient.post(
+    "/requests",
+    fd,
+    {
+      timeout: 300000,
+      withCredentials: true,
+    }
+  );
+}  
 
 
 
@@ -193,101 +251,7 @@ return ( <AccountLayout>
             key={selectedBusiness}
             mode="user-update"
             initialData={prefillData}
-            onSubmit={async (wizardData) => {
-        
-              setMsg("");
-              setTicket("");
-        
-              setLoading(true);
-        
-              try {
-        
-                const fd = new FormData();
-        
-                fd.append("request_type", "update");
-        
-                fd.append(
-                  "business_id",
-                  selectedBusiness
-                );
-        
-                Object.entries(wizardData).forEach(([k, v]) => {
-        
-                  if (
-                    k === "gallery_files" &&
-                    Array.isArray(v)
-                  ) {
-                    v.forEach((file) => {
-                      fd.append("gallery_files", file);
-                    });
-        
-                    return;
-                  }
-        
-                  if (
-                    k === "logo_file" ||
-                    k === "cover_file"
-                  ) {
-                    if (v) fd.append(k, v);
-                    return;
-                  }
-        
-                  if (Array.isArray(v)) {
-                    fd.append(k, JSON.stringify(v));
-                    return;
-                  }
-        
-                  if (
-                    typeof v === "object" &&
-                    v !== null
-                  ) {
-                    fd.append(k, JSON.stringify(v));
-                    return;
-                  }
-        
-                  if (
-                    v !== null &&
-                    v !== undefined
-                  ) {
-                    fd.append(k, v);
-                  }
-        
-                });
-        
-                const res = await apiClient.post(
-                  "/requests",
-                  fd,
-                  {
-                    headers: {
-                      "Content-Type":
-                        "multipart/form-data",
-                    },
-                    withCredentials: true,
-                  }
-                );
-        
-                setMsg(
-                  "✅ Business update request submitted."
-                );
-        
-                setTicket(
-                  res.data?.ticket_code || ""
-                );
-        
-              } catch (err) {
-        
-                console.error(err);
-        
-                setMsg(
-                  err.response?.data?.error ||
-                  "Error submitting request."
-                );
-        
-              } finally {
-                setLoading(false);
-              }
-        
-            }}
+            onSubmit={submitUpdateRequest}
           />
         
         )}
