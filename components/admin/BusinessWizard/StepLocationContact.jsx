@@ -1826,12 +1826,47 @@ export default function StepLocationContact({
           type="button"
           className="admin-btn admin-btn-primary"
           onClick={() => {
+            console.group("🔎 Location Step Validation Debug");
+          
+            console.log("Current wizard data:", {
+              service_mode: data.service_mode,
+              country: data.country,
+              country_code: data.country_code,
+              city: data.city,
+              availability_type: data.availability_type,
+              availability_hours: data.availability_hours,
+              location_map_url: data.location_map_url,
+              base_location_map_url: data.base_location_map_url,
+              address: data.address,
+              postal_code: data.postal_code,
+              service_radius_km: data.service_radius_km,
+              phone: data.phone,
+              email: data.email,
+              website: data.website,
+              whatsapp_number: data.whatsapp_number,
+            });
+          
+            console.log("Current error state:", errors);
+          
+            console.log("Computed state:", {
+              serviceMode,
+              needsPhysicalAddress,
+              needsServiceRadius,
+              canProceed,
+              hasBlockingErrors,
+              validationErrors: [...validationErrors],
+            });
+          
             const ok = validateStep();
-
+          
+            console.log("validateStep result:", ok);
+          
+            console.groupEnd();
+          
             if (!ok) {
               return;
             }
-
+          
             onNext();
           }}
         >
