@@ -720,13 +720,15 @@ export default function StepLocationContact({
      - keeps UX stable, improves engineering safety
   ───────────────────────────── */
   function validateStep() {
-  
+    const validationFailures = [];
+    
     // reset only step-critical errors if needed
     let ok = true;
 
     if (!data.country?.trim()) {
       setError("country", "Country is required");
       ok = false;
+      validationFailures.push("country is missing");
     } else {
       setError("country", "");
     }
@@ -734,6 +736,7 @@ export default function StepLocationContact({
     if (!data.country_code?.trim()) {
       setError("country_code", "Country code is required");
       ok = false;
+      validationFailures.push("country_code is missing");
     } else {
       setError("country_code", "");
     }
@@ -741,6 +744,7 @@ export default function StepLocationContact({
     if (!data.city?.trim()) {
       setError("city", "City is required");
       ok = false;
+      validationFailures.push("city is missing");
     } else {
       setError("city", "");
     }
@@ -751,6 +755,7 @@ export default function StepLocationContact({
         "Availability type is required"
       );
       ok = false;
+      validationFailures.push("availability_type is missing");
     } else {
       setError("availability_type", "");
     }
@@ -761,11 +766,19 @@ export default function StepLocationContact({
         data.location_map_url || "",
         true
       );
-      if (!v) ok = false;
+      
+      if (!v) {
+        ok = false;
+        validationFailures.push({
+          field: "location_map_url",
+          value: data.location_map_url || "",
+        });
+      }
     
       if (!data.address || !data.address.trim()) {
         setError("address", "Address is required");
         ok = false;
+        validationFailures.push("address is missing");
       } else {
         setError("address", "");
       }
@@ -773,6 +786,7 @@ export default function StepLocationContact({
       if (!data.postal_code || !data.postal_code.trim()) {
         setError("postal_code", "Postal code is required");
         ok = false;
+        validationFailures.push("postal_code is missing");
       } else {
         setError("postal_code", "");
       }
@@ -803,28 +817,55 @@ export default function StepLocationContact({
       const hours = data.availability_hours;
     
       if (!hours) {
-
         ok = false;
+      
+        validationFailures.push(
+          "availability_hours is missing"
+        );
       
         setError(
           "availability_hours",
           "Business hours are required"
         );
-      
       } else {
         for (const day of WEEK_DAYS) {
           const d = hours[day];
+      
           if (!d) {
             ok = false;
+      
+            validationFailures.push({
+              field: "availability_hours",
+              reason: "missing day configuration",
+              day,
+              hours,
+            });
+      
+            setError(
+              "availability_hours",
+              `Business hours are missing for ${day}`
+            );
+      
             break;
           }
+      
           if (!d.closed) {
             if (!d.open || !d.close || d.open >= d.close) {
               ok = false;
+      
+              validationFailures.push({
+                field: "availability_hours",
+                reason: "invalid opening/closing time",
+                day,
+                open: d.open,
+                close: d.close,
+              });
+      
               setError(
                 "availability_hours",
                 "Please enter valid business hours"
               );
+      
               break;
             }
           }
@@ -897,6 +938,10 @@ export default function StepLocationContact({
     // If WhatsApp entered but invalid, block
     if ( whatsAppNational && errors.whatsapp_number ) { ok = false;}
 
+    console.log(
+      "🔎 validateStep failures:",
+      validationFailures
+    );
     return ok;
   }
 
