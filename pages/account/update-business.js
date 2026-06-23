@@ -252,6 +252,10 @@ return ( <AccountLayout>
             mode="user-update"
             initialData={prefillData}
             onSubmit={submitUpdateRequest}
+            onSubmissionSuccess={() => {
+              setSelectedBusiness("");
+              setPrefillData(null);
+            }}
           />
         
         )}
