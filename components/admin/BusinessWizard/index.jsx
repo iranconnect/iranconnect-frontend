@@ -20,6 +20,7 @@ export default function BusinessWizard({
   mode = "admin-create",
   initialData = null,
   onSubmit: externalSubmit = null,
+  onSubmissionSuccess = null,
 }) {
   const [step, setStep] = useState(0);
   const [duplicate, setDuplicate] = useState(null);
@@ -295,6 +296,14 @@ export default function BusinessWizard({
           res?.data?.ticket_code || ""
         );
         setSubmitSuccess(true);
+
+        if (typeof onSubmissionSuccess === "function") {
+          window.setTimeout(() => {
+            onSubmissionSuccess({
+              ticketCode: res?.data?.ticket_code || "",
+            });
+          }, 3500);
+        }
       
         return;
       }
