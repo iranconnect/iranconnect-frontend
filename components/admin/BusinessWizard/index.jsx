@@ -152,6 +152,14 @@ export default function BusinessWizard({
           );
   
           setSubmitSuccess(true);
+
+          if (typeof onSubmissionSuccess === "function") {
+            window.setTimeout(() => {
+              onSubmissionSuccess({
+                ticketCode: res?.data?.ticket_code || "",
+              });
+            }, 3500);
+          }
         }
   
         return res;
@@ -297,14 +305,7 @@ export default function BusinessWizard({
         );
         setSubmitSuccess(true);
 
-        if (typeof onSubmissionSuccess === "function") {
-          window.setTimeout(() => {
-            onSubmissionSuccess({
-              ticketCode: res?.data?.ticket_code || "",
-            });
-          }, 3500);
-        }
-      
+            
         return;
       }
       
