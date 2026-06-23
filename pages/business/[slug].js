@@ -131,31 +131,88 @@ function buildOpeningHoursSchema(biz) {
     sunday: "Sunday",
   };
 
-  // ✅ حالت business_hours (دقیق‌ترین)
+  const addOpeningHours = (day, open, close) => {
+    if (!dayMap[day] || !open || !close) {
+      return;
+    }
+
+    result.push({
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: dayMap[day],
+      opens: String(open).trim(),
+      closes: String(close).trim(),
+    });
+  };
+
+  /*
+    پشتیبانی از هر دو ساختار:
+
+    ساختار جدید:
+    {
+      monday: {
+        open: "09:00",
+        close: "18:00",
+        closed: false
+      }
+    }
+
+    ساختار قدیمی:
+    {
+      monday: ["09:00-18:00"]
+    }
+  */
   if (
-    (biz.availability_type === "business_hours" ||
-     biz.availability_type === "appointment_only") &&
-    biz.availability_hours
+    (
+      biz.availability_type === "business_hours" ||
+      biz.availability_type === "appointment_only"
+    ) &&
+    biz.availability_hours &&
+    typeof biz.availability_hours === "object"
   ) {
-    Object.entries(biz.availability_hours).forEach(([day, ranges]) => {
-      if (!ranges || ranges.length === 0) return;
+    Object.entries(biz.availability_hours).forEach(
+      ([day, dayHours]) => {
+        if (!dayHours) {
+          return;
+        }
 
-      ranges.forEach((range) => {
-        const [open, close] = range.split("-");
+        // ساختار جدید Object
+        if (
+          !Array.isArray(dayHours) &&
+          typeof dayHours === "object"
+        ) {
+          if (dayHours.closed === true) {
+            return;
+          }
 
-        if (open && close) {
-          result.push({
-            "@type": "OpeningHoursSpecification",
-            dayOfWeek: dayMap[day],
-            opens: open.trim(),
-            closes: close.trim(),
+          addOpeningHours(
+            day,
+            dayHours.open,
+            dayHours.close
+          );
+
+          return;
+        }
+
+        // ساختار قدیمی Array
+        if (Array.isArray(dayHours)) {
+          dayHours.forEach((range) => {
+            if (typeof range !== "string") {
+              return;
+            }
+
+            const [open, close] = range.split("-");
+
+            addOpeningHours(day, open, close);
           });
         }
-      });
-    });
+      }
+    );
   }
 
-  // ✅ fallback از note (فقط اگر بالا چیزی نداشت)
+  /*
+    Fallback برای Businessهای قدیمی که ساعات فقط
+    در availability_note نوشته شده‌اند.
+  */
   if (result.length === 0 && biz.availability_note) {
     const lines = biz.availability_note.match(
       /(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday):\s*(.*)/gi
@@ -165,25 +222,23 @@ function buildOpeningHoursSchema(biz) {
       lines.forEach((line) => {
         const [day, hours] = line.split(":");
 
-        if (!hours || hours.toLowerCase().includes("closed")) return;
-
-        const parts = hours.trim().split("-");
-
-        if (parts.length === 2) {
-          result.push({
-            "@type": "OpeningHoursSpecification",
-            dayOfWeek: day.trim(),
-            opens: parts[0].trim(),
-            closes: parts[1].trim(),
-          });
+        if (!hours || hours.toLowerCase().includes("closed")) {
+          return;
         }
+
+        const [open, close] = hours.trim().split("-");
+
+        addOpeningHours(
+          day.trim().toLowerCase(),
+          open,
+          close
+        );
       });
     }
   }
 
   return result.length > 0 ? result : null;
 }
-
 /* ======================================================
    Page
 ====================================================== */
