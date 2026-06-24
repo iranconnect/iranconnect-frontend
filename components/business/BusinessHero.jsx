@@ -29,8 +29,12 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
       theme === "dark"
         ? "/logo-dark.png"
         : "/logo-light.png";
+
+    const fallbackCover =
+      "/images/iranconnect-default-business-cover.webp";
   
-  const coverImage = biz.cover_image_url || biz.logo_url;
+  const coverImage =
+  biz.cover_image_url || fallbackCover;
 
   return (
       <div className="card mt-6">
@@ -43,6 +47,10 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
             src={coverImage}
             alt={`${biz.name} cover`}
             className="w-full h-full object-cover"
+            onError={(event) => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = fallbackCover;
+            }}
           />
         )}
       </div>
