@@ -6,7 +6,7 @@ export default function AddBusinessV2() {
   return (
     <AdminLayout>
       <main className="admin-container">
-        <BusinessWizard />
+        <BusinessWizard mode="admin-create" />
       </main>
     </AdminLayout>
   );
