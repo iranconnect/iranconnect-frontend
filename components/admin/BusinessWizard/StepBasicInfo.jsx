@@ -71,6 +71,27 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
   const categoryId = Number(data?.category_id) || "";
   const selectedSubcategories = data?.subcategory_ids || [];
 
+  const isAdminEdit = mode === "admin-edit";
+  const isUserUpdate = mode === "user-update";
+
+  const stepCopy = isAdminEdit
+    ? {
+        title: "Edit Business",
+        subtitle: "Step 1 of 5 — Update basic business information",
+        nextLabel: "Continue to Services & Tags",
+      }
+    : isUserUpdate
+      ? {
+          title: "Update Your Business",
+          subtitle: "Step 1 of 5 — Review and update your business information",
+          nextLabel: "Continue to Services & Tags",
+        }
+      : {
+          title: "Add New Business",
+          subtitle: "Step 1 of 5 — Basic business information",
+          nextLabel: "Continue to Services & Tags",
+        };
+
 
   /* ─────────────────────────────
      Load categories (no pagination)
@@ -302,10 +323,11 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
   return (
     <div className="admin-section">
       <h2 className="admin-title mb-1">
-        Add New Business (Advanced)
+        {stepCopy.title}
       </h2>
+      
       <p className="admin-muted mb-6">
-        Step 1 of 4 — Basic Business Information
+        {stepCopy.subtitle}
       </p>
 
 
@@ -567,7 +589,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
           className="admin-btn admin-btn-primary"
           disabled={!canProceed}
         >
-          Next
+          {stepCopy.nextLabel}
         </button>
       </div>
     </div>
