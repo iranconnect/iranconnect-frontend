@@ -114,6 +114,11 @@ export default function StepPreviewSubmit({
       normalizedAdminNote.length > 0
     );
 
+  const isSubmitDisabled =
+    loading ||
+    submitSuccess ||
+    !isValidAdminEditAuthorization;
+
   function setChangeSourceType(nextSourceType) {
     setData((prev) => ({
       ...prev,
