@@ -196,11 +196,16 @@ export default function BusinessWizard({
         setSubmitError(true);
   
         if (status === 409) {
+          if (mode === "admin-edit") {
+            setDuplicate(err.response?.data || null);
+            return;
+          }
+        
           setSubmitMessage(
             serverMessage ||
             "You already have a pending request for this business."
           );
-  
+        
           return;
         }
   
