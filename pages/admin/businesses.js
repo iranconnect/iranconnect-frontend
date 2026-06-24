@@ -1,7 +1,10 @@
 // frontend/pages/admin/businesses.js
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
+import apiClientAdmin from "../../utils/apiClientAdmin";
 import AdminLayout from "../../components/admin/AdminLayout";
+
+import Link from "next/link";
 
 export default function BusinessesPage() {
   const [list, setList] = useState([]);
@@ -9,6 +12,7 @@ export default function BusinessesPage() {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [error, setError] = useState("");
 
   // ✂️ کوتاه‌سازی متن
   function truncate(text, length = 20) {
@@ -57,15 +61,35 @@ export default function BusinessesPage() {
      ================================================================ */
   async function fetchBusinesses(search = "") {
     setLoading(true);
+    setError("");
+  
     try {
-      const res = await apiClient.get("/admin/businesses", {
-        params: { q: search },
-        withCredentials: true,
+      const res = await apiClientAdmin.get("/admin/businesses", {
+        params: {
+          q: search.trim() || undefined,
+        },
       });
-
-      setList(res.data || []);
+  
+      const rows = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.rows)
+        ? res.data.rows
+        : [];
+  
+      setList(rows);
     } catch (err) {
-      console.error("❌ Error fetching businesses:", err);
+      console.error(
+        "❌ Error fetching businesses:",
+        err.response?.status,
+        err.response?.data || err.message
+      );
+  
+      setList([]);
+  
+      setError(
+        err.response?.data?.error ||
+          "Unable to load businesses. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -89,9 +113,7 @@ export default function BusinessesPage() {
     if (!ok) return;
 
     try {
-      await apiClient.delete(`/admin/businesses/${id}`, {
-        withCredentials: true,
-      });
+      await apiClientAdmin.delete(`/admin/businesses/${id}`);
 
       setList((prev) => prev.filter((b) => b.id !== id));
     } catch (err) {
@@ -143,6 +165,11 @@ export default function BusinessesPage() {
       </div>
 
       {/* 📋 جدول اطلاعات */}
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
       {loading ? (
         <p className="text-[var(--text)] text-sm opacity-70">
           Loading businesses...
@@ -185,12 +212,12 @@ export default function BusinessesPage() {
                   </td>
                   <td className="p-3">
                     <div className="flex gap-2">
-                      <a
+                      <Link
                         href={`/admin/edit/${b.id}`}
                         className="text-turquoise hover:underline"
                       >
                         Edit
-                      </a>
+                      </Link>
                       <button
                         onClick={() => deleteBusiness(b.id)}
                         className="text-red-500 hover:underline"
