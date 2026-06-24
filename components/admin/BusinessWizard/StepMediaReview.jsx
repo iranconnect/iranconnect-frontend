@@ -858,10 +858,11 @@ export default function StepMediaReview({
             marginTop: 10,
           }}
         >
-          {isRemoved(
-            "logo",
-            { url: data.logo_url }
-          ) &&
+          {isUserUpdateMode &&
+            isRemoved(
+              "logo",
+              { url: data.logo_url }
+            ) &&
             !data.logo_file && (
               <p
                 className="admin-error"
@@ -1160,12 +1161,13 @@ export default function StepMediaReview({
             marginTop: 10,
           }}
         >
-          {isRemoved(
-            "cover",
-            {
-              url: data.cover_image_url,
-            }
-          ) &&
+          {isUserUpdateMode &&
+            isRemoved(
+              "cover",
+              {
+                url: data.cover_image_url,
+              }
+            ) &&
             !data.cover_file && (
               <p
                 className="admin-error"
