@@ -76,6 +76,13 @@ export default function StepMediaReview({
   mode,
 }) {
 
+  const isExistingBusinessMode =
+    mode === "user-update" ||
+    mode === "admin-edit";
+
+  const isAdminEditMode =
+    mode === "admin-edit";  
+
   /* --------------------------------------------------
   🔐 NORMALIZED DATA
   -------------------------------------------------- */
@@ -530,47 +537,50 @@ export default function StepMediaReview({
   const canProceed = useMemo(() => {
 
     // =========================
-    // UPDATE BUSINESS MODE
+    // USER UPDATE TICKET MODE
     // =========================
-
     if (mode === "user-update") {
-    
       const removingCurrentLogo =
         isRemoved("logo", {
           url: data.logo_url,
         });
-    
+
       const hasReplacementLogo =
         !!data.logo_file;
-    
+
       const removingCurrentCover =
         isRemoved("cover", {
           url: data.cover_image_url,
         });
-    
+
       const hasReplacementCover =
         !!data.cover_file;
-    
+
       if (
         removingCurrentLogo &&
         !hasReplacementLogo
       ) {
         return false;
       }
-    
+
       if (
         removingCurrentCover &&
         !hasReplacementCover
       ) {
         return false;
       }
-    
+
       return (
-        normalized.owner_confirmed ===
-          true &&
+        normalized.owner_confirmed === true &&
         busy === false
       );
-    
+    }
+
+    // =========================
+    // ADMIN EDIT MODE
+    // =========================
+    if (mode === "admin-edit") {
+      return busy === false;
     }
 
     // =========================
@@ -657,7 +667,7 @@ export default function StepMediaReview({
         marginBottom: 12,
       }}
     >
-      {mode === "user-update" &&
+      {isExistingBusinessMode &&
         data.logo_url && (
         <div>
           <p
@@ -950,7 +960,7 @@ export default function StepMediaReview({
     >
   
       {/* CURRENT COVER */}
-      {mode === "user-update" &&
+      {isExistingBusinessMode &&
         data.cover_image_url && (
         <div>
           <p
@@ -1248,7 +1258,7 @@ export default function StepMediaReview({
       Gallery images (max {MAX_GALLERY_IMAGES})
     </label>
 
-    {mode === "user-update" &&
+    {isExistingBusinessMode &&
       Array.isArray(data.gallery) &&
       data.gallery.length > 0 && (
   
