@@ -71,6 +71,7 @@ function isRemoved(type, url, removedMedia) {
 
 export default function StepPreviewSubmit({
   data,
+  setData,
   onBack,
   onSubmit,
   loading,
@@ -92,6 +93,49 @@ export default function StepPreviewSubmit({
   const isAdminCreate = mode === "admin-create";
   const isAdminEdit = mode === "admin-edit";
   const isUserUpdate = mode === "user-update";
+
+  const normalizedChangeSource =
+    String(data.change_source_type || "").trim();
+
+  const normalizedTicketCode =
+    String(data.ticket_code || "").trim();
+
+  const normalizedAdminNote =
+    String(data.admin_note || "").trim();
+
+  const isValidAdminEditAuthorization =
+    !isAdminEdit ||
+    (
+      normalizedChangeSource === "ticket" &&
+      normalizedTicketCode.length > 0
+    ) ||
+    (
+      normalizedChangeSource === "admin_note" &&
+      normalizedAdminNote.length > 0
+    );
+
+  function setChangeSourceType(nextSourceType) {
+    setData((prev) => ({
+      ...prev,
+      change_source_type: nextSourceType,
+      ticket_code:
+        nextSourceType === "ticket"
+          ? prev.ticket_code || ""
+          : "",
+      admin_note:
+        nextSourceType === "admin_note"
+          ? prev.admin_note || ""
+          : "",
+    }));
+  }
+
+  function handleFinalSubmit() {
+    if (!isValidAdminEditAuthorization) {
+      return;
+    }
+
+    onSubmit();
+  }
 
   const previewCopy = isAdminEdit
     ? {
@@ -897,6 +941,107 @@ export default function StepPreviewSubmit({
       
       </Section>
 
+      {isAdminEdit && (
+        <Section title="Update Authorization">
+          <p
+            style={{
+              marginBottom: 16,
+              color: "var(--text)",
+              opacity: 0.8,
+              lineHeight: 1.7,
+            }}
+          >
+            Was this business update requested through an existing ticket?
+          </p>
+      
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="change_source_type"
+              value="ticket"
+              checked={normalizedChangeSource === "ticket"}
+              onChange={() => setChangeSourceType("ticket")}
+            />
+      
+            <span>
+              Yes, I have a pending update ticket.
+            </span>
+          </label>
+      
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="change_source_type"
+              value="admin_note"
+              checked={normalizedChangeSource === "admin_note"}
+              onChange={() => setChangeSourceType("admin_note")}
+            />
+      
+            <span>
+              No, this is an admin-initiated update.
+            </span>
+          </label>
+      
+          {normalizedChangeSource === "ticket" && (
+            <div style={{ marginTop: 18 }}>
+              <label className="admin-label">
+                Ticket code *
+              </label>
+      
+              <input
+                type="text"
+                className="admin-input"
+                value={data.ticket_code || ""}
+                onChange={(event) =>
+                  setData((prev) => ({
+                    ...prev,
+                    ticket_code: event.target.value,
+                  }))
+                }
+                placeholder="e.g. IC-BU-000123"
+                autoComplete="off"
+              />
+      
+              <p className="admin-hint mt-2">
+                Only a pending update ticket for this business can be used.
+              </p>
+            </div>
+          )}
+      
+          {normalizedChangeSource === "admin_note" && (
+            <div style={{ marginTop: 18 }}>
+              <label className="admin-label">
+                Admin note / reason for update *
+              </label>
+      
+              <textarea
+                className="admin-input"
+                rows={4}
+                value={data.admin_note || ""}
+                onChange={(event) =>
+                  setData((prev) => ({
+                    ...prev,
+                    admin_note: event.target.value,
+                  }))
+                }
+                placeholder="Explain why this direct administrative update is being made."
+              />
+      
+              <p className="admin-hint mt-2">
+                This note will be permanently stored in the business change audit.
+              </p>
+            </div>
+          )}
+      
+          {!isValidAdminEditAuthorization && (
+            <p className="text-red-500 text-sm mt-4">
+              Select an authorization method and complete the required field before
+              submitting this update.
+            </p>
+          )}
+        </Section>
+      )}
+
       {loading && (
         <div
           style={{
@@ -978,8 +1123,12 @@ export default function StepPreviewSubmit({
 
         <button
           className="admin-btn admin-btn-primary"
-          onClick={onSubmit}
-          disabled={loading || submitSuccess}
+          onClick={handleFinalSubmit}
+          disabled={
+            loading ||
+            submitSuccess ||
+            !isValidAdminEditAuthorization
+          }
         >
           {loading
             ? previewCopy.loadingLabel
