@@ -96,6 +96,11 @@ export default function BusinessWizard({
     },
   
     force_create: false,
+
+    // ADMIN EDIT AUTHORIZATION
+    change_source_type: "",
+    ticket_code: "",
+    admin_note: "",
   };
   
   const [data, setData] = useState(() => ({
@@ -483,6 +488,7 @@ export default function BusinessWizard({
       {step === 4 && (
         <StepPreviewSubmit
           data={data}
+          setData={setData}
           onBack={back}
           onSubmit={submit}
           loading={loading}
