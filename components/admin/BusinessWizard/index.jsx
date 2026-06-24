@@ -498,11 +498,21 @@ export default function BusinessWizard({
       {duplicate && (
         <DuplicateModal
           data={duplicate}
+          mode={mode}
           onCancel={() => setDuplicate(null)}
           onForce={() => {
+            const forcedData = {
+              ...data,
+              force_create: true,
+              force_update: true,
+            };
+      
             setDuplicate(null);
-            setData((d) => ({ ...d, force_create: true }));
-            submit();
+            setData(forcedData);
+      
+            window.setTimeout(() => {
+              submit();
+            }, 0);
           }}
         />
       )}
