@@ -25,9 +25,13 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
         {/* 🔵 Logo floating */}
         <div className="absolute -top-14 left-6 md:left-8">
           <img
-            src={biz.logo_url || "/logo.png"}
-            alt={biz.name}
+            src={biz.logo_url || "/logo-light.png"}
+            alt={`${biz.name} logo`}
             className="w-28 h-28 rounded-xl border-[var(--bg)] object-cover shadow"
+            onError={(event) => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = "/logo-light.png";
+            }}
           />
         </div>
 
