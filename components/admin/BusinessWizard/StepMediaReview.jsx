@@ -83,6 +83,47 @@ export default function StepMediaReview({
   const isAdminEditMode =
     mode === "admin-edit";  
 
+  const isUserUpdateMode =
+    mode === "user-update";
+
+  const stepCopy = isAdminEditMode
+    ? {
+        title: "Edit Business",
+        subtitle:
+          "Step 4 of 5 — Update media and profile visibility settings",
+        logoLabel: "Business logo",
+        logoUploadLabel: "Upload replacement logo",
+        coverUploadLabel: "Upload replacement cover",
+        galleryUploadLabel: "Add gallery images",
+        confirmationLabel: null,
+        nextLabel: "Continue to Review & Update",
+      }
+    : isUserUpdateMode
+      ? {
+          title: "Update Your Business",
+          subtitle:
+            "Step 4 of 5 — Review and update media and profile visibility settings",
+          logoLabel: "Business logo",
+          logoUploadLabel: "Upload replacement logo",
+          coverUploadLabel: "Upload replacement cover",
+          galleryUploadLabel: "Add gallery images",
+          confirmationLabel:
+            "I confirm that I am authorized to request updates for this business.",
+          nextLabel: "Continue to Review & Submit",
+        }
+      : {
+          title: "Add New Business",
+          subtitle:
+            "Step 4 of 5 — Upload media and configure profile visibility",
+          logoLabel: "Business logo *",
+          logoUploadLabel: "Upload business logo",
+          coverUploadLabel: "Upload cover image",
+          galleryUploadLabel: "Upload gallery images",
+          confirmationLabel:
+            "I confirm that I am authorized to manage this business.",
+          nextLabel: "Continue to Review & Create",
+        };
+
   /* --------------------------------------------------
   🔐 NORMALIZED DATA
   -------------------------------------------------- */
@@ -637,11 +678,11 @@ export default function StepMediaReview({
    
       <div className="mb-8">
         <h2 className="admin-title">
-          Media, Visibility & Compliance
+          {stepCopy.title}
         </h2>
-  
+      
         <p className="admin-hint">
-          Step 4 of 5 — Upload media and configure visibility settings.
+          {stepCopy.subtitle}
         </p>
       </div>
   <div
@@ -655,7 +696,9 @@ export default function StepMediaReview({
   > 
   {/* LOGO */}
   <div className="mb-8">
-    <label className="admin-label">Business logo *</label>
+    <label className="admin-label">
+      {stepCopy.logoLabel}
+    </label>
 
     <div
       style={{
@@ -761,7 +804,7 @@ export default function StepMediaReview({
             opacity: .9,
           }}
         >
-          Upload new logo
+          {stepCopy.logoUploadLabel}
         </p>
       
         <label
@@ -1064,7 +1107,7 @@ export default function StepMediaReview({
             opacity: .9,
           }}
         >
-          Upload new cover
+          {stepCopy.coverUploadLabel}
         </p>
 
         
@@ -1349,7 +1392,7 @@ export default function StepMediaReview({
     )}         
 
     <p className="admin-hint mb-3">
-      Upload gallery images (
+      {stepCopy.galleryUploadLabel} (
       {remainingGallerySlots}{" "}
       slots remaining)
     </p>
@@ -1544,7 +1587,7 @@ export default function StepMediaReview({
             )
           }
         />
-        I confirm that I am authorized to manage this business.
+        {stepCopy.confirmationLabel}
       </label>
     </div>
   )}
@@ -1606,7 +1649,7 @@ export default function StepMediaReview({
         hasGalleryOverflow
       }
     >
-      Next
+      {stepCopy.nextLabel}
     </button>
   </div>
   </div>
