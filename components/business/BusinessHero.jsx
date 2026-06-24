@@ -80,6 +80,11 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
               {biz.service_mode === "hybrid" && "🔄 Hybrid"}
             </p>
           )}
+          {biz.availability_note && (
+            <p className="text-sm text-justify-pro">
+              🕒 {biz.availability_note}
+            </p>
+          )}
           {/* 🔵 Rating */}
           <p className="text-lg font-medium">
             ⭐ {biz.avg_rating ?? "—"}{" "}
