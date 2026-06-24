@@ -218,6 +218,30 @@ export default function StepLocationContact({
 
   const serviceMode = data.service_mode;
 
+  const isAdminEdit = mode === "admin-edit";
+  const isUserUpdate = mode === "user-update";
+
+  const stepCopy = isAdminEdit
+    ? {
+        title: "Edit Business",
+        subtitle:
+          "Step 3 of 5 — Update location, availability, and contact details",
+        nextLabel: "Continue to Media & Visibility",
+      }
+    : isUserUpdate
+      ? {
+          title: "Update Your Business",
+          subtitle:
+            "Step 3 of 5 — Review and update location, availability, and contact details",
+          nextLabel: "Continue to Media & Visibility",
+        }
+      : {
+          title: "Add New Business",
+          subtitle:
+            "Step 3 of 5 — Add location, availability, and contact details",
+          nextLabel: "Continue to Media & Visibility",
+        };
+
   const businessCountryOptions = useMemo(() => {
     return Country.getAllCountries().map((country) => ({
       value: country.isoCode,
@@ -1080,10 +1104,11 @@ export default function StepLocationContact({
   return (
     <div className="admin-section">
       <h2 className="admin-title mb-1">
-        Add New Business (Advanced)
+        {stepCopy.title}
       </h2>
+      
       <p className="admin-muted mb-6">
-        Step 3 of 4 — Location, Availability & Contact
+        {stepCopy.subtitle}
       </p>
 
       {/* ─────────────────────────────
@@ -1878,15 +1903,15 @@ export default function StepLocationContact({
           className="admin-btn admin-btn-primary"
           onClick={() => {
             const ok = validateStep();
-          
+        
             if (!ok) {
               return;
             }
-          
+        
             onNext();
           }}
         >
-          Next
+          {stepCopy.nextLabel}
         </button>
       </div>
     </div>
