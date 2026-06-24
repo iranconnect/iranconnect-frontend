@@ -142,23 +142,41 @@ export default function BusinessWizard({
   
         if (mode === "user-update") {
           setSubmitError(false);
-  
+        
           setSubmitMessage(
             "Your update request has been submitted successfully. Your secure media archive has been created."
           );
-  
+        
           setTicketCode(
             res?.data?.ticket_code || ""
           );
-  
+        
           setSubmitSuccess(true);
-
+        
           if (typeof onSubmissionSuccess === "function") {
             window.setTimeout(() => {
               onSubmissionSuccess({
                 ticketCode: res?.data?.ticket_code || "",
               });
             }, 3500);
+          }
+        }
+        
+        if (mode === "admin-edit") {
+          setSubmitError(false);
+        
+          setSubmitMessage(
+            "Business updated successfully. Redirecting to businesses..."
+          );
+        
+          setTicketCode("");
+          setSubmitSuccess(true);
+        
+          if (typeof onSubmissionSuccess === "function") {
+            onSubmissionSuccess({
+              businessId: res?.data?.business_id || null,
+              slug: res?.data?.slug || "",
+            });
           }
         }
   
