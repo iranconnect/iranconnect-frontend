@@ -43,6 +43,33 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
     hadInitialTags &&
     removedAllTags;
 
+  const isAdminEdit = mode === "admin-edit";
+  const isUserUpdate = mode === "user-update";
+
+  const stepCopy = isAdminEdit
+    ? {
+        title: "Edit Business",
+        subtitle: "Step 2 of 5 — Update services and tags",
+        servicesTitle: "Services offered *",
+        tagsTitle: "Tags (optional)",
+        nextLabel: "Continue to Location & Contact",
+      }
+    : isUserUpdate
+      ? {
+          title: "Update Your Business",
+          subtitle: "Step 2 of 5 — Review and update services and tags",
+          servicesTitle: "Services offered *",
+          tagsTitle: "Tags (optional)",
+          nextLabel: "Continue to Location & Contact",
+        }
+      : {
+          title: "Add New Business",
+          subtitle: "Step 2 of 5 — Select services and tags",
+          servicesTitle: "Services offered *",
+          tagsTitle: "Tags (optional)",
+          nextLabel: "Continue to Location & Contact",
+        };
+
   
 
   /* ─────────────────────────────
@@ -276,16 +303,17 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   return (
     <div className="admin-section">
       <h2 className="admin-title mb-1">
-        Add New Business (Advanced)
+        {stepCopy.title}
       </h2>
+      
       <p className="admin-muted mb-6">
-        Step 2 of 4 — Services & Tags
+        {stepCopy.subtitle}
       </p>
 
       {/* SERVICES */}
       <div className="mb-8">
         <h4 className="font-semibold mb-2">
-          Services offered *
+          {stepCopy.servicesTitle}
         </h4>
 
         {loadingServices ? (
@@ -342,7 +370,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
       {/* TAGS */}
       <div className="mb-8">
         <h4 className="font-semibold mb-2">
-          Tags (optional)
+          {stepCopy.tagsTitle}
         </h4>
 
         {loadingTags ? (
@@ -413,7 +441,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
           onClick={onNext}
           disabled={!canProceed}
         >
-          Next
+          {stepCopy.nextLabel}
         </button>
       </div>
     </div>
