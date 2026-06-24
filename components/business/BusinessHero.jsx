@@ -1,23 +1,51 @@
 //frontend/components/business/BusinessHero.jsx
+import { useEffect, useState } from "react";
 import { Phone, Globe, MessageCircle } from "lucide-react";
 
 export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
+    const [theme, setTheme] = useState("light");
+
+    useEffect(() => {
+      const syncTheme = () => {
+        const currentTheme =
+          document.documentElement.getAttribute("data-theme") || "light";
+  
+        setTheme(currentTheme);
+      };
+  
+      syncTheme();
+  
+      const observer = new MutationObserver(syncTheme);
+  
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-theme"],
+      });
+  
+      return () => observer.disconnect();
+    }, []);
+  
+    const fallbackLogo =
+      theme === "dark"
+        ? "/logo-dark.png"
+        : "/logo-light.png";
+  
   const coverImage = biz.cover_image_url || biz.logo_url;
 
   return (
       <div className="card mt-6">
       
       
-      {/* 🔵 Cover */}
-      {coverImage && (
-        <div className="h-48 md:h-64 w-full relative">
+      {/* 🔵 Cover / reserved hero space */}
+      <div className="h-48 md:h-64 w-full relative overflow-hidden rounded">
+        {coverImage && (
           <img
             src={coverImage}
-            alt={biz.name}
-            className="w-full h-full rounded object-cover"
+            alt={`${biz.name} cover`}
+            className="w-full h-full object-cover"
           />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* 🔵 Content */}
       <div className="pb-6 md:pb-8 pt-20 md:pt-24 relative space-y-4">
@@ -25,12 +53,12 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
         {/* 🔵 Logo floating */}
         <div className="absolute -top-14 left-6 md:left-8">
           <img
-            src={biz.logo_url || "/logo-light.png"}
+            src={biz.logo_url || fallbackLogo}
             alt={`${biz.name} logo`}
             className="w-28 h-28 rounded-xl border-[var(--bg)] object-cover shadow"
             onError={(event) => {
               event.currentTarget.onerror = null;
-              event.currentTarget.src = "/logo-light.png";
+              event.currentTarget.src = fallbackLogo;
             }}
           />
         </div>
