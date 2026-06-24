@@ -641,7 +641,7 @@ export default function StepMediaReview({
         </h2>
   
         <p className="admin-hint">
-          Step 4 of 4 — Upload media, configure visibility settings, and confirm business ownership.
+          Step 4 of 5 — Upload media and configure visibility settings.
         </p>
       </div>
   <div
@@ -1530,19 +1530,24 @@ export default function StepMediaReview({
 
   
 
-  {/* CONFIRMATION */}
-  <div className="mb-8">
-    <label className="flex items-center gap-2">
-      <input
-        type="checkbox"
-        checked={normalized.owner_confirmed}
-        onChange={(e) =>
-          setField("owner_confirmed", e.target.checked)
-        }
-      />
-      I confirm that I am authorized to manage this business.
-    </label>
-  </div>
+  {/* CONFIRMATION — not required for admin edit */}
+  {!isAdminEditMode && (
+    <div className="mb-8">
+      <label className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={normalized.owner_confirmed}
+          onChange={(e) =>
+            setField(
+              "owner_confirmed",
+              e.target.checked
+            )
+          }
+        />
+        I confirm that I am authorized to manage this business.
+      </label>
+    </div>
+  )}
   </div>
   {error && <p className="admin-error mb-3">{error}</p>}    
 
