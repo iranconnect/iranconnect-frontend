@@ -267,7 +267,7 @@ export default function BusinessBySlug({ biz }) {
     ? biz.logo_url.startsWith("http")
       ? biz.logo_url
       : `${apiBase.replace("/api", "")}${biz.logo_url}`
-    : "/logo.png";
+    : "/logo-light.png";
 
   let imageSrc = original;
   if (original.startsWith("http")) {
