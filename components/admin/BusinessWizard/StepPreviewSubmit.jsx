@@ -1124,10 +1124,15 @@ export default function StepPreviewSubmit({
         <button
           className="admin-btn admin-btn-primary"
           onClick={handleFinalSubmit}
-          disabled={
-            loading ||
-            submitSuccess ||
-            !isValidAdminEditAuthorization
+          disabled={isSubmitDisabled}
+          style={
+            isSubmitDisabled
+              ? {
+                  opacity: 0.5,
+                  cursor: "not-allowed",
+                  boxShadow: "none",
+                }
+              : undefined
           }
         >
           {loading
