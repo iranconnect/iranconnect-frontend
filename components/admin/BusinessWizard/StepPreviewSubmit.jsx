@@ -89,6 +89,43 @@ export default function StepPreviewSubmit({
   
   const [tagNames, setTagNames] = useState([]);
 
+  const isAdminCreate = mode === "admin-create";
+  const isAdminEdit = mode === "admin-edit";
+  const isUserUpdate = mode === "user-update";
+
+  const previewCopy = isAdminEdit
+    ? {
+        title: "Review & Update Business",
+        subtitle: "Step 5 of 5 — Review changes before updating this business",
+        mediaTitle: "Media & Visibility",
+        loadingTitle: "Updating business profile…",
+        loadingText:
+          "Business details, services, media, and profile settings are being updated. Please do not refresh, close, or submit the form again.",
+        submitLabel: "Submit & Update Business",
+        loadingLabel: "Updating business…",
+      }
+    : isUserUpdate
+      ? {
+          title: "Review & Submit Update Request",
+          subtitle: "Step 5 of 5 — Review your requested changes before submission",
+          mediaTitle: "Media, Visibility & Confirmation",
+          loadingTitle: "Creating your secure request archive…",
+          loadingText:
+            "Your business details and media are being securely archived. This can take a few minutes when several images are included. Please do not refresh, close, or submit the form again.",
+          submitLabel: "Submit Update Request",
+          loadingLabel: "Submitting update request…",
+        }
+      : {
+          title: "Review & Create Business",
+          subtitle: "Step 5 of 5 — Review all business details before creation",
+          mediaTitle: "Media, Visibility & Confirmation",
+          loadingTitle: "Creating business…",
+          loadingText:
+            "Business details, services, media, and profile settings are being created. Please do not refresh, close, or submit the form again.",
+          submitLabel: "Submit & Create Business",
+          loadingLabel: "Creating business…",
+        };
+
   
   useEffect(() => {
   
@@ -233,10 +270,11 @@ export default function StepPreviewSubmit({
   return (
     <div className="admin-section">
       <h2 className="admin-title mb-1">
-        Review & Confirm Business
+        {previewCopy.title}
       </h2>
+      
       <p className="admin-muted mb-6">
-        Step 5 of 5 — Preview before submission
+        {previewCopy.subtitle}
       </p>
 
       {/* ─────────────────────────
@@ -485,7 +523,7 @@ export default function StepPreviewSubmit({
       {/* ─────────────────────────
          MEDIA, VISIBILITY & COMPLIANCE
       ───────────────────────── */}
-      <Section title="Media, Visibility & Compliance">
+      <Section title={previewCopy.mediaTitle}>
       
         {/* LOGO */}
         {(data.logo_url || data.logo_file) && (
@@ -839,20 +877,23 @@ export default function StepPreviewSubmit({
         </div>
       
         {/* COMPLIANCE */}
-        <div>
-      
-          <strong>Compliance confirmation:</strong>
-      
-          <div style={{ marginTop: 8 }}>
-      
-            <div>
-              {data.owner_confirmed
-                ? "✓ Ownership confirmed"
-                : "✗ Ownership not confirmed"}
+        {!isAdminEdit && (
+          <div>
+            <strong>
+              {isUserUpdate
+                ? "Update request confirmation:"
+                : "Business ownership confirmation:"}
+            </strong>
+        
+            <div style={{ marginTop: 8 }}>
+              <div>
+                {data.owner_confirmed
+                  ? "✓ Confirmation completed"
+                  : "✗ Confirmation not completed"}
+              </div>
             </div>
-      
           </div>
-        </div>
+        )}
       
       </Section>
 
@@ -870,12 +911,10 @@ export default function StepPreviewSubmit({
             lineHeight: 1.7,
           }}
         >
-          <strong>Creating your secure request archive…</strong>
-      
+          <strong>{previewCopy.loadingTitle}</strong>
+
           <div style={{ marginTop: 4 }}>
-            Your business details and media are being securely archived.
-            This can take a few minutes when several images are included.
-            Please do not refresh, close, or submit the form again.
+            {previewCopy.loadingText}
           </div>
         </div>
       )}
@@ -943,12 +982,8 @@ export default function StepPreviewSubmit({
           disabled={loading || submitSuccess}
         >
           {loading
-            ? mode === "user-update"
-              ? "Submitting update request…"
-              : "Creating business…"
-            : mode === "user-update"
-              ? "Submit Update Request"
-              : "Submit & Create Business"}
+            ? previewCopy.loadingLabel
+            : previewCopy.submitLabel}
         </button>
       </div>
     </div>
