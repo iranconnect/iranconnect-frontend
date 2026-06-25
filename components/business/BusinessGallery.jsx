@@ -51,9 +51,6 @@ export default function BusinessGallery({ biz }) {
     });
   }
 
-  if (!cover && gallery.length === 0) return null;
-
-  
   useEffect(() => {
     function handleKey(e) {
       if (activeIndex === null) return;
@@ -76,8 +73,14 @@ export default function BusinessGallery({ biz }) {
     }
   
     window.addEventListener("keydown", handleKey);
+  
     return () => window.removeEventListener("keydown", handleKey);
   }, [activeIndex, gallery.length]);
+  
+  if (gallery.length === 0) {
+    return null;
+  }
+
   
   /* ─────────────────────────────
      UI
