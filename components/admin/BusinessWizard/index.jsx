@@ -134,7 +134,7 @@ export default function BusinessWizard({
     setStep((s) => Math.max(s - 1, 0));
   }
 
-  async function submit() {
+  async function submit(submitData = data) {
     if (externalSubmit) {
       setSubmitMessage("");
       setSubmitError(false);
@@ -143,7 +143,7 @@ export default function BusinessWizard({
       setLoading(true);
   
       try {
-        const res = await externalSubmit(data);
+        const res = await externalSubmit(submitData);
   
         if (mode === "user-update") {
           setSubmitError(false);
@@ -187,10 +187,12 @@ export default function BusinessWizard({
   
         return res;
       } catch (err) {
-        console.error(
-          "Business wizard external submit failed",
-          err
-        );
+        if (!status || status >= 500) {
+          console.error(
+            "Business wizard external submit failed",
+            err
+          );
+        }
   
         const status = err?.response?.status;
   
@@ -509,16 +511,13 @@ export default function BusinessWizard({
           onForce={() => {
             const forcedData = {
               ...data,
-              force_create: true,
               force_update: true,
             };
-      
+          
             setDuplicate(null);
             setData(forcedData);
-      
-            window.setTimeout(() => {
-              submit();
-            }, 0);
+          
+            submit(forcedData);
           }}
         />
       )}
