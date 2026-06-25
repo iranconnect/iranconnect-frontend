@@ -2,77 +2,46 @@
 export default function BusinessLocation({ biz }) {
   if (!biz) return null;
 
-  const isLoggedIn = biz.viewer_is_authenticated;
+  const isLoggedIn = biz.viewer_is_authenticated === true;
 
-  const serviceMode = biz.service_mode;
-
-  const hasAddressDetails = Boolean(
+  const hasAddress = Boolean(
     biz.address ||
       biz.postal_code ||
       biz.city ||
       biz.country
   );
 
-  const hasBusinessLocation = Boolean(
-    hasAddressDetails || biz.location_map_url
-  );
+  const hasBusinessMap = Boolean(biz.location_map_url);
+  const hasBaseMap = Boolean(biz.base_location_map_url);
 
-  const hasServiceBaseLocation = Boolean(
-    biz.base_location_map_url
-  );
-
-  if (!hasBusinessLocation && !hasServiceBaseLocation) {
+  if (!hasAddress && !hasBusinessMap && !hasBaseMap) {
     return null;
   }
 
-  const fullAddress = biz.address
-    ? biz.address
-    : [
-        biz.postal_code,
-        biz.city,
-        biz.country,
-      ]
-        .filter(Boolean)
-        .join(", ");
+  const addressParts = [
+    biz.address,
+    [biz.postal_code, biz.city]
+      .filter(Boolean)
+      .join(" "),
+    biz.country,
+  ].filter(Boolean);
 
-  const locationLabel =
-    serviceMode === "at_home"
-      ? "Business office location"
+  const fullAddress = addressParts.join(", ");
+
+  const businessLocationTitle =
+    biz.service_mode === "at_home"
+      ? "Registered business address"
       : "Business location";
 
-  const shouldShowBusinessLocation =
-    hasBusinessLocation &&
-    serviceMode !== "at_home";
-
-  const shouldShowServiceBaseLocation =
-    hasServiceBaseLocation &&
-    ["at_home", "hybrid"].includes(serviceMode);
-
-  const shouldShowFallbackBusinessLocation =
-    hasBusinessLocation &&
-    !shouldShowBusinessLocation &&
-    !shouldShowServiceBaseLocation;
-
-  function getEmbedUrl() {
-    const mapQuery = [
-      biz.address,
-      biz.postal_code,
-      biz.city,
-      biz.country,
-    ]
-      .filter(Boolean)
-      .join(", ");
-
-    if (!mapQuery) {
-      return null;
-    }
+  function getAddressEmbedUrl() {
+    if (!fullAddress) return null;
 
     return `https://www.google.com/maps?q=${encodeURIComponent(
-      mapQuery
+      fullAddress
     )}&output=embed`;
   }
 
-  const embedUrl = getEmbedUrl();
+  const addressEmbedUrl = getAddressEmbedUrl();
 
   return (
     <section className="card mt-6">
@@ -81,11 +50,10 @@ export default function BusinessLocation({ biz }) {
       </h2>
 
       <div className="space-y-6">
-        {(shouldShowBusinessLocation ||
-          shouldShowFallbackBusinessLocation) && (
+        {(hasAddress || hasBusinessMap) && (
           <div>
             <h3 className="mb-2 text-sm font-semibold">
-              {locationLabel}
+              {businessLocationTitle}
             </h3>
 
             {fullAddress && (
@@ -95,7 +63,7 @@ export default function BusinessLocation({ biz }) {
               </p>
             )}
 
-            {isLoggedIn && biz.location_map_url && (
+            {hasBusinessMap && (
               <a
                 href={biz.location_map_url}
                 target="_blank"
@@ -106,10 +74,10 @@ export default function BusinessLocation({ biz }) {
               </a>
             )}
 
-            {isLoggedIn && embedUrl && (
+            {isLoggedIn && addressEmbedUrl && (
               <div className="mt-4 overflow-hidden rounded-xl border border-[var(--border)]">
                 <iframe
-                  src={embedUrl}
+                  src={addressEmbedUrl}
                   title={`${biz.name} business location`}
                   width="100%"
                   height="300"
@@ -121,27 +89,25 @@ export default function BusinessLocation({ biz }) {
           </div>
         )}
 
-        {shouldShowServiceBaseLocation && (
+        {hasBaseMap && (
           <div>
             <h3 className="mb-2 text-sm font-semibold">
               Service base location
             </h3>
 
             <p className="text-sm text-justify-pro">
-              📍 This is the base location used to calculate the business
-              service area.
+              📍 This location is used as the service base for customer-area
+              coverage.
             </p>
 
-            {isLoggedIn && (
-              <a
-                href={biz.base_location_map_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-turquoise hover:underline"
-              >
-                🗺 Open service base location in Google Maps
-              </a>
-            )}
+            <a
+              href={biz.base_location_map_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-turquoise hover:underline"
+            >
+              🗺 Open service base location in Google Maps
+            </a>
           </div>
         )}
       </div>
