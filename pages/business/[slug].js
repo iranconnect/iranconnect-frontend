@@ -5,7 +5,6 @@ import { ArrowUp } from "lucide-react";
 
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import RatingStars from "../../components/RatingStars";
 import BusinessHero from "../../components/business/BusinessHero";
 import BusinessAbout from "../../components/business/BusinessAbout";
 import BusinessServices from "../../components/business/BusinessServices";   
@@ -249,8 +248,6 @@ export default function BusinessBySlug({ biz }) {
   const { status, role } = useAuthSession();
 
 
-  const [rating, setRating] = useState(0);
-  const [message, setMessage] = useState("");
   const [showImageModal, setShowImageModal] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false); 
   const [showCTA, setShowCTA] = useState(true); 
@@ -326,32 +323,7 @@ export default function BusinessBySlug({ biz }) {
     return () => window.removeEventListener("scroll", handleCTAVisibility);
   }, []);
    
-  async function submitRating() {
-    try {
-      if (!isLoggedIn) {
-        setMessage("You must be logged in to rate.");
-        return;
-      }
-
-      if (!biz.allow_reviews) {
-        setMessage("Reviews are disabled for this business.");
-        return;
-      }
-
-      await apiClient.post(`/businesses/${biz.id}/reviews`, {
-        rating,
-      });
-
-      setMessage("✅ Rating submitted");
-      
-      setTimeout(() => {
-        window.location.reload();
-      }, 800); 
-    } catch (e) {
-      setMessage(e.response?.data?.error || "Error submitting rating.");
-    }
-  }
-
+  
   if (!biz || !isAuthReady) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -515,16 +487,6 @@ export default function BusinessBySlug({ biz }) {
             <BlurGate isVisible={isLoggedIn}>
               <BusinessLocation biz={biz} />
             </BlurGate>
-
-            {!isAdminView && isLoggedIn && biz.allow_reviews && (
-              <div className="mt-8 border-t pt-6">
-                <RatingStars value={rating} onChange={setRating} />
-                <button disabled={!rating} onClick={submitRating}>
-                  Submit
-                </button>
-                {message && <p>{message}</p>}
-              </div>
-            )}
 
             <BusinessClaim
               biz={biz}
