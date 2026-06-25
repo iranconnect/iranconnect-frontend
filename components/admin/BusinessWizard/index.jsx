@@ -187,14 +187,16 @@ export default function BusinessWizard({
   
         return res;
       } catch (err) {
+        
+  
+        const status = err?.response?.status;
+
         if (!status || status >= 500) {
           console.error(
             "Business wizard external submit failed",
             err
           );
         }
-  
-        const status = err?.response?.status;
   
         const serverMessage =
           err?.response?.data?.error ||
