@@ -11,96 +11,204 @@ import {
   MessageCircle,
 } from "lucide-react";
 
+function cleanWhatsApp(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function normalizeExternalUrl(value) {
+  if (!value) return null;
+
+  const url = String(value).trim();
+
+  if (!url) return null;
+
+  return /^https?:\/\//i.test(url)
+    ? url
+    : `https://${url}`;
+}
+
 export default function BusinessContact({ biz }) {
-  const hasAny =
-    biz.phone ||
-    biz.email ||
-    biz.website ||
-    biz.instagram_url ||
-    biz.facebook_url ||
-    biz.linkedin_url ||
-    biz.twitter_url ||
-    biz.telegram_url ||
-    biz.whatsapp_number;
+  const phoneVisible =
+    Boolean(biz.phone) && biz.show_phone === true;
 
-  if (!hasAny) return null;
+  const emailVisible =
+    Boolean(biz.email) && biz.show_email === true;
 
-  function cleanWhatsApp(num) {
-    return num?.replace(/\D/g, "");
+  const websiteUrl = normalizeExternalUrl(biz.website);
+  const instagramUrl = normalizeExternalUrl(biz.instagram_url);
+  const facebookUrl = normalizeExternalUrl(biz.facebook_url);
+  const linkedinUrl = normalizeExternalUrl(biz.linkedin_url);
+  const twitterUrl = normalizeExternalUrl(biz.twitter_url);
+  const telegramUrl = normalizeExternalUrl(biz.telegram_url);
+
+  const whatsappNumber = cleanWhatsApp(
+    biz.whatsapp_number
+  );
+
+  const hasSocialLinks = Boolean(
+    instagramUrl ||
+      facebookUrl ||
+      linkedinUrl ||
+      twitterUrl ||
+      telegramUrl ||
+      whatsappNumber
+  );
+
+  const hasAnyContact =
+    phoneVisible ||
+    emailVisible ||
+    websiteUrl ||
+    hasSocialLinks;
+
+  if (!hasAnyContact) {
+    return null;
   }
 
   return (
-    <div className="card mt-6">
-      <h2 className="text-xl font-semibold mb-4">
+    <section className="card mt-6">
+      <h2 className="text-xl font-semibold mb-5">
         Contact & Online Presence
       </h2>
 
-      <div className="space-y-4">
+      <div className="space-y-4 text-sm">
+        {phoneVisible && (
+          <div>
+            <h3 className="mb-1 font-semibold">
+              Phone
+            </h3>
 
-        {/* Phone */}
-        {biz.phone && biz.show_phone && (
-          <a href={`tel:${biz.phone}`} className="flex items-center gap-3">
-            <Phone size={18} />
-            <span>{biz.phone}</span>
-          </a>
+            <a
+              href={`tel:${biz.phone}`}
+              className="inline-flex items-center gap-2 text-turquoise hover:underline"
+            >
+              <Phone size={17} />
+              {biz.phone}
+            </a>
+          </div>
         )}
 
-        {/* Email */}
-        {biz.email && biz.show_email && (
-          <a href={`mailto:${biz.email}`} className="flex items-center gap-3">
-            <Mail size={18} />
-            <span>{biz.email}</span>
-          </a>
+        {emailVisible && (
+          <div>
+            <h3 className="mb-1 font-semibold">
+              Email
+            </h3>
+
+            <a
+              href={`mailto:${biz.email}`}
+              className="inline-flex items-center gap-2 text-turquoise hover:underline break-all"
+            >
+              <Mail size={17} />
+              {biz.email}
+            </a>
+          </div>
         )}
 
-        {/* Website */}
-        {biz.website && (
-          <a href={biz.website} target="_blank" rel="noreferrer" className="flex items-center gap-3">
-            <Globe size={18} />
-            <span>Website</span>
-          </a>
+        {websiteUrl && (
+          <div>
+            <h3 className="mb-1 font-semibold">
+              Website
+            </h3>
+
+            <a
+              href={websiteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-turquoise hover:underline break-all"
+            >
+              <Globe size={17} />
+              Visit website
+            </a>
+          </div>
         )}
 
-        {/* Social */}
-        <div className="flex flex-wrap gap-3 pt-2">
+        {hasSocialLinks && (
+          <div>
+            <h3 className="mb-3 font-semibold">
+              Social & Messaging
+            </h3>
 
-          {biz.instagram_url && (
-            <a href={biz.instagram_url} target="_blank">
-              <Instagram className="hover:text-pink-500" />
-            </a>
-          )}
+            <div className="flex flex-wrap gap-3">
+              {instagramUrl && (
+                <a
+                  href={instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram"
+                  title="Instagram"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] transition hover:text-pink-500"
+                >
+                  <Instagram size={19} />
+                </a>
+              )}
 
-          {biz.facebook_url && (
-            <a href={biz.facebook_url} target="_blank">
-              <Facebook className="hover:text-blue-600" />
-            </a>
-          )}
+              {facebookUrl && (
+                <a
+                  href={facebookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook"
+                  title="Facebook"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] transition hover:text-blue-600"
+                >
+                  <Facebook size={19} />
+                </a>
+              )}
 
-          {biz.linkedin_url && (
-            <a href={biz.linkedin_url} target="_blank">
-              <Linkedin className="hover:text-blue-700" />
-            </a>
-          )}
+              {linkedinUrl && (
+                <a
+                  href={linkedinUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="LinkedIn"
+                  title="LinkedIn"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] transition hover:text-blue-700"
+                >
+                  <Linkedin size={19} />
+                </a>
+              )}
 
-          {biz.twitter_url && (
-            <a href={biz.twitter_url} target="_blank">
-              <Twitter className="hover:text-black" />
-            </a>
-          )}
+              {twitterUrl && (
+                <a
+                  href={twitterUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="X"
+                  title="X"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] transition hover:text-black"
+                >
+                  <Twitter size={19} />
+                </a>
+              )}
 
-          {biz.telegram_url && (
-            <a href={biz.telegram_url} target="_blank">
-              <Send className="hover:text-sky-500" />
-            </a>
-          )}
+              {telegramUrl && (
+                <a
+                  href={telegramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Telegram"
+                  title="Telegram"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] transition hover:text-sky-500"
+                >
+                  <Send size={19} />
+                </a>
+              )}
 
-          {biz.whatsapp_number && (
-            <a href={`https://wa.me/${cleanWhatsApp(biz.whatsapp_number)}`} target="_blank">
-              <MessageCircle className="hover:text-green-500" />
-            </a>
-          )}
-        </div>
+              {whatsappNumber && (
+                <a
+                  href={`https://wa.me/${whatsappNumber}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="WhatsApp"
+                  title="WhatsApp"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] transition hover:text-green-500"
+                >
+                  <MessageCircle size={19} />
+                </a>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 }
