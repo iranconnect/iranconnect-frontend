@@ -95,32 +95,7 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
           {biz.short_description && (
             <p className="text-sm text-justify-pro">{biz.short_description}</p>
           )}
-          {biz.address && (
-            <p className={`text-sm text-sm text-justify-pro ${!isLoggedIn ? "blur-sm" : ""}`}>
-              📍{" "}
-              {biz.location_map_url ? (
-                <a href={biz.location_map_url} target="_blank" rel="noreferrer">
-                  {biz.address}
-                </a>
-              ) : (
-                biz.address
-              )}
-            </p>
-          )}
-
-          {biz.service_mode && (
-            <p className={`text-sm text-sm text-justify-pro ${!isLoggedIn ? "blur-sm" : ""}`}>
-              {biz.service_mode === "on_site" && "🏢 On-site"}
-              {biz.service_mode === "at_home" && "🚗 At home"}
-              {biz.service_mode === "remote" && "💻 Remote"}
-              {biz.service_mode === "hybrid" && "🔄 Hybrid"}
-            </p>
-          )}
-          {biz.availability_note && (
-            <p className="text-sm text-justify-pro">
-              🕒 {biz.availability_note}
-            </p>
-          )}
+          
           {/* 🔵 Rating */}
           <p className="text-lg font-medium">
             ⭐ {biz.avg_rating ?? "—"}{" "}
