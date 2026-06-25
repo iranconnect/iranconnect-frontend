@@ -19,6 +19,7 @@ import BusinessStickyCTA from "../../components/business/BusinessStickyCTA";
 import BusinessServicesList from "../../components/business/BusinessServicesList";
 import BusinessTags from "../../components/business/BusinessTags";
 import BusinessSubcategories from "../../components/business/BusinessSubcategories";
+import BusinessInformation from "../../components/business/BusinessInformation";
 
 import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
@@ -488,6 +489,8 @@ export default function BusinessBySlug({ biz }) {
             />
 
             <BusinessAbout biz={biz} />
+
+            <BusinessInformation biz={biz} />
 
             <BusinessSubcategories subcategories={biz.subcategories} />
             <BusinessServicesList services={biz.services} />
