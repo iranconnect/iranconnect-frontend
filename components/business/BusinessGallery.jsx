@@ -83,7 +83,10 @@ export default function BusinessGallery({ biz }) {
      UI
   ───────────────────────────── */
   return (
-    <div className="mt-6">
+    <section className="card mt-6">
+      <h2 className="text-xl font-semibold mb-4">
+        Gallery
+      </h2>
 
 
 
@@ -188,6 +191,6 @@ export default function BusinessGallery({ biz }) {
           </button>
         </div>
       )}
-    </div>
+    </section>
   );
 }
