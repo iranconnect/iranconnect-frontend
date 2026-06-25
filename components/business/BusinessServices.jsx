@@ -1,5 +1,4 @@
 //frontend/components/business/BusinessServices.jsx
-
 const DAYS_ORDER = [
   "monday",
   "tuesday",
@@ -10,10 +9,20 @@ const DAYS_ORDER = [
   "sunday",
 ];
 
-// 🔥 تشخیص روز جاری
+const DAY_LABELS = {
+  monday: "Mon",
+  tuesday: "Tue",
+  wednesday: "Wed",
+  thursday: "Thu",
+  friday: "Fri",
+  saturday: "Sat",
+  sunday: "Sun",
+};
+
 function getTodayKey() {
-  const todayIndex = new Date().getDay(); // 0=Sunday
-  const map = [
+  const todayIndex = new Date().getDay();
+
+  return [
     "sunday",
     "monday",
     "tuesday",
@@ -21,261 +30,249 @@ function getTodayKey() {
     "thursday",
     "friday",
     "saturday",
-  ];
-  return map[todayIndex];
+  ][todayIndex];
 }
 
 function formatServiceMode(mode) {
-  switch (mode) {
-    case "on_site":
-      return "🏢 On-site services";
-    case "at_home":
-      return "🚗 At customer location";
-    case "remote":
-      return "💻 Online services";
-    case "hybrid":
-      return "🔄 Mixed (On-site & Remote)";
-    default:
-      return null;
+  const labels = {
+    on_site: {
+      icon: "🏢",
+      label: "On-site services",
+      description: "Customers visit this business location.",
+    },
+    at_home: {
+      icon: "🚗",
+      label: "At customer location",
+      description: "Services are provided at the customer’s location.",
+    },
+    remote: {
+      icon: "💻",
+      label: "Remote / online services",
+      description: "Services are provided remotely or online.",
+    },
+    hybrid: {
+      icon: "🔄",
+      label: "Hybrid services",
+      description:
+        "Services are available both remotely and in person.",
+    },
+  };
+
+  return labels[mode] || null;
+}
+
+function formatAvailabilityType(type) {
+  const labels = {
+    always_open: "Open 24/7",
+    business_hours: "Business hours",
+    appointment_only: "By appointment only",
+  };
+
+  return labels[type] || null;
+}
+
+function hasRealHoursData(hours) {
+  if (!hours || typeof hours !== "object") {
+    return false;
   }
-}
 
-// 🔥 parse note (بدون تغییر منطق)
-function formatAvailabilityNote(note) {
-  if (!note) return [];
+  return Object.values(hours).some((day) => {
+    if (!day) return false;
 
-  const days = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ];
-
-  const result = [];
-
-  days.forEach((day) => {
-    const regex = new RegExp(`\\d*\\s*${day}:(.*?)(?=${days.join("|")}|$)`, "i");
-    const match = note.match(regex);
-
-    if (match) {
-      result.push({
-        day,
-        hours: match[1].trim(),
-      });
+    if (Array.isArray(day)) {
+      return day.length > 0;
     }
-  });
 
-  return result;
-}
-
-// 🔥 UI row
-function DayRow({ dayKey, label, hours }) {
-  const today = getTodayKey();
-  const isToday = dayKey.toLowerCase() === today;
-
-  return (
-    <div className="grid grid-cols-[80px_1fr] items-start">
-      <span
-        className={`font-medium capitalize ${
-          isToday ? "text-[#2aa7a1] font-semibold" : ""
-        }`}
-      >
-        {label}
-      </span>
-
-      <span className="text-sm text-justify-pro">
-        {hours}
-      </span>
-    </div>
-  );
-}
-
-// 🔥 helper: آیا واقعا دیتا داریم؟
-function hasRealHoursData(biz) {
-  if (!biz?.availability_hours) return false;
-
-  return Object.values(biz.availability_hours).some((d) => {
-    if (!d) return false;
-
-    // appointment mode → array
-    if (Array.isArray(d)) return d.length > 0;
-
-    // business_hours → object
-    if (typeof d === "object") {
-      return d.open || d.close || d.closed === true;
+    if (typeof day === "object") {
+      return (
+        day.closed === true ||
+        Boolean(day.open) ||
+        Boolean(day.close)
+      );
     }
 
     return false;
   });
 }
 
-// 🔥 renderer اصلی (با fix)
-function renderAvailability(biz) {
-  const hasData = hasRealHoursData(biz);
-
-  // 1️⃣ Always open
-  if (biz.availability_type === "always_open") {
-    return <p className="text-sm">🟢 Open 24/7</p>;
+function formatDayHours(dayValue) {
+  if (!dayValue) {
+    return "—";
   }
 
-  // 2️⃣ Appointment only
-  if (biz.availability_type === "appointment_only") {
-    if (!hasData) {
-      return <p className="text-sm">📅 By appointment only</p>;
+  if (Array.isArray(dayValue)) {
+    return dayValue.length
+      ? dayValue.join(" | ")
+      : "—";
+  }
+
+  if (typeof dayValue === "object") {
+    if (dayValue.closed) {
+      return "Closed";
     }
 
-    const days = DAYS_ORDER.map((dayKey) => {
-      const hrs = biz.availability_hours?.[dayKey];
-
-      return {
-        day: dayKey,
-        hours:
-          hrs && hrs.length > 0
-            ? hrs.join(" | ")
-            : "—", // ✅ FIX
-      };
-    });
-
-    return (
-      <div className="space-y-2">
-        <p className="text-sm">📅 By appointment only</p>
-
-        <div>
-          <p className="text-sm font-medium mb-2">🕒 Suggested hours</p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
-            {days.map(({ day, hours }) => (
-              <DayRow
-                key={day}
-                dayKey={day}
-                label={day.slice(0, 3)}
-                hours={hours}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    if (dayValue.open && dayValue.close) {
+      return `${dayValue.open} – ${dayValue.close}`;
+    }
   }
 
-  // 3️⃣ Business hours
-  if (biz.availability_type === "business_hours" && hasData) {
-    const days = DAYS_ORDER.map((dayKey) => {
-      const data = biz.availability_hours?.[dayKey];
+  return "—";
+}
 
-      return {
-        day: dayKey,
-        hours: data
-          ? !data.closed
-            ? `${data.open} - ${data.close}`
-            : "Closed"
-          : "—", // ✅ FIX
-      };
-    });
+function DayRow({ dayKey, value }) {
+  const isToday = getTodayKey() === dayKey;
 
-    return (
-      <div className="mt-2">
-        <p className="text-sm font-medium mb-2">🕒 Opening hours</p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
-          {days.map(({ day, hours }) => (
-            <DayRow
-              key={day}
-              dayKey={day}
-              label={day.slice(0, 3)}
-              hours={hours}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // 4️⃣ fallback note
-  if (biz.availability_note) {
-    return (
-      <p className="text-sm whitespace-pre-line">
-        📝 {biz.availability_note}
-      </p>
-    );
-  }
-
-  // 5️⃣ هیچ دیتایی نداریم
   return (
-    <p className="text-sm opacity-70">
-      🕓 Availability not specified
-    </p>
+    <div className="grid grid-cols-[70px_1fr] items-start gap-2">
+      <span
+        className={`font-medium ${
+          isToday
+            ? "text-turquoise font-semibold"
+            : ""
+        }`}
+      >
+        {DAY_LABELS[dayKey]}
+      </span>
+
+      <span className="text-sm text-justify-pro">
+        {value}
+      </span>
+    </div>
   );
 }
 
-// 🔥 main component
 export default function BusinessServices({ biz }) {
-  const serviceMode = formatServiceMode(biz.service_mode);
-  const weeklyHoursRaw = formatAvailabilityNote(biz.availability_note);
+  const serviceMode = formatServiceMode(
+    biz.service_mode
+  );
 
-  const weeklyHours =
-    weeklyHoursRaw.length > 0
-      ? DAYS_ORDER.map((dayKey) => {
-          const found = weeklyHoursRaw.find(
-            (d) => d.day.toLowerCase() === dayKey
-          );
+  const availabilityLabel = formatAvailabilityType(
+    biz.availability_type
+  );
 
-          return {
-            day: dayKey,
-            hours: found ? found.hours : "—", // ✅ FIX
-          };
-        })
-      : [];
+  const hasHours = hasRealHoursData(
+    biz.availability_hours
+  );
 
-  const hasData =
+  const hasContent =
     serviceMode ||
-    biz.availability_type ||
+    availabilityLabel ||
+    hasHours ||
     biz.availability_note ||
-    biz.availability_hours ||
     biz.service_radius_km;
 
-  const hasParsedNoteHours = weeklyHoursRaw.length > 0;
-
-  if (!hasData) return null;
+  if (!hasContent) {
+    return null;
+  }
 
   return (
-    <div className="card">
+    <section className="card">
       <h2 className="text-xl font-semibold mb-4">
         Services & Availability
       </h2>
 
-      <div className="space-y-3 text-sm text-justify-pro">
+      <div className="space-y-5 text-sm text-justify-pro">
+        {serviceMode && (
+          <div>
+            <h3 className="mb-1 font-semibold">
+              Service mode
+            </h3>
 
-        {serviceMode && <p className="text-sm">{serviceMode}</p>}
+            <p>
+              {serviceMode.icon} {serviceMode.label}
+            </p>
 
-        {hasParsedNoteHours ? (
-          <div className="mt-2">
-            <p className="text-sm font-medium mb-2">🕒 Opening hours</p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
-              {weeklyHours.map((item) => (
-                <DayRow
-                  key={item.day}
-                  dayKey={item.day}
-                  label={item.day.slice(0, 3)}
-                  hours={item.hours}
-                />
-              ))}
-            </div>
+            <p className="mt-1 opacity-75">
+              {serviceMode.description}
+            </p>
           </div>
-        ) : (
-          renderAvailability(biz)
+        )}
+
+        {availabilityLabel && (
+          <div>
+            <h3 className="mb-1 font-semibold">
+              Availability
+            </h3>
+
+            <p>
+              {biz.availability_type === "always_open"
+                ? "🟢"
+                : biz.availability_type ===
+                    "appointment_only"
+                  ? "📅"
+                  : "🕒"}{" "}
+              {availabilityLabel}
+            </p>
+          </div>
+        )}
+
+        {biz.availability_type === "business_hours" &&
+          hasHours && (
+            <div>
+              <h3 className="mb-3 font-semibold">
+                Opening hours
+              </h3>
+
+              <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
+                {DAYS_ORDER.map((dayKey) => (
+                  <DayRow
+                    key={dayKey}
+                    dayKey={dayKey}
+                    value={formatDayHours(
+                      biz.availability_hours?.[dayKey]
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+        {biz.availability_type === "appointment_only" &&
+          hasHours && (
+            <div>
+              <h3 className="mb-3 font-semibold">
+                Suggested appointment hours
+              </h3>
+
+              <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
+                {DAYS_ORDER.map((dayKey) => (
+                  <DayRow
+                    key={dayKey}
+                    dayKey={dayKey}
+                    value={formatDayHours(
+                      biz.availability_hours?.[dayKey]
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+        {biz.availability_note && (
+          <div>
+            <h3 className="mb-1 font-semibold">
+              Additional availability information
+            </h3>
+
+            <p className="whitespace-pre-line">
+              📝 {biz.availability_note}
+            </p>
+          </div>
         )}
 
         {biz.service_radius_km && (
-          <p className="text-sm">
-            📍 Service radius: {biz.service_radius_km} km
-          </p>
+          <div>
+            <h3 className="mb-1 font-semibold">
+              Service radius
+            </h3>
+
+            <p>
+              📍 This business serves customers within{" "}
+              {biz.service_radius_km} km of its service base.
+            </p>
+          </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }
