@@ -77,6 +77,10 @@ export default function BusinessReviews({
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
 
+  const [needsDisplayName, setNeedsDisplayName] = useState(false);
+  const [reviewDisplayName, setReviewDisplayName] = useState("");
+  const [savingDisplayName, setSavingDisplayName] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -143,6 +147,8 @@ export default function BusinessReviews({
         }));
       }
 
+      setNeedsDisplayName(false);
+
       setMessage(
         response.data?.message ||
           "Your review has been submitted and is pending approval."
@@ -150,12 +156,60 @@ export default function BusinessReviews({
 
       await loadReviews();
     } catch (error) {
+      const errorCode = error.response?.data?.code;
+
+      if (errorCode === "REVIEW_DISPLAY_NAME_REQUIRED") {
+        setNeedsDisplayName(true);
+        setMessage("");
+        return;
+      }
+
       setMessage(
         error.response?.data?.error ||
           "Unable to submit your review. Please try again."
       );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function saveReviewDisplayName() {
+    const normalizedName = reviewDisplayName
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (
+      normalizedName.length < 2 ||
+      normalizedName.length > 80
+    ) {
+      setMessage(
+        "Your review display name must be between 2 and 80 characters."
+      );
+      return;
+    }
+
+    try {
+      setSavingDisplayName(true);
+      setMessage("");
+
+      await apiClient.put(
+        "/auth/review-display-name",
+        {
+          review_display_name: normalizedName,
+        }
+      );
+
+      setReviewDisplayName(normalizedName);
+      setNeedsDisplayName(false);
+
+      await submitReview();
+    } catch (error) {
+      setMessage(
+        error.response?.data?.error ||
+          "Unable to save your review display name. Please try again."
+      );
+    } finally {
+      setSavingDisplayName(false);
     }
   }
 
@@ -263,18 +317,67 @@ export default function BusinessReviews({
             </p>
           </div>
 
-          <button
-            type="button"
-            disabled={!rating || submitting}
-            onClick={submitReview}
-            className="btn-primary px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {submitting
-              ? "Submitting..."
-              : userReview
-                ? "Update review"
-                : "Submit review"}
-          </button>
+          {needsDisplayName ? (
+            <div className="mb-4 rounded-xl border border-turquoise/40 bg-[var(--surface)] p-4">
+              <h4 className="mb-2 text-sm font-semibold">
+                Choose your public review name
+              </h4>
+
+              <p className="mb-3 text-sm text-justify-pro opacity-75">
+                This name will be shown publicly next to your review.
+                You can use a shortened name such as “Sara M.”
+              </p>
+
+              <label
+                htmlFor={`review-display-name-${businessId}`}
+                className="mb-2 block text-sm font-medium"
+              >
+                Review display name
+              </label>
+
+              <input
+                id={`review-display-name-${businessId}`}
+                type="text"
+                value={reviewDisplayName}
+                onChange={(event) =>
+                  setReviewDisplayName(
+                    event.target.value.slice(0, 80)
+                  )
+                }
+                maxLength={80}
+                placeholder="Example: Sara M."
+                className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-3 text-sm outline-none transition focus:border-turquoise"
+              />
+
+              <p className="mt-1 text-right text-xs opacity-60">
+                {reviewDisplayName.length}/80
+              </p>
+
+              <button
+                type="button"
+                disabled={savingDisplayName}
+                onClick={saveReviewDisplayName}
+                className="btn-primary mt-3 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {savingDisplayName
+                  ? "Saving..."
+                  : "Save name and submit review"}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={!rating || submitting}
+              onClick={submitReview}
+              className="btn-primary px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {submitting
+                ? "Submitting..."
+                : userReview
+                  ? "Update review"
+                  : "Submit review"}
+            </button>
+          )}
 
           {message && (
             <p className="mt-3 text-sm text-justify-pro">
@@ -309,12 +412,19 @@ export default function BusinessReviews({
             className="rounded-xl border border-[var(--border)] p-4"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <ReviewStars rating={review.rating} />
+              <div>
+                <p className="mb-1 text-sm font-semibold">
+                  {review.reviewer_display_name ||
+                    "IranConnect member"}
+                </p>
 
-                <span className="text-sm font-medium">
-                  {review.rating}/5
-                </span>
+                <div className="flex items-center gap-3">
+                  <ReviewStars rating={review.rating} />
+
+                  <span className="text-sm font-medium">
+                    {review.rating}/5
+                  </span>
+                </div>
               </div>
 
               <time className="text-xs opacity-60">
