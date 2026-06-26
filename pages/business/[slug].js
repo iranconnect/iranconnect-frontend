@@ -466,17 +466,17 @@ export default function BusinessBySlug({ biz }) {
 
             <BusinessSubcategories subcategories={biz.subcategories} />
             <BusinessServicesList services={biz.services} />
-            <BusinessTags tags={biz.tags} />     
+            <BusinessTags tags={biz.tags} />
+
+            <BlurGate isVisible={isLoggedIn}>
+              <BusinessGallery biz={biz} />
+            </BlurGate>
 
             <BusinessReviews
               businessId={biz.id}
               isLoggedIn={isLoggedIn}
               allowReviews={biz.allow_reviews === true}
             />
-
-            <BlurGate isVisible={isLoggedIn}>
-              <BusinessReviews businessId={biz.id} />
-            </BlurGate>
 
             <BlurGate isVisible={isLoggedIn}>
               <BusinessServices biz={biz} />
