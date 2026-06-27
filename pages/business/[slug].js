@@ -15,9 +15,6 @@ import BlurGate from "../../components/ui/BlurGate";
 import BusinessClaim from "../../components/business/BusinessClaim";
 import BusinessContact from "../../components/business/BusinessContact";
 import BusinessStickyCTA from "../../components/business/BusinessStickyCTA";
-import BusinessServicesList from "../../components/business/BusinessServicesList";
-import BusinessTags from "../../components/business/BusinessTags";
-import BusinessSubcategories from "../../components/business/BusinessSubcategories";
 import BusinessInformation from "../../components/business/BusinessInformation";
 
 import { X } from "lucide-react";
@@ -456,10 +453,6 @@ export default function BusinessBySlug({ biz }) {
 
             <BusinessInformation biz={biz} />
 
-            <BusinessSubcategories subcategories={biz.subcategories} />
-            <BusinessServicesList services={biz.services} />
-            <BusinessTags tags={biz.tags} />
-
             <BlurGate isVisible={isLoggedIn}>
               <BusinessGallery biz={biz} />
             </BlurGate>
@@ -470,9 +463,7 @@ export default function BusinessBySlug({ biz }) {
               allowReviews={biz.allow_reviews === true}
             />
 
-            <BlurGate isVisible={isLoggedIn}>
-              <BusinessServices biz={biz} />
-            </BlurGate>
+            <BusinessServices biz={biz} />
 
             <BlurGate isVisible={isLoggedIn}>
               <BusinessContact biz={biz} />
