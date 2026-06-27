@@ -101,9 +101,6 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
       
 
       if (document) formData.append("document", document);
-
-
-      console.log("📤 SENDING CLAIM...");
     
       const res = await apiClient.post(
         `/businesses/${businessId}/claims/start`,
@@ -113,17 +110,12 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
           headers: { "Content-Type": "multipart/form-data" },
         }
       );
-    
-      console.log("✅ RESPONSE:", res.data);
-    
+        
       setClaimToken(res.data.claim_token);
       setMsg(t.success);
       setStep(2);
     
     } catch (err) {
-      console.error("❌ CLAIM ERROR FULL:", err);
-      console.error("❌ CLAIM ERROR RESPONSE:", err.response);
-      console.error("❌ CLAIM ERROR DATA:", err.response?.data);
     
       setMsg(err.response?.data?.error || t.error);
     } finally {
@@ -139,6 +131,7 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
           {["en", "fr", "fa"].map((l) => (
             <button
               key={l}
+              type="button"
               onClick={() => setLang(l)}
               className={`text-xs px-2 py-1 rounded ${
                 lang === l
