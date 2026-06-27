@@ -11,7 +11,6 @@ import BusinessServices from "../../components/business/BusinessServices";
 import BusinessLocation from "../../components/business/BusinessLocation";
 import BusinessGallery from "../../components/business/BusinessGallery";
 import BusinessReviews from "../../components/business/BusinessReviews";
-import BlurGate from "../../components/ui/BlurGate";
 import BusinessClaim from "../../components/business/BusinessClaim";
 import BusinessContact from "../../components/business/BusinessContact";
 import BusinessStickyCTA from "../../components/business/BusinessStickyCTA";
@@ -453,9 +452,7 @@ export default function BusinessBySlug({ biz }) {
 
             <BusinessInformation biz={biz} />
 
-            <BlurGate isVisible={isLoggedIn}>
-              <BusinessGallery biz={biz} />
-            </BlurGate>
+            <BusinessGallery biz={biz} />
 
             <BusinessReviews
               businessId={biz.id}
@@ -465,13 +462,12 @@ export default function BusinessBySlug({ biz }) {
 
             <BusinessServices biz={biz} />
 
-            <BlurGate isVisible={isLoggedIn}>
-              <BusinessContact biz={biz} />
-            </BlurGate>
+            <BusinessContact
+              biz={biz}
+              phoneWithCode={phoneWithCode}
+            />
 
-            <BlurGate isVisible={isLoggedIn}>
-              <BusinessLocation biz={biz} />
-            </BlurGate>
+            <BusinessLocation biz={biz} />
 
             <BusinessClaim
               biz={biz}
