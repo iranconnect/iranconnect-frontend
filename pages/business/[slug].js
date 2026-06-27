@@ -16,10 +16,8 @@ import BusinessContact from "../../components/business/BusinessContact";
 import BusinessStickyCTA from "../../components/business/BusinessStickyCTA";
 import BusinessInformation from "../../components/business/BusinessInformation";
 
-import { X } from "lucide-react";
 import { getCountryCallingCode } from "libphonenumber-js";
 
-import apiClient from "../../utils/apiClient";
 import { useAuthSession } from "../../hooks/useAuthSession";
 
 /* ======================================================
@@ -231,36 +229,21 @@ function buildOpeningHoursSchema(biz) {
 /* ======================================================
    Page
 ====================================================== */
-export default function BusinessBySlug({ biz }) {
+export default function BusinessBySlug({
+  biz,
+  isStaging,
+}) {
 
   const footerRef = useRef(null); 
   const { status, role } = useAuthSession();
 
 
-  const [showImageModal, setShowImageModal] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false); 
   const [showCTA, setShowCTA] = useState(true); 
 
   const isAuthReady = status !== "checking";
   const isLoggedIn = status === "authenticated";
   const isAdminView = role === "admin" || role === "superadmin";
-
-  const apiBase =
-    process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
-  const cdnBase =
-    process.env.NEXT_PUBLIC_CDN_BASE || "http://localhost:5000";
-
-  const original = biz.logo_url
-    ? biz.logo_url.startsWith("http")
-      ? biz.logo_url
-      : `${apiBase.replace("/api", "")}${biz.logo_url}`
-    : "/logo-light.png";
-
-  let imageSrc = original;
-  if (original.startsWith("http")) {
-    const filename = original.split("/").pop().split("?")[0];
-    imageSrc = `${cdnBase}/cdn/${filename}?url=${encodeURIComponent(original)}`;
-  }
 
   const coverImage = biz.cover_image_url || biz.logo_url || null;
 
@@ -276,10 +259,9 @@ export default function BusinessBySlug({ biz }) {
 
   const metaDescription = buildMetaDescription(biz);
   const canonicalUrl = `https://iranconnect.org/business/${biz.slug}`;
-  const isStaging = process.env.NEXT_PUBLIC_ENV !== "production";
 
   const shouldNoIndex =
-    isStaging || (isAdminView && biz?.is_public === false);
+    isStaging || biz?.admin_preview === true;
 
   useEffect(() => {
     function handleScroll() {
@@ -437,9 +419,9 @@ export default function BusinessBySlug({ biz }) {
            }}
          >
           <div className="w-full max-w-5xl space-y-8">
-            {isAdminView && biz?.is_public === false && (
+            {biz?.admin_preview === true && (
               <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
-                Admin preview: this business is currently private/unpublished and is visible here because you are logged in as an admin.
+                Admin preview: this business is currently private or unpublished and is visible here because you are logged in as an admin.
               </div>
             )}
 
@@ -508,31 +490,6 @@ export default function BusinessBySlug({ biz }) {
         <div ref={footerRef}>
           <Footer />
         </div>
-
-        {showImageModal && (
-          <div
-            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4"
-            onClick={() => setShowImageModal(false)}
-          >
-            <button
-              type="button"
-              aria-label="Close image"
-              className="absolute top-4 right-4 text-white"
-              onClick={() => setShowImageModal(false)}
-            >
-              <X size={28} />
-            </button>
-
-            <img
-              src={imageSrc}
-              alt={biz.name}
-              loading="lazy"
-              decoding="async"
-              className="max-h-[90vh] max-w-[90vw] rounded-xl"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        )}
       </div>
     </>
   );
