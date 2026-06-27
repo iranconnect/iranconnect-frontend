@@ -1,8 +1,40 @@
 //frontend/components/business/BusinessLocation.jsx
-export default function BusinessLocation({ biz }) {
-  if (!biz) return null;
+function normalizeExternalUrl(value) {
+  if (!value) return null;
 
-  const isLoggedIn = biz.viewer_is_authenticated === true;
+  const rawValue = String(value).trim();
+
+  if (!rawValue) return null;
+
+  const candidate = /^https?:\/\//i.test(rawValue)
+    ? rawValue
+    : `https://${rawValue}`;
+
+  try {
+    const parsed = new URL(candidate);
+
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      return null;
+    }
+
+    return parsed.href;
+  } catch {
+    return null;
+  }
+}
+
+export default function BusinessLocation({ biz }) {
+  if (!biz) {
+    return null;
+  }
+
+  const businessMapUrl = normalizeExternalUrl(
+    biz.location_map_url
+  );
+
+  const baseLocationMapUrl = normalizeExternalUrl(
+    biz.base_location_map_url
+  );
 
   const hasAddress = Boolean(
     biz.address ||
@@ -10,13 +42,6 @@ export default function BusinessLocation({ biz }) {
       biz.city ||
       biz.country
   );
-
-  const hasBusinessMap = Boolean(biz.location_map_url);
-  const hasBaseMap = Boolean(biz.base_location_map_url);
-
-  if (!hasAddress && !hasBusinessMap && !hasBaseMap) {
-    return null;
-  }
 
   const addressParts = [
     biz.address,
@@ -28,20 +53,20 @@ export default function BusinessLocation({ biz }) {
 
   const fullAddress = addressParts.join(", ");
 
-  const businessLocationTitle =
-    biz.service_mode === "at_home"
-      ? "Registered business address"
-      : "Business location";
+  const hasBusinessLocation =
+    Boolean(fullAddress) || Boolean(businessMapUrl);
 
-  function getAddressEmbedUrl() {
-    if (!fullAddress) return null;
+  const hasBaseLocation = Boolean(baseLocationMapUrl);
 
-    return `https://www.google.com/maps?q=${encodeURIComponent(
-      fullAddress
-    )}&output=embed`;
+  if (!hasBusinessLocation && !hasBaseLocation) {
+    return null;
   }
 
-  const addressEmbedUrl = getAddressEmbedUrl();
+  const addressEmbedUrl = fullAddress
+    ? `https://www.google.com/maps?q=${encodeURIComponent(
+        fullAddress
+      )}&output=embed`
+    : null;
 
   return (
     <section className="card mt-6">
@@ -50,35 +75,36 @@ export default function BusinessLocation({ biz }) {
       </h2>
 
       <div className="space-y-6">
-        {(hasAddress || hasBusinessMap) && (
+        {hasBusinessLocation && (
           <div>
             <h3 className="mb-2 text-sm font-semibold">
-              {businessLocationTitle}
+              Business address
             </h3>
 
             {fullAddress && (
               <p className="flex items-start gap-2 text-sm text-justify-pro">
-                <span>📍</span>
+                <span aria-hidden="true">📍</span>
                 <span>{fullAddress}</span>
               </p>
             )}
 
-            {hasBusinessMap && (
+            {businessMapUrl && (
               <a
-                href={biz.location_map_url}
+                href={businessMapUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-turquoise hover:underline"
               >
-                🗺 Open business location in Google Maps
+                <span aria-hidden="true">🗺</span>
+                Open business location in Google Maps
               </a>
             )}
 
-            {isLoggedIn && addressEmbedUrl && (
+            {addressEmbedUrl && (
               <div className="mt-4 overflow-hidden rounded-xl border border-[var(--border)]">
                 <iframe
                   src={addressEmbedUrl}
-                  title={`${biz.name} business location`}
+                  title={`${biz.name} business location map`}
                   width="100%"
                   height="300"
                   style={{ border: 0 }}
@@ -89,24 +115,25 @@ export default function BusinessLocation({ biz }) {
           </div>
         )}
 
-        {hasBaseMap && (
+        {hasBaseLocation && (
           <div>
             <h3 className="mb-2 text-sm font-semibold">
               Service base location
             </h3>
 
             <p className="text-sm text-justify-pro">
-              📍 This location is used as the service base for customer-area
-              coverage.
+              📍 This location is used as the service base for
+              customer-area coverage.
             </p>
 
             <a
-              href={biz.base_location_map_url}
+              href={baseLocationMapUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-turquoise hover:underline"
             >
-              🗺 Open service base location in Google Maps
+              <span aria-hidden="true">🗺</span>
+              Open service base location in Google Maps
             </a>
           </div>
         )}
