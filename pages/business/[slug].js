@@ -235,7 +235,7 @@ function buildOpeningHoursSchema(biz) {
 /* ======================================================
    Page
 ====================================================== */
-export default function BusinessBySlug({ biz, isStaging }) {
+export default function BusinessBySlug({ biz }) {
 
   const footerRef = useRef(null); 
   const { status, role } = useAuthSession();
