@@ -479,10 +479,10 @@ export default function BusinessBySlug({ biz }) {
         
         {/* 🔥 Sticky CTA (Mobile Only) */}
         <BusinessStickyCTA
-          biz={biz}
-          isLoggedIn={isLoggedIn}
-          isVisible={showCTA}
-        />
+           biz={biz}
+           phoneWithCode={phoneWithCode}
+           isVisible={showCTA}
+         />
 
         {showScrollTop && (
           <button
