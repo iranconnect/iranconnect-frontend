@@ -224,6 +224,8 @@ export default function BusinessReviews({
     userReview?.status
   );
 
+  const hasApprovedReviews = reviews.length > 0;
+
   if (loading) {
     return (
       <section className="card mt-6">
@@ -244,19 +246,21 @@ export default function BusinessReviews({
         Reviews
       </h2>
 
-      <div className="mb-7 flex flex-wrap items-center gap-3 border-b border-[var(--border)] pb-6">
-        <div className="text-3xl font-bold">
-          {averageRating.toFixed(1)}
+      {hasApprovedReviews && (
+        <div className="mb-7 flex flex-wrap items-center gap-3 border-b border-[var(--border)] pb-6">
+          <div className="text-3xl font-bold">
+            {averageRating.toFixed(1)}
+          </div>
+      
+          <ReviewStars rating={Math.round(averageRating)} />
+      
+          <div className="text-sm text-justify-pro">
+            {reviews.length === 1
+              ? "(1 approved review)"
+              : `(${reviews.length} approved reviews)`}
+          </div>
         </div>
-
-        <ReviewStars rating={Math.round(averageRating)} />
-
-        <div className="text-sm text-justify-pro">
-          {reviews.length === 1
-            ? "(1 approved review)"
-            : `(${reviews.length} approved reviews)`}
-        </div>
-      </div>
+      )}
 
       {allowReviews && isLoggedIn && (
         <div className="mb-8 rounded-xl border border-[var(--border)] p-4">
