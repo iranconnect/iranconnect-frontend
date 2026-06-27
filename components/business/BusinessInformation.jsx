@@ -8,14 +8,27 @@ function formatBusinessType(value) {
     online: "Online Business",
   };
 
-  return labels[value] || value || null;
+  return labels[value] || null;
 }
 
 export default function BusinessInformation({ biz }) {
+  const businessType = formatBusinessType(
+    biz.business_type
+  );
+
+  const yearEstablished = Number(
+    biz.year_established
+  );
+
+  const hasValidYear =
+    Number.isInteger(yearEstablished) &&
+    yearEstablished >= 1000 &&
+    yearEstablished <= new Date().getFullYear();
+
   const hasContent =
-    biz.legal_name ||
-    biz.business_type ||
-    biz.year_established;
+    Boolean(biz.legal_name) ||
+    Boolean(businessType) ||
+    hasValidYear;
 
   if (!hasContent) {
     return null;
@@ -27,36 +40,40 @@ export default function BusinessInformation({ biz }) {
         Business Information
       </h2>
 
-      <div className="space-y-3 text-sm">
+      <dl className="space-y-3 text-sm">
         {biz.legal_name && (
           <div>
-            <span className="font-semibold">
+            <dt className="inline font-semibold">
               Legal business name:
-            </span>{" "}
-            <span>{biz.legal_name}</span>
+            </dt>{" "}
+            <dd className="inline">
+              {biz.legal_name}
+            </dd>
           </div>
         )}
 
-        {biz.business_type && (
+        {businessType && (
           <div>
-            <span className="font-semibold">
+            <dt className="inline font-semibold">
               Business type:
-            </span>{" "}
-            <span>
-              {formatBusinessType(biz.business_type)}
-            </span>
+            </dt>{" "}
+            <dd className="inline">
+              {businessType}
+            </dd>
           </div>
         )}
 
-        {biz.year_established && (
+        {hasValidYear && (
           <div>
-            <span className="font-semibold">
+            <dt className="inline font-semibold">
               Established:
-            </span>{" "}
-            <span>{biz.year_established}</span>
+            </dt>{" "}
+            <dd className="inline">
+              {yearEstablished}
+            </dd>
           </div>
         )}
-      </div>
+      </dl>
     </section>
   );
 }
