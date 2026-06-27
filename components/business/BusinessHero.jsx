@@ -1,64 +1,96 @@
 //frontend/components/business/BusinessHero.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Phone, Globe, MessageCircle } from "lucide-react";
 
-export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
-    const [theme, setTheme] = useState("light");
+function toPlainText(value) {
+  if (!value) return "";
 
-    useEffect(() => {
-      const syncTheme = () => {
-        const currentTheme =
-          document.documentElement.getAttribute("data-theme") || "light";
-  
-        setTheme(currentTheme);
-      };
-  
-      syncTheme();
-  
-      const observer = new MutationObserver(syncTheme);
-  
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ["data-theme"],
-      });
-  
-      return () => observer.disconnect();
-    }, []);
-  
-    const fallbackLogo =
-      theme === "dark"
-        ? "/logo-dark.png"
-        : "/logo-light.png";
+  return String(value)
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-    const fallbackCover =
-      "/images/iranconnect-default-business-cover.webp";
-  
+export default function BusinessHero({ biz, phoneWithCode }) {
+  const [theme, setTheme] = useState("light");
+
+  useEffect(() => {
+    const syncTheme = () => {
+      const currentTheme =
+        document.documentElement.getAttribute("data-theme") || "light";
+
+      setTheme(currentTheme);
+    };
+
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const fallbackLogo =
+    theme === "dark"
+      ? "/logo-dark.png"
+      : "/logo-light.png";
+
+  const fallbackCover =
+    "/images/iranconnect-default-business-cover.webp";
+
   const coverImage =
-  biz.cover_image_url || fallbackCover;
+    biz.cover_image_url || fallbackCover;
+
+  const subcategoryLabel = useMemo(() => {
+    const relationSubcategories = Array.isArray(biz.subcategories)
+      ? biz.subcategories
+          .map((item) => item?.name)
+          .filter(Boolean)
+          .slice(0, 2)
+      : [];
+
+    if (relationSubcategories.length > 0) {
+      return relationSubcategories.join(", ");
+    }
+
+    return biz.sub_category || null;
+  }, [biz.subcategories, biz.sub_category]);
+
+  const shortDescription = toPlainText(
+    biz.short_description
+  );
+
+  const reviewCount = Number(biz.review_count || 0);
+  const averageRating = Number(biz.avg_rating);
+
+  const hasApprovedRating =
+    reviewCount > 0 &&
+    Number.isFinite(averageRating) &&
+    averageRating > 0;
+
+  const callHref = phoneWithCode
+    ? `tel:${phoneWithCode.replace(/\s+/g, "")}`
+    : null;
 
   return (
-      <div className="card mt-6">
-      
-      
-      {/* 🔵 Cover / reserved hero space */}
+    <section className="card mt-6">
       <div className="h-48 md:h-64 w-full relative overflow-hidden rounded">
-        {coverImage && (
-          <img
-            src={coverImage}
-            alt={`${biz.name} cover`}
-            className="w-full h-full object-cover"
-            onError={(event) => {
-              event.currentTarget.onerror = null;
-              event.currentTarget.src = fallbackCover;
-            }}
-          />
-        )}
+        <img
+          src={coverImage}
+          alt={`Cover image for ${biz.name}`}
+          className="w-full h-full object-cover"
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = fallbackCover;
+          }}
+        />
       </div>
 
-      {/* 🔵 Content */}
       <div className="pb-6 md:pb-8 pt-20 md:pt-24 relative space-y-4">
-        
-        {/* 🔵 Logo floating */}
         <div className="absolute -top-14 left-6 md:left-8">
           <img
             src={biz.logo_url || fallbackLogo}
@@ -71,12 +103,17 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
           />
         </div>
 
-        {/* 🔵 Title */}
         <div className="space-y-2 max-w-full">
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
             {biz.name}
+
             {biz.owner_verified && (
-              <span className="ml-2 text-turquoise text-xl md:text-2xl align-middle">
+              <span
+                className="ml-2 text-turquoise text-xl md:text-2xl align-middle"
+                title="Verified business owner"
+                aria-label="Verified business owner"
+                role="img"
+              >
                 🎖️
               </span>
             )}
@@ -85,78 +122,68 @@ export default function BusinessHero({ biz, phoneWithCode, isLoggedIn }) {
           <p className="text-sm text-justify-pro">
             {[
               biz.category,
-              biz.sub_category,
-              [biz.city, biz.country].filter(Boolean).join(", "),
+              subcategoryLabel,
+              [biz.city, biz.country]
+                .filter(Boolean)
+                .join(", "),
             ]
               .filter(Boolean)
               .join(" • ")}
           </p>
 
-          {biz.short_description && (
-            <p className="text-sm text-justify-pro">{biz.short_description}</p>
+          {shortDescription && (
+            <p className="text-sm text-justify-pro">
+              {shortDescription}
+            </p>
           )}
-          
-          {/* 🔵 Rating */}
-          <p className="text-lg font-medium">
-            ⭐ {biz.avg_rating ?? "—"}{" "}
-            {typeof biz.review_count === "number" &&
-              `(${biz.review_count} reviews)`}
-          </p>
-        </div>
 
-        {/* 🔵 CTA Buttons */}
-        <div className="mt-6 flex flex-wrap gap-3">
-
-          {isLoggedIn ? (
-            <>
-              {phoneWithCode && (
-                <a
-                  href={`tel:${biz.phone}`}
-                  className="btn-primary !w-auto flex items-center gap-2 text-sm px-4 py-2"
-                >
-                  <Phone size={16} />
-                  Call
-                </a>
-              )}
-        
-              
-        
-              {biz.whatsapp_number && (
-                <a
-                  href={`https://wa.me/${biz.whatsapp_number.replace(/\D/g, "")}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-primary !w-auto flex items-center gap-2 text-sm px-4 py-2"
-                >
-                  <MessageCircle size={16} />
-                  WhatsApp
-                </a>
-              )}
-
-              {biz.website && (
-                <a
-                  href={biz.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-ghost !w-auto flex items-center gap-2 text-sm px-4 py-2"
-                >
-                  <Globe size={16} />
-                  Website
-                </a>
-              )}
-            </>
-          ) : (
-            <button
-              onClick={() =>
-                window.location.href = `/auth/login?redirect=/business/${biz.slug}`
-              }
-              className="w-full md:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-[#3fd0c9] to-[#2aa7a1] text-white font-medium hover:opacity-90"
-            >
-              Login to see full details and reviews
-            </button>
+          {hasApprovedRating && (
+            <p className="text-lg font-medium">
+              ⭐ {averageRating.toFixed(1)}{" "}
+              ({reviewCount}{" "}
+              {reviewCount === 1 ? "review" : "reviews"})
+            </p>
           )}
         </div>
+
+        {(callHref || biz.whatsapp_number || biz.website) && (
+          <div className="mt-6 flex flex-wrap gap-3">
+            {callHref && (
+              <a
+                href={callHref}
+                className="btn-primary !w-auto flex items-center gap-2 text-sm px-4 py-2"
+              >
+                <Phone size={16} />
+                Call
+              </a>
+            )}
+
+            {biz.whatsapp_number && (
+              <a
+                href={`https://wa.me/${biz.whatsapp_number.replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-primary !w-auto flex items-center gap-2 text-sm px-4 py-2"
+              >
+                <MessageCircle size={16} />
+                WhatsApp
+              </a>
+            )}
+
+            {biz.website && (
+              <a
+                href={biz.website}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-ghost !w-auto flex items-center gap-2 text-sm px-4 py-2"
+              >
+                <Globe size={16} />
+                Website
+              </a>
+            )}
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 }
