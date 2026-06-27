@@ -18,28 +18,57 @@ function cleanWhatsApp(value) {
 function normalizeExternalUrl(value) {
   if (!value) return null;
 
-  const url = String(value).trim();
+  const rawValue = String(value).trim();
 
-  if (!url) return null;
+  if (!rawValue) return null;
 
-  return /^https?:\/\//i.test(url)
-    ? url
-    : `https://${url}`;
+  const candidate = /^https?:\/\//i.test(rawValue)
+    ? rawValue
+    : `https://${rawValue}`;
+
+  try {
+    const parsed = new URL(candidate);
+
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      return null;
+    }
+
+    return parsed.href;
+  } catch {
+    return null;
+  }
 }
 
-export default function BusinessContact({ biz }) {
-  const phoneVisible =
-    Boolean(biz.phone) && biz.show_phone === true;
+export default function BusinessContact({
+  biz,
+  phoneWithCode,
+}) {
+  const phoneDisplay = phoneWithCode || biz.phone || null;
 
-  const emailVisible =
-    Boolean(biz.email) && biz.show_email === true;
+  const phoneHref = phoneDisplay
+    ? `tel:${String(phoneDisplay).replace(/\s+/g, "")}`
+    : null;
+
+  const email = biz.email
+    ? String(biz.email).trim()
+    : null;
 
   const websiteUrl = normalizeExternalUrl(biz.website);
-  const instagramUrl = normalizeExternalUrl(biz.instagram_url);
-  const facebookUrl = normalizeExternalUrl(biz.facebook_url);
-  const linkedinUrl = normalizeExternalUrl(biz.linkedin_url);
-  const twitterUrl = normalizeExternalUrl(biz.twitter_url);
-  const telegramUrl = normalizeExternalUrl(biz.telegram_url);
+  const instagramUrl = normalizeExternalUrl(
+    biz.instagram_url
+  );
+  const facebookUrl = normalizeExternalUrl(
+    biz.facebook_url
+  );
+  const linkedinUrl = normalizeExternalUrl(
+    biz.linkedin_url
+  );
+  const twitterUrl = normalizeExternalUrl(
+    biz.twitter_url
+  );
+  const telegramUrl = normalizeExternalUrl(
+    biz.telegram_url
+  );
 
   const whatsappNumber = cleanWhatsApp(
     biz.whatsapp_number
@@ -55,9 +84,9 @@ export default function BusinessContact({ biz }) {
   );
 
   const hasAnyContact =
-    phoneVisible ||
-    emailVisible ||
-    websiteUrl ||
+    Boolean(phoneHref) ||
+    Boolean(email) ||
+    Boolean(websiteUrl) ||
     hasSocialLinks;
 
   if (!hasAnyContact) {
@@ -71,34 +100,34 @@ export default function BusinessContact({ biz }) {
       </h2>
 
       <div className="space-y-4 text-sm">
-        {phoneVisible && (
+        {phoneHref && (
           <div>
             <h3 className="mb-1 font-semibold">
               Phone
             </h3>
 
             <a
-              href={`tel:${biz.phone}`}
+              href={phoneHref}
               className="inline-flex items-center gap-2 text-turquoise hover:underline"
             >
               <Phone size={17} />
-              {biz.phone}
+              {phoneDisplay}
             </a>
           </div>
         )}
 
-        {emailVisible && (
+        {email && (
           <div>
             <h3 className="mb-1 font-semibold">
               Email
             </h3>
 
             <a
-              href={`mailto:${biz.email}`}
-              className="inline-flex items-center gap-2 text-turquoise hover:underline break-all"
+              href={`mailto:${email}`}
+              className="inline-flex items-center gap-2 break-all text-turquoise hover:underline"
             >
               <Mail size={17} />
-              {biz.email}
+              {email}
             </a>
           </div>
         )}
@@ -113,7 +142,7 @@ export default function BusinessContact({ biz }) {
               href={websiteUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-turquoise hover:underline break-all"
+              className="inline-flex items-center gap-2 break-all text-turquoise hover:underline"
             >
               <Globe size={17} />
               Visit website
