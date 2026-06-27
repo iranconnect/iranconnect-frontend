@@ -1,21 +1,35 @@
 //frontend/components/business/BusinessStickyCTA.jsx
 import { Phone, MessageCircle } from "lucide-react";
 
-export default function BusinessStickyCTA({ biz, isLoggedIn, isVisible }) {
-  
-  if (!biz) return null;
+function cleanWhatsApp(value) {
+  return String(value || "").replace(/\D/g, "");
+}
 
-  // ✅ فقط برای کاربران لاگین شده
-  if (!isLoggedIn) return null;
+export default function BusinessStickyCTA({
+  biz,
+  phoneWithCode,
+  isVisible,
+}) {
+  if (!biz) {
+    return null;
+  }
+
+  const phoneDisplay = phoneWithCode || biz.phone || null;
+
+  const phoneHref = phoneDisplay
+    ? `tel:${String(phoneDisplay).replace(/\s+/g, "")}`
+    : null;
+
+  const whatsappNumber = cleanWhatsApp(
+    biz.whatsapp_number
+  );
 
   const hasCTA =
-    (biz.phone && biz.show_phone) ||
-    biz.whatsapp_number;
+    Boolean(phoneHref) ||
+    Boolean(whatsappNumber);
 
-  if (!hasCTA) return null;
-
-  function cleanWhatsApp(num) {
-    return num?.replace(/\D/g, "");
+  if (!hasCTA) {
+    return null;
   }
 
   return (
@@ -24,27 +38,30 @@ export default function BusinessStickyCTA({ biz, isLoggedIn, isVisible }) {
       className={`
         fixed bottom-0 left-0 right-0 z-[9999] md:hidden
         transition-all duration-300
-        ${isVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"}
+        ${
+          isVisible
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-full opacity-0"
+        }
       `}
     >
-      <div className="shadow-lg px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex gap-3">
-    
-        {biz.phone && biz.show_phone && (
+      <div className="flex gap-3 px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] shadow-lg">
+        {phoneHref && (
           <a
-            href={`tel:${biz.phone}`}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-medium transition"
+            href={phoneHref}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-teal-500 py-3 font-medium text-white transition hover:bg-teal-600"
           >
             <Phone size={18} />
             Call
           </a>
         )}
-    
-        {biz.whatsapp_number && (
+
+        {whatsappNumber && (
           <a
-            href={`https://wa.me/${cleanWhatsApp(biz.whatsapp_number)}`}
+            href={`https://wa.me/${whatsappNumber}`}
             target="_blank"
-            rel="noreferrer"
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-medium transition"
+            rel="noopener noreferrer"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-teal-500 py-3 font-medium text-white transition hover:bg-teal-600"
           >
             <MessageCircle size={18} />
             WhatsApp
