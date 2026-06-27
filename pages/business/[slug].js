@@ -450,7 +450,6 @@ export default function BusinessBySlug({ biz }) {
             <BusinessHero
               biz={biz}
               phoneWithCode={phoneWithCode}
-              isLoggedIn={isLoggedIn}
             />
 
             <BusinessAbout biz={biz} />
