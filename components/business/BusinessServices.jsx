@@ -19,6 +19,15 @@ const DAY_LABELS = {
   sunday: "Sun",
 };
 
+function toPlainText(value) {
+  if (!value) return "";
+
+  return String(value)
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function getTodayKey() {
   const todayIndex = new Date().getDay();
 
@@ -77,7 +86,9 @@ function hasRealHoursData(hours) {
   }
 
   return Object.values(hours).some((day) => {
-    if (!day) return false;
+    if (!day) {
+      return false;
+    }
 
     if (Array.isArray(day)) {
       return day.length > 0;
@@ -97,17 +108,17 @@ function hasRealHoursData(hours) {
 
 function formatDayHours(dayValue) {
   if (!dayValue) {
-    return "—";
+    return "Not specified";
   }
 
   if (Array.isArray(dayValue)) {
     return dayValue.length
       ? dayValue.join(" | ")
-      : "—";
+      : "Not specified";
   }
 
   if (typeof dayValue === "object") {
-    if (dayValue.closed) {
+    if (dayValue.closed === true) {
       return "Closed";
     }
 
@@ -116,7 +127,7 @@ function formatDayHours(dayValue) {
     }
   }
 
-  return "—";
+  return "Not specified";
 }
 
 function DayRow({ dayKey, value }) {
@@ -141,7 +152,38 @@ function DayRow({ dayKey, value }) {
   );
 }
 
+function TagList({ items }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span
+          key={item.slug || item.id || item.name}
+          className="tag"
+        >
+          {item.name}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function BusinessServices({ biz }) {
+  const subcategories = Array.isArray(biz.subcategories)
+    ? biz.subcategories.filter((item) => item?.name)
+    : [];
+
+  const services = Array.isArray(biz.services)
+    ? biz.services.filter((item) => item?.name)
+    : [];
+
+  const tags = Array.isArray(biz.tags)
+    ? biz.tags.filter((item) => item?.name)
+    : [];
+
   const serviceMode = formatServiceMode(
     biz.service_mode
   );
@@ -154,12 +196,35 @@ export default function BusinessServices({ biz }) {
     biz.availability_hours
   );
 
+  const availabilityNote = toPlainText(
+    biz.availability_note
+  );
+
+  const serviceRadius = Number(
+    biz.service_radius_km
+  );
+
+  const hasServiceRadius =
+    Number.isFinite(serviceRadius) &&
+    serviceRadius >= 1 &&
+    ["at_home", "hybrid"].includes(
+      biz.service_mode
+    );
+
+  const showHours =
+    ["business_hours", "appointment_only"].includes(
+      biz.availability_type
+    ) && hasHours;
+
   const hasContent =
-    serviceMode ||
-    availabilityLabel ||
-    hasHours ||
-    biz.availability_note ||
-    biz.service_radius_km;
+    subcategories.length > 0 ||
+    services.length > 0 ||
+    tags.length > 0 ||
+    Boolean(serviceMode) ||
+    Boolean(availabilityLabel) ||
+    showHours ||
+    Boolean(availabilityNote) ||
+    hasServiceRadius;
 
   if (!hasContent) {
     return null;
@@ -167,11 +232,41 @@ export default function BusinessServices({ biz }) {
 
   return (
     <section className="card">
-      <h2 className="text-xl font-semibold mb-4">
+      <h2 className="text-xl font-semibold mb-5">
         Services & Availability
       </h2>
 
-      <div className="space-y-5 text-sm text-justify-pro">
+      <div className="space-y-6 text-sm text-justify-pro">
+        {subcategories.length > 0 && (
+          <div>
+            <h3 className="mb-3 font-semibold">
+              Specialties
+            </h3>
+
+            <TagList items={subcategories} />
+          </div>
+        )}
+
+        {services.length > 0 && (
+          <div>
+            <h3 className="mb-3 font-semibold">
+              Services
+            </h3>
+
+            <TagList items={services} />
+          </div>
+        )}
+
+        {tags.length > 0 && (
+          <div>
+            <h3 className="mb-3 font-semibold">
+              Additional details
+            </h3>
+
+            <TagList items={tags} />
+          </div>
+        )}
+
         {serviceMode && (
           <div>
             <h3 className="mb-1 font-semibold">
@@ -206,61 +301,41 @@ export default function BusinessServices({ biz }) {
           </div>
         )}
 
-        {biz.availability_type === "business_hours" &&
-          hasHours && (
-            <div>
-              <h3 className="mb-3 font-semibold">
-                Opening hours
-              </h3>
+        {showHours && (
+          <div>
+            <h3 className="mb-3 font-semibold">
+              {biz.availability_type === "appointment_only"
+                ? "Suggested appointment hours"
+                : "Opening hours"}
+            </h3>
 
-              <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
-                {DAYS_ORDER.map((dayKey) => (
-                  <DayRow
-                    key={dayKey}
-                    dayKey={dayKey}
-                    value={formatDayHours(
-                      biz.availability_hours?.[dayKey]
-                    )}
-                  />
-                ))}
-              </div>
+            <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
+              {DAYS_ORDER.map((dayKey) => (
+                <DayRow
+                  key={dayKey}
+                  dayKey={dayKey}
+                  value={formatDayHours(
+                    biz.availability_hours?.[dayKey]
+                  )}
+                />
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-        {biz.availability_type === "appointment_only" &&
-          hasHours && (
-            <div>
-              <h3 className="mb-3 font-semibold">
-                Suggested appointment hours
-              </h3>
-
-              <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
-                {DAYS_ORDER.map((dayKey) => (
-                  <DayRow
-                    key={dayKey}
-                    dayKey={dayKey}
-                    value={formatDayHours(
-                      biz.availability_hours?.[dayKey]
-                    )}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-        {biz.availability_note && (
+        {availabilityNote && (
           <div>
             <h3 className="mb-1 font-semibold">
               Additional availability information
             </h3>
 
             <p className="whitespace-pre-line">
-              📝 {biz.availability_note}
+              📝 {availabilityNote}
             </p>
           </div>
         )}
 
-        {biz.service_radius_km && (
+        {hasServiceRadius && (
           <div>
             <h3 className="mb-1 font-semibold">
               Service radius
@@ -268,7 +343,7 @@ export default function BusinessServices({ biz }) {
 
             <p>
               📍 This business serves customers within{" "}
-              {biz.service_radius_km} km of its service base.
+              {serviceRadius} km of its service base.
             </p>
           </div>
         )}
