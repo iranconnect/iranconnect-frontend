@@ -88,13 +88,6 @@ export async function getServerSideProps(context) {
         isStaging,
       },
     }; 
-
-    return {
-      props: {
-        biz,
-        isStaging,
-      },
-    };
   } catch {
     return { notFound: true };
   }
@@ -242,7 +235,7 @@ function buildOpeningHoursSchema(biz) {
 /* ======================================================
    Page
 ====================================================== */
-export default function BusinessBySlug({ biz }) {
+export default function BusinessBySlug({ biz, isStaging }) {
 
   const footerRef = useRef(null); 
   const { status, role } = useAuthSession();
