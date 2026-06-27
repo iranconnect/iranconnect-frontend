@@ -6,53 +6,69 @@ export default function BusinessClaim({
   isLoggedIn,
   isAdminView,
 }) {
-  // 🟢 اگر owner verified
+  if (!biz) {
+    return null;
+  }
+
+  if (isAdminView && biz.is_public === false) {
+    return null;
+  }
+
   if (biz.owner_verified) {
     return (
-      <div className="card mt-10 p-6 text-center space-y-3">
-        <div className="text-3xl">🎖️</div>
-  
-        <h3 className="text-lg font-semibold text-turquoise">
+      <section className="card mt-10 p-6 text-center space-y-3">
+        <div
+          className="text-3xl"
+          role="img"
+          aria-label="Verified business owner"
+        >
+          🎖️
+        </div>
+
+        <h2 className="text-lg font-semibold text-turquoise">
           Verified Business
-        </h3>
-  
-        <p className="text-sm text-[var(--text)] max-w-xl mx-auto">
+        </h2>
+
+        <p className="mx-auto max-w-xl text-sm text-[var(--text)]">
           This business has been verified by its owner.
-          If you are the rightful owner of this business and believe this
-          verification is incorrect, you can contact IranConnect support
-          for further assistance.
+          If you are the rightful owner and believe this verification
+          is incorrect, please contact IranConnect support.
         </p>
-  
+
         <a
           href="/contact"
-          className="inline-block mt-2 text-sm text-turquoise hover:underline"
+          className="mt-2 inline-block text-sm text-turquoise hover:underline"
         >
           Contact Support
         </a>
-      </div>
+      </section>
     );
   }
 
-  // ❌ اگر لاگین نیست
   if (!isLoggedIn) {
     return (
-      <div className="mt-10 pt-0 text-center border-[var(--border)]">
+      <section className="mt-10 border-[var(--border)] pt-0 text-center">
         <button
-          onClick={() =>
-            window.location.href = `/auth/login?redirect=/business/${biz.slug}`
-          }
+          type="button"
+          onClick={() => {
+            window.location.href =
+              `/auth/login?redirect=/business/${biz.slug}`;
+          }}
           className="btn-primary inline-block px-6 py-3"
         >
-          Claim this business (Login required)
+          Claim this business
         </button>
-      </div>
+
+        <p className="mt-2 text-sm opacity-70">
+          Sign in to start a business claim.
+        </p>
+      </section>
     );
   }
 
-  // ✅ اگر لاگین کرده
   return (
-    <div className="mt-10 pt0 text-center border-[var(--border)]">
+    <section className="mt-10 border-[var(--border)] pt-0 text-center">
       <ClaimBusinessWidget businessId={biz.id} />
-    </div>
+    </section>
   );
 }
