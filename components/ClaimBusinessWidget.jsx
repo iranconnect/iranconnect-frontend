@@ -27,9 +27,9 @@ export default function ClaimBusinessWidget({ businessId }) {
       phone: "Business phone (with country code)",
       role: "Your role",
       descLabel: "Additional information",
-      file: "Proof of ownership (PDF, JPG, PNG)",
-      fileHelp: `Please upload an official document that proves you are the legal owner of this business.
-This may include registration certificates, incorporation documents, or other legal records clearly showing ownership.`,
+      file: "Proof of ownership (required — PDF, JPG, PNG, max 2 MB)",
+      fileHelp: `Please upload an official document proving that you are the legal owner of this business.
+      Accepted formats: PDF, JPG, PNG. Maximum file size: 2 MB.`,
       confirm: "I confirm that the information above is accurate.",
       submit: "Submit claim",
       success: "✅ Your claim was successfully submitted.",
@@ -45,9 +45,9 @@ This may include registration certificates, incorporation documents, or other le
       phone: "Téléphone professionnel",
       role: "Votre rôle",
       descLabel: "Informations complémentaires",
-      file: "Preuve de propriété (PDF, JPG, PNG)",
+      file: "Justificatif de propriété (obligatoire — PDF, JPG, PNG, max. 2 Mo)",
       fileHelp: `Veuillez télécharger un document officiel prouvant que vous êtes le propriétaire légal de cette entreprise.
-Cela peut inclure des documents d’enregistrement ou tout document légal attestant la propriété.`,
+      Formats acceptés : PDF, JPG, PNG. Taille maximale : 2 Mo.`,
       confirm: "Je confirme que les informations ci-dessus sont exactes.",
       submit: "Soumettre la demande",
       success: "✅ Votre demande a été envoyée avec succès.",
@@ -63,9 +63,9 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
       phone: "شماره تماس",
       role: "نقش شما",
       descLabel: "توضیحات تکمیلی",
-      file: "مدرک مالکیت (PDF، JPG، PNG)",
-      fileHelp: `لطفاً یک مدرک رسمی که نشان دهد شما مالک قانونی این کسب‌وکار هستید بارگذاری کنید.
-این مدرک می‌تواند شامل گواهی ثبت، اسناد تأسیس یا سایر مدارک قانونی مالکیت باشد.`,
+      file: "مدرک مالکیت (اجباری — PDF، JPG، PNG، حداکثر ۲ مگابایت)",
+      fileHelp: `لطفاً یک مدرک رسمی بارگذاری کنید که نشان دهد مالک قانونی این کسب‌وکار هستید.
+      فرمت‌های قابل قبول: PDF، JPG، PNG. حداکثر حجم فایل: ۲ مگابایت.`,
       confirm: "اینجانب تأیید می‌کنم اطلاعات وارد شده صحیح است.",
       submit: "ارسال درخواست",
       success: "✅ درخواست شما با موفقیت ثبت شد.",
@@ -78,13 +78,38 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
   const t = texts[lang];
 
   async function handleSubmit() {
+    const maxFileSizeBytes = 2 * 1024 * 1024;
+  
+    const allowedFileTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+    ];
+  
     if (
       role !== "owner" ||
       !email ||
       !phone ||
-      !fullName
+      !fullName ||
+      !document
     ) {
-      setMsg(t.error);
+      setMsg(
+        "Please complete all required fields and upload a proof of ownership document."
+      );
+      return;
+    }
+  
+    if (document.size > maxFileSizeBytes) {
+      setMsg(
+        "The ownership document must be 2 MB or smaller."
+      );
+      return;
+    }
+  
+    if (!allowedFileTypes.includes(document.type)) {
+      setMsg(
+        "Invalid document type. Only PDF, JPG, and PNG files are allowed."
+      );
       return;
     }
 
@@ -193,11 +218,24 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
               {t.fileHelp}
             </div>
 
-            <input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={(e) => setDocument(e.target.files[0])}
-            />
+            <label className="flex flex-col gap-2 text-sm">
+              <span className="font-medium">
+                {t.file}
+              </span>
+            
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                required
+                onChange={(event) => {
+                  const selectedFile =
+                    event.target.files?.[0] || null;
+            
+                  setDocument(selectedFile);
+                  setMsg("");
+                }}
+              />
+            </label>
 
             {/* ✅ Confirmation */}
             <label className="flex items-center gap-2 text-sm mt-2">
@@ -217,6 +255,7 @@ Cela peut inclure des documents d’enregistrement ou tout document légal attes
                 !email ||
                 !phone ||
                 !fullName ||
+                !document ||
                 role !== "owner"
               }
               className="btn-primary mt-2 disabled:opacity-60"
