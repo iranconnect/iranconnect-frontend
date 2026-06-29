@@ -150,23 +150,47 @@ function Home() {
 
   async function fetchList(forceCategory = null) {
     setLoading(true);
-
+  
     try {
-      const params = { limit: 10 };
-      if (forceCategory) params.category = forceCategory;
-      else if (country) params.country = country;
-      if (city) params.city = city;
-      if (category) params.category = category;
-      if (subcategory) params.subcategory = subcategory;
-      if (q) params.q = q;
-
-      const res = await apiClient.get("/businesses", { params });
-      setBusinesses(res.data || []);
+      const params = {
+        limit: 10,
+      };
+  
+      if (country) {
+        params.country = country;
+      }
+  
+      if (city) {
+        params.city = city;
+      }
+  
+      if (forceCategory || category) {
+        params.category = forceCategory || category;
+      }
+  
+      if (subcategory) {
+        params.subcategory = subcategory;
+      }
+  
+      if (q.trim()) {
+        params.q = q.trim();
+      }
+  
+      const res = await apiClient.get("/businesses", {
+        params,
+      });
+  
+      setBusinesses(
+        Array.isArray(res.data)
+          ? res.data
+          : []
+      );
     } catch (err) {
-      console.error(err);
+      console.error("Search list error:", err);
+      setBusinesses([]);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   const handleCountryChange = async (e) => {
