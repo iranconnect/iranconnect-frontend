@@ -5,24 +5,40 @@ import { useRef } from "react";
 export default function BusinessCard({ b }) {
   const imgErrored = useRef(false);
 
-  const safeText = (val) =>
-    typeof val === "string" ? val.slice(0, 200) : "";
+  const safeText = (value) =>
+    typeof value === "string"
+      ? value.slice(0, 200)
+      : "";
 
-  const isSafeHttpUrl = (url) => {
+  const isSafeHttpUrl = (value) => {
     try {
-      const u = new URL(url);
-      return u.protocol === "http:" || u.protocol === "https:";
+      const url = new URL(value);
+
+      return (
+        url.protocol === "http:" ||
+        url.protocol === "https:"
+      );
     } catch {
       return false;
     }
   };
 
-  // 🔵 Resolve image
-  let imageSrc = "/logo-light.png"; // ✅ real fallback
+  const reviewCount = Number(b?.review_count || 0);
+  const averageRating = Number(b?.avg_rating);
+
+  const hasApprovedRating =
+    reviewCount > 0 &&
+    Number.isFinite(averageRating) &&
+    averageRating > 0;
+
+  let imageSrc = "/logo-light.png";
 
   if (b?.image_url && isSafeHttpUrl(b.image_url)) {
     imageSrc = b.image_url;
-  } else if (b?.logo_url && isSafeHttpUrl(b.logo_url)) {
+  } else if (
+    b?.logo_url &&
+    isSafeHttpUrl(b.logo_url)
+  ) {
     imageSrc = b.logo_url;
   }
 
@@ -58,10 +74,13 @@ export default function BusinessCard({ b }) {
             alt={`${safeText(b?.name)} logo`}
             loading="lazy"
             decoding="async"
-            onError={(e) => {
-              if (imgErrored.current) return;
+            onError={(event) => {
+              if (imgErrored.current) {
+                return;
+              }
+
               imgErrored.current = true;
-              e.currentTarget.src = "/logo-light.png";
+              event.currentTarget.src = "/logo-light.png";
             }}
             className="
               w-20
@@ -77,7 +96,7 @@ export default function BusinessCard({ b }) {
             "
           />
         </div>
-        
+
         <div className="mt-5 flex flex-col">
           <h3
             className="
@@ -95,8 +114,8 @@ export default function BusinessCard({ b }) {
             "
           >
             <span>{safeText(b?.name)}</span>
-          
-            {b?.verified && (
+
+            {b?.owner_verified === true && (
               <span
                 className="
                   inline-flex
@@ -113,12 +132,13 @@ export default function BusinessCard({ b }) {
                   text-emerald-400
                   whitespace-nowrap
                 "
+                title="Verified business owner"
               >
                 ✓ Verified
               </span>
             )}
           </h3>
-        
+
           <p
             className="
               mt-3
@@ -128,9 +148,11 @@ export default function BusinessCard({ b }) {
             "
           >
             {safeText(b?.category)}
-            {b?.subcategory ? ` • ${safeText(b.subcategory)}` : ""}
+            {b?.sub_category
+              ? ` • ${safeText(b.sub_category)}`
+              : ""}
           </p>
-        
+
           <p
             className="
               mt-1
@@ -138,10 +160,12 @@ export default function BusinessCard({ b }) {
               text-muted
             "
           >
-            {safeText(b?.city)}, {safeText(b?.country)}
+            {[safeText(b?.city), safeText(b?.country)]
+              .filter(Boolean)
+              .join(", ")}
           </p>
         </div>
-        
+
         <div
           className="
             mt-6
@@ -150,32 +174,36 @@ export default function BusinessCard({ b }) {
             dark:text-slate-400
           "
         >
-          {b?.reviews_count || 0} reviews
+          {reviewCount === 1
+            ? "1 review"
+            : `${reviewCount} reviews`}
         </div>
-        <div
-          className="
-            absolute
-            top-4
-            right-4
-            flex
-            items-center
-            gap-1
-            rounded-full
-            border
-            border-cyan-400/20
-            bg-cyan-500/10
-            px-3
-            py-1
-            text-sm
-            font-semibold
-            text-turquoise
-            backdrop-blur-sm
-          "
-        >
-          ⭐ {typeof b?.avg_rating === "number" ? b.avg_rating : "—"}
-        </div>
+
+        {hasApprovedRating && (
+          <div
+            className="
+              absolute
+              top-4
+              right-4
+              flex
+              items-center
+              gap-1
+              rounded-full
+              border
+              border-cyan-400/20
+              bg-cyan-500/10
+              px-3
+              py-1
+              text-sm
+              font-semibold
+              text-turquoise
+              backdrop-blur-sm
+            "
+          >
+            ⭐ {averageRating.toFixed(1)}
+          </div>
+        )}
       </div>
     </Link>
   );
 }
-
