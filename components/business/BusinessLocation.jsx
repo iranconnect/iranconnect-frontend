@@ -28,19 +28,31 @@ export default function BusinessLocation({ biz }) {
     return null;
   }
 
+  const serviceMode = String(
+    biz.service_mode || ""
+  ).trim();
+
+  const isOnSite = serviceMode === "on_site";
+  const isAtHome = serviceMode === "at_home";
+  const isHybrid = serviceMode === "hybrid";
+  const isRemote = serviceMode === "remote";
+
+  const shouldShowBusinessLocation =
+    isOnSite || isHybrid;
+
+  const shouldShowBaseLocation =
+    isAtHome || isHybrid;
+
+  if (isRemote) {
+    return null;
+  }
+
   const businessMapUrl = normalizeExternalUrl(
     biz.location_map_url
   );
 
   const baseLocationMapUrl = normalizeExternalUrl(
     biz.base_location_map_url
-  );
-
-  const hasAddress = Boolean(
-    biz.address ||
-      biz.postal_code ||
-      biz.city ||
-      biz.country
   );
 
   const addressParts = [
@@ -54,9 +66,31 @@ export default function BusinessLocation({ biz }) {
   const fullAddress = addressParts.join(", ");
 
   const hasBusinessLocation =
-    Boolean(fullAddress) || Boolean(businessMapUrl);
+    shouldShowBusinessLocation &&
+    (Boolean(fullAddress) || Boolean(businessMapUrl));
 
-  const hasBaseLocation = Boolean(baseLocationMapUrl);
+  /*
+    طبق Policy فعلی، Base Location فقط در سطح شهر ثبت می‌شود.
+    بنابراین نقشه Embed از city + country ساخته می‌شود،
+    نه از Google Maps short link.
+  */
+  const baseLocationLabel = [
+    biz.city,
+    biz.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const baseLocationEmbedUrl = baseLocationLabel
+    ? `https://www.google.com/maps?q=${encodeURIComponent(
+        baseLocationLabel
+      )}&output=embed`
+    : null;
+
+  const hasBaseLocation =
+    shouldShowBaseLocation &&
+    (Boolean(baseLocationMapUrl) ||
+      Boolean(baseLocationEmbedUrl));
 
   if (!hasBusinessLocation && !hasBaseLocation) {
     return null;
@@ -122,19 +156,39 @@ export default function BusinessLocation({ biz }) {
             </h3>
 
             <p className="text-sm text-justify-pro">
-              📍 This location is used as the service base for
-              customer-area coverage.
+              📍 Service coverage begins from this city.
             </p>
 
-            <a
-              href={baseLocationMapUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-turquoise hover:underline"
-            >
-              <span aria-hidden="true">🗺</span>
-              Open service base location in Google Maps
-            </a>
+            {baseLocationLabel && (
+              <p className="mt-2 text-sm text-muted">
+                {baseLocationLabel}
+              </p>
+            )}
+
+            {baseLocationMapUrl && (
+              <a
+                href={baseLocationMapUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-turquoise hover:underline"
+              >
+                <span aria-hidden="true">🗺</span>
+                Open service base location in Google Maps
+              </a>
+            )}
+
+            {baseLocationEmbedUrl && (
+              <div className="mt-4 overflow-hidden rounded-xl border border-[var(--border)]">
+                <iframe
+                  src={baseLocationEmbedUrl}
+                  title={`${biz.name} service base location map`}
+                  width="100%"
+                  height="300"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
