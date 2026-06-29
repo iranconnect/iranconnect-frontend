@@ -31,6 +31,8 @@ export default function SearchPage() {
    🔵 صفحه اصلی سرچ (بدون تغییر منطق)
    ============================================================================ */
 function Home() {
+  const router = useRouter();
+
   const [q, setQ] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
