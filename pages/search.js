@@ -247,25 +247,11 @@ function Home() {
   
     if (value) {
       await fetchCities(value);
-  
-      // Country selected, but City / Category / Subcategory reset.
-      await fetchList(null, {
-        country: value,
-        city: "",
-        category: "",
-        subcategory: "",
-      });
-  
       return;
     }
-  
-    // Country cleared → show all public businesses again.
-    await fetchList(null, {
-      country: "",
-      city: "",
-      category: "",
-      subcategory: "",
-    });
+    
+    // Country cleared:
+    // reset filters only; results remain unchanged until Search is clicked.
   };
 
   const handleCityChange = async (e) => {
