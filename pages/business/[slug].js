@@ -265,6 +265,8 @@ export default function BusinessBySlug({
   const shouldNoIndex =
     isStaging || biz?.admin_preview === true;
 
+  const isPublicSeoPage = biz?.admin_preview !== true; 
+
   useEffect(() => {
     function handleScroll() {
       setShowScrollTop(window.scrollY > 300);
@@ -317,97 +319,110 @@ export default function BusinessBySlug({
           content={`${biz.name} - ${biz.category} in ${biz.city}. ${metaDescription}`}
         />
 
-        <link rel="canonical" href={canonicalUrl} />
-
         <meta
           name="robots"
           content={shouldNoIndex ? "noindex,nofollow" : "index,follow"}
-        />   
-
-        <meta property="og:title" content={biz.name} />
-        <meta property="og:description" content={metaDescription} />
-        {coverImage && <meta property="og:image" content={coverImage} />}
-        <meta property="og:type" content="business.business" />
-        <meta property="og:url" content={canonicalUrl} />
-        <meta property="og:site_name" content="IranConnect" />
-        <meta property="og:locale" content="en_US" />
-        <meta name="twitter:card" content="summary_large_image" />
-
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "LocalBusiness",
-              "@id": canonicalUrl,
-              name: biz.name,
-              url: canonicalUrl,
-              logo: biz.logo_url || undefined,
-              image: coverImage || undefined,
-              description: metaDescription || undefined,
-              address: {
-                "@type": "PostalAddress",
-                streetAddress: biz.address || undefined,
-                addressLocality: biz.city || undefined,
-                addressCountry: biz.country || undefined,
-                postalCode: biz.postal_code || undefined,
-              },
-              telephone: biz.phone || undefined,
-              sameAs: [
-                biz.website,
-                biz.instagram_url,
-                biz.facebook_url,
-                biz.linkedin_url,
-                biz.twitter_url,
-                biz.telegram_url,
-              ].filter(Boolean),
-              ...(openingHours?.length > 0 && {
-                openingHoursSpecification: openingHours,
-              }), 
-              aggregateRating:
-                biz.avg_rating && biz.review_count > 0
-                  ? {
-                      "@type": "AggregateRating",
-                      ratingValue: Number(biz.avg_rating),
-                      reviewCount: Number(biz.review_count),
-                      bestRating: 5,
-                      worstRating: 1,
-                    }
-                  : undefined,
-            }),
-          }}
         />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "BreadcrumbList",
-              itemListElement: [
-                {
-                  "@type": "ListItem",
-                  position: 1,
-                  name: "Home",
-                  item: "https://iranconnect.org",
-                },
-                {
-                  "@type": "ListItem",
-                  position: 2,
-                  name: biz.category || "Category",
-                  item: `https://iranconnect.org/search?category=${encodeURIComponent(
-                    biz.category || ""
-                  )}`,
-                },
-                {
-                  "@type": "ListItem",
-                  position: 3,
+        
+        {isPublicSeoPage && (
+          <>
+            <link rel="canonical" href={canonicalUrl} />
+        
+            <meta property="og:title" content={biz.name} />
+            <meta
+              property="og:description"
+              content={metaDescription}
+            />
+            {coverImage && (
+              <meta property="og:image" content={coverImage} />
+            )}
+            <meta property="og:type" content="business.business" />
+            <meta property="og:url" content={canonicalUrl} />
+            <meta property="og:site_name" content="IranConnect" />
+            <meta property="og:locale" content="en_US" />
+            <meta
+              name="twitter:card"
+              content="summary_large_image"
+            />
+        
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "LocalBusiness",
+                  "@id": canonicalUrl,
                   name: biz.name,
-                  item: canonicalUrl,
-                },
-              ],
-            }),
-          }}
-        /> 
+                  url: canonicalUrl,
+                  logo: biz.logo_url || undefined,
+                  image: coverImage || undefined,
+                  description: metaDescription || undefined,
+                  address: {
+                    "@type": "PostalAddress",
+                    streetAddress: biz.address || undefined,
+                    addressLocality: biz.city || undefined,
+                    addressCountry: biz.country || undefined,
+                    postalCode: biz.postal_code || undefined,
+                  },
+                  telephone: biz.phone || undefined,
+                  sameAs: [
+                    biz.website,
+                    biz.instagram_url,
+                    biz.facebook_url,
+                    biz.linkedin_url,
+                    biz.twitter_url,
+                    biz.telegram_url,
+                  ].filter(Boolean),
+                  ...(openingHours?.length > 0 && {
+                    openingHoursSpecification: openingHours,
+                  }),
+                  aggregateRating:
+                    biz.avg_rating && biz.review_count > 0
+                      ? {
+                          "@type": "AggregateRating",
+                          ratingValue: Number(biz.avg_rating),
+                          reviewCount: Number(biz.review_count),
+                          bestRating: 5,
+                          worstRating: 1,
+                        }
+                      : undefined,
+                }),
+              }}
+            />
+        
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "BreadcrumbList",
+                  itemListElement: [
+                    {
+                      "@type": "ListItem",
+                      position: 1,
+                      name: "Home",
+                      item: "https://iranconnect.org",
+                    },
+                    {
+                      "@type": "ListItem",
+                      position: 2,
+                      name: biz.category || "Category",
+                      item: `https://iranconnect.org/search?category=${encodeURIComponent(
+                        biz.category || ""
+                      )}`,
+                    },
+                    {
+                      "@type": "ListItem",
+                      position: 3,
+                      name: biz.name,
+                      item: canonicalUrl,
+                    },
+                  ],
+                }),
+              }}
+            />
+          </>
+        )}
       </Head>
 
       <div className="flex flex-col min-h-screen">
