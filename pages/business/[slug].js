@@ -36,7 +36,9 @@ export async function getServerSideProps(context) {
   // 🔥 STEP 1: اگر ID بود → redirect
   if (/^\d+$/.test(slug)) {
     try {
-      const res = await fetch(`${apiBase}/businesses/${slug}`);
+      const res = await fetch(
+        `${apiBase}/businesses/id-to-slug/${slug}`
+      );
 
       if (!res.ok) return { notFound: true };
 
