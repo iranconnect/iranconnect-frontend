@@ -89,7 +89,11 @@ function Home() {
   async function fetchCities(selectedCountry) {
     if (!selectedCountry) {
       setCities([]);
-      setCity('');
+      setCity("");
+      setCategories([]);
+      setCategory("");
+      setSubcategories([]);
+      setSubcategory("");
       return;
     }
 
@@ -148,32 +152,52 @@ function Home() {
     }
   }
 
-  async function fetchList(forceCategory = null) {
+  async function fetchList(
+    forceCategory = null,
+    filterOverrides = {}
+  ) {
     setLoading(true);
   
     try {
+      const resolvedCountry =
+        filterOverrides.country ?? country;
+  
+      const resolvedCity =
+        filterOverrides.city ?? city;
+  
+      const resolvedCategory =
+        filterOverrides.category ??
+        forceCategory ??
+        category;
+  
+      const resolvedSubcategory =
+        filterOverrides.subcategory ?? subcategory;
+  
+      const resolvedQuery =
+        filterOverrides.q ?? q;
+  
       const params = {
         limit: 10,
       };
   
-      if (country) {
-        params.country = country;
+      if (resolvedCountry) {
+        params.country = resolvedCountry;
       }
   
-      if (city) {
-        params.city = city;
+      if (resolvedCity) {
+        params.city = resolvedCity;
       }
   
-      if (forceCategory || category) {
-        params.category = forceCategory || category;
+      if (resolvedCategory) {
+        params.category = resolvedCategory;
       }
   
-      if (subcategory) {
-        params.subcategory = subcategory;
+      if (resolvedSubcategory) {
+        params.subcategory = resolvedSubcategory;
       }
   
-      if (q.trim()) {
-        params.q = q.trim();
+      if (resolvedQuery.trim()) {
+        params.q = resolvedQuery.trim();
       }
   
       const res = await apiClient.get("/businesses", {
@@ -195,8 +219,51 @@ function Home() {
 
   const handleCountryChange = async (e) => {
     const value = e.target.value;
+  
     setCountry(value);
-    await fetchCities(value);
+  
+    // Reset every dependent filter immediately.
+    setCity("");
+    setCategory("");
+    setSubcategory("");
+  
+    setCities([]);
+    setCategories([]);
+    setSubcategories([]);
+  
+    // Remove old ?category=... from URL.
+    router.replace(
+      {
+        pathname: "/search",
+        query: {},
+      },
+      undefined,
+      {
+        shallow: true,
+      }
+    );
+  
+    if (value) {
+      await fetchCities(value);
+  
+      // Country selected, but City / Category / Subcategory reset.
+      await fetchList(null, {
+        country: value,
+        city: "",
+        category: "",
+        subcategory: "",
+      });
+  
+      return;
+    }
+  
+    // Country cleared → show all public businesses again.
+    await fetchList(null, {
+      country: "",
+      city: "",
+      category: "",
+      subcategory: "",
+    });
   };
 
   const handleCityChange = async (e) => {
