@@ -145,16 +145,11 @@ export default function DeleteBusinessRequest() {
                 </h3>
             
                 <p className="mt-2">
-                  If your request is approved, your business listing
-                  will be removed from public search, profile pages,
-                  reviews, claims, rankings, and search-engine surfaces.
+                  If your request is approved, your business listing will be removed from IranConnect’s public search, profile pages, reviews, claims, rankings, and search-engine surfaces.
                 </p>
             
                 <p className="mt-2">
-                  Your business listing will no longer be publicly listed or accessible through IranConnect’s public search, profile pages, reviews, claims, ranking, or search-engine surfaces. However, the listing and its historical
-                  records will remain securely stored in the IranConnect
-                  database for audit, security, ownership-verification,
-                  billing, and operational record-keeping purposes.
+                  The listing will no longer be publicly available. However, its historical records will remain securely stored in the IranConnect database for audit, security, ownership-verification, billing, and operational record-keeping purposes.
                 </p>
             
                 <p className="mt-3">
@@ -162,9 +157,7 @@ export default function DeleteBusinessRequest() {
                     Need to restore a previously removed listing?
                   </strong>
                   <br />
-                  Please submit a new business request and clearly state
-                  that you are requesting restoration of a previously
-                  removed IranConnect listing.
+                  Please submit a new business request and clearly state that you are requesting restoration of a previously removed IranConnect listing.
                 </p>
               </div>
             
@@ -248,9 +241,7 @@ export default function DeleteBusinessRequest() {
                 className="mt-1"
               />
               <span>
-                I confirm that the information above is accurate and I
-                understand that, if approved, this business listing will
-                no longer be publicly accessible on IranConnect.
+                I confirm that the information above is accurate and understand that, if approved, this business listing will no longer be publicly available on IranConnect.
               </span>
             </label>
 
