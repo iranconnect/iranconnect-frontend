@@ -115,29 +115,11 @@ export default function ProfileMenu({ role, hasRequests, hasBusiness }) {
             <>
               <div className="border-t border-[var(--border)] my-2"></div>
           
-              <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
-                Business Management
-              </p>
-          
               <a
-                href="/account/update-business"
-                className="block text-sm text-[var(--text)] hover:text-turquoise mb-1"
+                href="/account/businesses"
+                className="block text-sm font-medium text-[var(--text)] hover:text-turquoise mb-2"
               >
-                ✏️ Update Business
-              </a>
-          
-              <a
-                href="/account/delete-business"
-                className="block text-sm text-[var(--text)] hover:text-turquoise mb-1"
-              >
-                🗑️ Delete Business
-              </a>
-          
-              <a
-                href="/account/new-business"
-                className="block text-sm text-[var(--text)] hover:text-turquoise mb-2"
-              >
-                🆕 Add New Business
+                🏢 Business Management
               </a>
             </>
           )}
