@@ -281,32 +281,12 @@ export default function Header() {
                 <>
                   <div className="border-t border-[var(--border)] my-2"></div>
               
-                  <p className="text-xs uppercase tracking-wide text-gray-500">
-                    Business Management
-                  </p>
-              
                   <Link
-                    href="/account/update-business"
+                    href="/account/businesses"
                     onClick={() => setMenuOpen(false)}
-                    className="text-[var(--text)] hover:text-turquoise"
+                    className="font-medium text-[var(--text)] hover:text-turquoise"
                   >
-                    ✏️ Update Business
-                  </Link>
-              
-                  <Link
-                    href="/account/delete-business"
-                    onClick={() => setMenuOpen(false)}
-                    className="text-[var(--text)] hover:text-turquoise"
-                  >
-                    🗑️ Delete Business
-                  </Link>
-              
-                  <Link
-                    href="/account/new-business"
-                    onClick={() => setMenuOpen(false)}
-                    className="text-[var(--text)] hover:text-turquoise"
-                  >
-                    🆕 Add New Business
+                    🏢 Business Management
                   </Link>
                 </>
               )}
