@@ -100,12 +100,12 @@ export default function BusinessManagementPage() {
           <div className="mb-8 text-center">
             <h1
               className="text-2xl font-bold"
-              style={{ color: theme === "dark" ? "#40E0D0" : "#0A1D37" }}
+              style={{ color: theme === "dark" ? "#0A1D37" : "#0A1D37" }}
             >
               🏢 Business Management
             </h1>
 
-            <p className="mt-2 text-sm opacity-75">
+            <p className="mt-2 text-sm opacity-75" "#0A1D37">
               Manage the business listings for which your ownership has been verified.
             </p>
 
