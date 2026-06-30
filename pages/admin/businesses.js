@@ -200,7 +200,8 @@ export default function BusinessesPage() {
         }
       );
 
-      closeSoftDeleteModal();
+      setDeleteTarget(null);
+      setDeleteReason("");
 
       await fetchBusinesses({
         search: query,
@@ -243,7 +244,7 @@ export default function BusinessesPage() {
         `/admin/businesses/${restoreTarget.id}/restore`
       );
 
-      closeRestoreModal();
+      setRestoreTarget(null);
 
       await fetchBusinesses({
         search: query,
