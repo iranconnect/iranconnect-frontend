@@ -105,7 +105,7 @@ export default function BusinessManagementPage() {
               🏢 Business Management
             </h1>
 
-            <p className="mt-2 text-sm opacity-75" "#0A1D37">
+            <p className="mt-2 text-sm opacity-75">
               Manage the business listings for which your ownership has been verified.
             </p>
 
