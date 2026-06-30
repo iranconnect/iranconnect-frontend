@@ -241,7 +241,7 @@ export default function DeleteBusinessRequest() {
                 className="mt-1"
               />
               <span>
-                I confirm that the information above is accurate and understand that, if approved, this business listing will no longer be publicly available on IranConnect.
+                I confirm that the information above is accurate. I understand that, if approved, this business listing will no longer be publicly available on IranConnect.
               </span>
             </label>
 
