@@ -1,10 +1,12 @@
 /*frontend/pages/account/delete-business.js*/
 'use client';
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import AccountLayout from "../../components/account/AccountLayout";
 import apiClient from "../../utils/apiClient";   // ✅ مسیر صحیح اصلاح شد
 
 export default function DeleteBusinessRequest() {
+  const router = useRouter();
   const [businesses, setBusinesses] = useState([]);
   const [selectedBusiness, setSelectedBusiness] = useState("");
   const [reason, setReason] = useState("");
@@ -38,6 +40,33 @@ export default function DeleteBusinessRequest() {
         setBusinesses([]);
       });
   }, []);
+
+  useEffect(() => {
+    if (!router.isReady || businesses.length === 0) {
+      return;
+    }
+  
+    const requestedBusinessId = String(
+      router.query.businessId || ""
+    );
+  
+    if (!requestedBusinessId) {
+      return;
+    }
+  
+    const isOwnedActiveBusiness = businesses.some(
+      (business) =>
+        String(business.id) === requestedBusinessId
+    );
+  
+    if (isOwnedActiveBusiness) {
+      setSelectedBusiness(requestedBusinessId);
+    }
+  }, [
+    router.isReady,
+    router.query.businessId,
+    businesses,
+  ]);
 
   /* ولیدیشن */
   const validateField = (name, value) => {
