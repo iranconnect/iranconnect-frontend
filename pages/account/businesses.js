@@ -100,7 +100,7 @@ export default function BusinessManagementPage() {
           <div className="mb-8 text-center">
             <h1
               className="text-2xl font-bold"
-              style={{ color: theme === "dark" ? "#ffffff" : "#0A1D37" }}
+              style={{ color: theme === "dark" ? "#40E0D0" : "#0A1D37" }}
             >
               🏢 Business Management
             </h1>
