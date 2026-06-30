@@ -151,8 +151,7 @@ export default function DeleteBusinessRequest() {
                 </p>
             
                 <p className="mt-2">
-                  Your business information will no longer be publicly
-                  accessible. However, the listing and its historical
+                  Your business listing will no longer be publicly listed or accessible through IranConnect’s public search, profile pages, reviews, claims, ranking, or search-engine surfaces. However, the listing and its historical
                   records will remain securely stored in the IranConnect
                   database for audit, security, ownership-verification,
                   billing, and operational record-keeping purposes.
