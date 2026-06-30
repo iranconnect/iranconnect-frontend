@@ -2,11 +2,14 @@
 'use client';
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import AccountLayout from "../../components/account/AccountLayout";
 import BusinessWizard from "../../components/admin/BusinessWizard";
 import apiClient from "../../utils/apiClient";
 
 export default function UpdateBusinessRequest() {
+
+  const router = useRouter();
 
 const [businesses, setBusinesses] = useState([]);
 const [selectedBusiness, setSelectedBusiness] = useState("");
@@ -68,6 +71,36 @@ useEffect(() => {
     });
 
 }, []); 
+
+/* ============================================================
+PRESELECT BUSINESS FROM BUSINESS MANAGEMENT
+============================================================ */
+useEffect(() => {
+  if (!router.isReady || businesses.length === 0) {
+    return;
+  }
+
+  const requestedBusinessId = String(
+    router.query.businessId || ""
+  );
+
+  if (!requestedBusinessId) {
+    return;
+  }
+
+  const isOwnedActiveBusiness = businesses.some(
+    (business) =>
+      String(business.id) === requestedBusinessId
+  );
+
+  if (isOwnedActiveBusiness) {
+    setSelectedBusiness(requestedBusinessId);
+  }
+}, [
+  router.isReady,
+  router.query.businessId,
+  businesses,
+]);
 
 
 /* ============================================================
