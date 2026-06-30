@@ -133,7 +133,42 @@ export default function DeleteBusinessRequest() {
               className="rounded-2xl p-8 border transition-all duration-300"
               style={cardStyle}
             >
-        
+              <div
+                className="
+                  mb-6 rounded-xl border border-amber-300
+                  bg-amber-50 p-4 text-sm leading-6
+                  text-amber-950
+                "
+              >
+                <h3 className="font-semibold">
+                  What happens when you request deletion?
+                </h3>
+            
+                <p className="mt-2">
+                  If your request is approved, your business listing
+                  will be removed from public search, profile pages,
+                  reviews, claims, rankings, and search-engine surfaces.
+                </p>
+            
+                <p className="mt-2">
+                  Your business information will no longer be publicly
+                  accessible. However, the listing and its historical
+                  records will remain securely stored in the IranConnect
+                  database for audit, security, ownership-verification,
+                  billing, and operational record-keeping purposes.
+                </p>
+            
+                <p className="mt-3">
+                  <strong>
+                    Need to restore a previously removed listing?
+                  </strong>
+                  <br />
+                  Please submit a new business request and clearly state
+                  that you are requesting restoration of a previously
+                  removed IranConnect listing.
+                </p>
+              </div>
+            
               <form onSubmit={handleSubmit} className="space-y-4">
             {/* Select Business */}
             <div>
@@ -206,13 +241,18 @@ export default function DeleteBusinessRequest() {
             </div>
 
             {/* Confirm */}
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-start gap-2 text-sm leading-5">
               <input
                 type="checkbox"
                 checked={confirm}
                 onChange={(e) => setConfirm(e.target.checked)}
+                className="mt-1"
               />
-              I confirm that the information above is accurate.
+              <span>
+                I confirm that the information above is accurate and I
+                understand that, if approved, this business listing will
+                no longer be publicly accessible on IranConnect.
+              </span>
             </label>
 
             {/* Submit button */}
