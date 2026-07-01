@@ -55,7 +55,7 @@ export default function AccountLayout({ children }) {
   
         if (!mounted) return;
   
-        // Allow user, admin, superadmin to access /account
+        // User, admin and superadmin can access account pages.
         if (!["user", "admin", "superadmin"].includes(r)) {
           if (!hasRedirectedRef.current) {
             hasRedirectedRef.current = true;
