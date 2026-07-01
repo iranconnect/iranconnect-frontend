@@ -11,6 +11,17 @@ import { useSentryBaseContext } from "../../hooks/useSentryBaseContext";
 import { SentryContextReady } from "../../hooks/useSentryContextStatus";
 import { useSafePageEvent } from "../../hooks/useSafePageEvent";
 
+function buildLoginRedirectUrl(returnTo) {
+  const safeReturnTo =
+    typeof returnTo === "string" &&
+    returnTo.startsWith("/") &&
+    !returnTo.startsWith("//")
+      ? returnTo
+      : "/account";
+
+  return `/auth/login?redirect=${encodeURIComponent(safeReturnTo)}`;
+}
+
 /**
  * AccountLayout — IranConnect
  *
@@ -37,41 +48,48 @@ export default function AccountLayout({ children }) {
   ---------------------------------------------------- */
   useEffect(() => {
     let mounted = true;
-
-  async function checkRole() {
-    try {
-      const r = await getSessionRole();
   
-      if (!mounted) return;
+    async function checkRole() {
+      try {
+        const r = await getSessionRole();
   
-      // Allow user, admin, superadmin to access /account
-      if (!["user", "admin", "superadmin"].includes(r)) {
+        if (!mounted) return;
+  
+        // Allow user, admin, superadmin to access /account
+        if (!["user", "admin", "superadmin"].includes(r)) {
+          if (!hasRedirectedRef.current) {
+            hasRedirectedRef.current = true;
+  
+            router.replace(
+              buildLoginRedirectUrl(router.asPath)
+            );
+          }
+  
+          return;
+        }
+  
+        setRole(r);
+      } catch {
         if (!hasRedirectedRef.current) {
           hasRedirectedRef.current = true;
-          router.replace("/auth/login");
+  
+          router.replace(
+            buildLoginRedirectUrl(router.asPath)
+          );
         }
-        return;
+      } finally {
+        if (mounted) {
+          setChecking(false);
+        }
       }
-      
-      setRole(r);
-
-    } catch {
-      if (!hasRedirectedRef.current) {
-        hasRedirectedRef.current = true;
-        router.replace("/auth/login");
-      }
-    } finally {
-      if (mounted) setChecking(false);
     }
-  }
-
+  
     checkRole();
-
+  
     return () => {
       mounted = false;
     };
   }, [router]);
-
   /* ----------------------------------------------------
      🧠 Sentry Base Context
   ---------------------------------------------------- */
