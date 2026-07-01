@@ -96,7 +96,7 @@ export default function BusinessManagementPage() {
   return (
     <AccountLayout>
       <main className="flex-1 px-4 py-6 md:py-8">
-        <div className="mx-auto w-full max-w-6xl">
+        <div className="mx-auto w-full max-w-5xl">
           <div className="mb-8 text-center">
             <h1
               className="text-2xl font-bold"
