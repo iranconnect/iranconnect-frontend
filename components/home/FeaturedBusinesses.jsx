@@ -73,15 +73,22 @@ export default function FeaturedBusinesses() {
         className="
           grid
           gap-6
-          lg:grid-cols-3
           items-stretch
+          justify-center
+          lg:grid-cols-[repeat(auto-fit,minmax(280px,346px))]
         "
       >
         {businesses.map((business) => (
-          <BusinessCard
+          <div
             key={business.id}
-            b={business}
-          />
+            className="
+              w-full
+              max-w-sm
+              justify-self-center
+            "
+          >
+            <BusinessCard b={business} />
+          </div>
         ))}
       </div>
     </SectionWrapper>
