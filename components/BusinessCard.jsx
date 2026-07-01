@@ -45,7 +45,7 @@ export default function BusinessCard({ b }) {
   return (
     <Link
       href={`/business/${b.slug || b.id}`}
-      className="block group w-full"
+      className="block group w-full h-full"
       prefetch={false}
     >
       <div
@@ -56,6 +56,7 @@ export default function BusinessCard({ b }) {
           flex-col
           justify-between
           min-h-[280px]
+          h-full
           rounded-3xl
           p-6
           transition-all
