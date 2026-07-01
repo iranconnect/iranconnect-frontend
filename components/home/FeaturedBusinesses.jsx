@@ -71,11 +71,11 @@ export default function FeaturedBusinesses() {
 
       <div
         className="
-          grid
+          flex
+          flex-wrap
+          justify-center
           gap-6
           items-stretch
-          justify-center
-          lg:grid-cols-[repeat(auto-fit,minmax(280px,346px))]
         "
       >
         {businesses.map((business) => (
@@ -84,7 +84,8 @@ export default function FeaturedBusinesses() {
             className="
               w-full
               max-w-sm
-              justify-self-center
+              h-full
+              lg:w-[346px]
             "
           >
             <BusinessCard b={business} />
