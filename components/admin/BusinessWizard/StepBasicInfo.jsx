@@ -73,6 +73,10 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
 
   const isAdminEdit = mode === "admin-edit";
   const isUserUpdate = mode === "user-update";
+  const isUserNew = mode === "user-new";
+
+  const isUserCatalogMode =
+    isUserUpdate || isUserNew;
 
   const stepCopy = isAdminEdit
     ? {
@@ -97,45 +101,24 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
      Load categories (no pagination)
   ───────────────────────────── */
   useEffect(() => {
-
-    const endpoint =
-    mode === "user-update"
-    ? "/businesses/categories"
-    : "/admin/categories/all";
-    
-    const request =
-    mode === "user-update"
-    ? apiClient.get(endpoint, {
-    params: {
-    country: data?.country,
-    city: data?.city,
-    },
-    })
-    : apiClient.get(endpoint);
-    
-    request
-    .then((res) => {
-    
-    
-      const rows =
-        res.data?.data ||
-        res.data ||
-        [];
-    
-      setCategories(rows);
-    
-    })
-    .catch(() => {
-      setCategories([]);
-    });
-    
-    
-    }, [
-    mode,
-    data?.country,
-    data?.city,
-    ]);
-
+    const endpoint = isUserCatalogMode
+      ? "/businesses/onboarding/categories"
+      : "/admin/categories/all";
+  
+    apiClient
+      .get(endpoint)
+      .then((res) => {
+        const rows =
+          res.data?.data ||
+          res.data ||
+          [];
+  
+        setCategories(rows);
+      })
+      .catch(() => {
+        setCategories([]);
+      });
+  }, [isUserCatalogMode]);
 
   /* ─────────────────────────────
      Load subcategories by category
@@ -145,21 +128,32 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
       setSubcategories([]);
       return;
     }
-
+  
     setLoadingSubs(true);
-
+  
+    const endpoint = isUserCatalogMode
+      ? "/businesses/onboarding/subcategories"
+      : "/admin/subcategories";
+  
     apiClient
-      .get(
-        mode === "user-update"
-          ? "/businesses/subcategories"
-          : "/admin/subcategories",
-        {
-        params: { category_id: categoryId },
+      .get(endpoint, {
+        params: {
+          category_id: categoryId,
+        },
       })
-      .then((res) => setSubcategories(res.data?.data || []))
-      .catch(() => setSubcategories([]))
-      .finally(() => setLoadingSubs(false));
-  }, [categoryId]);
+      .then((res) => {
+        setSubcategories(res.data?.data || []);
+      })
+      .catch(() => {
+        setSubcategories([]);
+      })
+      .finally(() => {
+        setLoadingSubs(false);
+      });
+  }, [
+    categoryId,
+    isUserCatalogMode,
+  ]);
 
   /* ─────────────────────────────
      Generic setter
@@ -296,7 +290,10 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
       // =========================
       // USER UPDATE MODE
       // =========================
-      if (mode === "user-update") {
+      if (
+        mode === "user-update" ||
+        mode === "user-new"
+      ) {
         return validationErrors.size === 0;
       }
     
