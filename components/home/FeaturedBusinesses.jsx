@@ -74,6 +74,7 @@ export default function FeaturedBusinesses() {
           grid
           gap-6
           lg:grid-cols-3
+          items-stretch
         "
       >
         {businesses.map((business) => (
