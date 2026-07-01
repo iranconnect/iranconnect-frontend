@@ -61,6 +61,15 @@ export default function FeaturedBusinesses() {
     return null;
   }
 
+  const featuredCount = businesses.length;
+
+  const cardWidthClass =
+    featuredCount >= 3
+      ? "lg:w-[calc((100%-3rem)/3)]"
+      : featuredCount === 2
+      ? "lg:w-[calc((100%-1.5rem)/2)] max-w-sm"
+      : "lg:w-[346px] max-w-sm";
+
   return (
     <SectionWrapper>
       <SectionTitle
@@ -76,17 +85,13 @@ export default function FeaturedBusinesses() {
           justify-center
           gap-6
           items-stretch
+          lg:flex-nowrap
         "
       >
         {businesses.map((business) => (
           <div
             key={business.id}
-            className="
-              w-full
-              max-w-sm
-              h-full
-              lg:w-[346px]
-            "
+            className={`w-full max-w-sm h-full ${cardWidthClass}`}
           >
             <BusinessCard b={business} />
           </div>
