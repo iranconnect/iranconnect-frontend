@@ -145,11 +145,19 @@ export default function BusinessWizard({
       try {
         const res = await externalSubmit(submitData);
   
-        if (mode === "user-update") {
+        if (
+          mode === "user-update" ||
+          mode === "user-new"
+        ) {
+          const isNewBusinessRequest =
+            mode === "user-new";
+        
           setSubmitError(false);
         
           setSubmitMessage(
-            "Your update request has been submitted successfully. Your secure media archive has been created."
+            isNewBusinessRequest
+              ? "Your new business request has been submitted successfully. Our team will review it before it is published."
+              : "Your update request has been submitted successfully. Your secure media archive has been created."
           );
         
           setTicketCode(
