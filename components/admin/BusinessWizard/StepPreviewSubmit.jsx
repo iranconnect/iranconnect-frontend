@@ -93,6 +93,10 @@ export default function StepPreviewSubmit({
   const isAdminCreate = mode === "admin-create";
   const isAdminEdit = mode === "admin-edit";
   const isUserUpdate = mode === "user-update";
+  const isUserNew = mode === "user-new";
+
+  const isUserCatalogMode =
+    isUserUpdate || isUserNew;
 
   const normalizedChangeSource =
     String(data.change_source_type || "").trim();
@@ -145,7 +149,8 @@ export default function StepPreviewSubmit({
   const previewCopy = isAdminEdit
     ? {
         title: "Review & Update Business",
-        subtitle: "Step 5 of 5 — Review changes before updating this business",
+        subtitle:
+          "Step 5 of 5 — Review changes before updating this business",
         mediaTitle: "Media & Visibility",
         loadingTitle: "Updating business profile…",
         loadingText:
@@ -156,24 +161,41 @@ export default function StepPreviewSubmit({
     : isUserUpdate
       ? {
           title: "Review & Submit Update Request",
-          subtitle: "Step 5 of 5 — Review your requested changes before submission",
+          subtitle:
+            "Step 5 of 5 — Review your requested changes before submission",
           mediaTitle: "Media, Visibility & Confirmation",
-          loadingTitle: "Creating your secure request archive…",
+          loadingTitle:
+            "Creating your secure request archive…",
           loadingText:
             "Your business details and media are being securely archived. This can take a few minutes when several images are included. Please do not refresh, close, or submit the form again.",
           submitLabel: "Submit Update Request",
           loadingLabel: "Submitting update request…",
         }
-      : {
-          title: "Review & Create Business",
-          subtitle: "Step 5 of 5 — Review all business details before creation",
-          mediaTitle: "Media, Visibility & Confirmation",
-          loadingTitle: "Creating business…",
-          loadingText:
-            "Business details, services, media, and profile settings are being created. Please do not refresh, close, or submit the form again.",
-          submitLabel: "Submit & Create Business",
-          loadingLabel: "Creating business…",
-        };
+      : isUserNew
+        ? {
+            title: "Review & Submit New Business Request",
+            subtitle:
+              "Step 5 of 5 — Review your business details before sending your request",
+            mediaTitle: "Media, Visibility & Confirmation",
+            loadingTitle:
+              "Creating your secure new-business request…",
+            loadingText:
+              "Your business details and media are being securely prepared for review. Please do not refresh, close, or submit the form again.",
+            submitLabel: "Submit New Business Request",
+            loadingLabel:
+              "Submitting new business request…",
+          }
+        : {
+            title: "Review & Create Business",
+            subtitle:
+              "Step 5 of 5 — Review all business details before creation",
+            mediaTitle: "Media, Visibility & Confirmation",
+            loadingTitle: "Creating business…",
+            loadingText:
+              "Business details, services, media, and profile settings are being created. Please do not refresh, close, or submit the form again.",
+            submitLabel: "Submit & Create Business",
+            loadingLabel: "Creating business…",
+          };
 
   
   useEffect(() => {
@@ -186,8 +208,8 @@ export default function StepPreviewSubmit({
         if (data.category_id) {
   
           const categoryRes = await apiClient.get(
-            mode === "user-update"
-              ? "/businesses/categories"
+            isUserCatalogMode
+              ? "/businesses/onboarding/categories"
               : "/admin/categories/all"
           );
   
@@ -214,8 +236,8 @@ export default function StepPreviewSubmit({
   
           const subRes =
             await apiClient.get(
-              mode === "user-update"
-                ? "/businesses/subcategories"
+              isUserCatalogMode
+                ? "/businesses/onboarding/subcategories"
                 : "/admin/subcategories",
               {
                 params: {
@@ -246,7 +268,7 @@ export default function StepPreviewSubmit({
   
           const serviceRes =
             await apiClient.get(
-              mode === "user-update"
+              isUserCatalogMode
                 ? "/businesses/services"
                 : "/admin/services",
               {
@@ -277,9 +299,15 @@ export default function StepPreviewSubmit({
   
           const tagRes =
             await apiClient.get(
-              mode === "user-update"
+              isUserCatalogMode
                 ? "/businesses/tags"
-                : "/admin/tags/for-business"
+                : "/admin/tags/for-business",
+              {
+                params: {
+                  category_id: data.category_id,
+                  service_ids: (data.services || []).join(","),
+                },
+              }
             );
   
           const allTags =
