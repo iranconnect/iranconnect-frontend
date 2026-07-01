@@ -242,7 +242,7 @@ export default function BusinessManagementPage() {
                 </div>
 
                 <div className="hidden overflow-x-auto md:block">
-                  <table className="min-w-full text-left text-sm">
+                  <table className="min-w-full text-center text-sm">
                     <thead
                       className="border-b"
                       style={{
@@ -259,7 +259,7 @@ export default function BusinessManagementPage() {
                         <th className="px-4 py-3">Profile completion</th>
                         <th className="px-4 py-3">Visibility</th>
                         <th className="px-4 py-3">Lifecycle</th>
-                        <th className="px-4 py-3 text-right">Actions</th>
+                        <th className="px-4 py-3">Actions</th>
                       </tr>
                     </thead>
 
@@ -278,7 +278,7 @@ export default function BusinessManagementPage() {
                                   : "rgba(0,0,0,0.06)",
                             }}
                           >
-                            <td className="px-4 py-4">
+                            <td className="px-4 py-4 text-center">
                               <p className="font-semibold text-turquoise">
                                 {business.name}
                               </p>
@@ -344,9 +344,9 @@ export default function BusinessManagementPage() {
                               )}
                             </td>
 
-                            <td className="px-4 py-4">
+                            <td className="px-4 py-4 text-center">
                               {!isDeleted && (
-                                <div className="flex justify-end gap-2">
+                                <div className="flex justify-center gap-2">
                                   <Link
                                     href={`/account/update-business?businessId=${business.id}`}
                                     className="rounded-lg border border-turquoise px-3 py-2 text-xs font-medium text-turquoise hover:bg-turquoise hover:text-navy transition"
