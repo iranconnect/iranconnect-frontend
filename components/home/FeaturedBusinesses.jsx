@@ -63,35 +63,54 @@ export default function FeaturedBusinesses() {
 
   const featuredCount = businesses.length;
 
-  const cardWidthClass =
+  const featuredRowWidthClass =
     featuredCount >= 3
-      ? "lg:w-[calc((100%-3rem)/3)]"
+      ? "lg:max-w-[1092px]"
       : featuredCount === 2
-      ? "lg:w-[calc((100%-1.5rem)/2)] max-w-sm"
-      : "lg:w-[346px] max-w-sm";
+      ? "lg:max-w-[716px]"
+      : "lg:max-w-[346px]";
 
   return (
     <SectionWrapper>
-      <SectionTitle
-        title="Featured Businesses"
-        subtitle="Discover trusted Iranian-owned businesses and professionals recommended by the community."
-        center
-      />
-
       <div
         className="
+          [&_p]:mx-auto
+          [&_p]:max-w-none
+          [&_p]:md:whitespace-nowrap
+        "
+      >
+        <SectionTitle
+          title="Featured Businesses"
+          subtitle="Discover trusted Iranian-owned businesses and professionals recommended by the community."
+          center
+        />
+      </div>
+
+      <div
+        className={`
+          mx-auto
           flex
+          w-full
           flex-wrap
+          items-stretch
           justify-center
           gap-6
-          items-stretch
+          ${featuredRowWidthClass}
           lg:flex-nowrap
-        "
+        `}
       >
         {businesses.map((business) => (
           <div
             key={business.id}
-            className={`w-full max-w-sm h-full ${cardWidthClass}`}
+            className="
+              flex
+              w-full
+              min-w-0
+              self-stretch
+              md:max-w-sm
+              lg:max-w-none
+              lg:flex-1
+            "
           >
             <BusinessCard b={business} />
           </div>
