@@ -45,6 +45,10 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
 
   const isAdminEdit = mode === "admin-edit";
   const isUserUpdate = mode === "user-update";
+  const isUserNew = mode === "user-new";
+
+  const isUserCatalogMode =
+    isUserUpdate || isUserNew;
 
   const stepCopy = isAdminEdit
     ? {
@@ -99,9 +103,9 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
 
     apiClient
       .get(
-        mode === "user-update"
+        isUserCatalogMode
           ? "/businesses/services"
-          : "/admin/services",
+          : "/admin/services"
         {
           params: {
             subcategory_ids:
@@ -112,7 +116,10 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
       .then((res) => setServices(res.data?.data || []))
       .catch(() => setServices([]))
       .finally(() => setLoadingServices(false));
-  }, [subcategoryIds]);
+  }, [
+    JSON.stringify(subcategoryIds),
+    isUserCatalogMode,
+  ]);
 
   /* ─────────────────────────────
      Load tags (global)
