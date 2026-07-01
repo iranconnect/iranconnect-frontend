@@ -105,7 +105,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
       .get(
         isUserCatalogMode
           ? "/businesses/services"
-          : "/admin/services"
+          : "/admin/services",
         {
           params: {
             subcategory_ids:
