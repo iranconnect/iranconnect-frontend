@@ -257,7 +257,7 @@ export default function BusinessManagementPage() {
                         <th className="px-4 py-3">Category</th>
                         <th className="px-4 py-3">Location</th>
                         <th className="px-4 py-3">Profile completion</th>
-                        <th className="px-4 py-3">Visibility</th>
+                        <th className="min-w-[120px] px-4 py-3">Visibility</th>
                         <th className="px-4 py-3">Lifecycle</th>
                         <th className="px-4 py-3">Actions</th>
                       </tr>
@@ -310,9 +310,9 @@ export default function BusinessManagementPage() {
                               )}
                             </td>
 
-                            <td className="px-4 py-4">
+                            <td className="min-w-[120px] px-4 py-4">
                               <span
-                                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
                                   business.is_public && !isDeleted
                                     ? "bg-green-100 text-green-700"
                                     : "bg-gray-100 text-gray-700"
