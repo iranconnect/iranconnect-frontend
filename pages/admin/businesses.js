@@ -83,6 +83,53 @@ export default function BusinessesPage() {
   const [restoreSubmitting, setRestoreSubmitting] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+  
+    async function checkAccess() {
+      try {
+        const res = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
+  
+        if (!res.data?.ok) {
+          if (mounted) {
+            window.location.href = "/auth/login";
+          }
+  
+          return;
+        }
+  
+        const role = res.data.role;
+  
+        if (
+          role !== "admin" &&
+          role !== "superadmin"
+        ) {
+          if (mounted) {
+            window.location.href = "/";
+          }
+  
+          return;
+        }
+  
+        if (mounted) {
+          setAuthChecked(true);
+        }
+      } catch {
+        if (mounted) {
+          window.location.href = "/auth/login";
+        }
+      }
+    }
+  
+    checkAccess();
+  
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isReady) {
       return;
     }
@@ -282,10 +329,7 @@ export default function BusinessesPage() {
 
       setRestoreTarget(null);
 
-      await fetchBusinesses({
-        search: query,
-        requestedStatus: status,
-      });
+      await fetchBusinesses();
     } catch (err) {
       console.error(
         "❌ Restore failed:",
