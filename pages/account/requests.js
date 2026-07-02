@@ -186,7 +186,10 @@ export default function RequestHistory() {
       setRequests([]);
       setPagination(DEFAULT_PAGINATION);
 
-      setError("Unable to load requests.");
+      setError(
+        err.response?.data?.error ||
+          "Unable to load requests."
+      );
     } finally {
       setLoading(false);
     }
