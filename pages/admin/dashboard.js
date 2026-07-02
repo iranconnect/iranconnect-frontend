@@ -7,6 +7,7 @@ import StatCard from "../../components/admin/StatCard";
 export default function AdminDashboard({ toggleTheme, currentTheme }) {
   const [businesses, setBusinesses] = useState([]);
   const [users, setUsers] = useState([]);
+  const [totalUsers, setTotalUsers] = useState(0);
 
   const [loadingBiz, setLoadingBiz] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -75,13 +76,42 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   ============================================================ */
   async function fetchUsers() {
     setLoadingUsers(true);
+  
     try {
       const r = await apiClient.get("/admin/users", {
         withCredentials: true,
+  
+        params: {
+          page: 1,
+          limit: 10,
+        },
       });
-      setUsers(r.data || []);
+  
+      /*
+        Pagination API جدید:
+        {
+          rows: [...],
+          pagination: { total: ... }
+        }
+  
+        Fallback برای سازگاری با پاسخ قدیمی Array.
+      */
+      if (Array.isArray(r.data)) {
+        setUsers(r.data);
+        setTotalUsers(r.data.length);
+        return;
+      }
+  
+      setUsers(r.data?.rows || []);
+  
+      setTotalUsers(
+        Number(r.data?.pagination?.total) || 0
+      );
     } catch (e) {
       console.error("❌ Error fetching users:", e);
+  
+      setUsers([]);
+      setTotalUsers(0);
     } finally {
       setLoadingUsers(false);
     }
@@ -104,9 +134,9 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
     return {
       totalBusinesses,
       avgRatings,
-      totalUsers: users.length,
+      totalUsers,
     };
-  }, [businesses, users]);
+  }, [businesses, totalUsers]);
 
   /* ============================================================
      ⛔ Prevent UI rendering before auth check
