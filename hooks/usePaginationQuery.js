@@ -54,8 +54,8 @@ export default function usePaginationQuery({
     filterKeys,
   ]);
 
-  function replaceQuery(nextQuery) {
-    router.replace(
+  async function replaceQuery(nextQuery) {
+    return router.replace(
       {
         pathname: router.pathname,
         query: nextQuery,
@@ -68,35 +68,35 @@ export default function usePaginationQuery({
     );
   }
 
-  function setPage(nextPage) {
-    replaceQuery({
+  async function setPage(nextPage) {
+    return replaceQuery({
       ...router.query,
       page: String(nextPage),
       limit: String(limit),
     });
   }
 
-  function applyFilters(nextFilters = {}) {
+  async function applyFilters(nextFilters = {}) {
     const query = {
       page: "1",
       limit: String(limit),
     };
-
+  
     for (const key of filterKeys) {
       const value = String(
         nextFilters[key] || ""
       ).trim();
-
+  
       if (value) {
         query[key] = value;
       }
     }
-
-    replaceQuery(query);
+  
+    return replaceQuery(query);
   }
 
-  function clearFilters() {
-    replaceQuery({
+  async function clearFilters() {
+    return replaceQuery({
       page: "1",
       limit: String(limit),
     });
