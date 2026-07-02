@@ -182,6 +182,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   }, [
     data.category_id,
     JSON.stringify(data.services || []),
+    isUserCatalogMode,
   ]);
   /* ─────────────────────────────
      Handlers
