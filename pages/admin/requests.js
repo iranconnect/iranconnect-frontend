@@ -243,14 +243,14 @@ export default function AdminBusinessRequestsPage() {
     });
   }
 
-  function handleClear() {
+  async function handleClear() {
     setDraftFilters({
       q: "",
       type: "",
       status: "",
     });
-
-    clearFilters();
+  
+    await clearFilters();
   }
 
   /* ============================================================
