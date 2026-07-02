@@ -201,14 +201,14 @@ export default function RequestHistory() {
     applyFilters(draftFilters);
   }
 
-  function handleClear() {
+  async function handleClear() {
     setDraftFilters({
       business: "",
       ticket: "",
       created: "",
     });
-
-    clearFilters();
+  
+    await clearFilters();
   }
 
   const inputClass =
