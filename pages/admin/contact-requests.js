@@ -1,33 +1,90 @@
 // pages/admin/contact-requests.js
 import { useEffect, useState } from "react";
+
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 import ContactRequestDetailsModal from "../../components/admin/ContactRequestDetailsModal";
 
+import Pagination from "../../components/ui/Pagination";
+import usePaginationQuery from "../../hooks/usePaginationQuery";
+
+const DEFAULT_PAGINATION = {
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 0,
+  from: 0,
+  to: 0,
+  hasPreviousPage: false,
+  hasNextPage: false,
+};
+
+function formatDate(value) {
+  if (!value) {
+    return "—";
+  }
+
+  return new Date(value).toLocaleDateString();
+}
+
+function getSubjectLabel(request) {
+  if (request.subject_type === "other") {
+    return request.custom_subject || "Other";
+  }
+
+  return String(request.subject_type || "—").replace(
+    /_/g,
+    " "
+  );
+}
+
 export default function ContactRequestsPage() {
   const [requests, setRequests] = useState([]);
+  const [pagination, setPagination] = useState(
+    DEFAULT_PAGINATION
+  );
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedRequest, setSelectedRequest] =
+    useState(null);
 
-  // Filters
-  const [searchName, setSearchName] = useState("");
-  const [searchEmail, setSearchEmail] = useState("");
-  const [searchSubject, setSearchSubject] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterDate, setFilterDate] = useState("");
+  const [authChecked, setAuthChecked] =
+    useState(false);
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const perPage = 10;
+  const [draftFilters, setDraftFilters] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    status: "pending",
+    date: "",
+  });
 
-  // Access control
-  const [authChecked, setAuthChecked] = useState(false);
+  const {
+    isReady,
+    page,
+    limit,
+    filters,
+    setPage,
+    applyFilters,
+    clearFilters,
+  } = usePaginationQuery({
+    filterKeys: [
+      "name",
+      "email",
+      "subject",
+      "status",
+      "date",
+    ],
+    defaultLimit: 10,
+  });
 
   /* ============================================================
-     🔐 Check authentication & role using HttpOnly Cookie
+     🔐 Admin access check
   ============================================================ */
   useEffect(() => {
+    let mounted = true;
+
     async function checkAccess() {
       try {
         const me = await apiClient.get("/auth/me", {
@@ -39,66 +96,171 @@ export default function ContactRequestsPage() {
           return;
         }
 
-        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
+        if (
+          me.data.role !== "admin" &&
+          me.data.role !== "superadmin"
+        ) {
           window.location.href = "/";
           return;
         }
 
-        setAuthChecked(true);
-        fetchRequests();
-      } catch (err) {
+        if (mounted) {
+          setAuthChecked(true);
+        }
+      } catch {
         window.location.href = "/auth/login";
       }
     }
 
     checkAccess();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   /* ============================================================
-     📡 Fetch contact requests with filters
+     Sync URL filters -> form state
   ============================================================ */
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
+    setDraftFilters({
+      name: filters.name || "",
+      email: filters.email || "",
+      subject: filters.subject || "",
+      status: filters.status || "pending",
+      date: filters.date || "",
+    });
+  }, [
+    isReady,
+    filters.name,
+    filters.email,
+    filters.subject,
+    filters.status,
+    filters.date,
+  ]);
+
+  /* ============================================================
+     Fetch after URL/query changes
+  ============================================================ */
+  useEffect(() => {
+    if (!authChecked || !isReady) {
+      return;
+    }
+
+    fetchRequests();
+  }, [
+    authChecked,
+    isReady,
+    page,
+    limit,
+    filters.name,
+    filters.email,
+    filters.subject,
+    filters.status,
+    filters.date,
+  ]);
+
   async function fetchRequests() {
     setLoading(true);
     setError("");
 
     try {
-      const params = {};
-      if (searchName) params.name = searchName;
-      if (searchEmail) params.email = searchEmail;
-      if (searchSubject) params.subject = searchSubject;
-      if (filterStatus) params.status = filterStatus;
-      if (filterDate) params.date = filterDate;
+      const res = await apiClient.get(
+        "/admin/contact-requests",
+        {
+          params: {
+            page,
+            limit,
+            name: filters.name || undefined,
+            email: filters.email || undefined,
+            subject: filters.subject || undefined,
+            status: filters.status || "pending",
+            date: filters.date || undefined,
+          },
+          withCredentials: true,
+        }
+      );
 
-      const res = await apiClient.get("/admin/contact-requests", {
-        params,
-        withCredentials: true,
-      });
+      /*
+        Backward compatibility:
+        تا قبل از Deploy Backend جدید،
+        endpoint فعلی Array برمی‌گرداند.
+      */
+      if (Array.isArray(res.data)) {
+        const legacyRows = res.data;
 
-      setRequests(res.data || []);
-      setCurrentPage(1);
+        setRequests(legacyRows);
+
+        setPagination({
+          page: 1,
+          limit: legacyRows.length || 10,
+          total: legacyRows.length,
+          totalPages: 1,
+          from: legacyRows.length ? 1 : 0,
+          to: legacyRows.length,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        });
+
+        return;
+      }
+
+      setRequests(res.data?.rows || []);
+
+      setPagination(
+        res.data?.pagination ||
+          DEFAULT_PAGINATION
+      );
     } catch (err) {
-      console.error("❌ Fetch contact requests error:", err);
-      setError(err.response?.data?.error || "Failed to load contact requests.");
+      console.error(
+        "❌ Fetch contact requests error:",
+        err
+      );
+
+      setRequests([]);
+      setPagination(DEFAULT_PAGINATION);
+
+      setError(
+        err.response?.data?.error ||
+          "Failed to load contact requests."
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  /* ============================================================
-     🔄 Clear all filters
-  ============================================================ */
-  function clearFilters() {
-    setSearchName("");
-    setSearchEmail("");
-    setSearchSubject("");
-    setFilterStatus("");
-    setFilterDate("");
-    fetchRequests();
+  function handleSearch(event) {
+    event.preventDefault();
+
+    applyFilters({
+      name: draftFilters.name,
+      email: draftFilters.email,
+      subject: draftFilters.subject,
+      status: draftFilters.status,
+      date: draftFilters.date,
+    });
   }
 
-  /* ============================================================
-     📥 Secure Export (SuperAdmin only – Cookie based)
-  ============================================================ */
+  async function handleClear() {
+    setDraftFilters({
+      name: "",
+      email: "",
+      subject: "",
+      status: "pending",
+      date: "",
+    });
+
+    await clearFilters();
+
+    applyFilters({
+      status: "pending",
+    });
+  }
+
   async function exportContactRequests(type) {
     try {
       const res = await apiClient.get(
@@ -110,22 +272,29 @@ export default function ContactRequestsPage() {
       );
 
       const blob = new Blob([res.data]);
-      const url = window.URL.createObjectURL(blob);
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download =
+      const url =
+        window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
+      link.href = url;
+
+      link.download =
         type === "xlsx"
           ? "IranConnect_Contact_Requests.xlsx"
           : "IranConnect_Contact_Requests.pdf";
 
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      document.body.appendChild(link);
+
+      link.click();
+
+      link.remove();
 
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("❌ Export failed:", err);
+
       alert(
         err.response?.data?.error ||
           "You are not authorized to export this file."
@@ -133,17 +302,6 @@ export default function ContactRequestsPage() {
     }
   }
 
-  /* ============================================================
-     📑 Pagination Logic
-  ============================================================ */
-  const indexOfLast = currentPage * perPage;
-  const indexOfFirst = indexOfLast - perPage;
-  const currentData = requests.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(requests.length / perPage);
-
-  /* ============================================================
-     ⛔ Prevent rendering before auth is checked
-  ============================================================ */
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -152,9 +310,6 @@ export default function ContactRequestsPage() {
     );
   }
 
-  /* ============================================================
-     🎨 UI Rendering
-  ============================================================ */
   return (
     <AdminLayout>
       <div className="admin-container">
@@ -163,80 +318,115 @@ export default function ContactRequestsPage() {
             📩 Contact Requests
           </h2>
 
-          {/* Filters */}
-          <div className="flex flex-wrap gap-3 mb-6 items-center">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-wrap gap-3 mb-6 items-center"
+          >
             <input
               type="text"
               placeholder="Filter by name..."
               className="admin-input w-40"
-              value={searchName}
-              onChange={(e) => setSearchName(e.target.value)}
+              value={draftFilters.name}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  name: event.target.value,
+                }))
+              }
             />
 
             <input
               type="text"
               placeholder="Filter by email..."
               className="admin-input w-48"
-              value={searchEmail}
-              onChange={(e) => setSearchEmail(e.target.value)}
+              value={draftFilters.email}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  email: event.target.value,
+                }))
+              }
             />
 
             <input
               type="text"
               placeholder="Filter by subject..."
               className="admin-input w-48"
-              value={searchSubject}
-              onChange={(e) => setSearchSubject(e.target.value)}
+              value={draftFilters.subject}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  subject: event.target.value,
+                }))
+              }
             />
 
             <select
               className="admin-input w-40"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              value={draftFilters.status}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
+              }
             >
-              <option value="">All Status</option>
               <option value="pending">Pending</option>
               <option value="handled">Handled</option>
+              <option value="all">All statuses</option>
             </select>
 
             <input
               type="date"
               className="admin-input w-40"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
+              value={draftFilters.date}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  date: event.target.value,
+                }))
+              }
             />
 
             <button
-              onClick={fetchRequests}
-              className="admin-btn admin-btn-primary text-sm px-5 py-2"
+              type="submit"
+              disabled={loading}
+              className="admin-btn admin-btn-primary text-sm px-5 py-2 disabled:opacity-60"
             >
               Search
             </button>
 
             <button
-              onClick={clearFilters}
-              className="admin-btn admin-btn-secondary text-sm px-4 py-2"
+              type="button"
+              disabled={loading}
+              onClick={handleClear}
+              className="admin-btn admin-btn-secondary text-sm px-4 py-2 disabled:opacity-60"
             >
               Clear
             </button>
 
-            {/* Export (SECURE) */}
             <div className="flex flex-row gap-3 ml-auto">
               <button
-                onClick={() => exportContactRequests("xlsx")}
+                type="button"
+                onClick={() =>
+                  exportContactRequests("xlsx")
+                }
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
                 Export XLSX
               </button>
 
               <button
-                onClick={() => exportContactRequests("pdf")}
+                type="button"
+                onClick={() =>
+                  exportContactRequests("pdf")
+                }
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
                 Export PDF
               </button>
             </div>
-          </div>
+          </form>
 
           {error && (
             <p className="text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm">
@@ -245,80 +435,105 @@ export default function ContactRequestsPage() {
           )}
 
           {loading ? (
-            <p className="text-sm opacity-70">Loading contact requests...</p>
+            <p className="text-sm opacity-70">
+              Loading contact requests...
+            </p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm text-[var(--text)]">
-                <thead className="opacity-80">
-                  <tr>
-                    <th className="text-left p-3">Name</th>
-                    <th className="text-left p-3">Email</th>
-                    <th className="text-left p-3">Subject</th>
-                    <th className="text-center p-3">Status</th>
-                    <th className="text-left p-3">Date</th>
-                    <th className="text-center p-3">Action</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {currentData.map((r) => (
-                    <tr
-                      key={r.id}
-                      className="border-t border-[var(--border)] hover:bg-[var(--bg)]/40 transition"
-                    >
-                      <td className="p-3">{r.name}</td>
-                      <td className="p-3">{r.email}</td>
-                      <td className="p-3 capitalize">
-                        {r.subject_type.replace(/_/g, " ")}
-                      </td>
-                      <td className="p-3 text-center">
-                        {r.status === "handled" ? "✅ Handled" : "🕓 Pending"}
-                      </td>
-                      <td className="p-3">
-                        {new Date(r.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="p-3 text-center">
-                        <button
-                          onClick={() => setSelectedRequest(r)}
-                          className="admin-btn admin-btn-secondary text-sm px-3 py-1"
-                        >
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {!currentData.length && (
+            <>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm text-[var(--text)]">
+                  <thead className="opacity-80">
                     <tr>
-                      <td colSpan="6" className="text-center opacity-70 p-4">
-                        No contact requests found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+                      <th className="text-left p-3">
+                        Name
+                      </th>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-5">
-              {Array.from({ length: totalPages }, (_, idx) => idx + 1).map(
-                (num) => (
-                  <button
-                    key={num}
-                    onClick={() => setCurrentPage(num)}
-                    className={`px-3 py-1 rounded-md text-sm font-medium ${
-                      currentPage === num
-                        ? "bg-turquoise text-navy shadow-md"
-                        : "border border-[var(--border)] hover:bg-[var(--card-bg)]"
-                    }`}
-                  >
-                    {num}
-                  </button>
-                )
+                      <th className="text-left p-3">
+                        Email
+                      </th>
+
+                      <th className="text-left p-3">
+                        Subject
+                      </th>
+
+                      <th className="text-center p-3">
+                        Status
+                      </th>
+
+                      <th className="text-left p-3">
+                        Date
+                      </th>
+
+                      <th className="text-center p-3">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {requests.map((request) => (
+                      <tr
+                        key={request.id}
+                        className="border-t border-[var(--border)] hover:bg-[var(--bg)]/40 transition"
+                      >
+                        <td className="p-3">
+                          {request.name || "—"}
+                        </td>
+
+                        <td className="p-3">
+                          {request.email || "—"}
+                        </td>
+
+                        <td className="p-3 capitalize">
+                          {getSubjectLabel(request)}
+                        </td>
+
+                        <td className="p-3 text-center">
+                          {request.status === "handled"
+                            ? "✅ Handled"
+                            : "🕓 Pending"}
+                        </td>
+
+                        <td className="p-3">
+                          {formatDate(request.created_at)}
+                        </td>
+
+                        <td className="p-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedRequest(request)
+                            }
+                            className="admin-btn admin-btn-secondary text-sm px-3 py-1"
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {!requests.length && (
+                      <tr>
+                        <td
+                          colSpan="6"
+                          className="text-center opacity-70 p-4"
+                        >
+                          No contact requests found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {!error && (
+                <Pagination
+                  pagination={pagination}
+                  onPageChange={setPage}
+                  disabled={loading}
+                />
               )}
-            </div>
+            </>
           )}
         </section>
       </div>
@@ -326,7 +541,9 @@ export default function ContactRequestsPage() {
       {selectedRequest && (
         <ContactRequestDetailsModal
           request={selectedRequest}
-          onClose={() => setSelectedRequest(null)}
+          onClose={() =>
+            setSelectedRequest(null)
+          }
           refresh={fetchRequests}
         />
       )}
