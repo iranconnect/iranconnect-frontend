@@ -11,7 +11,7 @@ import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 const DEFAULT_PAGINATION = {
   page: 1,
-  limit: 20,
+  limit: 10,
   total: 0,
   totalPages: 0,
   from: 0,
