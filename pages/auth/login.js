@@ -32,6 +32,22 @@ export default function Login() {
 
   const captchaRef = useRef(null);
 
+  function getSafePostLoginRedirect() {
+    const redirect = new URLSearchParams(
+      window.location.search
+    ).get("redirect");
+  
+    if (
+      redirect &&
+      redirect.startsWith("/") &&
+      !redirect.startsWith("//")
+    ) {
+      return redirect;
+    }
+  
+    return "/search";
+  }
+
   /* ───────────────────────────────────────────────
      🔵 Load language
   ─────────────────────────────────────────────── */
@@ -178,12 +194,8 @@ export default function Login() {
         if (!res.data.all_consents_accepted) {
           setShowConsent(true);
         } else {
-          const redirect =
-            new URLSearchParams(window.location.search).get(
-              "redirect"
-            );
-
-          window.location.href = redirect || "/search";
+          window.location.href =
+            getSafePostLoginRedirect();
         }
 
         return;
@@ -423,9 +435,10 @@ export default function Login() {
           lang={lang}
           onClose={(accepted) => {
             setShowConsent(false);
-
+          
             if (accepted) {
-              window.location.href = "/search";
+              window.location.href =
+                getSafePostLoginRedirect();
             }
           }}
         />
