@@ -56,7 +56,7 @@ export default function ContactRequestsPage() {
     name: "",
     email: "",
     subject: "",
-    status: "pending",
+    status: "all",
     date: "",
   });
 
@@ -131,7 +131,7 @@ export default function ContactRequestsPage() {
       name: filters.name || "",
       email: filters.email || "",
       subject: filters.subject || "",
-      status: filters.status || "pending",
+      status: filters.status || "all",
       date: filters.date || "",
     });
   }, [
@@ -178,7 +178,7 @@ export default function ContactRequestsPage() {
             name: filters.name || undefined,
             email: filters.email || undefined,
             subject: filters.subject || undefined,
-            status: filters.status || "pending",
+            status: filters.status || "all",
             date: filters.date || undefined,
           },
           withCredentials: true,
@@ -250,14 +250,14 @@ export default function ContactRequestsPage() {
       name: "",
       email: "",
       subject: "",
-      status: "pending",
+      status: "all",
       date: "",
     });
-
+  
     await clearFilters();
-
+  
     applyFilters({
-      status: "pending",
+      status: "all",
     });
   }
 
