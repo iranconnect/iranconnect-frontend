@@ -173,14 +173,14 @@ export default function UsersPage() {
     });
   }
 
-  function handleClear() {
+  async function handleClear() {
     setDraftFilters({
       q: "",
       role: "",
       verified: "",
     });
-
-    clearFilters();
+  
+    await clearFilters();
   }
 
   function handleExport(format) {
