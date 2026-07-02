@@ -5,12 +5,25 @@ import Link from "next/link";
 import apiClient from "../../utils/apiClient";
 import apiClientAdmin from "../../utils/apiClientAdmin";
 import AdminLayout from "../../components/admin/AdminLayout";
+import Pagination from "../../components/ui/Pagination";
+import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 const STATUS_OPTIONS = [
   { value: "active", label: "Active" },
   { value: "deleted", label: "Deleted" },
   { value: "all", label: "All" },
 ];
+
+const DEFAULT_PAGINATION = {
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 0,
+  from: 0,
+  to: 0,
+  hasPreviousPage: false,
+  hasNextPage: false,
+};
 
 function truncate(text, length = 24) {
   if (!text) return "—";
@@ -38,12 +51,29 @@ function formatDate(value) {
 export default function BusinessesPage() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searching, setSearching] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("active");
+  const [pagination, setPagination] = useState(
+    DEFAULT_PAGINATION
+  );
+  
   const [error, setError] = useState("");
+  
+  const {
+    isReady,
+    page,
+    limit,
+    filters,
+    setPage,
+    applyFilters,
+    clearFilters,
+  } = usePaginationQuery({
+    filterKeys: ["q", "status"],
+    defaultLimit: 10,
+  });
+  
+  const status = filters.status || "active";
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteReason, setDeleteReason] = useState("");
@@ -53,79 +83,89 @@ export default function BusinessesPage() {
   const [restoreSubmitting, setRestoreSubmitting] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-
-    async function checkAccess() {
-      try {
-        const res = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-
-        if (!res.data?.ok) {
-          if (mounted) {
-            window.location.href = "/auth/login";
-          }
-          return;
-        }
-
-        const role = res.data.role;
-
-        if (role !== "admin" && role !== "superadmin") {
-          if (mounted) {
-            window.location.href = "/";
-          }
-          return;
-        }
-
-        if (mounted) {
-          setAuthChecked(true);
-          fetchBusinesses({
-            requestedStatus: "active",
-          });
-        }
-      } catch {
-        window.location.href = "/auth/login";
-      }
+    if (!isReady) {
+      return;
     }
+  
+    setQuery(filters.q || "");
+  }, [
+    isReady,
+    filters.q,
+  ]);
+  
+  useEffect(() => {
+    if (!authChecked || !isReady) {
+      return;
+    }
+  
+    fetchBusinesses();
+  }, [
+    authChecked,
+    isReady,
+    page,
+    limit,
+    filters.q,
+    filters.status,
+  ]);
 
-    checkAccess();
+  
 
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  async function fetchBusinesses({
-    search = query,
-    requestedStatus = status,
-  } = {}) {
+  async function fetchBusinesses() {
     setLoading(true);
     setError("");
-
+  
     try {
-      const res = await apiClientAdmin.get("/admin/businesses", {
-        params: {
-          q: search.trim() || undefined,
-          status: requestedStatus,
-        },
-      });
-
-      const rows = Array.isArray(res.data)
-        ? res.data
-        : Array.isArray(res.data?.rows)
-          ? res.data.rows
-          : [];
-
-      setList(rows);
+      const res = await apiClientAdmin.get(
+        "/admin/businesses",
+        {
+          params: {
+            page,
+            limit,
+            q: filters.q || undefined,
+            status,
+          },
+        }
+      );
+  
+      /*
+        تا قبل از Deploy Backend جدید،
+        API هنوز Array برمی‌گرداند.
+      */
+      if (Array.isArray(res.data)) {
+        const legacyRows = res.data;
+  
+        setList(legacyRows);
+  
+        setPagination({
+          page: 1,
+          limit: legacyRows.length || 10,
+          total: legacyRows.length,
+          totalPages: 1,
+          from: legacyRows.length ? 1 : 0,
+          to: legacyRows.length,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        });
+  
+        return;
+      }
+  
+      setList(res.data?.rows || []);
+  
+      setPagination(
+        res.data?.pagination ||
+          DEFAULT_PAGINATION
+      );
     } catch (err) {
       console.error(
         "❌ Error fetching businesses:",
         err.response?.status,
         err.response?.data || err.message
       );
-
+  
       setList([]);
-
+      setPagination(DEFAULT_PAGINATION);
+  
       setError(
         err.response?.data?.error ||
           "Unable to load businesses. Please try again."
@@ -135,26 +175,25 @@ export default function BusinessesPage() {
     }
   }
 
-  async function handleSearch(event) {
+  function handleSearch(event) {
     event.preventDefault();
-
-    setSearching(true);
-
-    await fetchBusinesses({
-      search: query,
-      requestedStatus: status,
+  
+    applyFilters({
+      q: query,
+      status,
     });
-
-    setSearching(false);
   }
 
-  async function handleStatusChange(nextStatus) {
-    setStatus(nextStatus);
-
-    await fetchBusinesses({
-      search: query,
-      requestedStatus: nextStatus,
+  function handleStatusChange(nextStatus) {
+    applyFilters({
+      q: query,
+      status: nextStatus,
     });
+  }
+
+  async function handleClear() {
+    setQuery("");
+    await clearFilters();
   }
 
   function openSoftDeleteModal(business) {
@@ -203,10 +242,7 @@ export default function BusinessesPage() {
       setDeleteTarget(null);
       setDeleteReason("");
 
-      await fetchBusinesses({
-        search: query,
-        requestedStatus: status,
-      });
+      await fetchBusinesses();
     } catch (err) {
       console.error(
         "❌ Soft delete failed:",
@@ -309,7 +345,7 @@ export default function BusinessesPage() {
 
             <button
               type="submit"
-              disabled={searching}
+              disabled={loading}
               className="
                 px-4 py-2 bg-turquoise text-navy
                 font-medium rounded shadow
@@ -317,7 +353,22 @@ export default function BusinessesPage() {
                 disabled:opacity-60
               "
             >
-              {searching ? "Searching..." : "Search"}
+              Search
+            </button>
+            
+            <button
+              type="button"
+              onClick={handleClear}
+              disabled={loading}
+              className="
+                px-4 py-2 border border-[var(--border)]
+                bg-[var(--card-bg)] text-[var(--text)]
+                font-medium rounded shadow
+                hover:bg-[var(--bg)] transition
+                disabled:opacity-60
+              "
+            >
+              Clear
             </button>
           </form>
         </div>
@@ -360,178 +411,187 @@ export default function BusinessesPage() {
             Loading businesses...
           </p>
         ) : (
-          <section
-            className="
-              overflow-x-auto rounded-2xl border
-              border-[var(--border)] bg-[var(--card-bg)]
-              p-5 text-[var(--text)]
-              shadow-[5px_5px_15px_var(--shadow-dark),-5px_-5px_15px_var(--shadow-light)]
-            "
-          >
-            <table className="min-w-full text-sm">
-              <thead className="opacity-80">
-                <tr>
-                  <th className="p-3 text-left">ID</th>
-                  <th className="p-3 text-left">Name</th>
-                  <th className="p-3 text-left">Category</th>
-                  <th className="p-3 text-left">Location</th>
-                  <th className="p-3 text-left">Visibility</th>
-                  <th className="p-3 text-left">Lifecycle</th>
-                  <th className="p-3 text-left">Actions</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {list.map((business) => (
-                  <tr
-                    key={business.id}
-                    className="border-t border-[var(--border)] hover:bg-[var(--bg)]/40"
-                  >
-                    <td className="p-3 opacity-70">
-                      {business.id}
-                    </td>
-
-                    <td className="p-3">
-                      <div className="font-medium">
-                        {truncate(business.name, 28)}
-                      </div>
-
-                      <div className="mt-1 text-xs opacity-60">
-                        {business.slug || "—"}
-                      </div>
-                    </td>
-
-                    <td className="p-3">
-                      <div>
-                        {truncate(business.category, 20)}
-                      </div>
-
-                      <div className="mt-1 text-xs opacity-60">
-                        {truncate(
-                          business.sub_category,
-                          20
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="p-3">
-                      <div>
-                        {truncate(business.city, 16)}
-                      </div>
-
-                      <div className="mt-1 text-xs opacity-60">
-                        {truncate(business.country, 16)}
-                      </div>
-                    </td>
-
-                    <td className="p-3">
-                      {business.is_public ? (
-                        <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
-                          Public
-                        </span>
-                      ) : (
-                        <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
-                          Private
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="p-3">
-                      {business.is_deleted ? (
-                        <div className="space-y-1">
-                          <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
-                            Deleted
-                          </span>
-
-                          <div className="text-xs opacity-70">
-                            {formatDate(business.deleted_at)}
-                          </div>
-
-                          <div
-                            className="max-w-[220px] text-xs opacity-70"
-                            title={business.deleted_reason || ""}
-                          >
-                            {truncate(
-                              business.deleted_reason,
-                              45
-                            )}
-                          </div>
-
-                          <div className="text-xs opacity-60">
-                            By:{" "}
-                            {business.deleted_by_email ||
-                              business.deleted_source ||
-                              "—"}
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
-                          Active
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="p-3">
-                      <div className="flex flex-wrap gap-2">
-                        {!business.is_deleted && (
-                          <>
-                            <Link
-                              href={`/admin/edit/${business.id}`}
-                              className="text-turquoise hover:underline"
-                            >
-                              Edit
-                            </Link>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openSoftDeleteModal(business)
-                              }
-                              className="text-red-600 hover:underline"
-                            >
-                              Delete
-                            </button>
-                          </>
-                        )}
-
-                        {business.is_deleted && (
-                          <>
-                            <Link
-                              href={`/admin/edit/${business.id}`}
-                              className="text-turquoise hover:underline"
-                            >
-                              View
-                            </Link>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openRestoreModal(business)
-                              }
-                              className="text-green-700 hover:underline"
-                            >
-                              Restore
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-
-                {!list.length && (
+          <>
+            <section
+              className="
+                overflow-x-auto rounded-2xl border
+                border-[var(--border)] bg-[var(--card-bg)]
+                p-5 text-[var(--text)]
+                shadow-[5px_5px_15px_var(--shadow-dark),-5px_-5px_15px_var(--shadow-light)]
+              "
+            >
+              <table className="min-w-full text-sm">
+                <thead className="opacity-80">
                   <tr>
-                    <td
-                      colSpan="7"
-                      className="p-5 text-center opacity-70"
-                    >
-                      No businesses found.
-                    </td>
+                    <th className="p-3 text-left">ID</th>
+                    <th className="p-3 text-left">Name</th>
+                    <th className="p-3 text-left">Category</th>
+                    <th className="p-3 text-left">Location</th>
+                    <th className="p-3 text-left">Visibility</th>
+                    <th className="p-3 text-left">Lifecycle</th>
+                    <th className="p-3 text-left">Actions</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </section>
+                </thead>
+  
+                <tbody>
+                  {list.map((business) => (
+                    <tr
+                      key={business.id}
+                      className="border-t border-[var(--border)] hover:bg-[var(--bg)]/40"
+                    >
+                      <td className="p-3 opacity-70">
+                        {business.id}
+                      </td>
+  
+                      <td className="p-3">
+                        <div className="font-medium">
+                          {truncate(business.name, 28)}
+                        </div>
+  
+                        <div className="mt-1 text-xs opacity-60">
+                          {business.slug || "—"}
+                        </div>
+                      </td>
+  
+                      <td className="p-3">
+                        <div>
+                          {truncate(business.category, 20)}
+                        </div>
+  
+                        <div className="mt-1 text-xs opacity-60">
+                          {truncate(
+                            business.sub_category,
+                            20
+                          )}
+                        </div>
+                      </td>
+  
+                      <td className="p-3">
+                        <div>
+                          {truncate(business.city, 16)}
+                        </div>
+  
+                        <div className="mt-1 text-xs opacity-60">
+                          {truncate(business.country, 16)}
+                        </div>
+                      </td>
+  
+                      <td className="p-3">
+                        {business.is_public ? (
+                          <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+                            Public
+                          </span>
+                        ) : (
+                          <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+                            Private
+                          </span>
+                        )}
+                      </td>
+  
+                      <td className="p-3">
+                        {business.is_deleted ? (
+                          <div className="space-y-1">
+                            <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
+                              Deleted
+                            </span>
+  
+                            <div className="text-xs opacity-70">
+                              {formatDate(business.deleted_at)}
+                            </div>
+  
+                            <div
+                              className="max-w-[220px] text-xs opacity-70"
+                              title={business.deleted_reason || ""}
+                            >
+                              {truncate(
+                                business.deleted_reason,
+                                45
+                              )}
+                            </div>
+  
+                            <div className="text-xs opacity-60">
+                              By:{" "}
+                              {business.deleted_by_email ||
+                                business.deleted_source ||
+                                "—"}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
+                            Active
+                          </span>
+                        )}
+                      </td>
+  
+                      <td className="p-3">
+                        <div className="flex flex-wrap gap-2">
+                          {!business.is_deleted && (
+                            <>
+                              <Link
+                                href={`/admin/edit/${business.id}`}
+                                className="text-turquoise hover:underline"
+                              >
+                                Edit
+                              </Link>
+  
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openSoftDeleteModal(business)
+                                }
+                                className="text-red-600 hover:underline"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+  
+                          {business.is_deleted && (
+                            <>
+                              <Link
+                                href={`/admin/edit/${business.id}`}
+                                className="text-turquoise hover:underline"
+                              >
+                                View
+                              </Link>
+  
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openRestoreModal(business)
+                                }
+                                className="text-green-700 hover:underline"
+                              >
+                                Restore
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+  
+                  {!list.length && (
+                    <tr>
+                      <td
+                        colSpan="7"
+                        className="p-5 text-center opacity-70"
+                      >
+                        No businesses found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </section>
+            {!error && (
+              <Pagination
+                pagination={pagination}
+                onPageChange={setPage}
+                disabled={loading}
+              />
+            )}
+          </> 
         )}
       </div>
 
