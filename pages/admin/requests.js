@@ -41,7 +41,10 @@ function getStatusClass(status) {
 }
 
 function getStatusLabel(status) {
-  if (status === "pending_review") {
+  if (
+    status === "pending" ||
+    status === "pending_review"
+  ) {
     return "Pending review";
   }
 
