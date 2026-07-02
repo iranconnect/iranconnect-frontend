@@ -56,7 +56,7 @@ export default function UsersPage() {
     clearFilters,
   } = usePaginationQuery({
     filterKeys: ["q", "role", "verified"],
-    defaultLimit: 20,
+    defaultLimit: 10,
   });
 
   /* ============================================================
