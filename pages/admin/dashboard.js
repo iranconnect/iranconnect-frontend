@@ -6,6 +6,11 @@ import StatCard from "../../components/admin/StatCard";
 
 export default function AdminDashboard({ toggleTheme, currentTheme }) {
   const [businesses, setBusinesses] = useState([]);
+  const [totalBusinesses, setTotalBusinesses] =
+    useState(0);
+  
+  const [averageRating, setAverageRating] =
+    useState("—");
   const [users, setUsers] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
 
@@ -59,13 +64,78 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   ============================================================ */
   async function fetchBusinesses() {
     setLoadingBiz(true);
+  
     try {
-      const r = await apiClient.get("/admin/businesses", {
-        withCredentials: true,
-      });
-      setBusinesses(r.data || []);
+      const r = await apiClient.get(
+        "/admin/businesses",
+        {
+          withCredentials: true,
+  
+          params: {
+            page: 1,
+            limit: 10,
+            status: "active",
+          },
+        }
+      );
+  
+      /*
+        پاسخ قدیمی:
+        Array
+  
+        پاسخ جدید:
+        {
+          rows: [],
+          pagination: { total },
+          summary: { averageRating }
+        }
+      */
+      if (Array.isArray(r.data)) {
+        const legacyRows = r.data;
+  
+        setBusinesses(legacyRows);
+        setTotalBusinesses(legacyRows.length);
+  
+        const ratings = legacyRows
+          .map((business) =>
+            Number(business.avg_rating)
+          )
+          .filter(
+            (rating) => !Number.isNaN(rating)
+          );
+  
+        setAverageRating(
+          ratings.length
+            ? (
+                ratings.reduce(
+                  (sum, rating) => sum + rating,
+                  0
+                ) / ratings.length
+              ).toFixed(2)
+            : "—"
+        );
+  
+        return;
+      }
+  
+      setBusinesses(r.data?.rows || []);
+  
+      setTotalBusinesses(
+        Number(r.data?.pagination?.total) || 0
+      );
+  
+      setAverageRating(
+        r.data?.summary?.averageRating || "—"
+      );
     } catch (e) {
-      console.error("❌ Error fetching businesses:", e);
+      console.error(
+        "❌ Error fetching businesses:",
+        e
+      );
+  
+      setBusinesses([]);
+      setTotalBusinesses(0);
+      setAverageRating("—");
     } finally {
       setLoadingBiz(false);
     }
@@ -121,22 +191,17 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
      📊 Compute Statistics (Memoized)
   ============================================================ */
   const stats = useMemo(() => {
-    const totalBusinesses = businesses.length;
-
-    const ratings = businesses
-      .map((b) => Number(b.avg_rating))
-      .filter((v) => !isNaN(v));
-
-    const avgRatings = ratings.length
-      ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2)
-      : "—";
-
+    
     return {
       totalBusinesses,
-      avgRatings,
+      avgRatings: averageRating,
       totalUsers,
     };
-  }, [businesses, totalUsers]);
+  }, [
+    totalBusinesses,
+    averageRating,
+    totalUsers,
+  ]);
 
   /* ============================================================
      ⛔ Prevent UI rendering before auth check
