@@ -34,34 +34,24 @@ export default function ClaimDetailsModal({
   };
 
   // 📎 دانلود امن فایل مدرک مالکیت (HttpOnly + Admin Secure)
-  async function handleDownload() {
+  function handleDownload() {
+    if (!claim?.id || downloading) return;
+  
+    setDownloading(true);
+  
     try {
-      setDownloading(true);
-
-      const res = await apiClient.get(
-        `/admin/claims/download-document/${claim.id}`,
-        {
-          responseType: 'blob',
-          withCredentials: true,
-          headers: {
-            'x-iranconnect-admin': 'true',
-          },
-        }
+      const apiBase = String(
+        process.env.NEXT_PUBLIC_API_BASE || ""
+      ).replace(/\/$/, "");
+  
+      window.open(
+        `${apiBase}/admin/claims/download-document/${claim.id}`,
+        "_blank",
+        "noopener,noreferrer"
       );
-
-      const blob = res.data;
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download =
-        claim.document_url?.split('/').pop() || 'ownership_document';
-      a.click();
-
-      window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('❌ Download error:', err);
-      alert('❌ Unable to download document (auth or file missing).');
+      console.error("❌ Download error:", err);
+      alert("❌ Unable to open ownership document.");
     } finally {
       setDownloading(false);
     }
