@@ -34,24 +34,58 @@ export default function ClaimDetailsModal({
   };
 
   // 📎 دانلود امن فایل مدرک مالکیت (HttpOnly + Admin Secure)
-  function handleDownload() {
-    if (!claim?.id || downloading) return;
-  
-    setDownloading(true);
+  async function handleDownload() {
+    if (downloading) return;
   
     try {
-      const apiBase = String(
-        process.env.NEXT_PUBLIC_API_BASE || ""
-      ).replace(/\/$/, "");
+      setDownloading(true);
   
-      window.open(
-        `${apiBase}/admin/claims/download-document/${claim.id}`,
-        "_blank",
-        "noopener,noreferrer"
+      const res = await apiClient.get(
+        `/admin/claims/download-document/${claim.id}`,
+        {
+          responseType: "blob",
+          withCredentials: true,
+          headers: {
+            "x-iranconnect-admin": "true",
+          },
+        }
       );
+  
+      const contentType =
+        res.headers?.["content-type"] || "application/octet-stream";
+  
+      const blob = new Blob([res.data], {
+        type: contentType,
+      });
+  
+      const objectUrl = window.URL.createObjectURL(blob);
+  
+      const link = document.createElement("a");
+      link.href = objectUrl;
+  
+      const fallbackName = `claim-document-${claim.id}`;
+  
+      link.download =
+        claim.document_url
+          ?.split("/")
+          .pop()
+          ?.split("?")[0] || fallbackName;
+  
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+  
+      window.setTimeout(() => {
+        window.URL.revokeObjectURL(objectUrl);
+      }, 1000);
     } catch (err) {
-      console.error("❌ Download error:", err);
-      alert("❌ Unable to open ownership document.");
+      console.error("❌ Claim document download failed:", err);
+  
+      const responseMessage =
+        err.response?.data?.error ||
+        "Unable to download the ownership document.";
+  
+      alert(responseMessage);
     } finally {
       setDownloading(false);
     }
