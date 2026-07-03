@@ -158,49 +158,7 @@ export default function AdminClaimsPage() {
         }
       );
 
-      /*
-        سازگاری موقت با پاسخ قدیمی Backend:
-        Array کامل برمی‌گرداند.
-      */
-      if (Array.isArray(res.data)) {
-        const legacyRows = res.data;
-
-        const localQuery =
-          filters.q?.trim().toLowerCase() || "";
-
-        const locallyFilteredRows = localQuery
-          ? legacyRows.filter((claim) => {
-              const searchableFields = [
-                claim.business_name,
-                claim.full_name,
-                claim.email,
-                claim.user_email,
-                claim.phone,
-              ];
-
-              return searchableFields.some((value) =>
-                String(value || "")
-                  .toLowerCase()
-                  .includes(localQuery)
-              );
-            })
-          : legacyRows;
-
-        setClaims(locallyFilteredRows);
-
-        setPagination({
-          page: 1,
-          limit: locallyFilteredRows.length || 10,
-          total: locallyFilteredRows.length,
-          totalPages: 1,
-          from: locallyFilteredRows.length ? 1 : 0,
-          to: locallyFilteredRows.length,
-          hasPreviousPage: false,
-          hasNextPage: false,
-        });
-
-        return;
-      }
+      
 
       setClaims(res.data?.rows || []);
 
