@@ -1,22 +1,64 @@
 // pages/admin/claims.js
 import { useEffect, useState } from "react";
+
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 import ClaimDetailsModal from "../../components/admin/ClaimDetailsModal";
 
+import Pagination from "../../components/ui/Pagination";
+import usePaginationQuery from "../../hooks/usePaginationQuery";
+
+const DEFAULT_PAGINATION = {
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 0,
+  from: 0,
+  to: 0,
+  hasPreviousPage: false,
+  hasNextPage: false,
+};
+
+function formatStatus(status) {
+  return String(status || "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export default function AdminClaimsPage() {
   const [claims, setClaims] = useState([]);
-  const [filteredClaims, setFilteredClaims] = useState([]);
+  const [pagination, setPagination] = useState(
+    DEFAULT_PAGINATION
+  );
+
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedClaim, setSelectedClaim] =
+    useState(null);
 
-  const [statusFilter, setStatusFilter] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedClaim, setSelectedClaim] = useState(null);
+  const [authChecked, setAuthChecked] =
+    useState(false);
 
-  const [authChecked, setAuthChecked] = useState(false);
+  const [draftFilters, setDraftFilters] = useState({
+    status: "all",
+    q: "",
+  });
+
+  const {
+    isReady,
+    page,
+    limit,
+    filters,
+    setPage,
+    applyFilters,
+    clearFilters,
+  } = usePaginationQuery({
+    filterKeys: ["status", "q"],
+    defaultLimit: 10,
+  });
 
   /* ==========================================================
-     🔐 ۱. احراز هویت با HttpOnly کوکی + چک نقش
+     🔐 Auth check
   ========================================================== */
   useEffect(() => {
     let mounted = true;
@@ -28,18 +70,20 @@ export default function AdminClaimsPage() {
         });
 
         if (!me.data?.ok) {
-          if (mounted) window.location.href = "/auth/login";
+          window.location.href = "/auth/login";
           return;
         }
 
-        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
-          if (mounted) window.location.href = "/";
+        if (
+          me.data.role !== "admin" &&
+          me.data.role !== "superadmin"
+        ) {
+          window.location.href = "/";
           return;
         }
 
         if (mounted) {
           setAuthChecked(true);
-          fetchClaims(); // داده اولیه
         }
       } catch {
         window.location.href = "/auth/login";
@@ -47,136 +91,261 @@ export default function AdminClaimsPage() {
     }
 
     checkAccess();
-    return () => (mounted = false);
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   /* ==========================================================
-     📌 ۲. دریافت لیست Claim
+     Sync URL filters -> form state
   ========================================================== */
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
+    setDraftFilters({
+      status: filters.status || "all",
+      q: filters.q || "",
+    });
+  }, [
+    isReady,
+    filters.status,
+    filters.q,
+  ]);
+
+  /* ==========================================================
+     Fetch claims
+  ========================================================== */
+  useEffect(() => {
+    if (!authChecked || !isReady) {
+      return;
+    }
+
+    fetchClaims();
+  }, [
+    authChecked,
+    isReady,
+    page,
+    limit,
+    filters.status,
+    filters.q,
+  ]);
+
   async function fetchClaims() {
     setLoading(true);
-    try {
-      const res = await apiClient.get("/admin/claims", {
-        params: statusFilter ? { status: statusFilter } : {},
-        withCredentials: true,
-      });
+    setError("");
 
-      setClaims(res.data || []);
-      setFilteredClaims(res.data || []);
+    try {
+      const status =
+        filters.status && filters.status !== "all"
+          ? filters.status
+          : undefined;
+
+      const q = filters.q?.trim() || undefined;
+
+      const res = await apiClient.get(
+        "/admin/claims",
+        {
+          params: {
+            page,
+            limit,
+            status,
+            q,
+          },
+          withCredentials: true,
+        }
+      );
+
+      /*
+        سازگاری موقت با پاسخ قدیمی Backend:
+        Array کامل برمی‌گرداند.
+      */
+      if (Array.isArray(res.data)) {
+        const legacyRows = res.data;
+
+        const localQuery =
+          filters.q?.trim().toLowerCase() || "";
+
+        const locallyFilteredRows = localQuery
+          ? legacyRows.filter((claim) => {
+              const searchableFields = [
+                claim.business_name,
+                claim.full_name,
+                claim.email,
+                claim.user_email,
+                claim.phone,
+              ];
+
+              return searchableFields.some((value) =>
+                String(value || "")
+                  .toLowerCase()
+                  .includes(localQuery)
+              );
+            })
+          : legacyRows;
+
+        setClaims(locallyFilteredRows);
+
+        setPagination({
+          page: 1,
+          limit: locallyFilteredRows.length || 10,
+          total: locallyFilteredRows.length,
+          totalPages: 1,
+          from: locallyFilteredRows.length ? 1 : 0,
+          to: locallyFilteredRows.length,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        });
+
+        return;
+      }
+
+      setClaims(res.data?.rows || []);
+
+      setPagination(
+        res.data?.pagination ||
+          DEFAULT_PAGINATION
+      );
     } catch (err) {
       console.error("❌ Error fetching claims:", err);
+
       setClaims([]);
-      setFilteredClaims([]);
+      setPagination(DEFAULT_PAGINATION);
+
+      setError(
+        err.response?.data?.error ||
+          "Failed to load claim requests."
+      );
     } finally {
       setLoading(false);
     }
   }
 
   /* ==========================================================
-     🔍 ۳. جستجو
+     Search / Clear
   ========================================================== */
-  useEffect(() => {
-    const lower = searchTerm.toLowerCase();
+  function handleSearch(event) {
+    event.preventDefault();
 
-    setFilteredClaims(
-      claims.filter(
-        (c) =>
-          c.business_name?.toLowerCase().includes(lower) ||
-          c.email?.toLowerCase().includes(lower) ||
-          c.full_name?.toLowerCase().includes(lower) ||
-          c.user_email?.toLowerCase().includes(lower)
-      )
-    );
-  }, [searchTerm, claims]);
+    applyFilters({
+      status: draftFilters.status,
+      q: draftFilters.q,
+    });
+  }
+
+  async function handleClear() {
+    setDraftFilters({
+      status: "all",
+      q: "",
+    });
+
+    await clearFilters();
+
+    applyFilters({
+      status: "all",
+    });
+  }
 
   /* ==========================================================
-     🟢 ۴. Approve / Reject (با ارسال کوکی)
+     Approve / Reject
   ========================================================== */
   async function handleApprove(id, note = "") {
-    if (!note.trim()) return alert("Approval note is required.");
-    if (!confirm("Confirm approval?")) return;
+    if (!note.trim()) {
+      alert("Approval note is required.");
+      return;
+    }
+
+    if (!window.confirm("Confirm approval?")) {
+      return;
+    }
 
     try {
       await apiClient.post(
         `/admin/claims/${id}/approve`,
         { note },
-        { withCredentials: true }
+        {
+          withCredentials: true,
+        }
       );
 
-      fetchClaims();
       setSelectedClaim(null);
+      fetchClaims();
     } catch (err) {
-      alert(err.response?.data?.error || "Error approving claim.");
+      alert(
+        err.response?.data?.error ||
+          "Error approving claim."
+      );
     }
   }
 
   async function handleReject(id, note = "") {
-    if (!note.trim()) return alert("Rejection note is required.");
+    if (!note.trim()) {
+      alert("Rejection note is required.");
+      return;
+    }
 
-    if (!confirm("Confirm rejection?")) return;
+    if (!window.confirm("Confirm rejection?")) {
+      return;
+    }
 
     try {
       await apiClient.post(
         `/admin/claims/${id}/reject`,
         { note },
-        { withCredentials: true }
+        {
+          withCredentials: true,
+        }
       );
 
-      fetchClaims();
       setSelectedClaim(null);
+      fetchClaims();
     } catch (err) {
-      alert(err.response?.data?.error || "Error rejecting claim.");
+      alert(
+        err.response?.data?.error ||
+          "Error rejecting claim."
+      );
     }
   }
 
   /* ==========================================================
-     📤 ۵. خروجی گرفتن
+     Export
   ========================================================== */
-  async function handleExportXLSX() {
+  async function handleExport(format) {
     try {
-      const res = await apiClient.get("/admin/claims/export/xlsx", {
-        responseType: "blob",
-        withCredentials: true,
-      });
+      const res = await apiClient.get(
+        `/admin/claims/export/${format}`,
+        {
+          responseType: "blob",
+          withCredentials: true,
+        }
+      );
 
       const blob = new Blob([res.data]);
+
       const url = URL.createObjectURL(blob);
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "IranConnect_Claims_Report.xlsx";
-      a.click();
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download =
+        format === "xlsx"
+          ? "IranConnect_Claims_Report.xlsx"
+          : "IranConnect_Claims_Report.pdf";
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      link.remove();
 
       URL.revokeObjectURL(url);
     } catch {
-      alert("Failed to export XLSX.");
+      alert(`Failed to export ${format.toUpperCase()}.`);
     }
   }
 
-  async function handleExportPDF() {
-    try {
-      const res = await apiClient.get("/admin/claims/export/pdf", {
-        responseType: "blob",
-        withCredentials: true,
-      });
-
-      const blob = new Blob([res.data]);
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "IranConnect_Claims_Report.pdf";
-      a.click();
-
-      URL.revokeObjectURL(url);
-    } catch {
-      alert("Failed to export PDF.");
-    }
-  }
-
-  /* ==========================================================
-     🚫 جلوگیری از رندر بدون احراز هویت
-  ========================================================== */
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -185,124 +354,194 @@ export default function AdminClaimsPage() {
     );
   }
 
-  /* ==========================================================
-     🎨 UI
-  ========================================================== */
   return (
     <AdminLayout>
       <div className="admin-container">
         <div className="admin-section">
-          <h2 className="admin-title mb-4">📨 Business Claim Requests</h2>
+          <h2 className="admin-title mb-4">
+            📨 Business Claim Requests
+          </h2>
 
-          {/* فیلتر + جستجو */}
-          <div className="flex flex-wrap items-center gap-3 mb-6">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-wrap items-center gap-3 mb-6"
+          >
             <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              value={draftFilters.status}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
+              }
               className="admin-input w-48"
             >
-              <option value="">All statuses</option>
+              <option value="all">All statuses</option>
               <option value="pending">Pending</option>
-              <option value="pending_review">Pending Review</option>
+              <option value="pending_review">
+                Pending Review
+              </option>
               <option value="verified">Verified</option>
               <option value="rejected">Rejected</option>
             </select>
 
             <input
               type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={draftFilters.q}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  q: event.target.value,
+                }))
+              }
               placeholder="Search business, applicant, email, or user..."
-              className="admin-input w-60"
+              className="admin-input w-72"
             />
 
-            <div className="flex flex-row flex-wrap gap-3 items-center">
+            <button
+              type="submit"
+              disabled={loading}
+              className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+            >
+              Search
+            </button>
+
+            <button
+              type="button"
+              disabled={loading}
+              onClick={handleClear}
+              className="admin-btn admin-btn-secondary px-4 py-2 text-sm disabled:opacity-60"
+            >
+              Clear
+            </button>
+
+            <div className="flex flex-row flex-wrap gap-3 items-center ml-auto">
               <button
+                type="button"
+                onClick={() => handleExport("xlsx")}
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm"
-                onClick={fetchClaims}
-              >
-                Refresh
-              </button>
-              <button
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
-                onClick={handleExportXLSX}
               >
                 Export XLSX
               </button>
+
               <button
+                type="button"
+                onClick={() => handleExport("pdf")}
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm"
-                onClick={handleExportPDF}
               >
                 Export PDF
               </button>
             </div>
-          </div>
+          </form>
 
-          {/* جدول */}
+          {error && (
+            <p className="text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm">
+              {error}
+            </p>
+          )}
+
           {loading ? (
             <p className="admin-muted">Loading...</p>
-          ) : filteredClaims.length === 0 ? (
-            <p className="admin-muted">No claim requests found.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="admin-table w-full">
-                <thead>
-                  <tr>
-                    <th>Business</th>
-                    <th>Applicant</th>
-                    <th>Role</th>
-                    <th>Email</th>
-                    <th>Submitted by (User)</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredClaims.map((c) => (
-                    <tr key={c.id}>
-                      <td className="max-w-[120px] truncate">{c.business_name}</td>
-                      <td className="max-w-[100px] truncate">
-                        {c.full_name || "—"}
-                      </td>
-                      <td>{c.applicant_role || "—"}</td>
-                      <td className="max-w-[100px] truncate">{c.email}</td>
-                      <td className="max-w-[100px] truncate opacity-80">
-                        {c.user_email || "—"}
-                      </td>
-
-                      <td>
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-semibold ${
-                            c.status === "verified"
-                              ? "bg-green-100 text-green-700"
-                              : c.status === "pending_review"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : c.status === "rejected"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {c.status}
-                        </span>
-                      </td>
-
-                      <td>{new Date(c.created_at).toLocaleDateString()}</td>
-
-                      <td>
-                        <button
-                          className="admin-btn admin-btn-secondary text-sm px-3 py-1"
-                          onClick={() => setSelectedClaim(c)}
-                        >
-                          View
-                        </button>
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="admin-table w-full">
+                  <thead>
+                    <tr>
+                      <th>Business</th>
+                      <th>Applicant</th>
+                      <th>Role</th>
+                      <th>Email</th>
+                      <th>Submitted by (User)</th>
+                      <th>Status</th>
+                      <th>Created</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+
+                  <tbody>
+                    {claims.map((claim) => (
+                      <tr key={claim.id}>
+                        <td className="max-w-[120px] truncate">
+                          {claim.business_name || "—"}
+                        </td>
+
+                        <td className="max-w-[100px] truncate">
+                          {claim.full_name || "—"}
+                        </td>
+
+                        <td>
+                          {claim.applicant_role || "—"}
+                        </td>
+
+                        <td className="max-w-[100px] truncate">
+                          {claim.email || "—"}
+                        </td>
+
+                        <td className="max-w-[100px] truncate opacity-80">
+                          {claim.user_email || "—"}
+                        </td>
+
+                        <td>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-semibold ${
+                              claim.status === "verified"
+                                ? "bg-green-100 text-green-700"
+                                : claim.status === "pending_review"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : claim.status === "rejected"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {formatStatus(claim.status)}
+                          </span>
+                        </td>
+
+                        <td>
+                          {claim.created_at
+                            ? new Date(
+                                claim.created_at
+                              ).toLocaleDateString()
+                            : "—"}
+                        </td>
+
+                        <td>
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn-secondary text-sm px-3 py-1"
+                            onClick={() =>
+                              setSelectedClaim(claim)
+                            }
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {!claims.length && (
+                      <tr>
+                        <td
+                          colSpan="8"
+                          className="text-center opacity-70 p-4"
+                        >
+                          No claim requests found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {!error && (
+                <Pagination
+                  pagination={pagination}
+                  onPageChange={setPage}
+                  disabled={loading}
+                />
+              )}
+            </>
           )}
         </div>
       </div>
@@ -311,8 +550,12 @@ export default function AdminClaimsPage() {
         <ClaimDetailsModal
           claim={selectedClaim}
           onClose={() => setSelectedClaim(null)}
-          onApprove={(note) => handleApprove(selectedClaim.id, note)}
-          onReject={(note) => handleReject(selectedClaim.id, note)}
+          onApprove={(note) =>
+            handleApprove(selectedClaim.id, note)
+          }
+          onReject={(note) =>
+            handleReject(selectedClaim.id, note)
+          }
         />
       )}
     </AdminLayout>
