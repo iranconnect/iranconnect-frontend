@@ -39,7 +39,7 @@ export default function ClaimDetailsModal({
       setDownloading(true);
 
       const res = await apiClient.get(
-        `/admin/claims/download-document/${claim.id}`
+        `/admin/claims/download-document/${claim.id}`,
         {
           responseType: 'blob',
           withCredentials: true,
