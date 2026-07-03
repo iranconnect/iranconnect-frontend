@@ -3,89 +3,197 @@ import { useEffect, useState } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../utils/apiClient";
 import SuspiciousIPDetailsModal from "../../components/admin/SuspiciousIPDetailsModal";
+import Pagination from "../../components/ui/Pagination";
+import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 export default function AdminSuspiciousIPsPage() {
   const [ips, setIps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showRules, setShowRules] = useState(false);
 
-  const [filters, setFilters] = useState({
+  const DEFAULT_PAGINATION = {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    from: 0,
+    to: 0,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  };
+  
+  const [selectedIP, setSelectedIP] = useState(null);
+  
+  const [currentUserRole] = useState("admin");
+  
+  const [pagination, setPagination] = useState(
+    DEFAULT_PAGINATION
+  );
+  
+  const [draftFilters, setDraftFilters] = useState({
     ip: "",
     type: "",
     severity: "",
     status: "",
   });
-
-  const [selectedIP, setSelectedIP] = useState(null);
-
-  // نقش از JWT (در صورت نیاز به کنترل UI)
-  const [currentUserRole] = useState("admin");
-
-  // Pagination
-  const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    pageSize: 10,
-    total: 0,
-    totalPages: 1,
+  
+  const {
+    isReady,
+    page,
+    limit,
+    filters,
+    setPage,
+    applyFilters,
+  } = usePaginationQuery({
+    filterKeys: [
+      "ip",
+      "type",
+      "severity",
+      "status",
+    ],
+    defaultLimit: 10,
   });
 
   useEffect(() => {
-    fetchSuspiciousIPs(1);
-  }, []);
-
-  async function fetchSuspiciousIPs(newPage = page) {
+    if (!isReady) {
+      return;
+    }
+  
+    setDraftFilters({
+      ip: filters.ip || "",
+      type: filters.type || "",
+      severity: filters.severity || "",
+      status: filters.status || "",
+    });
+  }, [
+    isReady,
+    filters.ip,
+    filters.type,
+    filters.severity,
+    filters.status,
+  ]);
+  
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+  
+    fetchSuspiciousIPs();
+  }, [
+    isReady,
+    page,
+    limit,
+    filters.ip,
+    filters.type,
+    filters.severity,
+    filters.status,
+  ]);
+  
+  async function fetchSuspiciousIPs() {
     setLoading(true);
+  
     try {
-      const params = {
-        ...filters,
-        page: newPage,
-        pageSize: 10,
-      };
-
-      const res = await apiClient.get("/admin/suspicious-ips", { params });
-
-      setIps(res.data?.data || []);
-      setPagination(
-        res.data?.pagination || {
-          page: newPage,
-          pageSize: 10,
-          total: 0,
-          totalPages: 1,
+      const res = await apiClient.get(
+        "/admin/suspicious-ips",
+        {
+          params: {
+            page,
+            limit,
+            ip: filters.ip?.trim() || undefined,
+            type: filters.type || undefined,
+            severity: filters.severity || undefined,
+            status: filters.status || undefined,
+          },
+          withCredentials: true,
         }
       );
-      setPage(newPage);
+  
+      setIps(res.data?.rows || []);
+  
+      setPagination(
+        res.data?.pagination ||
+          DEFAULT_PAGINATION
+      );
     } catch (err) {
-      console.error("Failed to fetch suspicious IPs:", err);
+      console.error(
+        "Failed to fetch suspicious IPs:",
+        err
+      );
+  
+      setIps([]);
+      setPagination(DEFAULT_PAGINATION);
     } finally {
       setLoading(false);
     }
   }
-
-  function handleSearch() {
-    fetchSuspiciousIPs(1);
+  
+  function handleSearch(event) {
+    event.preventDefault();
+  
+    applyFilters({
+      ip: draftFilters.ip,
+      type: draftFilters.type,
+      severity: draftFilters.severity,
+      status: draftFilters.status,
+    });
   }
-
+  
   function handleClear() {
-    setFilters({ ip: "", type: "", severity: "", status: "" });
-    fetchSuspiciousIPs(1);
+    setDraftFilters({
+      ip: "",
+      type: "",
+      severity: "",
+      status: "",
+    });
+  
+    applyFilters({
+      ip: "",
+      type: "",
+      severity: "",
+      status: "",
+    });
   }
 
-  function goToPage(newPage) {
-    if (
-      newPage < 1 ||
-      newPage > pagination.totalPages ||
-      newPage === page
-    )
-      return;
-    fetchSuspiciousIPs(newPage);
-  }
-
-  function handleExport(format) {
-    window.open(
-      `${process.env.NEXT_PUBLIC_API_BASE}/admin/suspicious-ips/export/${format}`,
-      "_blank"
-    );
+  async function handleExport(format) {
+    try {
+      const res = await apiClient.get(
+        `/admin/suspicious-ips/export/${format}`,
+        {
+          responseType: "blob",
+          withCredentials: true,
+        }
+      );
+  
+      const blob = new Blob([res.data]);
+  
+      const url = URL.createObjectURL(blob);
+  
+      const link = document.createElement("a");
+  
+      link.href = url;
+      link.download =
+        format === "xlsx"
+          ? "IranConnect_SuspiciousIPs_Report.xlsx"
+          : "IranConnect_SuspiciousIPs_Report.pdf";
+  
+      document.body.appendChild(link);
+  
+      link.click();
+  
+      link.remove();
+  
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(
+        "❌ Suspicious IP export failed:",
+        err
+      );
+  
+      alert(
+        err.response?.data?.error ||
+          `Failed to export ${format.toUpperCase()}.`
+      );
+    }
   }
 
   return (
@@ -133,21 +241,30 @@ export default function AdminSuspiciousIPsPage() {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-wrap gap-3 mb-6 items-center">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-wrap gap-3 mb-6 items-center"
+          >
             <input
               className="admin-input w-48"
               placeholder="Filter by IP"
-              value={filters.ip}
-              onChange={(e) =>
-                setFilters({ ...filters, ip: e.target.value })
+              value={draftFilters.ip}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  ip: event.target.value,
+                }))
               }
             />
 
             <select
               className="admin-input w-40"
-              value={filters.type}
-              onChange={(e) =>
-                setFilters({ ...filters, type: e.target.value })
+              value={draftFilters.type}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  type: event.target.value,
+                }))
               }
             >
               <option value="">All Types</option>
@@ -162,9 +279,12 @@ export default function AdminSuspiciousIPsPage() {
 
             <select
               className="admin-input w-36"
-              value={filters.severity}
-              onChange={(e) =>
-                setFilters({ ...filters, severity: e.target.value })
+              value={draftFilters.severity}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  severity: event.target.value,
+                }))
               }
             >
               <option value="">All Severity</option>
@@ -176,9 +296,12 @@ export default function AdminSuspiciousIPsPage() {
 
             <select
               className="admin-input w-36"
-              value={filters.status}
-              onChange={(e) =>
-                setFilters({ ...filters, status: e.target.value })
+              value={draftFilters.status}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
               }
             >
               <option value="">All Status</option>
@@ -188,33 +311,40 @@ export default function AdminSuspiciousIPsPage() {
             </select>
 
             <button
-              onClick={handleSearch}
-              className="admin-btn admin-btn-primary px-4 py-2 text-sm"
+              type="submit"
+              disabled={loading}
+              className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
             >
               Search
             </button>
+            
             <button
+              type="button"
+              disabled={loading}
               onClick={handleClear}
-              className="admin-btn admin-btn-secondary px-4 py-2 text-sm"
+              className="admin-btn admin-btn-secondary px-4 py-2 text-sm disabled:opacity-60"
             >
               Clear
             </button>
 
             <div className="flex gap-2 ml-auto">
               <button
+                type="button"
                 onClick={() => handleExport("xlsx")}
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm"
               >
                 Export XLSX
               </button>
+              
               <button
+                type="button"
                 onClick={() => handleExport("pdf")}
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm"
               >
                 Export PDF
               </button>
             </div>
-          </div>
+          </form>
 
           {/* Table */}
           {loading ? (
@@ -250,6 +380,7 @@ export default function AdminSuspiciousIPsPage() {
                           <td>{ip.total_attempts}</td>
                           <td className="text-right">
                             <button
+                              type="button"
                               onClick={() =>
                                 setSelectedIP({
                                   ip_address: ip.ip_address,
@@ -273,32 +404,11 @@ export default function AdminSuspiciousIPsPage() {
                 </table>
               </div>
 
-              <div className="flex items-center justify-between mt-4 text-sm">
-                <div>
-                  Page {pagination.page} of {pagination.totalPages}{" "}
-                  {pagination.total > 0 && (
-                    <span className="opacity-70">
-                      ({pagination.total} records)
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    className="admin-btn admin-btn-secondary px-3 py-1"
-                    onClick={() => goToPage(page - 1)}
-                    disabled={page <= 1}
-                  >
-                    ◀ Prev
-                  </button>
-                  <button
-                    className="admin-btn admin-btn-secondary px-3 py-1"
-                    onClick={() => goToPage(page + 1)}
-                    disabled={page >= pagination.totalPages}
-                  >
-                    Next ▶
-                  </button>
-                </div>
-              </div>
+              <Pagination
+                pagination={pagination}
+                onPageChange={setPage}
+                disabled={loading}
+              />
             </>
           )}
 
