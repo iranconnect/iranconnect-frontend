@@ -595,8 +595,7 @@ function Home() {
                   type="button"
                   onClick={handleClear}
                   className="
-                    admin-btn
-                    admin-btn-secondary
+                    search-clear-btn
                     w-full
                     h-11
                     sm:col-span-1
