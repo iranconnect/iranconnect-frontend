@@ -445,6 +445,32 @@ function Home() {
     );
   };
 
+  const handleClear = (event) => {
+    event?.preventDefault?.();
+  
+    setQ("");
+    setCountry("");
+    setCity("");
+    setCategory("");
+    setSubcategory("");
+  
+    fetchList(
+      null,
+      {
+        q: "",
+        country: "",
+        city: "",
+        category: "",
+        subcategory: "",
+      },
+      {
+        append: false,
+        requestedPage: 1,
+        syncUrl: true,
+      }
+    );
+  };
+
   const selectClass = 'input-default w-full h-11';
 
   return (
@@ -540,13 +566,13 @@ function Home() {
                 <input
                   className="
                     input-default w-full h-11
-                    sm:col-span-3 sm:row-start-2
+                    sm:col-span-2 sm:row-start-2
                   "
                   placeholder="Search by name or address"
                   value={q}
-                  onChange={(e) => setQ(e.target.value)}
+                  onChange={(event) => setQ(event.target.value)}
                 />
-  
+                
                 {/* Search button */}
                 <button
                   className="
@@ -556,6 +582,18 @@ function Home() {
                   type="submit"
                 >
                   Search
+                </button>
+                
+                {/* Clear button */}
+                <button
+                  className="
+                    btn-secondary w-full h-11
+                    sm:col-span-1 sm:row-start-2
+                  "
+                  type="button"
+                  onClick={handleClear}
+                >
+                  Clear
                 </button>
   
               </form>
