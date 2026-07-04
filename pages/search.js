@@ -141,54 +141,15 @@ function Home() {
         setSubcategory(initialFilters.subcategory);
         setQ(initialFilters.q);
   
-        await fetchCountries();
-  
+        await Promise.all([
+          fetchCountries(),
+          fetchCities(),
+          fetchCategories(),
+          fetchSubcategories(),
+        ]);
+        
         if (cancelled) {
           return;
-        }
-  
-        if (initialFilters.country) {
-          await fetchCities(initialFilters.country);
-  
-          if (cancelled) {
-            return;
-          }
-  
-          setCity(initialFilters.city);
-        }
-  
-        if (
-          initialFilters.country &&
-          initialFilters.city
-        ) {
-          await fetchCategories(
-            initialFilters.country,
-            initialFilters.city
-          );
-  
-          if (cancelled) {
-            return;
-          }
-  
-          setCategory(initialFilters.category);
-        }
-  
-        if (
-          initialFilters.country &&
-          initialFilters.city &&
-          initialFilters.category
-        ) {
-          await fetchSubcategories(
-            initialFilters.country,
-            initialFilters.city,
-            initialFilters.category
-          );
-  
-          if (cancelled) {
-            return;
-          }
-  
-          setSubcategory(initialFilters.subcategory);
         }
   
         const firstPageResult = await fetchList(
@@ -277,31 +238,15 @@ function Home() {
     }
   }
 
-  async function fetchCities(selectedCountry) {
-    if (!selectedCountry) {
-      setCities([]);
-      setCity("");
-      setCategories([]);
-      setCategory("");
-      setSubcategories([]);
-      setSubcategory("");
-      return;
-    }
-
+  async function fetchCities() {
     setLoadingCities(true);
-
+  
     try {
-      const res = await apiClient.get("/businesses/cities", {
-        params: { country: selectedCountry },
-      });
-
+      const res = await apiClient.get(
+        "/businesses/cities"
+      );
+  
       setCities(res.data || []);
-      setCity('');
-      setCategories([]);
-      setCategory('');
-      setSubcategories([]);
-      setSubcategory('');
-
     } catch (err) {
       console.error(err);
     } finally {
@@ -309,34 +254,24 @@ function Home() {
     }
   }
 
-  async function fetchCategories(selectedCountry, selectedCity) {
-    if (!selectedCountry || !selectedCity) {
-      setCategories([]);
-      return;
-    }
-
+  async function fetchCategories() {
     try {
-      const res = await apiClient.get("/businesses/categories", {
-        params: { country: selectedCountry, city: selectedCity },
-      });
-
+      const res = await apiClient.get(
+        "/businesses/categories"
+      );
+  
       setCategories(res.data || []);
     } catch (err) {
       console.error(err);
     }
   }
 
-  async function fetchSubcategories(selectedCountry, selectedCity, selectedCategory) {
-    if (!selectedCountry || !selectedCity || !selectedCategory) {
-      setSubcategories([]);
-      return;
-    }
-
+  async function fetchSubcategories() {
     try {
-      const res = await apiClient.get("/businesses/subcategories", {
-        params: { country: selectedCountry, city: selectedCity, category: selectedCategory },
-      });
-
+      const res = await apiClient.get(
+        "/businesses/subcategories"
+      );
+  
       setSubcategories(res.data || []);
     } catch (err) {
       console.error(err);
@@ -484,42 +419,16 @@ function Home() {
     );
   }
 
-  const handleCountryChange = async (e) => {
-    const value = e.target.value;
-  
-    setCountry(value);
-  
-    // Reset every dependent filter immediately.
-    setCity("");
-    setCategory("");
-    setSubcategory("");
-  
-    setCities([]);
-    setCategories([]);
-    setSubcategories([]);
-    
-    if (value) {
-      await fetchCities(value);
-      return;
-    }
-    
-    // Country cleared:
-    // reset filters only; results remain unchanged until Search is clicked.
+  const handleCountryChange = (event) => {
+    setCountry(event.target.value);
   };
 
-  const handleCityChange = async (e) => {
-    const value = e.target.value;
-    setCity(value);
-    setCategory('');
-    setSubcategory('');
-    await fetchCategories(country, value);
+  const handleCityChange = (event) => {
+    setCity(event.target.value);
   };
 
-  const handleCategoryChange = async (e) => {
-    const selected = e.target.value;
-    setCategory(selected);
-    setSubcategory('');
-    await fetchSubcategories(country, city, selected);
+  const handleCategoryChange = (event) => {
+    setCategory(event.target.value);
   };
 
   const handleSearch = (event) => {
@@ -584,7 +493,7 @@ function Home() {
                   className={selectClass}
                   value={city}
                   onChange={handleCityChange}
-                  disabled={!country || loadingCities}
+                  disabled={loadingCities}
                 >
                   <option value="">
                     {loadingCities ? 'Loading cities...' : 'City'}
@@ -602,7 +511,6 @@ function Home() {
                   className={selectClass}
                   value={category}
                   onChange={handleCategoryChange}
-                  disabled={!city}
                 >
                   <option value="">Category</option>
   
@@ -618,7 +526,6 @@ function Home() {
                   className={selectClass}
                   value={subcategory}
                   onChange={(e) => setSubcategory(e.target.value)}
-                  disabled={!category}
                 >
                   <option value="">Subcategory</option>
   
