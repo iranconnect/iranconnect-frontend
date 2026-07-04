@@ -540,9 +540,12 @@ function Home() {
                 >
                   <option value="">Category</option>
   
-                  {categories.map((cat, idx) => (
-                    <option key={idx} value={cat.category}>
-                      {cat.category}
+                  {categories.map((cat) => (
+                    <option
+                      key={cat.id}
+                      value={cat.slug}
+                    >
+                      {cat.name}
                     </option>
                   ))}
                 </select>
@@ -555,9 +558,12 @@ function Home() {
                 >
                   <option value="">Subcategory</option>
   
-                  {subcategories.map((sub, idx) => (
-                    <option key={idx} value={sub.sub_category}>
-                      {sub.sub_category}
+                  {subcategories.map((sub) => (
+                    <option
+                      key={sub.id}
+                      value={sub.slug}
+                    >
+                      {sub.name}
                     </option>
                   ))}
                 </select>
