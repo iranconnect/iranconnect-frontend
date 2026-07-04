@@ -116,6 +116,9 @@ export default function BusinessReviews({
   const [loadingMore, setLoadingMore] =
     useState(false);
 
+  const [loadingReviewList, setLoadingReviewList] =
+  useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -132,8 +135,10 @@ export default function BusinessReviews({
 
       if (append) {
         setLoadingMore(true);
-      } else {
+      } else if (requestedPage === 1 && reviews.length === 0) {
         setLoading(true);
+      } else {
+        setLoadingReviewList(true);
       }
 
       try {
@@ -246,9 +251,10 @@ export default function BusinessReviews({
 
         return null;
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
+          setLoading(false);
+          setLoadingMore(false);
+          setLoadingReviewList(false);
+        }
     },
     [businessId]
   );
@@ -647,7 +653,11 @@ export default function BusinessReviews({
                       : filterOption.value
                   }
                   type="button"
-                  disabled={loading || loadingMore}
+                  disabled={
+                    loading ||
+                    loadingMore ||
+                    loadingReviewList
+                  }
                   onClick={() =>
                     handleRatingFilterChange(
                       filterOption.value
@@ -667,8 +677,20 @@ export default function BusinessReviews({
           </div>
         </div>
 
-        <div className="h-[560px] overflow-y-auto p-4 pr-2">
-          <div className="space-y-4">
+        <div className="relative max-h-[560px] overflow-y-auto p-4 pr-2">
+          {loadingReviewList && (
+            <div className="sticky top-0 z-10 mb-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-center text-sm font-medium shadow-sm">
+              Loading reviews...
+            </div>
+          )}
+        
+          <div
+            className={`space-y-4 transition-opacity ${
+              loadingReviewList
+                ? "pointer-events-none opacity-40"
+                : "opacity-100"
+            }`}
+          >
             {reviews.length === 0 && (
               <p className="text-sm text-justify-pro opacity-70">
                 {selectedRatingFilter
@@ -740,7 +762,7 @@ export default function BusinessReviews({
               <div className="pt-1 text-center">
                 <button
                   type="button"
-                  disabled={loadingMore}
+                  disabled={loadingMore || loadingReviewList}
                   onClick={handleLoadMore}
                   className="btn-primary min-w-[160px] px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
