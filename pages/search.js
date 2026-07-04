@@ -43,6 +43,9 @@ function Home() {
   const [category, setCategory] = useState('');
   const [subcategory, setSubcategory] = useState('');
   const [businesses, setBusinesses] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [theme, setTheme] = useState('light');
@@ -156,9 +159,19 @@ function Home() {
 
   async function fetchList(
     forceCategory = null,
-    filterOverrides = {}
+    filterOverrides = {},
+    options = {}
   ) {
-    setLoading(true);
+    const {
+      append = false,
+      requestedPage = 1,
+    } = options;
+  
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
   
     try {
       const resolvedCountry =
@@ -179,6 +192,7 @@ function Home() {
         filterOverrides.q ?? q;
   
       const params = {
+        page: requestedPage,
         limit: 10,
       };
   
@@ -202,21 +216,55 @@ function Home() {
         params.q = resolvedQuery.trim();
       }
   
-      const res = await apiClient.get("/businesses", {
-        params,
-      });
+      const res = await apiClient.get(
+        "/businesses",
+        { params }
+      );
   
-      setBusinesses(
-        Array.isArray(res.data)
-          ? res.data
-          : []
+      const nextRows = res.data?.rows || [];
+      const nextPagination =
+        res.data?.pagination || {};
+  
+      setBusinesses((currentRows) =>
+        append
+          ? [...currentRows, ...nextRows]
+          : nextRows
+      );
+  
+      setCurrentPage(
+        Number(nextPagination.page) || requestedPage
+      );
+  
+      setHasMore(
+        Boolean(nextPagination.hasNextPage)
       );
     } catch (err) {
       console.error("Search list error:", err);
-      setBusinesses([]);
+  
+      if (!append) {
+        setBusinesses([]);
+        setCurrentPage(1);
+        setHasMore(false);
+      }
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  }
+
+  function handleLoadMore() {
+    if (loadingMore || !hasMore) {
+      return;
+    }
+  
+    fetchList(
+      null,
+      {},
+      {
+        append: true,
+        requestedPage: currentPage + 1,
+      }
+    );
   }
 
   const handleCountryChange = async (e) => {
@@ -398,12 +446,36 @@ function Home() {
             {loading ? (
               <p>Loading...</p>
             ) : businesses.length === 0 ? (
-              <p className="text-muted">No results found.</p>
+              <p className="text-muted">
+                No results found.
+              </p>
             ) : (
               <div className="space-y-5">
-                {businesses.slice(0, 10).map((b) => (
-                  <BusinessCard key={b.id} b={b} />
+                {businesses.map((b) => (
+                  <BusinessCard
+                    key={b.id}
+                    b={b}
+                  />
                 ))}
+          
+                {hasMore && (
+                  <div className="pt-2 text-center">
+                    <button
+                      type="button"
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                      className="
+                        btn-primary
+                        min-w-[180px]
+                        disabled:opacity-60
+                      "
+                    >
+                      {loadingMore
+                        ? "Loading..."
+                        : "Load more"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </section>
