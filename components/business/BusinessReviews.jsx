@@ -3,6 +3,20 @@ import { useCallback, useEffect, useState } from "react";
 import RatingStars from "../RatingStars";
 import apiClient from "../../utils/apiClient";
 
+const REVIEW_PAGE_SIZE = 5;
+
+const EMPTY_SUMMARY = {
+  average_rating: 0,
+  approved_review_count: 0,
+  rating_breakdown: {
+    5: 0,
+    4: 0,
+    3: 0,
+    2: 0,
+    1: 0,
+  },
+};
+
 function formatReviewDate(value) {
   if (!value) return "";
 
@@ -28,7 +42,8 @@ function getReviewStatusMeta(status) {
     approved: {
       label: "Published",
       className: "text-emerald-600",
-      message: "Your review is currently visible on this business profile.",
+      message:
+        "Your review is currently visible on this business profile.",
     },
     rejected: {
       label: "Needs revision",
@@ -59,6 +74,7 @@ function ReviewStars({ rating }) {
       aria-label={`${safeRating} out of 5 stars`}
     >
       {"★".repeat(safeRating)}
+
       <span className="text-muted">
         {"★".repeat(5 - safeRating)}
       </span>
@@ -74,52 +90,208 @@ export default function BusinessReviews({
   const [reviews, setReviews] = useState([]);
   const [userReview, setUserReview] = useState(null);
 
+  const [summary, setSummary] = useState(
+    EMPTY_SUMMARY
+  );
+
+  const [selectedRatingFilter, setSelectedRatingFilter] =
+    useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
 
-  const [needsDisplayName, setNeedsDisplayName] = useState(false);
-  const [reviewDisplayName, setReviewDisplayName] = useState("");
-  const [savingDisplayName, setSavingDisplayName] = useState(false);
+  const [needsDisplayName, setNeedsDisplayName] =
+    useState(false);
+
+  const [reviewDisplayName, setReviewDisplayName] =
+    useState("");
+
+  const [savingDisplayName, setSavingDisplayName] =
+    useState(false);
 
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] =
+    useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
 
-  const loadReviews = useCallback(async () => {
-    if (!businessId) {
-      setLoading(false);
+  const fetchReviewPage = useCallback(
+    async ({
+      append = false,
+      requestedPage = 1,
+      ratingFilter = null,
+    } = {}) => {
+      if (!businessId) {
+        setLoading(false);
+        return null;
+      }
+
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
+      try {
+        const params = {
+          page: requestedPage,
+          limit: REVIEW_PAGE_SIZE,
+        };
+
+        if (ratingFilter) {
+          params.rating = ratingFilter;
+        }
+
+        const response = await apiClient.get(
+          `/businesses/${businessId}/reviews`,
+          {
+            params,
+          }
+        );
+
+        const publicReviews = Array.isArray(
+          response.data?.data
+        )
+          ? response.data.data
+          : [];
+
+        const nextPagination =
+          response.data?.pagination || {};
+
+        const nextSummary =
+          response.data?.summary || EMPTY_SUMMARY;
+
+        const ownReview =
+          response.data?.user_review || null;
+
+        setReviews((currentReviews) => {
+          if (!append) {
+            return publicReviews;
+          }
+
+          const mergedReviews = [
+            ...currentReviews,
+            ...publicReviews,
+          ];
+
+          return Array.from(
+            new Map(
+              mergedReviews.map((review) => [
+                review.id,
+                review,
+              ])
+            ).values()
+          );
+        });
+
+        setSummary({
+          average_rating: Number(
+            nextSummary.average_rating || 0
+          ),
+          approved_review_count: Number(
+            nextSummary.approved_review_count || 0
+          ),
+          rating_breakdown: {
+            5: Number(
+              nextSummary.rating_breakdown?.[5] || 0
+            ),
+            4: Number(
+              nextSummary.rating_breakdown?.[4] || 0
+            ),
+            3: Number(
+              nextSummary.rating_breakdown?.[3] || 0
+            ),
+            2: Number(
+              nextSummary.rating_breakdown?.[2] || 0
+            ),
+            1: Number(
+              nextSummary.rating_breakdown?.[1] || 0
+            ),
+          },
+        });
+
+        setUserReview(ownReview);
+
+        setRating(Number(ownReview?.rating) || 0);
+        setComment(ownReview?.comment || "");
+
+        const receivedPage =
+          Number(nextPagination.page) ||
+          requestedPage;
+
+        setCurrentPage(receivedPage);
+
+        setHasMore(
+          Boolean(nextPagination.hasNextPage)
+        );
+
+        return {
+          page: receivedPage,
+          hasMore: Boolean(
+            nextPagination.hasNextPage
+          ),
+        };
+      } catch {
+        if (!append) {
+          setReviews([]);
+          setUserReview(null);
+          setSummary(EMPTY_SUMMARY);
+          setCurrentPage(1);
+          setHasMore(false);
+        }
+
+        return null;
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [businessId]
+  );
+
+  useEffect(() => {
+    setSelectedRatingFilter(null);
+    setReviews([]);
+    setSummary(EMPTY_SUMMARY);
+    setCurrentPage(1);
+    setHasMore(false);
+
+    fetchReviewPage({
+      append: false,
+      requestedPage: 1,
+      ratingFilter: null,
+    });
+  }, [businessId, fetchReviewPage]);
+
+  async function handleRatingFilterChange(nextRating) {
+    if (loading || loadingMore) {
       return;
     }
 
-    try {
-      setLoading(true);
+    setSelectedRatingFilter(nextRating);
 
-      const response = await apiClient.get(
-        `/businesses/${businessId}/reviews`
-      );
+    await fetchReviewPage({
+      append: false,
+      requestedPage: 1,
+      ratingFilter: nextRating,
+    });
+  }
 
-      const publicReviews = Array.isArray(response.data?.data)
-        ? response.data.data
-        : [];
-
-      const ownReview = response.data?.user_review || null;
-
-      setReviews(publicReviews);
-      setUserReview(ownReview);
-
-      setRating(Number(ownReview?.rating) || 0);
-      setComment(ownReview?.comment || "");
-    } catch {
-      setReviews([]);
-      setUserReview(null);
-    } finally {
-      setLoading(false);
+  async function handleLoadMore() {
+    if (loadingMore || !hasMore) {
+      return;
     }
-  }, [businessId]);
 
-  useEffect(() => {
-    loadReviews();
-  }, [loadReviews]);
+    await fetchReviewPage({
+      append: true,
+      requestedPage: currentPage + 1,
+      ratingFilter: selectedRatingFilter,
+    });
+  }
 
   async function submitReview() {
     if (!isLoggedIn || !allowReviews || !rating || submitting) {
@@ -138,7 +310,8 @@ export default function BusinessReviews({
         }
       );
 
-      const submittedReview = response.data?.review || null;
+      const submittedReview =
+        response.data?.review || null;
 
       if (submittedReview) {
         setUserReview((current) => ({
@@ -154,11 +327,18 @@ export default function BusinessReviews({
           "Your review has been submitted and is pending approval."
       );
 
-      await loadReviews();
+      await fetchReviewPage({
+        append: false,
+        requestedPage: 1,
+        ratingFilter: selectedRatingFilter,
+      });
     } catch (error) {
-      const errorCode = error.response?.data?.code;
+      const errorCode =
+        error.response?.data?.code;
 
-      if (errorCode === "REVIEW_DISPLAY_NAME_REQUIRED") {
+      if (
+        errorCode === "REVIEW_DISPLAY_NAME_REQUIRED"
+      ) {
         setNeedsDisplayName(true);
         setMessage("");
         return;
@@ -213,18 +393,45 @@ export default function BusinessReviews({
     }
   }
 
-  const averageRating = reviews.length
-    ? reviews.reduce(
-        (total, review) => total + Number(review.rating || 0),
-        0
-      ) / reviews.length
-    : 0;
-
   const statusMeta = getReviewStatusMeta(
     userReview?.status
   );
 
-  const hasApprovedReviews = reviews.length > 0;
+  const hasApprovedReviews =
+    summary.approved_review_count > 0;
+
+  const ratingFilterOptions = [
+    {
+      value: null,
+      label: "All",
+      count: summary.approved_review_count,
+    },
+    {
+      value: 5,
+      label: "5★",
+      count: summary.rating_breakdown[5],
+    },
+    {
+      value: 4,
+      label: "4★",
+      count: summary.rating_breakdown[4],
+    },
+    {
+      value: 3,
+      label: "3★",
+      count: summary.rating_breakdown[3],
+    },
+    {
+      value: 2,
+      label: "2★",
+      count: summary.rating_breakdown[2],
+    },
+    {
+      value: 1,
+      label: "1★",
+      count: summary.rating_breakdown[1],
+    },
+  ];
 
   if (loading) {
     return (
@@ -249,15 +456,19 @@ export default function BusinessReviews({
       {hasApprovedReviews && (
         <div className="mb-7 flex flex-wrap items-center gap-3 border-b border-[var(--border)] pb-6">
           <div className="text-3xl font-bold">
-            {averageRating.toFixed(1)}
+            {summary.average_rating.toFixed(1)}
           </div>
-      
-          <ReviewStars rating={Math.round(averageRating)} />
-      
+
+          <ReviewStars
+            rating={Math.round(
+              summary.average_rating
+            )}
+          />
+
           <div className="text-sm text-justify-pro">
-            {reviews.length === 1
+            {summary.approved_review_count === 1
               ? "(1 approved review)"
-              : `(${reviews.length} approved reviews)`}
+              : `(${summary.approved_review_count} approved reviews)`}
           </div>
         </div>
       )}
@@ -272,7 +483,9 @@ export default function BusinessReviews({
 
           {statusMeta && (
             <div className="mb-4 text-sm">
-              <p className={`font-medium ${statusMeta.className}`}>
+              <p
+                className={`font-medium ${statusMeta.className}`}
+              >
                 {statusMeta.label}
               </p>
 
@@ -308,7 +521,9 @@ export default function BusinessReviews({
               id={`review-comment-${businessId}`}
               value={comment}
               onChange={(event) =>
-                setComment(event.target.value.slice(0, 3000))
+                setComment(
+                  event.target.value.slice(0, 3000)
+                )
               }
               maxLength={3000}
               rows={5}
@@ -328,8 +543,9 @@ export default function BusinessReviews({
               </h4>
 
               <p className="mb-3 text-sm text-justify-pro opacity-75">
-                This name will be shown publicly next to your review.
-                You can use a shortened name such as “Sara M.”
+                This name will be shown publicly next to your
+                review. You can use a shortened name such as
+                “Sara M.”
               </p>
 
               <label
@@ -403,67 +619,139 @@ export default function BusinessReviews({
         </p>
       )}
 
-      <div className="space-y-4">
-        {reviews.length === 0 && (
-          <p className="text-sm text-justify-pro opacity-70">
-            No approved reviews have been published yet.
-          </p>
-        )}
+      <div className="rounded-xl border border-[var(--border)]">
+        <div className="border-b border-[var(--border)] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="font-semibold">
+              Customer reviews
+            </h3>
 
-        {reviews.map((review) => (
-          <article
-            key={review.id}
-            className="rounded-xl border border-[var(--border)] p-4"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="mb-1 text-sm font-semibold">
-                  {review.reviewer_display_name ||
-                    "IranConnect member"}
-                </p>
+            <span className="text-xs opacity-65">
+              {selectedRatingFilter
+                ? `${selectedRatingFilter}-star reviews`
+                : "All approved reviews"}
+            </span>
+          </div>
 
-                <div className="flex items-center gap-3">
-                  <ReviewStars rating={review.rating} />
+          <div className="mt-4 flex flex-wrap gap-2">
+            {ratingFilterOptions.map((filterOption) => {
+              const isActive =
+                selectedRatingFilter ===
+                filterOption.value;
 
-                  <span className="text-sm font-medium">
-                    {review.rating}/5
-                  </span>
-                </div>
-              </div>
+              return (
+                <button
+                  key={
+                    filterOption.value === null
+                      ? "all"
+                      : filterOption.value
+                  }
+                  type="button"
+                  disabled={loading || loadingMore}
+                  onClick={() =>
+                    handleRatingFilterChange(
+                      filterOption.value
+                    )
+                  }
+                  aria-pressed={isActive}
+                  className={
+                    isActive
+                      ? "rounded-full border border-turquoise bg-turquoise px-3 py-1.5 text-xs font-semibold text-navy transition disabled:cursor-not-allowed disabled:opacity-50"
+                      : "rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-semibold transition hover:border-turquoise disabled:cursor-not-allowed disabled:opacity-50"
+                  }
+                >
+                  {filterOption.label} ({filterOption.count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-              <time className="text-xs opacity-60">
-                {formatReviewDate(review.created_at)}
-              </time>
-            </div>
-
-            {review.comment && (
-              <p className="mt-3 whitespace-pre-line text-sm leading-6 text-justify-pro">
-                {review.comment}
+        <div className="h-[560px] overflow-y-auto p-4 pr-2">
+          <div className="space-y-4">
+            {reviews.length === 0 && (
+              <p className="text-sm text-justify-pro opacity-70">
+                {selectedRatingFilter
+                  ? `No ${selectedRatingFilter}-star reviews have been published yet.`
+                  : "No approved reviews have been published yet."}
               </p>
             )}
 
-            {review.reply?.reply_text && (
-              <div className="mt-4 rounded-xl border-l-4 border-turquoise bg-[var(--surface)] px-4 py-3">
-                <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold">
-                    Response from the business
-                  </p>
+            {reviews.map((review) => (
+              <article
+                key={review.id}
+                className="rounded-xl border border-[var(--border)] p-4"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="mb-1 text-sm font-semibold">
+                      {review.reviewer_display_name ||
+                        "IranConnect member"}
+                    </p>
+
+                    <div className="flex items-center gap-3">
+                      <ReviewStars
+                        rating={review.rating}
+                      />
+
+                      <span className="text-sm font-medium">
+                        {review.rating}/5
+                      </span>
+                    </div>
+                  </div>
 
                   <time className="text-xs opacity-60">
                     {formatReviewDate(
-                      review.reply.updated_at ||
-                        review.reply.created_at
+                      review.created_at
                     )}
                   </time>
                 </div>
 
-                <p className="whitespace-pre-line text-sm leading-6 text-justify-pro">
-                  {review.reply.reply_text}
-                </p>
+                {review.comment && (
+                  <p className="mt-3 whitespace-pre-line text-sm leading-6 text-justify-pro">
+                    {review.comment}
+                  </p>
+                )}
+
+                {review.reply?.reply_text && (
+                  <div className="mt-4 rounded-xl border-l-4 border-turquoise bg-[var(--surface)] px-4 py-3">
+                    <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-semibold">
+                        Response from the business
+                      </p>
+
+                      <time className="text-xs opacity-60">
+                        {formatReviewDate(
+                          review.reply.updated_at ||
+                            review.reply.created_at
+                        )}
+                      </time>
+                    </div>
+
+                    <p className="whitespace-pre-line text-sm leading-6 text-justify-pro">
+                      {review.reply.reply_text}
+                    </p>
+                  </div>
+                )}
+              </article>
+            ))}
+
+            {hasMore && (
+              <div className="pt-1 text-center">
+                <button
+                  type="button"
+                  disabled={loadingMore}
+                  onClick={handleLoadMore}
+                  className="btn-primary min-w-[160px] px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loadingMore
+                    ? "Loading..."
+                    : "Load more"}
+                </button>
               </div>
             )}
-          </article>
-        ))}
+          </div>
+        </div>
       </div>
     </section>
   );
