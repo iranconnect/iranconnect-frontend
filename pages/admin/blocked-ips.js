@@ -3,26 +3,49 @@ import { useState, useEffect } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../utils/apiClient";
 import BlockedIPDetailsModal from "../../components/admin/BlockedIPDetailsModal";
+import Pagination from "../../components/ui/Pagination";
+import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 export default function AdminBlockedIPs() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const [filters, setFilters] = useState({
+  const [selectedIP, setSelectedIP] = useState(null);
+
+  const DEFAULT_PAGINATION = {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    from: 0,
+    to: 0,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  };
+  
+  const [pagination, setPagination] = useState(
+    DEFAULT_PAGINATION
+  );
+  
+  const [draftFilters, setDraftFilters] = useState({
     ip: "",
     status: "",
   });
-
-  const [selectedIP, setSelectedIP] = useState(null);
+  
+  const {
+    isReady,
+    page,
+    limit,
+    filters,
+    setPage,
+    applyFilters,
+  } = usePaginationQuery({
+    filterKeys: ["ip", "status"],
+    defaultLimit: 10,
+  });
+  
   const [authChecked, setAuthChecked] = useState(false);
 
-  const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    pageSize: 10,
-    total: 0,
-    totalPages: 1,
-  });
 
   /* ===========================================================
      🔐 مرحله 1: احراز هویت ادمین با کوکی HttpOnly (ایمن)
@@ -62,37 +85,66 @@ export default function AdminBlockedIPs() {
      📥 مرحله 2: دریافت رکوردها — فقط بعد از احراز هویت
      =========================================================== */
   useEffect(() => {
-    if (!authChecked) return;
-    fetchBlockedIPs(1);
-  }, [authChecked]);
+    if (!isReady) {
+      return;
+    }
+  
+    setDraftFilters({
+      ip: filters.ip || "",
+      status: filters.status || "",
+    });
+  }, [
+    isReady,
+    filters.ip,
+    filters.status,
+  ]);
+  
+  useEffect(() => {
+    if (!authChecked || !isReady) {
+      return;
+    }
+  
+    fetchBlockedIPs();
+  }, [
+    authChecked,
+    isReady,
+    page,
+    limit,
+    filters.ip,
+    filters.status,
+  ]);
 
-  async function fetchBlockedIPs(newPage = page) {
+  async function fetchBlockedIPs() {
     setLoading(true);
+  
     try {
-      const params = {
-        ...filters,
-        page: newPage,
-        pageSize: 10,
-      };
-
-      const res = await apiClient.get("/admin/blocked-ips", {
-        params,
-        withCredentials: true,
-      });
-
-      setList(res.data?.data || []);
-      setPagination(
-        res.data?.pagination || {
-          page: newPage,
-          pageSize: 10,
-          total: (res.data?.data || []).length,
-          totalPages: 1,
+      const res = await apiClient.get(
+        "/admin/blocked-ips",
+        {
+          params: {
+            page,
+            limit,
+            ip: filters.ip?.trim() || undefined,
+            status: filters.status || undefined,
+          },
+          withCredentials: true,
         }
       );
-
-      setPage(newPage);
+  
+      setList(res.data?.rows || []);
+  
+      setPagination(
+        res.data?.pagination ||
+          DEFAULT_PAGINATION
+      );
     } catch (err) {
-      console.error("Failed to fetch blocked IPs:", err);
+      console.error(
+        "Failed to fetch blocked IPs:",
+        err
+      );
+  
+      setList([]);
+      setPagination(DEFAULT_PAGINATION);
     } finally {
       setLoading(false);
     }
@@ -101,30 +153,67 @@ export default function AdminBlockedIPs() {
   /* ===========================================================
      📁 Export
      =========================================================== */
-  function handleExport(format) {
-    window.open(
-      `${process.env.NEXT_PUBLIC_API_BASE}/admin/blocked-ips/export/${format}?t=${Date.now()}`,
-      "_blank"
-    );
+  async function handleExport(format) {
+    try {
+      const res = await apiClient.get(
+        `/admin/blocked-ips/export/${format}`,
+        {
+          responseType: "blob",
+          withCredentials: true,
+        }
+      );
+  
+      const blob = new Blob([res.data]);
+  
+      const url = URL.createObjectURL(blob);
+  
+      const link = document.createElement("a");
+  
+      link.href = url;
+      link.download =
+        format === "xlsx"
+          ? "IranConnect_BlockedIPs_Report.xlsx"
+          : "IranConnect_BlockedIPs_Report.pdf";
+  
+      document.body.appendChild(link);
+  
+      link.click();
+  
+      link.remove();
+  
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(
+        "❌ Blocked IP export failed:",
+        err
+      );
+  
+      alert(
+        err.response?.data?.error ||
+          `Failed to export ${format.toUpperCase()}.`
+      );
+    }
   }
 
-  function handleSearch() {
-    fetchBlockedIPs(1);
+  function handleSearch(event) {
+    event.preventDefault();
+  
+    applyFilters({
+      ip: draftFilters.ip,
+      status: draftFilters.status,
+    });
   }
-
+  
   function handleClear() {
-    setFilters({ ip: "", status: "" });
-    fetchBlockedIPs(1);
-  }
-
-  function goToPage(newPage) {
-    if (
-      newPage < 1 ||
-      newPage > (pagination.totalPages || 1) ||
-      newPage === page
-    )
-      return;
-    fetchBlockedIPs(newPage);
+    setDraftFilters({
+      ip: "",
+      status: "",
+    });
+  
+    applyFilters({
+      ip: "",
+      status: "",
+    });
   }
 
   /* ===========================================================
@@ -151,21 +240,30 @@ export default function AdminBlockedIPs() {
           <h2 className="admin-title mb-5">🚫 Blocked IP Addresses</h2>
 
           {/* Filters */}
-          <div className="flex flex-wrap gap-3 mb-6 items-center">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-wrap gap-3 mb-6 items-center"
+          >
             <input
               className="admin-input w-48"
               placeholder="Filter by IP"
-              value={filters.ip}
-              onChange={(e) =>
-                setFilters({ ...filters, ip: e.target.value })
+              value={draftFilters.ip}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  ip: event.target.value,
+                }))
               }
             />
 
             <select
               className="admin-input w-40"
-              value={filters.status}
-              onChange={(e) =>
-                setFilters({ ...filters, status: e.target.value })
+              value={draftFilters.status}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
               }
             >
               <option value="">All Status</option>
@@ -174,15 +272,18 @@ export default function AdminBlockedIPs() {
             </select>
 
             <button
-              onClick={handleSearch}
-              className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
+              type="submit"
+              disabled={loading}
+              className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium disabled:opacity-60"
             >
               Search
             </button>
-
+            
             <button
+              type="button"
+              disabled={loading}
               onClick={handleClear}
-              className="admin-btn admin-btn-secondary px-4 py-2 text-sm font-medium"
+              className="admin-btn admin-btn-secondary px-4 py-2 text-sm font-medium disabled:opacity-60"
             >
               Clear
             </button>
@@ -190,19 +291,21 @@ export default function AdminBlockedIPs() {
             {/* Export Buttons */}
             <div className="flex flex-row gap-2 ml-auto">
               <button
+                type="button"
                 onClick={() => handleExport("xlsx")}
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
                 Export XLSX
               </button>
               <button
+                type="button"
                 onClick={() => handleExport("pdf")}
                 className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
               >
                 Export PDF
               </button>
             </div>
-          </div>
+          </form>
 
           {/* Table */}
           {loading ? (
@@ -243,6 +346,7 @@ export default function AdminBlockedIPs() {
                           </td>
                           <td className="text-right">
                             <button
+                              type="button"
                               onClick={() => setSelectedIP(item)}
                               className="admin-btn admin-btn-secondary text-xs px-3 py-1"
                             >
@@ -262,35 +366,11 @@ export default function AdminBlockedIPs() {
                 </table>
               </div>
 
-              {/* Pagination */}
-              <div className="flex items-center justify-between mt-4 text-sm">
-                <div>
-                  Page {pagination.page} of {pagination.totalPages}{" "}
-                  {pagination.total > 0 && (
-                    <span className="opacity-70">
-                      ({pagination.total} records)
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    className="admin-btn admin-btn-secondary px-3 py-1"
-                    onClick={() => goToPage(page - 1)}
-                    disabled={page <= 1}
-                  >
-                    ◀ Prev
-                  </button>
-
-                  <button
-                    className="admin-btn admin-btn-secondary px-3 py-1"
-                    onClick={() => goToPage(page + 1)}
-                    disabled={page >= (pagination.totalPages || 1)}
-                  >
-                    Next ▶
-                  </button>
-                </div>
-              </div>
+              <Pagination
+                pagination={pagination}
+                onPageChange={setPage}
+                disabled={loading}
+              />
             </>
           )}
 
