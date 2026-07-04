@@ -260,3 +260,52 @@ iframe[src*="google.com/recaptcha/"] {
   color: #ffffff;
   opacity: 0.9;
 }
+
+/* ============================================================
+   Public Search — Clear button
+   Light theme: navy background / white text
+   Dark theme: white background / navy text
+============================================================ */
+
+.search-clear-btn {
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+/* Light theme */
+html[data-theme="light"] .search-clear-btn,
+html:not([data-theme]) .search-clear-btn {
+  background-color: #0a1d37;
+  color: #ffffff;
+  border: 1px solid #0a1d37;
+}
+
+/* Dark theme */
+html[data-theme="dark"] .search-clear-btn {
+  background-color: #ffffff;
+  color: #0a1d37;
+  border: 1px solid #ffffff;
+}
+
+/* Hover */
+html[data-theme="light"] .search-clear-btn:hover,
+html:not([data-theme]) .search-clear-btn:hover {
+  background-color: #102139;
+  border-color: #102139;
+}
+
+html[data-theme="dark"] .search-clear-btn:hover {
+  background-color: #eaf0f8;
+  border-color: #eaf0f8;
+}
+
+/* Keyboard accessibility */
+.search-clear-btn:focus-visible {
+  outline: 2px solid #40e0d0;
+  outline-offset: 2px;
+}
