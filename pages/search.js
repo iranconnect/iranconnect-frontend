@@ -592,12 +592,16 @@ function Home() {
                 
                 {/* Clear button */}
                 <button
-                  className="
-                    btn-secondary w-full h-11
-                    sm:col-span-1 sm:row-start-2
-                  "
                   type="button"
                   onClick={handleClear}
+                  className="
+                    admin-btn
+                    admin-btn-secondary
+                    w-full
+                    h-11
+                    sm:col-span-1
+                    sm:row-start-2
+                  "
                 >
                   Clear
                 </button>
