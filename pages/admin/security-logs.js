@@ -2,15 +2,46 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import Pagination from "../../components/ui/Pagination";
+import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 export default function AdminSecurityLogs() {
   const [logs, setLogs] = useState([]);
-  const [filteredLogs, setFilteredLogs] = useState([]);
-  const [filter, setFilter] = useState("");
-  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState("");
+
+  const DEFAULT_PAGINATION = {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    from: 0,
+    to: 0,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  };
+  
+  const [pagination, setPagination] = useState(
+    DEFAULT_PAGINATION
+  );
+  
+  const [draftFilters, setDraftFilters] = useState({
+    status: "",
+    q: "",
+  });
+  
+  const {
+    isReady,
+    page,
+    limit,
+    filters,
+    setPage,
+    applyFilters,
+  } = usePaginationQuery({
+    filterKeys: ["status", "q"],
+    defaultLimit: 10,
+  });
 
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -54,84 +85,140 @@ export default function AdminSecurityLogs() {
      📦 Fetch logs — after auth + when filter changes
   ============================================================ */
   useEffect(() => {
-    if (!authChecked) return;
+    if (!isReady) {
+      return;
+    }
+  
+    setDraftFilters({
+      status: filters.status || "",
+      q: filters.q || "",
+    });
+  }, [
+    isReady,
+    filters.status,
+    filters.q,
+  ]);
+  
+  useEffect(() => {
+    if (!authChecked || !isReady) {
+      return;
+    }
+  
     fetchLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authChecked, filter]);
-
+  }, [
+    authChecked,
+    isReady,
+    page,
+    limit,
+    filters.status,
+    filters.q,
+  ]);
+  
   async function fetchLogs() {
     setLoading(true);
     setError("");
-
+  
     try {
-      const res = await apiClient.get("/admin/security-logs", {
-        params: { status: filter || undefined },
-        withCredentials: true,
-      });
-
-      const data = Array.isArray(res.data) ? res.data : [];
-      setLogs(data);
-      setFilteredLogs(data);
+      const res = await apiClient.get(
+        "/admin/security-logs",
+        {
+          params: {
+            page,
+            limit,
+            status: filters.status || undefined,
+            q: filters.q?.trim() || undefined,
+          },
+          withCredentials: true,
+        }
+      );
+  
+      setLogs(res.data?.rows || []);
+  
+      setPagination(
+        res.data?.pagination ||
+          DEFAULT_PAGINATION
+      );
     } catch (err) {
       console.error("❌ Error loading logs:", err);
-      setError(err.response?.data?.error || "Failed to load security logs.");
+  
       setLogs([]);
-      setFilteredLogs([]);
+      setPagination(DEFAULT_PAGINATION);
+  
+      setError(
+        err.response?.data?.error ||
+          "Failed to load security logs."
+      );
     } finally {
       setLoading(false);
     }
   }
-
-  /* ============================================================
-     🔍 Client-side search
-  ============================================================ */
-  useEffect(() => {
-    let list = logs;
-
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((l) =>
-        l.email?.toLowerCase().includes(q)
-      );
-    }
-
-    setFilteredLogs(list);
-  }, [search, logs]);
-
+  
+  function handleSearch(event) {
+    event.preventDefault();
+  
+    applyFilters({
+      status: draftFilters.status,
+      q: draftFilters.q,
+    });
+  }
+  
+  function handleClear() {
+    setDraftFilters({
+      status: "",
+      q: "",
+    });
+  
+    applyFilters({
+      status: "",
+      q: "",
+    });
+  }
   /* ============================================================
      📤 Export CSV
   ============================================================ */
-  function exportToCSV() {
-    if (!filteredLogs.length) return;
-
-    const headers = [
-      "Email",
-      "Status",
-      "IP",
-      "User Agent",
-      "Expires At",
-      "Used At",
-      "Created At",
-    ];
-
-    const rows = filteredLogs.map((l) => [
-      l.email,
-      l.status,
-      l.ip_address || "",
-      l.user_agent ? `"${l.user_agent.replace(/"/g, "'")}"` : "",
-      l.expires_at ? new Date(l.expires_at).toISOString() : "",
-      l.used_at ? new Date(l.used_at).toISOString() : "",
-      new Date(l.created_at).toISOString(),
-    ]);
-
-    const csv =
-      [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `IranConnect_Security_Logs_${Date.now()}.csv`;
-    a.click();
+  async function exportToCSV() {
+    try {
+      const res = await apiClient.get(
+        "/admin/security-logs/export/csv",
+        {
+          params: {
+            status: filters.status || undefined,
+            q: filters.q?.trim() || undefined,
+          },
+          responseType: "blob",
+          withCredentials: true,
+        }
+      );
+  
+      const blob = new Blob([res.data], {
+        type: "text/csv;charset=utf-8;",
+      });
+  
+      const url = URL.createObjectURL(blob);
+  
+      const link = document.createElement("a");
+  
+      link.href = url;
+      link.download = "IranConnect_Security_Logs.csv";
+  
+      document.body.appendChild(link);
+  
+      link.click();
+  
+      link.remove();
+  
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(
+        "❌ Security Logs export failed:",
+        err
+      );
+  
+      alert(
+        err.response?.data?.error ||
+          "Failed to export security logs."
+      );
+    }
   }
 
   /* ============================================================
@@ -152,16 +239,9 @@ export default function AdminSecurityLogs() {
     <AdminLayout>
       <div className="admin-container">
         <div className="admin-section">
-          <div className="flex flex-wrap justify-between items-center mb-5 gap-3">
-            <h2 className="admin-title">🔐 Password Reset Logs</h2>
-            <button
-              onClick={exportToCSV}
-              className="admin-btn admin-btn-primary"
-              disabled={!filteredLogs.length}
-            >
-              ⬇️ Export CSV
-            </button>
-          </div>
+          <h2 className="admin-title mb-5">
+            🔐 Password Reset Logs
+          </h2>
 
           {error && (
             <p className="text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm">
@@ -170,10 +250,18 @@ export default function AdminSecurityLogs() {
           )}
 
           {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3 mb-5">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-wrap items-center gap-3 mb-5"
+          >
             <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
+              value={draftFilters.status}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
+              }
               className="admin-input w-48"
             >
               <option value="">All statuses</option>
@@ -183,81 +271,133 @@ export default function AdminSecurityLogs() {
               <option value="expired">Expired</option>
               <option value="used">Used</option>
             </select>
-
+          
             <input
               type="text"
               placeholder="Search by email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={draftFilters.q}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  q: event.target.value,
+                }))
+              }
               className="admin-input w-60"
             />
-
+          
             <button
-              className="admin-btn admin-btn-secondary"
-              onClick={fetchLogs}
+              type="submit"
+              disabled={loading}
+              className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
             >
-              Refresh
+              Search
             </button>
-          </div>
+          
+            <button
+              type="button"
+              disabled={loading}
+              onClick={handleClear}
+              className="admin-btn admin-btn-secondary px-4 py-2 text-sm disabled:opacity-60"
+            >
+              Clear
+            </button>
+          
+            <div className="ml-auto">
+              <button
+                type="button"
+                onClick={exportToCSV}
+                disabled={loading}
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+              >
+                Export CSV
+              </button>
+            </div>
+          </form>
 
           {/* Table */}
           {loading ? (
             <p className="admin-muted">Loading...</p>
-          ) : filteredLogs.length === 0 ? (
+          ) : logs.length === 0 ? (
             <p className="admin-muted">No records found.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="admin-table w-full">
-                <thead>
-                  <tr>
-                    <th>Email</th>
-                    <th>Status</th>
-                    <th>IP</th>
-                    <th>Expires</th>
-                    <th>Used</th>
-                    <th>Created</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredLogs.map((log) => (
-                    <tr
-                      key={log.id}
-                      onClick={() => setSelected(log)}
-                      className="cursor-pointer"
-                    >
-                      <td>{log.email}</td>
-                      <td className="capitalize">{log.status}</td>
-                      <td>{log.ip_address || "—"}</td>
-                      <td>
-                        {log.expires_at
-                          ? new Date(log.expires_at).toLocaleString()
-                          : "—"}
-                      </td>
-                      <td>
-                        {log.used_at
-                          ? new Date(log.used_at).toLocaleString()
-                          : "—"}
-                      </td>
-                      <td>
-                        {new Date(log.created_at).toLocaleString()}
-                      </td>
-                      <td className="text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelected(log);
-                          }}
-                          className="text-turquoise hover:underline"
-                        >
-                          View
-                        </button>
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="admin-table w-full">
+                  <thead>
+                    <tr>
+                      <th>Email</th>
+                      <th>Status</th>
+                      <th>IP</th>
+                      <th>Expires</th>
+                      <th>Used</th>
+                      <th>Created</th>
+                      <th></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+          
+                  <tbody>
+                    {logs.map((log) => (
+                      <tr
+                        key={log.id}
+                        onClick={() => setSelected(log)}
+                        className="cursor-pointer"
+                      >
+                        <td>{log.email}</td>
+          
+                        <td className="capitalize">
+                          {log.status}
+                        </td>
+          
+                        <td>{log.ip_address || "—"}</td>
+          
+                        <td>
+                          {log.expires_at
+                            ? new Date(
+                                log.expires_at
+                              ).toLocaleString()
+                            : "—"}
+                        </td>
+          
+                        <td>
+                          {log.used_at
+                            ? new Date(
+                                log.used_at
+                              ).toLocaleString()
+                            : "—"}
+                        </td>
+          
+                        <td>
+                          {new Date(
+                            log.created_at
+                          ).toLocaleString()}
+                        </td>
+          
+                        <td className="text-right">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setSelected(log);
+                            }}
+                            className="text-turquoise hover:underline"
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+          
+              {!error && (
+                <Pagination
+                  pagination={pagination}
+                  onPageChange={setPage}
+                  disabled={loading}
+                />
+              )}
+            </>
           )}
         </div>
 
