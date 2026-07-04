@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient.js";
 
 export default function FileLogDetailsModal({ log, onClose }) {
-  const [details, setDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const details = log;
 
   /* ---------------------------------------------------------
      ⌨️ Close modal with ESC
@@ -19,33 +18,7 @@ export default function FileLogDetailsModal({ log, onClose }) {
   /* ---------------------------------------------------------
      📦 Load log details
   --------------------------------------------------------- */
-  useEffect(() => {
-    if (log?.id) fetchDetails();
-  }, [log]);
-
-  async function fetchDetails() {
-    setLoading(true);
-
-    try {
-      const res = await apiClient.get(
-        `/admin/files/logs?id=${encodeURIComponent(log.id)}`,
-        {
-          withCredentials: true,
-          headers: {
-            "x-iranconnect-admin": "true",
-          },
-        }
-      );
-
-      setDetails(res.data?.[0] || log);
-    } catch (err) {
-      console.error("❌ Error fetching file log details:", err);
-      // fallback to initial log to avoid empty UI
-      setDetails(log);
-    } finally {
-      setLoading(false);
-    }
-  }
+  
 
   if (!log) return null;
 
@@ -73,51 +46,46 @@ export default function FileLogDetailsModal({ log, onClose }) {
           File Log Details
         </h2>
 
-        {loading ? (
-          <p className="text-center text-gray-400">Loading...</p>
-        ) : (
-          <div className="space-y-3 text-sm">
-            <div>
-              <strong>File Name:</strong> {details?.file_name || "—"}
-            </div>
-            <div>
-              <strong>Mime Type:</strong> {details?.mime_type || "—"}
-            </div>
-            <div>
-              <strong>Status:</strong> {details?.scan_status || "—"}
-            </div>
-            <div>
-              <strong>Upload Source:</strong> {details?.upload_source || "—"}
-            </div>
-            <div>
-              <strong>User:</strong> {details?.user_email || "—"}
-            </div>
-            <div>
-              <strong>Size:</strong>{" "}
-              {details?.file_size
-                ? (details.file_size / 1024).toFixed(1) + " KB"
-                : "—"}
-            </div>
-            <div>
-              <strong>IP Address:</strong> {details?.ip_address || "—"}
-            </div>
-            <div>
-              <strong>Scanned At:</strong>{" "}
-              {details?.scanned_at
-                ? new Date(details.scanned_at).toLocaleString()
-                : "—"}
-            </div>
-
-            {details?.error_message && (
-              <div>
-                <strong>Error Message:</strong>{" "}
-                <span className="text-red-500">
-                  {details.error_message}
-                </span>
-              </div>
-            )}
+        <div className="space-y-3 text-sm">
+          <div>
+            <strong>File Name:</strong> {details?.file_name || "—"}
           </div>
-        )}
+          <div>
+            <strong>Mime Type:</strong> {details?.mime_type || "—"}
+          </div>
+          <div>
+            <strong>Status:</strong> {details?.scan_status || "—"}
+          </div>
+          <div>
+            <strong>Upload Source:</strong> {details?.upload_source || "—"}
+          </div>
+          <div>
+            <strong>User:</strong> {details?.user_email || "—"}
+          </div>
+          <div>
+            <strong>Size:</strong>{" "}
+            {details?.file_size
+              ? (details.file_size / 1024).toFixed(1) + " KB"
+              : "—"}
+          </div>
+          <div>
+            <strong>IP Address:</strong> {details?.ip_address || "—"}
+          </div>
+          <div>
+            <strong>Scanned At:</strong>{" "}
+            {details?.scanned_at
+              ? new Date(details.scanned_at).toLocaleString()
+              : "—"}
+          </div>
+           {details?.error_message && (
+            <div>
+              <strong>Error Message:</strong>{" "}
+              <span className="text-red-500">
+                {details.error_message}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
