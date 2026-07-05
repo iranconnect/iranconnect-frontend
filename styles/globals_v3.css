@@ -309,3 +309,34 @@ html[data-theme="dark"] .search-clear-btn:hover {
   outline: 2px solid #40e0d0;
   outline-offset: 2px;
 }
+
+/* ==========================================================
+   Consent Review Modal
+   Override legacy inline policy colors for light/dark themes.
+========================================================== */
+.consent-policy-content,
+.consent-policy-content * {
+  color: inherit !important;
+}
+
+.consent-policy-content [style*="background-color"] {
+  background-color: transparent !important;
+}
+
+.consent-policy-content a {
+  color: var(--turquoise) !important;
+  text-decoration: underline;
+}
+
+.consent-policy-content h1,
+.consent-policy-content h2,
+.consent-policy-content h3,
+.consent-policy-content h4,
+.consent-policy-content strong {
+  color: inherit !important;
+}
+
+.consent-policy-content .ql-direction-rtl {
+  direction: rtl;
+  text-align: right;
+}
