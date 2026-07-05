@@ -5,6 +5,7 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import ReCAPTCHA from "react-google-recaptcha"; // 🧩 اضافه شد
 import { Eye, EyeOff } from "lucide-react";
+import ConsentReviewModal from "../../components/ConsentReviewModal";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -19,7 +20,13 @@ export default function Register() {
   const [emailStatus, setEmailStatus] = useState(null);
   const [theme, setTheme] = useState("light");
   const [lang, setLang] = useState("en");
-  const [checked, setChecked] = useState(false);
+
+  const [showConsentReview, setShowConsentReview] =
+    useState(false);
+  
+  const [consentPresentation, setConsentPresentation] =
+    useState(null);
+  
   const [captchaToken, setCaptchaToken] = useState(null);
 
   /* 🎨 Theme & Language Watch */
@@ -83,9 +90,11 @@ export default function Register() {
   async function submit(e) {
     e.preventDefault();
 
-    if (!checked) {
+    if (!consentPresentation?.presentationToken) {
       setMsgType("error");
-      setMsg("⚠️ Please accept the policies before signing up.");
+      setMsg(
+        "⚠️ Please review and accept the policies before signing up."
+      );
       return;
     }
 
@@ -113,7 +122,9 @@ export default function Register() {
       const res = await apiClient.post("/auth/register", {
         email,
         password,
-        agreed_terms: checked,
+        agreed_terms: true,
+        consent_presentation_token:
+          consentPresentation.presentationToken,
         recaptchaToken: captchaToken,
       });
 
@@ -237,42 +248,32 @@ export default function Register() {
             </div>
 
             {/* 🧾 پذیرش سیاست‌ها */}
-            <div className="text-sm mt-4 leading-6">
-              <p>You can read IranConnect policies here:</p>
-              <p>
-                <a
-                  href="/privacy-policy"
-                  target="_blank"
-                  className="text-turquoise underline mx-1"
-                >
-                  Privacy Policy
-                </a>{" "}
-                •{" "}
-                <a
-                  href="/terms-of-service"
-                  target="_blank"
-                  className="text-turquoise underline mx-1"
-                >
-                  Terms of Service
-                </a>{" "}
-                •{" "}
-                <a
-                  href="/cookies"
-                  target="_blank"
-                  className="text-turquoise underline mx-1"
-                >
-                  Cookies
-                </a>
+            <div className="mt-4 rounded-xl border p-4 text-sm leading-6">
+              <p className="font-medium">
+                Before creating your account, please review and accept
+                IranConnect’s Terms of Service, Privacy Policy, and
+                Cookie Policy.
               </p>
-              <label className="flex items-center mt-3">
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={(e) => setChecked(e.target.checked)}
-                  className="mr-2"
-                />
-                <span>I have read and accept all the above policies.</span>
-              </label>
+            
+              <button
+                type="button"
+                onClick={() => {
+                  setMsg("");
+                  setMsgType("info");
+                  setShowConsentReview(true);
+                }}
+                className="mt-3 rounded-lg border border-turquoise px-4 py-2 font-medium text-turquoise transition hover:bg-turquoise hover:text-navy"
+              >
+                {consentPresentation
+                  ? "✓ Policies reviewed and accepted"
+                  : "Review and accept policies"}
+              </button>
+            
+              {consentPresentation?.presentationExpiresAt && (
+                <p className="mt-2 text-xs opacity-70">
+                  Your policy review is valid for 20 minutes.
+                </p>
+              )}
             </div>
 
             {/* 🧩 Google reCAPTCHA */}
@@ -325,6 +326,21 @@ export default function Register() {
       </main>
 
       <Footer />
-    </div>
+
+      {showConsentReview && (
+        <ConsentReviewModal
+          initialLanguage={lang}
+          onClose={() => {
+            setShowConsentReview(false);
+          }}
+          onConfirmed={(presentation) => {
+            setConsentPresentation(presentation);
+            setShowConsentReview(false);
+            setMsg("");
+            setMsgType("info");
+          }}
+        />
+      )}
+      </div>
   );
 }
