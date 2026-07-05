@@ -277,12 +277,15 @@ export default function Register() {
             </div>
 
             {/* 🧩 Google reCAPTCHA */}
-            <div className="flex justify-center my-3">
-              <ReCAPTCHA
-                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
-                onChange={(token) => setCaptchaToken(token)}
-              />
-            </div>
+            {!showConsentReview && (
+              <div className="flex justify-center my-3">
+                <ReCAPTCHA
+                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+                  onChange={(token) => setCaptchaToken(token)}
+                  onExpired={() => setCaptchaToken(null)}
+                />
+              </div>
+            )}
 
             {/* 🔘 دکمه ثبت‌نام */}
             <button
