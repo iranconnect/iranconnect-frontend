@@ -4,7 +4,8 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";import DOMPurify from "isomorphic-dompurify";
+} from "react";
+import DOMPurify from "isomorphic-dompurify";
 
 import apiClient from "../utils/apiClient";
 
@@ -105,6 +106,7 @@ export default function ConsentReviewModal({
 
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const policyContentRef = useRef(null);
 
   const text = TEXTS[language] || TEXTS.en;
