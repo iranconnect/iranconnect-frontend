@@ -1,6 +1,10 @@
 //frontend/components/ConsentReviewModal.jsx
-import { useEffect, useMemo, useState } from "react";
-import DOMPurify from "isomorphic-dompurify";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";import DOMPurify from "isomorphic-dompurify";
 
 import apiClient from "../utils/apiClient";
 
@@ -101,7 +105,7 @@ export default function ConsentReviewModal({
 
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const policyContentRef = useRef(null);
 
   const text = TEXTS[language] || TEXTS.en;
 
@@ -158,6 +162,13 @@ export default function ConsentReviewModal({
       mounted = false;
     };
   }, [language]);
+
+  useEffect(() => {
+    policyContentRef.current?.scrollTo({
+      top: 0,
+      behavior: "auto",
+    });
+  }, [activeTab, language]);
 
   const activePolicy = bundle?.policies?.[activeTab] || null;
 
@@ -308,7 +319,10 @@ export default function ConsentReviewModal({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div
+          ref={policyContentRef}
+          className="min-h-0 flex-1 overflow-y-auto px-6 py-5"
+        >
           {loading && (
             <p className="text-sm opacity-70">
               {text.loading}
@@ -345,7 +359,7 @@ export default function ConsentReviewModal({
               </div>
 
               <article
-                className="prose max-w-none prose-sm"
+                className="consent-policy-content prose max-w-none prose-sm"
                 dir={
                   language === "fa"
                     ? "rtl"
