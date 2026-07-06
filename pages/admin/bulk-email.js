@@ -76,7 +76,13 @@ export default function BulkEmailPage() {
         withCredentials: true,
       });
 
-      setLogs(res.data || []);
+      const payload = res.data;
+
+      setLogs(
+        Array.isArray(payload)
+          ? payload
+          : payload?.rows || []
+      );
     } catch (err) {
       console.error("❌ Error fetching logs:", err);
     }
