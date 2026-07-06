@@ -40,6 +40,8 @@ const csp = `
     https://res.cloudinary.com
     https://maps.googleapis.com
     https://maps.gstatic.com
+    https://www.google.com
+    https://www.gstatic.com
     https://*.googleusercontent.com;
 
   connect-src
@@ -49,6 +51,9 @@ const csp = `
     https://maps.googleapis.com
     https://places.googleapis.com
     https://api.cloudinary.com
+    https://www.google.com
+    https://www.recaptcha.net
+    https://www.gstatic.com
     https://www.google-analytics.com
     https://region1.google-analytics.com
     https://stats.g.doubleclick.net
@@ -57,6 +62,7 @@ const csp = `
 
   frame-src
     https://www.google.com
+    https://www.recaptcha.net
     ${isStaging ? "https://vercel.live" : ""};
 
   font-src
