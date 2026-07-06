@@ -1,5 +1,9 @@
 // pages/admin/consents.js
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -37,6 +41,8 @@ export default function AdminConsentsPage() {
   const [pagination, setPagination] = useState(
     DEFAULT_PAGINATION
   );
+
+  const latestRequestIdRef = useRef(0);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -163,27 +169,32 @@ export default function AdminConsentsPage() {
   ]);
 
   async function fetchConsentData() {
+    const requestId =
+      latestRequestIdRef.current + 1;
+  
+    latestRequestIdRef.current = requestId;
+  
     setLoading(true);
     setError("");
-
+  
     try {
       const endpoint =
         activeTab === "audit"
           ? "/admin/consents/audit-history"
           : "/admin/consents";
-
+  
       const res = await apiClient.get(endpoint, {
         params: {
           page,
           limit,
           type: filters.type || undefined,
           q: filters.q || undefined,
-
+  
           event_type:
             activeTab === "audit"
               ? filters.event_type || undefined
               : undefined,
-
+  
           source:
             activeTab === "audit"
               ? filters.source || undefined
@@ -191,28 +202,49 @@ export default function AdminConsentsPage() {
         },
         withCredentials: true,
       });
-
+  
+      /*
+        اگر در فاصله‌ی ارسال درخواست تا دریافت پاسخ،
+        درخواست جدیدتری اجرا شده باشد، پاسخ قدیمی
+        نباید UI را تغییر دهد.
+      */
+      if (
+        requestId !== latestRequestIdRef.current
+      ) {
+        return;
+      }
+  
       setRows(res.data?.rows || []);
-
+  
       setPagination(
         res.data?.pagination ||
           DEFAULT_PAGINATION
       );
     } catch (err) {
+      if (
+        requestId !== latestRequestIdRef.current
+      ) {
+        return;
+      }
+  
       console.error(
         "❌ Fetch consent data error:",
         err
       );
-
+  
       setRows([]);
       setPagination(DEFAULT_PAGINATION);
-
+  
       setError(
         err.response?.data?.error ||
           "Failed to load consent records."
       );
     } finally {
-      setLoading(false);
+      if (
+        requestId === latestRequestIdRef.current
+      ) {
+        setLoading(false);
+      }
     }
   }
 
@@ -270,6 +302,8 @@ export default function AdminConsentsPage() {
     if (nextTab === activeTab) {
       return;
     }
+
+    latestRequestIdRef.current += 1;
 
     setRows([]);
     setPagination(DEFAULT_PAGINATION);
