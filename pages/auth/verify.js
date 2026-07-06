@@ -13,7 +13,7 @@ export default function Verify() {
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(180);
+  const [secondsLeft, setSecondsLeft] = useState(60);
   const [timerActive, setTimerActive] = useState(false);
   const [theme, setTheme] = useState("light");
   const [captchaToken, setCaptchaToken] = useState(null);
@@ -25,7 +25,7 @@ export default function Verify() {
     if (urlEmail) {
       setEmail(urlEmail);
       setTimerActive(true);
-      setSecondsLeft(180);
+      setSecondsLeft(60);
     } else {
       router.push("/auth/register");
     }
@@ -112,7 +112,7 @@ export default function Verify() {
       });
 
       setMsg(res.data.message || "Verification code resent successfully.");
-      setSecondsLeft(180);
+      setSecondsLeft(60);
       setTimerActive(true);
       setCaptchaToken(null);
     } catch (err) {
