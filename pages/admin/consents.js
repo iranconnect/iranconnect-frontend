@@ -1,19 +1,86 @@
 // pages/admin/consents.js
 import { useEffect, useState } from "react";
+
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 
-export default function AdminConsentsPage() {
-  const [consents, setConsents] = useState([]);
-  const [filteredConsents, setFilteredConsents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [authChecked, setAuthChecked] = useState(false);
+import Pagination from "../../components/ui/Pagination";
+import usePaginationQuery from "../../hooks/usePaginationQuery";
 
-  /* ==========================================================
-     🔐 ۱. چک کردن دسترسی با JWT HttpOnly + نقش Admin/Superadmin
-  ========================================================== */
+const DEFAULT_PAGINATION = {
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 0,
+  from: 0,
+  to: 0,
+  hasPreviousPage: false,
+  hasNextPage: false,
+};
+
+function formatDateTime(value) {
+  if (!value) {
+    return "—";
+  }
+
+  return new Date(value).toLocaleString();
+}
+
+function getChoiceClass(choice) {
+  return choice === "accepted"
+    ? "text-green-600"
+    : "text-red-600";
+}
+
+export default function AdminConsentsPage() {
+  const [rows, setRows] = useState([]);
+  const [pagination, setPagination] = useState(
+    DEFAULT_PAGINATION
+  );
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const [authChecked, setAuthChecked] = useState(false);
+  const [adminRole, setAdminRole] = useState("");
+
+  const [draftFilters, setDraftFilters] = useState({
+    type: "",
+    q: "",
+    event_type: "",
+    source: "",
+  });
+
+  const {
+    isReady,
+    page,
+    limit,
+    filters,
+    setPage,
+    applyFilters,
+    clearFilters,
+  } = usePaginationQuery({
+    filterKeys: [
+      "tab",
+      "type",
+      "q",
+      "event_type",
+      "source",
+    ],
+    defaultLimit: 10,
+  });
+
+  const activeTab =
+    filters.tab === "audit"
+      ? "audit"
+      : "current";
+
+  const isSuperAdmin =
+    adminRole === "superadmin";
+
+  /* ============================================================
+     🔐 Admin access check
+  ============================================================ */
   useEffect(() => {
     let mounted = true;
 
@@ -24,18 +91,21 @@ export default function AdminConsentsPage() {
         });
 
         if (!res.data?.ok) {
-          if (mounted) window.location.href = "/auth/login";
+          window.location.href = "/auth/login";
           return;
         }
 
-        if (res.data.role !== "admin" && res.data.role !== "superadmin") {
-          if (mounted) window.location.href = "/";
+        if (
+          res.data.role !== "admin" &&
+          res.data.role !== "superadmin"
+        ) {
+          window.location.href = "/";
           return;
         }
 
         if (mounted) {
+          setAdminRole(res.data.role);
           setAuthChecked(true);
-          fetchConsents();
         }
       } catch {
         window.location.href = "/auth/login";
@@ -43,100 +113,265 @@ export default function AdminConsentsPage() {
     }
 
     checkAccess();
-    return () => (mounted = false);
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  /* ==========================================================
-     📡 ۲. دریافت لیست Consents
-  ========================================================== */
-  async function fetchConsents() {
+  /* ============================================================
+     🔄 Sync URL filters → form state
+  ============================================================ */
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
+    setDraftFilters({
+      type: filters.type || "",
+      q: filters.q || "",
+      event_type: filters.event_type || "",
+      source: filters.source || "",
+    });
+  }, [
+    isReady,
+    filters.type,
+    filters.q,
+    filters.event_type,
+    filters.source,
+  ]);
+
+  /* ============================================================
+     📡 Fetch current tab data after URL/query changes
+  ============================================================ */
+  useEffect(() => {
+    if (!authChecked || !isReady) {
+      return;
+    }
+
+    fetchConsentData();
+  }, [
+    authChecked,
+    isReady,
+    activeTab,
+    page,
+    limit,
+    filters.type,
+    filters.q,
+    filters.event_type,
+    filters.source,
+  ]);
+
+  async function fetchConsentData() {
     setLoading(true);
+    setError("");
+
     try {
-      const res = await apiClient.get("/admin/consents", {
+      const endpoint =
+        activeTab === "audit"
+          ? "/admin/consents/audit-history"
+          : "/admin/consents";
+
+      const res = await apiClient.get(endpoint, {
+        params: {
+          page,
+          limit,
+          type: filters.type || undefined,
+          q: filters.q || undefined,
+
+          event_type:
+            activeTab === "audit"
+              ? filters.event_type || undefined
+              : undefined,
+
+          source:
+            activeTab === "audit"
+              ? filters.source || undefined
+              : undefined,
+        },
         withCredentials: true,
       });
 
-      setConsents(res.data || []);
-      setFilteredConsents(res.data || []);
+      setRows(res.data?.rows || []);
+
+      setPagination(
+        res.data?.pagination ||
+          DEFAULT_PAGINATION
+      );
     } catch (err) {
-      console.error("❌ Error fetching consents:", err);
-      alert(err.response?.data?.error || "Failed to fetch consent logs.");
+      console.error(
+        "❌ Fetch consent data error:",
+        err
+      );
+
+      setRows([]);
+      setPagination(DEFAULT_PAGINATION);
+
+      setError(
+        err.response?.data?.error ||
+          "Failed to load consent records."
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  /* ==========================================================
-     🔍 ۳. اعمال جستجو و فیلتر
-  ========================================================== */
-  useEffect(() => {
-    let list = consents;
+  /* ============================================================
+     🔍 Apply server-side filters
+  ============================================================ */
+  function handleSearch(event) {
+    event.preventDefault();
 
-    if (filterType) {
-      list = list.filter((c) => c.consent_type === filterType);
-    }
+    applyFilters({
+      tab:
+        activeTab === "audit"
+          ? "audit"
+          : "",
 
-    if (searchTerm) {
-      const lower = searchTerm.toLowerCase();
-      list = list.filter((c) => c.email?.toLowerCase().includes(lower));
-    }
+      type: draftFilters.type,
+      q: draftFilters.q,
 
-    setFilteredConsents(list);
-  }, [filterType, searchTerm, consents]);
+      event_type:
+        activeTab === "audit"
+          ? draftFilters.event_type
+          : "",
 
-  /* ==========================================================
-     📤 ۴. خروجی XLSX
-  ========================================================== */
-  async function handleExportXLSX() {
-    try {
-      const res = await apiClient.get("/admin/consents/export/xlsx", {
-        withCredentials: true,
-        responseType: "blob",
+      source:
+        activeTab === "audit"
+          ? draftFilters.source
+          : "",
+    });
+  }
+
+  /* ============================================================
+     🧹 Clear current tab filters
+  ============================================================ */
+  async function handleClear() {
+    setDraftFilters({
+      type: "",
+      q: "",
+      event_type: "",
+      source: "",
+    });
+
+    await clearFilters();
+
+    if (activeTab === "audit") {
+      await applyFilters({
+        tab: "audit",
       });
-
-      const blob = new Blob([res.data]);
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "IranConnect_User_Consents.xlsx";
-      a.click();
-
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("❌ XLSX export failed:", err);
-      alert("Failed to export Excel file.");
     }
   }
 
-  /* ==========================================================
-     🧾 ۵. خروجی PDF
-  ========================================================== */
-  async function handleExportPDF() {
+  /* ============================================================
+     🔁 Switch tab and reset audit-only filters when needed
+  ============================================================ */
+  async function handleTabChange(nextTab) {
+    if (nextTab === activeTab) {
+      return;
+    }
+
+    setRows([]);
+    setPagination(DEFAULT_PAGINATION);
+
+    setDraftFilters((current) => ({
+      ...current,
+      event_type: "",
+      source: "",
+    }));
+
+    await applyFilters({
+      tab:
+        nextTab === "audit"
+          ? "audit"
+          : "",
+
+      type: draftFilters.type,
+      q: draftFilters.q,
+      event_type: "",
+      source: "",
+    });
+  }
+
+  /* ============================================================
+     📤 Export filtered active tab
+     SuperAdmin only
+  ============================================================ */
+  async function handleExport(format) {
+    if (!isSuperAdmin) {
+      return;
+    }
+
     try {
-      const res = await apiClient.get("/admin/consents/export/pdf", {
-        withCredentials: true,
-        responseType: "blob",
-      });
+      const res = await apiClient.get(
+        `/admin/consents/export/${format}`,
+        {
+          params: {
+            tab:
+              activeTab === "audit"
+                ? "audit"
+                : "current",
+
+            type: filters.type || undefined,
+            q: filters.q || undefined,
+
+            event_type:
+              activeTab === "audit"
+                ? filters.event_type || undefined
+                : undefined,
+
+            source:
+              activeTab === "audit"
+                ? filters.source || undefined
+                : undefined,
+          },
+
+          withCredentials: true,
+          responseType: "blob",
+        }
+      );
 
       const blob = new Blob([res.data]);
-      const url = window.URL.createObjectURL(blob);
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "IranConnect_User_Consents.pdf";
-      a.click();
+      const url =
+        window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
+      link.href = url;
+
+      if (activeTab === "audit") {
+        link.download =
+          format === "xlsx"
+            ? "IranConnect_Consent_Audit_History.xlsx"
+            : "IranConnect_Consent_Audit_History.pdf";
+      } else {
+        link.download =
+          format === "xlsx"
+            ? "IranConnect_User_Consents.xlsx"
+            : "IranConnect_User_Consents_Report.pdf";
+      }
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      link.remove();
 
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("❌ PDF export failed:", err);
-      alert("Failed to export PDF file.");
+      console.error(
+        "❌ Consent export failed:",
+        err
+      );
+
+      alert(
+        err.response?.data?.error ||
+          "Failed to export consent data."
+      );
     }
   }
 
-  /* ==========================================================
-     🚫 جلوگیری از رندر بدون احراز هویت
-  ========================================================== */
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
@@ -145,101 +380,381 @@ export default function AdminConsentsPage() {
     );
   }
 
-  /* ==========================================================
-     🎨 UI
-  ========================================================== */
   return (
     <AdminLayout>
       <div className="admin-container">
-        <div className="admin-section">
-          <h2 className="admin-title mb-4">🧾 User Consents Log</h2>
+        <section className="admin-section">
+          <h2 className="admin-title mb-5">
+            🧾 User Consents
+          </h2>
 
-          {/* Filters */}
-          <div className="flex flex-wrap gap-3 mb-5 items-center">
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="admin-input w-48"
+          {/* ==================================================
+             Tabs
+          ================================================== */}
+          <div className="flex flex-wrap gap-3 mb-6 border-b border-[var(--border)] pb-4">
+            <button
+              type="button"
+              onClick={() =>
+                handleTabChange("current")
+              }
+              className={`admin-btn px-4 py-2 text-sm ${
+                activeTab === "current"
+                  ? "admin-btn-primary"
+                  : "admin-btn-secondary"
+              }`}
             >
-              <option value="">All Types</option>
-              <option value="terms">Terms of Service</option>
-              <option value="privacy">Privacy Policy</option>
-              <option value="cookies">Cookies Policy</option>
+              Current Consent State
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                handleTabChange("audit")
+              }
+              className={`admin-btn px-4 py-2 text-sm ${
+                activeTab === "audit"
+                  ? "admin-btn-primary"
+                  : "admin-btn-secondary"
+              }`}
+            >
+              Consent Audit History
+            </button>
+          </div>
+
+          {/* ==================================================
+             Filters
+          ================================================== */}
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-wrap gap-3 mb-6 items-center"
+          >
+            <select
+              className="admin-input w-48"
+              value={draftFilters.type}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  type: event.target.value,
+                }))
+              }
+            >
+              <option value="">
+                All Consent Types
+              </option>
+
+              <option value="terms">
+                Terms of Service
+              </option>
+
+              <option value="privacy">
+                Privacy Policy
+              </option>
+
+              <option value="cookies">
+                Cookies Policy
+              </option>
             </select>
 
             <input
               type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by user email..."
               className="admin-input w-60"
+              value={draftFilters.q}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  q: event.target.value,
+                }))
+              }
             />
 
-            <button className="admin-btn admin-btn-primary" onClick={fetchConsents}>
+            {activeTab === "audit" && (
+              <>
+                <select
+                  className="admin-input w-44"
+                  value={
+                    draftFilters.event_type
+                  }
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      event_type:
+                        event.target.value,
+                    }))
+                  }
+                >
+                  <option value="">
+                    All Event Types
+                  </option>
+
+                  <option value="recorded">
+                    Recorded
+                  </option>
+
+                  <option value="choice_changed">
+                    Choice Changed
+                  </option>
+
+                  <option value="version_updated">
+                    Version Updated
+                  </option>
+
+                  <option value="migrated">
+                    Migrated
+                  </option>
+                </select>
+
+                <select
+                  className="admin-input w-52"
+                  value={draftFilters.source}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      source: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="">
+                    All Sources
+                  </option>
+
+                  <option value="registration_verify">
+                    Registration Verify
+                  </option>
+
+                  <option value="terms_agreement">
+                    Terms Agreement
+                  </option>
+
+                  <option value="anonymous_migration">
+                    Anonymous Migration
+                  </option>
+
+                  <option value="legacy_consent_api">
+                    Legacy Consent API
+                  </option>
+                </select>
+              </>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="admin-btn admin-btn-primary text-sm px-5 py-2 disabled:opacity-60"
+            >
+              Search
+            </button>
+
+            <button
+              type="button"
+              disabled={loading}
+              onClick={handleClear}
+              className="admin-btn admin-btn-secondary text-sm px-4 py-2 disabled:opacity-60"
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              disabled={loading}
+              onClick={fetchConsentData}
+              className="admin-btn admin-btn-secondary text-sm px-4 py-2 disabled:opacity-60"
+            >
               Refresh
             </button>
 
-            <button
-              className="admin-btn bg-green-600 hover:bg-green-700"
-              onClick={handleExportXLSX}
-            >
-              📊 Export XLSX
-            </button>
+            {isSuperAdmin && (
+              <div className="flex gap-3 ml-auto">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() =>
+                    handleExport("xlsx")
+                  }
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+                >
+                  Export XLSX
+                </button>
 
-            <button
-              className="admin-btn bg-turquoise hover:bg-turquoise/90"
-              onClick={handleExportPDF}
-            >
-              🧾 Export PDF
-            </button>
-          </div>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() =>
+                    handleExport("pdf")
+                  }
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+                >
+                  Export PDF
+                </button>
+              </div>
+            )}
+          </form>
 
-          {/* Table */}
-          {loading ? (
-            <p className="admin-muted">Loading...</p>
-          ) : filteredConsents.length === 0 ? (
-            <p className="admin-muted">No consent records found.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="admin-table w-full">
-                <thead>
-                  <tr>
-                    <th>User Email</th>
-                    <th>Consent Type</th>
-                    <th>Version</th>
-                    <th>Choice</th>
-                    <th>IP Address</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredConsents.map((c) => (
-                    <tr key={c.id}>
-                      <td>{c.email}</td>
-                      <td className="capitalize">{c.consent_type}</td>
-                      <td>{c.version}</td>
-
-                      <td
-                        className={`font-semibold ${
-                          c.choice === "accepted"
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {c.choice}
-                      </td>
-
-                      <td>{c.ip_address || "—"}</td>
-
-                      <td>{new Date(c.created_at).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {error && (
+            <p className="text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm">
+              {error}
+            </p>
           )}
-        </div>
+
+          {loading ? (
+            <p className="admin-muted">
+              Loading consent records...
+            </p>
+          ) : (
+            <>
+              {/* ==============================================
+                 Current Consent State table
+              ============================================== */}
+              {activeTab === "current" && (
+                <div className="overflow-x-auto">
+                  <table className="admin-table w-full">
+                    <thead>
+                      <tr>
+                        <th>User Email</th>
+                        <th>Consent Type</th>
+                        <th>Version</th>
+                        <th>Choice</th>
+                        <th>IP Address</th>
+                        <th>Updated At</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {rows.map((consent) => (
+                        <tr key={consent.id}>
+                          <td>
+                            {consent.email || "—"}
+                          </td>
+
+                          <td className="capitalize">
+                            {consent.consent_type}
+                          </td>
+
+                          <td>
+                            {consent.version || "—"}
+                          </td>
+
+                          <td
+                            className={`font-semibold ${getChoiceClass(
+                              consent.choice
+                            )}`}
+                          >
+                            {consent.choice || "—"}
+                          </td>
+
+                          <td>
+                            {consent.ip_address || "—"}
+                          </td>
+
+                          <td>
+                            {formatDateTime(
+                              consent.updated_at
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+
+                      {!rows.length && (
+                        <tr>
+                          <td
+                            colSpan="6"
+                            className="text-center opacity-70 p-4"
+                          >
+                            No consent records found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* ==============================================
+                 Consent Audit History table
+              ============================================== */}
+              {activeTab === "audit" && (
+                <div className="overflow-x-auto">
+                  <table className="admin-table w-full">
+                    <thead>
+                      <tr>
+                        <th>User Email</th>
+                        <th>Consent Type</th>
+                        <th>Version</th>
+                        <th>Choice</th>
+                        <th>Event Type</th>
+                        <th>Source</th>
+                        <th>Created At</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {rows.map((event) => (
+                        <tr key={event.id}>
+                          <td>
+                            {event.email || "—"}
+                          </td>
+
+                          <td className="capitalize">
+                            {event.consent_type || "—"}
+                          </td>
+
+                          <td>
+                            {event.policy_version || "—"}
+                          </td>
+
+                          <td
+                            className={`font-semibold ${getChoiceClass(
+                              event.choice
+                            )}`}
+                          >
+                            {event.choice || "—"}
+                          </td>
+
+                          <td className="capitalize">
+                            {String(
+                              event.event_type || "—"
+                            ).replace(/_/g, " ")}
+                          </td>
+
+                          <td className="capitalize">
+                            {String(
+                              event.source || "—"
+                            ).replace(/_/g, " ")}
+                          </td>
+
+                          <td>
+                            {formatDateTime(
+                              event.created_at
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+
+                      {!rows.length && (
+                        <tr>
+                          <td
+                            colSpan="7"
+                            className="text-center opacity-70 p-4"
+                          >
+                            No consent audit events found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {!error && (
+                <Pagination
+                  pagination={pagination}
+                  onPageChange={setPage}
+                  disabled={loading}
+                />
+              )}
+            </>
+          )}
+        </section>
       </div>
     </AdminLayout>
   );
