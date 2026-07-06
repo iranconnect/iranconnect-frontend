@@ -253,10 +253,17 @@ export default function Verify() {
 
       setCodeSent(true);
 
+      const wasCodeAlreadySent = codeSent;
+
+      setCodeSent(true);
+      
       setMessage(
         response.data?.message ||
-          "A new verification code has been sent."
+          (wasCodeAlreadySent
+            ? "A new verification code has been sent."
+            : "A verification code has been sent to your email.")
       );
+      
       setMessageType("success");
       
       setSecondsLeft(
@@ -336,8 +343,10 @@ export default function Verify() {
             Verify Your Email 📩
           </h2>
 
-          <p className="text-sm text-center mb-6 opacity-75">
-            Enter your email and verification code below.
+          <p className="text-center mb-6 opacity-70">
+            {codeSent
+              ? "Enter the verification code sent to your email."
+              : "Check or enter your email to receive a verification code."}
           </p>
 
           <div className="space-y-4">
