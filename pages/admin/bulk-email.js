@@ -1,34 +1,113 @@
 // frontend/pages/admin/bulk-email.js
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import Pagination from "../../components/ui/Pagination";
+import usePaginationQuery from "../../hooks/usePaginationQuery";
+
 import "react-quill/dist/quill.snow.css";
 
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+const ReactQuill = dynamic(
+  () => import("react-quill"),
+  { ssr: false }
+);
+
+const DEFAULT_PAGINATION = {
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 0,
+  from: 0,
+  to: 0,
+  hasPreviousPage: false,
+  hasNextPage: false,
+};
+
+function formatDateTime(value) {
+  if (!value) {
+    return "—";
+  }
+
+  return new Date(value).toLocaleString("en-GB");
+}
+
+function truncate(text, length = 25) {
+  if (!text) {
+    return "—";
+  }
+
+  return text.length > length
+    ? `${text.slice(0, length)}...`
+    : text;
+}
 
 export default function BulkEmailPage() {
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
-  // Send form
-  const [senderEmail, setSenderEmail] = useState("privacy@iranconnect.org");
+  /* ============================================================
+     Send form
+  ============================================================ */
+  const [senderEmail, setSenderEmail] = useState(
+    "privacy@iranconnect.org"
+  );
+
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [attachments, setAttachments] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  // Logs
-  const [logs, setLogs] = useState([]);
-
-  // Filters
-  const [filterType, setFilterType] = useState("");
-  const [filterValue, setFilterValue] = useState("");
-
-  const previewRef = useRef(null);
-
-  // 🔐 Access control
+  /* ============================================================
+     Auth
+  ============================================================ */
   const [authChecked, setAuthChecked] = useState(false);
+  const [adminRole, setAdminRole] = useState("");
 
+  const isSuperAdmin =
+    adminRole === "superadmin";
+
+  /* ============================================================
+     Logs
+  ============================================================ */
+  const [logs, setLogs] = useState([]);
+  const [pagination, setPagination] = useState(
+    DEFAULT_PAGINATION
+  );
+
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsError, setLogsError] = useState("");
+
+  const latestRequestIdRef = useRef(0);
+
+  const [draftFilters, setDraftFilters] = useState({
+    bulk_code: "",
+    sender_email: "",
+    admin_email: "",
+    date: "",
+  });
+
+  const {
+    isReady,
+    page,
+    limit,
+    filters,
+    setPage,
+    applyFilters,
+    clearFilters,
+  } = usePaginationQuery({
+    filterKeys: [
+      "bulk_code",
+      "sender_email",
+      "admin_email",
+      "date",
+    ],
+    defaultLimit: 10,
+  });
+
+  /* ============================================================
+     Access check
+  ============================================================ */
   useEffect(() => {
     let mounted = true;
 
@@ -38,185 +117,286 @@ export default function BulkEmailPage() {
           withCredentials: true,
         });
 
-        if (!me?.data?.ok) {
-          if (mounted) window.location.href = "/auth/login";
+        if (!me.data?.ok) {
+          window.location.href = "/auth/login";
           return;
         }
 
-        const role = me.data.role;
-        if (role !== "admin" && role !== "superadmin") {
-          if (mounted) window.location.href = "/";
+        if (
+          me.data.role !== "admin" &&
+          me.data.role !== "superadmin"
+        ) {
+          window.location.href = "/";
           return;
         }
 
-        if (mounted) setAuthChecked(true);
-      } catch (err) {
-        if (mounted) window.location.href = "/auth/login";
+        if (mounted) {
+          setAdminRole(me.data.role);
+          setAuthChecked(true);
+        }
+      } catch {
+        window.location.href = "/auth/login";
       }
     }
 
     checkAccess();
-    return () => (mounted = false);
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   /* ============================================================
-     📜 Fetch logs AFTER auth
+     Sync URL filters → form state
   ============================================================ */
   useEffect(() => {
-    if (!authChecked) return;
+    if (!isReady) {
+      return;
+    }
+
+    setDraftFilters({
+      bulk_code: filters.bulk_code || "",
+      sender_email: filters.sender_email || "",
+      admin_email: filters.admin_email || "",
+      date: filters.date || "",
+    });
+  }, [
+    isReady,
+    filters.bulk_code,
+    filters.sender_email,
+    filters.admin_email,
+    filters.date,
+  ]);
+
+  /* ============================================================
+     Fetch logs after URL/query changes
+  ============================================================ */
+  useEffect(() => {
+    if (!authChecked || !isReady) {
+      return;
+    }
+
     fetchLogs();
-  }, [authChecked]);
+  }, [
+    authChecked,
+    isReady,
+    page,
+    limit,
+    filters.bulk_code,
+    filters.sender_email,
+    filters.admin_email,
+    filters.date,
+  ]);
 
-  async function fetchLogs(bulkCodeDigits = null) {
+  async function fetchLogs() {
+    const requestId =
+      latestRequestIdRef.current + 1;
+
+    latestRequestIdRef.current = requestId;
+
+    setLogsLoading(true);
+    setLogsError("");
+
     try {
-      let url = "/admin/bulk-email/logs";
-      if (bulkCodeDigits) url += `?bulk_code=${bulkCodeDigits}`;
+      const res = await apiClient.get(
+        "/admin/bulk-email/logs",
+        {
+          params: {
+            page,
+            limit,
+            bulk_code:
+              filters.bulk_code || undefined,
+            sender_email:
+              filters.sender_email || undefined,
+            admin_email:
+              filters.admin_email || undefined,
+            date: filters.date || undefined,
+          },
+          withCredentials: true,
+        }
+      );
 
-      const res = await apiClient.get(url, {
-        withCredentials: true,
-      });
+      if (
+        requestId !== latestRequestIdRef.current
+      ) {
+        return;
+      }
 
       const payload = res.data;
 
-      setLogs(
-        Array.isArray(payload)
-          ? payload
-          : payload?.rows || []
+      /*
+        سازگاری موقت با پاسخ قدیمی Backend،
+        در صورت برگشت به نسخه قدیمی.
+      */
+      if (Array.isArray(payload)) {
+        setLogs(payload);
+
+        setPagination({
+          page: 1,
+          limit: payload.length || 10,
+          total: payload.length,
+          totalPages: 1,
+          from: payload.length ? 1 : 0,
+          to: payload.length,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        });
+
+        return;
+      }
+
+      setLogs(payload?.rows || []);
+
+      setPagination(
+        payload?.pagination ||
+          DEFAULT_PAGINATION
       );
     } catch (err) {
-      console.error("❌ Error fetching logs:", err);
+      if (
+        requestId !== latestRequestIdRef.current
+      ) {
+        return;
+      }
+
+      console.error(
+        "❌ Error fetching bulk email logs:",
+        err
+      );
+
+      setLogs([]);
+      setPagination(DEFAULT_PAGINATION);
+
+      setLogsError(
+        err.response?.data?.error ||
+          "Failed to load bulk email logs."
+      );
+    } finally {
+      if (
+        requestId === latestRequestIdRef.current
+      ) {
+        setLogsLoading(false);
+      }
     }
   }
 
   /* ============================================================
-     🚀 Send Bulk Emails
+     Apply filters
+  ============================================================ */
+  function handleSearch(event) {
+    event.preventDefault();
+
+    applyFilters({
+      bulk_code: draftFilters.bulk_code,
+      sender_email: draftFilters.sender_email,
+      admin_email: draftFilters.admin_email,
+      date: draftFilters.date,
+    });
+  }
+
+  /* ============================================================
+     Clear filters
+  ============================================================ */
+  async function handleClear() {
+    setDraftFilters({
+      bulk_code: "",
+      sender_email: "",
+      admin_email: "",
+      date: "",
+    });
+
+    await clearFilters();
+  }
+
+  /* ============================================================
+     Send email — SuperAdmin only
   ============================================================ */
   async function handleSendEmail() {
+    if (!isSuperAdmin) {
+      return;
+    }
+
     if (!subject.trim() || !body.trim()) {
       alert("Please enter subject and body.");
       return;
     }
 
-    setLoading(true);
-    try {
-      let payload;
+    setSending(true);
 
+    try {
       if (attachments.length > 0) {
-        payload = new FormData();
-        payload.append("sender_email", senderEmail);
+        const payload = new FormData();
+
+        payload.append(
+          "sender_email",
+          senderEmail
+        );
+
         payload.append("subject", subject);
         payload.append("body", body);
-        attachments.forEach((file) => payload.append("attachments", file));
 
-        await apiClient.post("/admin/bulk-email/send", payload, {
-          headers: { "Content-Type": "multipart/form-data" },
-          withCredentials: true,
+        attachments.forEach((file) => {
+          payload.append("attachments", file);
         });
+
+        await apiClient.post(
+          "/admin/bulk-email/send",
+          payload,
+          {
+            headers: {
+              "Content-Type":
+                "multipart/form-data",
+            },
+            withCredentials: true,
+          }
+        );
       } else {
         await apiClient.post(
           "/admin/bulk-email/send",
-          { sender_email: senderEmail, subject, body },
-          { withCredentials: true }
+          {
+            sender_email: senderEmail,
+            subject,
+            body,
+          },
+          {
+            withCredentials: true,
+          }
         );
       }
 
       alert("✅ Emails sent successfully!");
-      fetchLogs();
+
       setSubject("");
       setBody("");
       setAttachments([]);
+
+      await fetchLogs();
     } catch (err) {
-      console.error("❌ Error sending emails:", err);
-      alert(err.response?.data?.error || "❌ Error sending emails");
+      console.error(
+        "❌ Error sending bulk emails:",
+        err
+      );
+
+      alert(
+        err.response?.data?.error ||
+          "Error sending emails."
+      );
+    } finally {
+      setSending(false);
     }
-
-    setLoading(false);
   }
 
   /* ============================================================
-     📥 Download helper
-  ============================================================ */
-  function downloadFrom(url) {
-    const fullUrl = `${API_BASE}${url}`;
-    const a = document.createElement("a");
-    a.href = fullUrl;
-    a.target = "_blank";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }
-
-  /* ============================================================
-     Report Filter Builder
-  ============================================================ */
-  function buildFilteredReportUrl(filter, value) {
-    const params = new URLSearchParams();
-    params.set("filter", filter);
-    if (value) params.set("value", value.trim());
-    return `/admin/bulk-email/report/filter?${params.toString()}`;
-  }
-
-  /* ============================================================
-     Date Validation
-  ============================================================ */
-  function isValidDDMMYYYY(v) {
-    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return false;
-    const [dd, mm, yyyy] = v.split("/").map(Number);
-    const d = new Date(yyyy, mm - 1, dd);
-    return (
-      d.getFullYear() === yyyy &&
-      d.getMonth() === mm - 1 &&
-      d.getDate() === dd
-    );
-  }
-
-  /* ============================================================
-     Generate Report
-  ============================================================ */
-  async function handleGenerateReport() {
-    if (!filterType) {
-      alert("Please select a filter first.");
-      return;
-    }
-
-    if (filterType === "bulk_code") {
-      if (!filterValue.trim()) {
-        alert("Please enter a Bulk Code number.");
-        return;
-      }
-      await fetchLogs(filterValue.trim());
-      return;
-    }
-
-    if (!filterValue.trim()) {
-      alert("Please enter a value.");
-      return;
-    }
-
-    if (filterType === "date" && !isValidDDMMYYYY(filterValue.trim())) {
-      alert("Please enter date as DD/MM/YYYY");
-      return;
-    }
-
-    const url = buildFilteredReportUrl(filterType, filterValue);
-    downloadFrom(url);
-  }
-
-  /* ============================================================
-     Utility
-  ============================================================ */
-  function truncate(text, length = 25) {
-    if (!text) return "-";
-    return text.length > length ? text.slice(0, length) + "..." : text;
-  }
-
-  /* ============================================================
-     Quill Config
+     Quill config
   ============================================================ */
   const quillModules = {
     toolbar: [
       [{ font: [] }, { size: [] }],
-      ["bold", "italic", "underline", "strike"],
+      [
+        "bold",
+        "italic",
+        "underline",
+        "strike",
+      ],
       [{ color: [] }, { background: [] }],
       [{ align: [] }],
       ["blockquote", "code-block"],
@@ -241,241 +421,360 @@ export default function BulkEmailPage() {
     "image",
   ];
 
-  /* ============================================================
-     Loading state before auth
-  ============================================================ */
   if (!authChecked) {
     return (
       <AdminLayout>
         <div className="admin-container">
-          <p className="text-center text-gray-500">Checking access...</p>
+          <p className="text-center text-gray-500">
+            Checking access...
+          </p>
         </div>
       </AdminLayout>
     );
   }
 
-  /* ============================================================
-     ✔ Render UI (same as original)
-  ============================================================ */
   return (
     <AdminLayout>
       <div className="admin-container">
-
         <div className="mb-6">
-          <h1 className="admin-title">📨 Bulk Email Manager</h1>
+          <h1 className="admin-title">
+            📨 Bulk Email Manager
+          </h1>
+
           <p className="admin-muted">
             Send announcements or policy updates to all users.
           </p>
         </div>
 
-        {/* -------------------- SEND EMAIL -------------------- */}
-        <section className="admin-section mb-10" style={{ overflow: "visible" }}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        {/* ====================================================
+           SEND EMAIL — SuperAdmin only
+        ==================================================== */}
+        {isSuperAdmin && (
+          <section
+            className="admin-section mb-10"
+            style={{ overflow: "visible" }}
+          >
+            <h2 className="admin-title mb-4">
+              ✉️ Send Bulk Email
+            </h2>
 
-            <div>
-              <label className="block mb-1 text-sm font-medium">Sender Email</label>
-              <select
-                className="admin-input"
-                value={senderEmail}
-                onChange={(e) => setSenderEmail(e.target.value)}
-              >
-                <option>privacy@iranconnect.org</option>
-                <option>support@iranconnect.org</option>
-                <option>info@iranconnect.org</option>
-              </select>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block mb-1 text-sm font-medium">
+                  Sender Email
+                </label>
 
-            <div className="md:col-span-2">
-              <label className="block mb-1 text-sm font-medium">Subject</label>
-              <input
-                type="text"
-                className="admin-input"
-                placeholder="Enter subject..."
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-              />
-            </div>
+                <select
+                  className="admin-input"
+                  value={senderEmail}
+                  onChange={(event) =>
+                    setSenderEmail(
+                      event.target.value
+                    )
+                  }
+                >
+                  <option>
+                    privacy@iranconnect.org
+                  </option>
 
-          </div>
+                  <option>
+                    support@iranconnect.org
+                  </option>
 
-          <div className="mb-4">
-            <label className="block mb-1 text-sm font-medium">Attachments</label>
-            <input
-              type="file"
-              multiple
-              onChange={(e) => setAttachments(Array.from(e.target.files))}
-              className="admin-input"
-            />
-            {attachments.length > 0 && (
-              <p className="text-xs text-gray-500 mt-1">
-                {attachments.length} file(s) selected
-              </p>
-            )}
-          </div>
+                  <option>
+                    info@iranconnect.org
+                  </option>
+                </select>
+              </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            <div className="quill-wrapper relative z-[50]">
-              <label className="block mb-2 text-sm font-medium">Email Content</label>
-              <ReactQuill
-                theme="snow"
-                value={body}
-                onChange={setBody}
-                modules={quillModules}
-                formats={quillFormats}
-                placeholder="Write your email content here..."
-                className="min-h-[300px] bg-[var(--bg)] rounded-lg"
-              />
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium">Live Preview</label>
-              <div
-                ref={previewRef}
-                className="admin-card min-h-[300px] overflow-y-auto text-[var(--text)]"
-                dangerouslySetInnerHTML={{
-                  __html:
-                    body || "<p><i>Live preview will appear here...</i></p>",
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end mt-6">
-            <button
-              onClick={handleSendEmail}
-              disabled={loading}
-              className="admin-btn admin-btn-primary"
-            >
-              {loading ? "Sending..." : "Send Email"}
-            </button>
-          </div>
-        </section>
-
-        {/* -------------------- REPORT FILTER -------------------- */}
-        <section className="admin-section mb-6">
-          <h2 className="admin-title mb-3">📊 Filter Reports</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-4">
-            <div>
-              <label className="block mb-1 text-sm font-medium">Filter Type</label>
-              <select
-                className="admin-input"
-                value={filterType}
-                onChange={(e) => {
-                  setFilterType(e.target.value);
-                  setFilterValue("");
-                }}
-              >
-                <option value="">Select a filter...</option>
-                <option value="bulk_code">Bulk code</option>
-                <option value="sender_email">Sender email</option>
-                <option value="admin_email">Admin email</option>
-                <option value="date">Date (DD/MM/YYYY)</option>
-              </select>
-            </div>
-
-            {filterType && (
               <div className="md:col-span-2">
-                <label className="block mb-1 text-sm font-medium">Value</label>
+                <label className="block mb-1 text-sm font-medium">
+                  Subject
+                </label>
+
                 <input
                   type="text"
-                  placeholder={`Enter ${filterType}...`}
-                  value={filterValue}
-                  onChange={(e) => setFilterValue(e.target.value)}
                   className="admin-input"
+                  placeholder="Enter subject..."
+                  value={subject}
+                  onChange={(event) =>
+                    setSubject(event.target.value)
+                  }
                 />
               </div>
-            )}
+            </div>
 
-            <div>
+            <div className="mb-4">
+              <label className="block mb-1 text-sm font-medium">
+                Attachments
+              </label>
+
+              <input
+                type="file"
+                multiple
+                onChange={(event) =>
+                  setAttachments(
+                    Array.from(event.target.files || [])
+                  )
+                }
+                className="admin-input"
+              />
+
+              {attachments.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {attachments.length} file(s) selected
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+              <div className="quill-wrapper relative z-[50]">
+                <label className="block mb-2 text-sm font-medium">
+                  Email Content
+                </label>
+
+                <ReactQuill
+                  theme="snow"
+                  value={body}
+                  onChange={setBody}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  placeholder="Write your email content here..."
+                  className="min-h-[300px] bg-[var(--bg)] rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 text-sm font-medium">
+                  Live Preview
+                </label>
+
+                <div
+                  className="admin-card min-h-[300px] overflow-y-auto text-[var(--text)]"
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      body ||
+                      "<p><i>Live preview will appear here...</i></p>",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-6">
               <button
-                onClick={handleGenerateReport}
-                className="admin-btn admin-btn-secondary w-full"
+                type="button"
+                onClick={handleSendEmail}
+                disabled={sending}
+                className="admin-btn admin-btn-primary disabled:opacity-60"
               >
-                Generate Report
+                {sending
+                  ? "Sending..."
+                  : "Send Email"}
               </button>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* -------------------- LOGS TABLE -------------------- */}
+        {/* ====================================================
+           LOGS
+        ==================================================== */}
         <section className="admin-section">
-          <h2 className="admin-title mb-3">📋 Sent Email Logs</h2>
+          <h2 className="admin-title mb-5">
+            📋 Sent Email Logs
+          </h2>
 
-          <div className="overflow-x-auto">
-            <table className="admin-table w-full">
-              <thead>
-                <tr>
-                  <th>Bulk Code</th>
-                  <th>Sender Email</th>
-                  <th>Sent Count</th>
-                  <th>Date</th>
-                  <th>Admin Email</th>
-                  <th>Report</th>
-                </tr>
-              </thead>
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-wrap gap-3 mb-6 items-center"
+          >
+            <input
+              type="text"
+              placeholder="Bulk code, e.g. BID-000001"
+              className="admin-input w-52"
+              value={draftFilters.bulk_code}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  bulk_code: event.target.value,
+                }))
+              }
+            />
 
-              <tbody>
-                {logs.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="text-center py-4 opacity-70">
-                      No email logs found.
-                    </td>
-                  </tr>
-                ) : (
-                  logs.map((log) => (
-                    <tr key={log.id}>
-                      <td className="font-medium">
-                        {log.bulk_code ||
-                          `BID-${String(log.id).padStart(6, "0")}`}
-                      </td>
+            <input
+              type="text"
+              placeholder="Sender email..."
+              className="admin-input w-52"
+              value={draftFilters.sender_email}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  sender_email: event.target.value,
+                }))
+              }
+            />
 
-                      <td title={log.sender_email}>
-                        {truncate(log.sender_email)}
-                      </td>
+            <input
+              type="text"
+              placeholder="Admin email..."
+              className="admin-input w-52"
+              value={draftFilters.admin_email}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  admin_email: event.target.value,
+                }))
+              }
+            />
 
-                      <td>
-                        {log.sent_count}/{log.total_count}
-                      </td>
+            <input
+              type="date"
+              className="admin-input w-44"
+              value={draftFilters.date}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  date: event.target.value,
+                }))
+              }
+            />
 
-                      <td>
-                        {new Date(log.created_at).toLocaleString("en-GB")}
-                      </td>
+            <button
+              type="submit"
+              disabled={logsLoading}
+              className="admin-btn admin-btn-primary text-sm px-5 py-2 disabled:opacity-60"
+            >
+              Search
+            </button>
 
-                      <td title={log.admin_email} className="text-blue-700">
-                        {truncate(log.admin_email)}
-                      </td>
+            <button
+              type="button"
+              disabled={logsLoading}
+              onClick={handleClear}
+              className="admin-btn admin-btn-secondary text-sm px-4 py-2 disabled:opacity-60"
+            >
+              Clear
+            </button>
 
-                      <td>
-                        <div className="flex gap-2">
-                          <a
-                            href={`${API_BASE}/admin/bulk-email/report/${log.id}/pdf`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="admin-btn admin-btn-secondary"
-                          >
-                            PDF
-                          </a>
-                          <a
-                            href={`${API_BASE}/admin/bulk-email/report/${log.id}/xlsx`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="admin-btn admin-btn-secondary"
-                          >
-                            XLSX
-                          </a>
-                        </div>
-                      </td>
+            <button
+              type="button"
+              disabled={logsLoading}
+              onClick={fetchLogs}
+              className="admin-btn admin-btn-secondary text-sm px-4 py-2 disabled:opacity-60"
+            >
+              Refresh
+            </button>
+          </form>
+
+          {logsError && (
+            <p className="text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm">
+              {logsError}
+            </p>
+          )}
+
+          {logsLoading ? (
+            <p className="admin-muted">
+              Loading email logs...
+            </p>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="admin-table w-full">
+                  <thead>
+                    <tr>
+                      <th>Bulk Code</th>
+                      <th>Sender Email</th>
+                      <th>Subject</th>
+                      <th>Sent Count</th>
+                      <th>Date</th>
+                      <th>Admin Email</th>
+                      <th>Report</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
+                  </thead>
 
-            </table>
-          </div>
+                  <tbody>
+                    {logs.map((log) => (
+                      <tr key={log.id}>
+                        <td className="font-medium">
+                          {log.bulk_code ||
+                            `BID-${String(
+                              log.id
+                            ).padStart(6, "0")}`}
+                        </td>
 
+                        <td title={log.sender_email}>
+                          {truncate(log.sender_email)}
+                        </td>
+
+                        <td title={log.subject}>
+                          {truncate(log.subject, 35)}
+                        </td>
+
+                        <td>
+                          {log.sent_count}/
+                          {log.total_count}
+                        </td>
+
+                        <td>
+                          {formatDateTime(
+                            log.created_at
+                          )}
+                        </td>
+
+                        <td
+                          title={log.admin_email}
+                          className="text-blue-700"
+                        >
+                          {truncate(log.admin_email)}
+                        </td>
+
+                        <td>
+                          <div className="flex gap-2">
+                            <a
+                              href={`${API_BASE}/admin/bulk-email/report/${log.id}/pdf`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="admin-btn admin-btn-secondary text-sm px-3 py-1"
+                            >
+                              PDF
+                            </a>
+
+                            <a
+                              href={`${API_BASE}/admin/bulk-email/report/${log.id}/xlsx`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="admin-btn admin-btn-secondary text-sm px-3 py-1"
+                            >
+                              XLSX
+                            </a>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {!logs.length && (
+                      <tr>
+                        <td
+                          colSpan="7"
+                          className="text-center py-4 opacity-70"
+                        >
+                          No email logs found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {!logsError && (
+                <Pagination
+                  pagination={pagination}
+                  onPageChange={setPage}
+                  disabled={logsLoading}
+                />
+              )}
+            </>
+          )}
         </section>
-
       </div>
     </AdminLayout>
   );
