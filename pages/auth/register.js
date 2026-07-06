@@ -16,8 +16,6 @@ export default function Register() {
   const [msg, setMsg] = useState("");
   const [msgType, setMsgType] = useState("info");
   const [loading, setLoading] = useState(false);
-  const [checkingEmail, setCheckingEmail] = useState(false);
-  const [emailStatus, setEmailStatus] = useState(null);
   const [theme, setTheme] = useState("light");
   const [lang, setLang] = useState("en");
 
@@ -53,38 +51,7 @@ export default function Register() {
     return () => observer.disconnect();
   }, []);
 
-  /* 🧩 بررسی وضعیت ایمیل در لحظه */
-  async function checkEmailLive(value) {
-    if (!value || !value.includes("@")) {
-      setEmailStatus(null);
-      return;
-    }
-
-    setCheckingEmail(true);
-
-    try {
-      const res = await apiClient.post("/auth/check-email", {
-        email: value,
-      });
-
-      if (!res.data.exists) setEmailStatus({ state: "available" });
-      else if (res.data.exists && res.data.verified)
-        setEmailStatus({ state: "verified" });
-      else if (res.data.exists && !res.data.verified)
-        setEmailStatus({ state: "unverified" });
-    } catch (err) {
-      console.error("checkEmailLive error:", err);
-      setEmailStatus(null);
-    }
-
-    setCheckingEmail(false);
-  }
-
-  const handleEmailChange = (e) => {
-    const val = e.target.value;
-    setEmail(val);
-    checkEmailLive(val);
-  };
+  
 
   /* 🟢 Submit — ثبت نام */
   async function submit(e) {
@@ -101,12 +68,6 @@ export default function Register() {
     if (password !== confirmPassword) {
       setMsgType("error");
       setMsg("Passwords do not match.");
-      return;
-    }
-
-    if (emailStatus?.state === "verified") {
-      setMsgType("error");
-      setMsg("This email is already registered. Please log in instead.");
       return;
     }
 
@@ -193,7 +154,7 @@ export default function Register() {
               required
               placeholder="Email address"
               value={email}
-              onChange={handleEmailChange}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full p-3 rounded-lg border border-gray-300 bg-[#f5f7fa]
                          text-gray-900 shadow-inner focus:outline-none focus:ring-2
                          focus:ring-turquoise"
