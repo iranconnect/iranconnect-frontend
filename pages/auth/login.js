@@ -24,6 +24,9 @@ export default function Login() {
   const [showConsent, setShowConsent] = useState(false);
   const [userId, setUserId] = useState(null);
 
+  const [verificationRequiredEmail, setVerificationRequiredEmail] =
+  useState("");
+
   // ⚙️ CAPTCHA
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
@@ -140,6 +143,7 @@ export default function Login() {
 
     setLoading(true);
     setMsg("");
+    setVerificationRequiredEmail("");
 
     try {
       // 🚫 CAPTCHA required
@@ -214,6 +218,25 @@ export default function Login() {
       if (data.blocked) {
         setMsg("Your account has been suspended.");
 
+        setLoading(false);
+        return;
+      }
+
+      /* 📩 VERIFIED PASSWORD, BUT EMAIL VERIFICATION IS REQUIRED */
+      if (data.code === "email_verification_required") {
+        const verifiedEmail = String(
+          data.verification_email || email
+        )
+          .trim()
+          .toLowerCase();
+      
+        setVerificationRequiredEmail(verifiedEmail);
+      
+        setMsg(
+          data.error ||
+            "Please verify your email before logging in."
+        );
+      
         setLoading(false);
         return;
       }
@@ -396,6 +419,36 @@ export default function Login() {
               {msg}
             </p>
           )}
+
+          {verificationRequiredEmail && (
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  router.push(
+                    `/auth/verify?email=${encodeURIComponent(
+                      verificationRequiredEmail
+                    )}&from=login`
+                  );
+                }}
+                className="
+                  rounded-lg
+                  border
+                  border-turquoise
+                  px-4
+                  py-2
+                  text-sm
+                  font-medium
+                  text-turquoise
+                  transition
+                  hover:bg-turquoise
+                  hover:text-navy
+                "
+              >
+                Verify email
+              </button>
+            </div>
+          )}  
 
           <div className="mt-6 text-center text-sm">
             <p>
