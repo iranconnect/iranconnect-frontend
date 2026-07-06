@@ -44,6 +44,7 @@ export default function Verify() {
 
   const [theme, setTheme] = useState("light");
   const [captchaToken, setCaptchaToken] = useState(null);
+  const [codeSent, setCodeSent] = useState(false);
 
   /* ----------------------------------------------------
      Initial query handling
@@ -68,11 +69,13 @@ export default function Verify() {
     }
 
     if (delivery === "sent") {
+      setCodeSent(true);
+    
       setMessage(
         "A verification code has been sent to your email."
       );
       setMessageType("success");
-
+    
       setSecondsLeft(
         RESEND_COOLDOWN_SECONDS
       );
@@ -248,12 +251,14 @@ export default function Verify() {
         }
       );
 
+      setCodeSent(true);
+
       setMessage(
         response.data?.message ||
           "A new verification code has been sent."
       );
       setMessageType("success");
-
+      
       setSecondsLeft(
         RESEND_COOLDOWN_SECONDS
       );
@@ -335,62 +340,59 @@ export default function Verify() {
             Enter your email and verification code below.
           </p>
 
-          <form
-            onSubmit={submitVerification}
-            className="space-y-4"
-          >
+          <div className="space-y-4">
             <input
               type="email"
               required
               placeholder="Email address"
               value={email}
               onChange={handleEmailChange}
-              className="w-full p-3 rounded-lg border border-gray-300 bg-[#f5f7fa] text-gray-900 shadow-inner focus:outline-none focus:ring-2 focus:ring-turquoise"
+              disabled={codeSent}
+              className="w-full p-3 rounded-lg border border-gray-300 bg-[#f5f7fa] text-gray-900 shadow-inner focus:outline-none focus:ring-2 focus:ring-turquoise disabled:cursor-not-allowed disabled:opacity-70"
             />
-
-            <input
-              type="text"
-              required
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="Enter verification code"
-              value={code}
-              onChange={(event) => {
-                const digitsOnly =
-                  event.target.value
-                    .replace(/\D/g, "")
-                    .slice(0, 6);
-
-                setCode(digitsOnly);
-              }}
-              className="w-full p-3 rounded-lg border border-gray-300 bg-[#f5f7fa] text-gray-900 shadow-inner focus:outline-none focus:ring-2 focus:ring-turquoise"
-            />
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-turquoise text-navy py-2 rounded-lg font-medium shadow-md hover:bg-turquoise/90 transition-all duration-200 disabled:opacity-60"
-            >
-              {loading
-                ? "Verifying..."
-                : "Verify Email"}
-            </button>
-          </form>
+          
+            {codeSent && (
+              <form
+                onSubmit={submitVerification}
+                className="space-y-4"
+              >
+                <input
+                  type="text"
+                  required
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="Enter verification code"
+                  value={code}
+                  onChange={(event) => {
+                    const digitsOnly = event.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 6);
+          
+                    setCode(digitsOnly);
+                  }}
+                  className="w-full p-3 rounded-lg border border-gray-300 bg-[#f5f7fa] text-gray-900 shadow-inner focus:outline-none focus:ring-2 focus:ring-turquoise"
+                />
+          
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-turquoise text-navy py-2 rounded-lg font-medium shadow-md hover:bg-turquoise/90 transition-all duration-200 disabled:opacity-60"
+                >
+                  {loading
+                    ? "Verifying..."
+                    : "Verify Email"}
+                </button>
+              </form>
+            )}
+          </div>
 
           <div className="mt-5 text-center text-sm">
-            {timerActive && secondsLeft > 0 ? (
-              <p className="opacity-80">
-                You can request a new code in{" "}
-                <span className="font-semibold text-turquoise">
-                  {formatTime(secondsLeft)}
-                </span>
-              </p>
-            ) : (
+            {!codeSent ? (
               <>
                 <p className="mb-3 opacity-80">
-                  Need a new verification code?
+                  We will send a verification code to this email.
                 </p>
-
+          
                 <div className="flex justify-center my-3">
                   <ReCAPTCHA
                     ref={captchaRef}
@@ -403,7 +405,7 @@ export default function Verify() {
                     }}
                     onExpired={() => {
                       setCaptchaToken(null);
-
+          
                       setMessage(
                         "reCAPTCHA expired. Please verify again."
                       );
@@ -411,19 +413,61 @@ export default function Verify() {
                     }}
                   />
                 </div>
-
+          
                 <button
                   type="button"
                   onClick={requestNewCode}
-                  disabled={
-                    resending ||
-                    !canRequestNewCode
-                  }
-                  className="bg-navy text-white px-4 py-2 rounded-lg text-sm hover:bg-navy/80 transition-all disabled:opacity-60"
+                  disabled={resending}
+                  className="rounded-lg bg-turquoise px-5 py-2.5 text-sm font-semibold text-navy shadow-md transition hover:bg-turquoise/90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {resending
                     ? "Sending..."
                     : "Send verification code"}
+                </button>
+              </>
+            ) : timerActive && secondsLeft > 0 ? (
+              <p className="opacity-80">
+                You can request a new code in{" "}
+                <span className="font-semibold text-turquoise">
+                  {formatTime(secondsLeft)}
+                </span>
+              </p>
+            ) : (
+              <>
+                <p className="mb-3 opacity-80">
+                  Need a new verification code?
+                </p>
+          
+                <div className="flex justify-center my-3">
+                  <ReCAPTCHA
+                    ref={captchaRef}
+                    sitekey={
+                      process.env
+                        .NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+                    }
+                    onChange={(token) => {
+                      setCaptchaToken(token);
+                    }}
+                    onExpired={() => {
+                      setCaptchaToken(null);
+          
+                      setMessage(
+                        "reCAPTCHA expired. Please verify again."
+                      );
+                      setMessageType("error");
+                    }}
+                  />
+                </div>
+          
+                <button
+                  type="button"
+                  onClick={requestNewCode}
+                  disabled={resending}
+                  className="rounded-lg bg-turquoise px-5 py-2.5 text-sm font-semibold text-navy shadow-md transition hover:bg-turquoise/90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {resending
+                    ? "Sending..."
+                    : "Send a new code"}
                 </button>
               </>
             )}
