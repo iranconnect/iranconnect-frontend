@@ -33,14 +33,24 @@ export default function CategoryDetailsModal({
       alert("Action comment is required.");
       return;
     }
-
-    if (type === "delete") {
-      const ok = confirm("Are you sure you want to delete this category?");
-      if (!ok) return;
+  
+    const confirmations = {
+      archive:
+        "Archive this category? It will remain stored but will no longer be selectable.",
+      restore:
+        "Restore this category? It will return as inactive and remain unavailable until reactivated.",
+      deactivate:
+        "Deactivate this category? It will no longer be selectable.",
+      reactivate:
+        "Reactivate this category? It will become selectable again.",
+    };
+  
+    if (confirmations[type] && !confirm(confirmations[type])) {
+      return;
     }
-
+  
     setActionLoading(true);
-
+  
     try {
       await apiClient.post(
         `/admin/categories/${categoryId}/${type}`,
@@ -51,7 +61,7 @@ export default function CategoryDetailsModal({
           },
         }
       );
-
+  
       onUpdated();
       onClose();
     } catch (err) {
@@ -89,7 +99,11 @@ export default function CategoryDetailsModal({
           <div><strong>Sort Order:</strong> {category.sort_order}</div>
           <div>
             <strong>Status:</strong>{" "}
-            {category.is_active ? "🟢 Active" : "🔴 Inactive"}
+            {category.is_deleted
+              ? "⚫ Archived"
+              : category.is_active
+                ? "🟢 Active"
+                : "🟡 Inactive"}
           </div>
           <div>
             <strong>Created:</strong>{" "}
@@ -107,27 +121,44 @@ export default function CategoryDetailsModal({
         />
 
         {/* Actions */}
-        <div className="flex justify-between items-center gap-3 mt-5">
-
-          {/* Delete */}
-          <button
-            onClick={() => action("delete")}
-            className="admin-btn admin-btn-danger px-4 py-2 text-sm"
-            disabled={actionLoading}
-          >
-            🗑 Delete
-          </button>
-
-          {/* Activate / Deactivate */}
-          <button
-            onClick={() =>
-              action(category.is_active ? "deactivate" : "activate")
-            }
-            className="admin-btn admin-btn-primary px-4 py-2 text-sm"
-            disabled={actionLoading}
-          >
-            {category.is_active ? "Deactivate" : "Activate"}
-          </button>
+        <div className="flex flex-wrap justify-between items-center gap-3 mt-5">
+          {category.is_deleted ? (
+            <button
+              onClick={() => action("restore")}
+              className="admin-btn admin-btn-secondary px-4 py-2 text-sm"
+              disabled={actionLoading}
+            >
+              Restore as Inactive
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => action("archive")}
+                className="admin-btn admin-btn-danger px-4 py-2 text-sm"
+                disabled={actionLoading}
+              >
+                Archive
+              </button>
+        
+              {category.is_active ? (
+                <button
+                  onClick={() => action("deactivate")}
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm"
+                  disabled={actionLoading}
+                >
+                  Deactivate
+                </button>
+              ) : (
+                <button
+                  onClick={() => action("reactivate")}
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm"
+                  disabled={actionLoading}
+                >
+                  Reactivate
+                </button>
+              )}
+            </>
+          )}
         </div>
 
         {/* Audit log */}
