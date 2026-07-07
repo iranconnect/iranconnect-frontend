@@ -584,7 +584,7 @@ export default function BulkEmailPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-              <div className="quill-wrapper relative z-[50]">
+              <div className="quill-wrapper bulk-email-quill-wrapper relative">
                 <label className="block mb-2 text-sm font-medium">
                   Email Content
                 </label>
