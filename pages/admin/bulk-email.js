@@ -44,7 +44,6 @@ function truncate(text, length = 25) {
 }
 
 export default function BulkEmailPage() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
   /* ============================================================
      Send form
@@ -305,6 +304,63 @@ export default function BulkEmailPage() {
     });
 
     await clearFilters();
+  }
+
+  async function handleSingleReportDownload(
+    reportId,
+    format
+  ) {
+    try {
+      const response = await apiClient.get(
+        `/admin/bulk-email/report/${reportId}/${format}`,
+        {
+          withCredentials: true,
+          responseType: "blob",
+        }
+      );
+  
+      const mimeType =
+        format === "pdf"
+          ? "application/pdf"
+          : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  
+      const blob = new Blob(
+        [response.data],
+        { type: mimeType }
+      );
+  
+      const objectUrl =
+        window.URL.createObjectURL(blob);
+  
+      const link = document.createElement("a");
+  
+      link.href = objectUrl;
+  
+      link.download =
+        format === "pdf"
+          ? `bulk_email_report_${reportId}.pdf`
+          : `bulk_email_report_${reportId}.xlsx`;
+  
+      document.body.appendChild(link);
+  
+      link.click();
+  
+      link.remove();
+  
+      window.setTimeout(() => {
+        window.URL.revokeObjectURL(objectUrl);
+      }, 1000);
+    } catch (err) {
+      console.error(
+        "❌ Bulk email report download failed:",
+        err
+      );
+  
+      alert(
+        err.response?.data?.error ||
+          "Failed to download this report."
+      );
+    }
   }
 
   /* ============================================================
@@ -729,23 +785,31 @@ export default function BulkEmailPage() {
 
                         <td>
                           <div className="flex gap-2">
-                            <a
-                              href={`${API_BASE}/admin/bulk-email/report/${log.id}/pdf`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleSingleReportDownload(
+                                  log.id,
+                                  "pdf"
+                                )
+                              }
                               className="admin-btn admin-btn-secondary text-sm px-3 py-1"
                             >
                               PDF
-                            </a>
-
-                            <a
-                              href={`${API_BASE}/admin/bulk-email/report/${log.id}/xlsx`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            </button>
+                        
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleSingleReportDownload(
+                                  log.id,
+                                  "xlsx"
+                                )
+                              }
                               className="admin-btn admin-btn-secondary text-sm px-3 py-1"
                             >
                               XLSX
-                            </a>
+                            </button>
                           </div>
                         </td>
                       </tr>
