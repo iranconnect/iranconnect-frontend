@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../utils/apiClient";
 import CategoryDetailsModal from "../../components/admin/CategoryDetailsModal";
+import Pagination from "../../components/ui/Pagination";
+import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -10,10 +12,23 @@ export default function AdminCategoriesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [page, setPage] = useState(1);
+  
   const [pagination, setPagination] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("all");
 
+  const {
+    isReady,
+    page,
+    limit,
+    filters,
+    setPage,
+    applyFilters,
+  } = usePaginationQuery({
+    filterKeys: ["status"],
+    defaultLimit: 10,
+  });
+  
+  const statusFilter = filters.status || "all";
+  
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -24,26 +39,36 @@ export default function AdminCategoriesPage() {
   });
 
   useEffect(() => {
-    fetchCategories(1);
-  }, [statusFilter]);
+    if (!isReady) {
+      return;
+    }
+  
+    fetchCategories();
+  }, [
+    isReady,
+    page,
+    limit,
+    statusFilter,
+  ]);
 
-  async function fetchCategories(p = 1) {
+  async function fetchCategories() {
     setError("");
+  
     try {
       const res = await apiClient.get("/admin/catalog/categories", {
         params: {
           status: statusFilter,
-          page: p,
-          limit: 10,
+          page,
+          limit,
         },
       });
   
       setCategories(res.data.rows || []);
       setPagination(res.data.pagination || null);
-      setPage(res.data.pagination?.page || p);
     } catch (err) {
       setCategories([]);
       setPagination(null);
+  
       setError(
         err.response?.data?.error ||
         "Failed to load categories."
@@ -76,7 +101,11 @@ export default function AdminCategoriesPage() {
         comment: "",
       });
   
-      await fetchCategories(1);
+      await applyFilters({
+        status: statusFilter === "all"
+          ? ""
+          : statusFilter,
+      });
     } catch (err) {
       setError(err.response?.data?.error || "❌ Failed to create category.");
     } finally {
@@ -142,10 +171,14 @@ export default function AdminCategoriesPage() {
           <select
             className="admin-input max-w-xs"
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) =>
+              applyFilters({
+                status:
+                  e.target.value === "all"
+                    ? ""
+                    : e.target.value,
+              })
+            }
           >
             <option value="all">All statuses</option>
             <option value="active">Active</option>
@@ -190,35 +223,19 @@ export default function AdminCategoriesPage() {
           </tbody>
         </table>
 
-        {pagination && pagination.totalPages > 1 && (
-          <div className="flex justify-center gap-2 mt-4">
-            <button
-              className="admin-btn admin-btn-secondary text-xs"
-              disabled={!pagination.hasPreviousPage}
-              onClick={() => fetchCategories(page - 1)}
-            >
-              Prev
-            </button>
-        
-            <span className="text-sm">
-              Page {pagination.page} of {pagination.totalPages}
-            </span>
-        
-            <button
-              className="admin-btn admin-btn-secondary text-xs"
-              disabled={!pagination.hasNextPage}
-              onClick={() => fetchCategories(page + 1)}
-            >
-              Next
-            </button>
-          </div>
+        {!error && (
+          <Pagination
+            pagination={pagination}
+            onPageChange={setPage}
+            disabled={submitting}
+          />
         )}
 
         {selected && (
           <CategoryDetailsModal
             categoryId={selected}
             onClose={()=>setSelected(null)}
-            onUpdated={fetchCategories}
+            onUpdated={() => fetchCategories()}
           />
         )}
       </section>
