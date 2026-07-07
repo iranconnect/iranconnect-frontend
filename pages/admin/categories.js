@@ -12,6 +12,7 @@ export default function AdminCategoriesPage() {
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const [form, setForm] = useState({
     name: "",
@@ -23,17 +24,31 @@ export default function AdminCategoriesPage() {
   });
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    fetchCategories(1);
+  }, [statusFilter]);
 
-  async function fetchCategories(p = page) {
-    const res = await apiClient.get("/admin/categories", {
-      params: { page: p, pageSize: 10 },
-    });
+  async function fetchCategories(p = 1) {
+    setError("");
+    try {
+      const res = await apiClient.get("/admin/catalog/categories", {
+        params: {
+          status: statusFilter,
+          page: p,
+          limit: 10,
+        },
+      });
   
-    setCategories(res.data.data);
-    setPagination(res.data.pagination);
-    setPage(p);
+      setCategories(res.data.rows || []);
+      setPagination(res.data.pagination || null);
+      setPage(res.data.pagination?.page || p);
+    } catch (err) {
+      setCategories([]);
+      setPagination(null);
+      setError(
+        err.response?.data?.error ||
+        "Failed to load categories."
+      );
+    }
   }
 
 
@@ -119,6 +134,26 @@ export default function AdminCategoriesPage() {
 
         </form>
 
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <label className="text-sm font-medium">
+            Status
+          </label>
+        
+          <select
+            className="admin-input max-w-xs"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+
         <table className="admin-table">
           <thead>
             <tr>
@@ -134,7 +169,13 @@ export default function AdminCategoriesPage() {
               <tr key={c.id}>
                 <td>{c.name}</td>
                 <td>{c.slug}</td>
-                <td>{c.is_active ? "Active":"Inactive"}</td>
+                <td>
+                  {c.is_deleted
+                    ? "⚫ Archived"
+                    : c.is_active
+                      ? "🟢 Active"
+                      : "🟡 Inactive"}
+                </td>
                 <td>{c.created_by_email || "—"}</td>
                 <td className="text-right">
                   <button
@@ -153,7 +194,7 @@ export default function AdminCategoriesPage() {
           <div className="flex justify-center gap-2 mt-4">
             <button
               className="admin-btn admin-btn-secondary text-xs"
-              disabled={page === 1}
+              disabled={!pagination.hasPreviousPage}
               onClick={() => fetchCategories(page - 1)}
             >
               Prev
@@ -165,7 +206,7 @@ export default function AdminCategoriesPage() {
         
             <button
               className="admin-btn admin-btn-secondary text-xs"
-              disabled={page === pagination.totalPages}
+              disabled={!pagination.hasNextPage}
               onClick={() => fetchCategories(page + 1)}
             >
               Next
