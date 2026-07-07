@@ -215,6 +215,7 @@ gmp-place-autocomplete::part(input)::placeholder {
 }
 
 .bulk-email-quill-wrapper .ql-editor {
+  position: relative;
   min-height: 250px;
   font-size: 15px;
   line-height: 1.6;
