@@ -188,21 +188,36 @@ gmp-place-autocomplete::part(input)::placeholder {
 
 /* ============================================================
    Bulk Email ReactQuill
-   Keep the editor inside normal page flow and below Admin header.
+   Scoped styles: editor must remain inside normal document flow.
 ============================================================ */
 .bulk-email-quill-wrapper {
-  isolation: auto !important;
-  position: static !important;
-  z-index: auto !important;
+  position: static;
+  z-index: auto;
+  isolation: auto;
+  overflow: visible;
 }
 
 .bulk-email-quill-wrapper .ql-toolbar {
   position: static !important;
   top: auto !important;
   z-index: auto !important;
+  background: var(--card-bg);
+  border-radius: 0.5rem 0.5rem 0 0;
 }
 
 .bulk-email-quill-wrapper .ql-container {
-  position: relative;
-  z-index: auto !important;
+  position: static;
+  z-index: auto;
+  overflow: visible;
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.bulk-email-quill-wrapper .ql-editor {
+  min-height: 250px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
 }
