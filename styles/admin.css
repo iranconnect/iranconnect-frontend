@@ -185,3 +185,12 @@ gmp-place-autocomplete::part(input) {
 gmp-place-autocomplete::part(input)::placeholder {
   color: rgba(255, 255, 255, 0.6);
 }
+
+/* Bulk Email editor must remain below the sticky Admin header */
+.bulk-email-quill-wrapper {
+  z-index: 0 !important;
+}
+
+.bulk-email-quill-wrapper .ql-toolbar {
+  z-index: 1 !important;
+}
