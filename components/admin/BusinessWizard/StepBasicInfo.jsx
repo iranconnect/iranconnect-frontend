@@ -152,7 +152,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
       });
   }, [
     categoryId,
-      useWizardCatalogEndpoints,
+    useWizardCatalogEndpoints,
   ]);
 
   /* ─────────────────────────────
