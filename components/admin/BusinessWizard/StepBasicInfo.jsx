@@ -74,9 +74,9 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
   const isAdminEdit = mode === "admin-edit";
   const isUserUpdate = mode === "user-update";
   const isUserNew = mode === "user-new";
-
-  const isUserCatalogMode =
-    isUserUpdate || isUserNew;
+  
+  const useWizardCatalogEndpoints =
+    !isAdminEdit;
 
   const stepCopy = isAdminEdit
     ? {
@@ -101,7 +101,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
      Load categories (no pagination)
   ───────────────────────────── */
   useEffect(() => {
-    const endpoint = isUserCatalogMode
+    const endpoint = useWizardCatalogEndpoints
       ? "/businesses/onboarding/categories"
       : "/admin/categories/all";
   
@@ -118,7 +118,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
       .catch(() => {
         setCategories([]);
       });
-  }, [isUserCatalogMode]);
+  }, [useWizardCatalogEndpoints]);
 
   /* ─────────────────────────────
      Load subcategories by category
@@ -131,7 +131,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
   
     setLoadingSubs(true);
   
-    const endpoint = isUserCatalogMode
+    const endpoint = useWizardCatalogEndpoints
       ? "/businesses/onboarding/subcategories"
       : "/admin/subcategories";
   
@@ -152,7 +152,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
       });
   }, [
     categoryId,
-    isUserCatalogMode,
+      useWizardCatalogEndpoints,
   ]);
 
   /* ─────────────────────────────
@@ -173,6 +173,8 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
         subcategory_ids: current.includes(id)
           ? current.filter((x) => x !== id)
           : [...current, id],
+        services: [],
+        tags: [],
       };
     });
   }
@@ -363,6 +365,8 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
               ...prev,
               category_id: newCategoryId,
               subcategory_ids: [],
+              services: [],
+              tags: [],
             }));
           }}
 
