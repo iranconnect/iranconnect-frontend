@@ -3,13 +3,28 @@ import { useEffect, useState } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../utils/apiClient";
 import SubcategoryDetailsModal from "../../components/admin/SubcategoryDetailsModal";
+import Pagination from "../../components/ui/Pagination";
+import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 export default function AdminSubcategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [selected, setSelected] = useState(null);
-  const [page, setPage] = useState(1);
+  
   const [pagination, setPagination] = useState(null);
+  const {
+    isReady,
+    page,
+    limit,
+    filters,
+    setPage,
+    applyFilters,
+  } = usePaginationQuery({
+    filterKeys: ["status"],
+    defaultLimit: 10,
+  });
+  
+  const statusFilter = filters.status || "all";
 
   const [form, setForm] = useState({
     category_id: "",
@@ -24,25 +39,54 @@ export default function AdminSubcategoriesPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    apiClient.get("/admin/subcategories/all").then((res) => {
-      setCategories(res.data.data || []);
-    }).catch(() => {
-      setCategories([]);
-    });
-  
-    fetchSubcategories(1);
+    apiClient
+      .get("/admin/subcategories/all")
+      .then((res) => {
+        setCategories(res.data.data || []);
+      })
+      .catch(() => {
+        setCategories([]);
+      });
   }, []);
-
-
-
-  async function fetchSubcategories(p = page) {
-    const res = await apiClient.get("/admin/subcategories", {
-      params: { page: p, pageSize: 10 },
-    });
   
-    setSubcategories(res.data.data || []);
-    setPagination(res.data.pagination);
-    setPage(p);
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+  
+    fetchSubcategories();
+  }, [
+    isReady,
+    page,
+    limit,
+    statusFilter,
+  ]);
+
+
+
+  async function fetchSubcategories() {
+    setError("");
+  
+    try {
+      const res = await apiClient.get("/admin/catalog/subcategories", {
+        params: {
+          status: statusFilter,
+          page,
+          limit,
+        },
+      });
+  
+      setSubcategories(res.data.rows || []);
+      setPagination(res.data.pagination || null);
+    } catch (err) {
+      setSubcategories([]);
+      setPagination(null);
+  
+      setError(
+        err.response?.data?.error ||
+        "Failed to load subcategories."
+      );
+    }
   }
 
 
@@ -62,7 +106,11 @@ export default function AdminSubcategoriesPage() {
         seo_description: "",
         comment: "",
       });
-      fetchSubcategories();
+      await applyFilters({
+        status: statusFilter === "all"
+          ? ""
+          : statusFilter,
+      });
     } catch (err) {
       setError(err.response?.data?.error || "Failed to create subcategory.");
     }
@@ -148,6 +196,30 @@ export default function AdminSubcategoriesPage() {
             </button>
           </form>
 
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <label className="text-sm font-medium">
+              Status
+            </label>
+          
+            <select
+              className="admin-input max-w-xs"
+              value={statusFilter}
+              onChange={(e) =>
+                applyFilters({
+                  status:
+                    e.target.value === "all"
+                      ? ""
+                      : e.target.value,
+                })
+              }
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+
           {/* Table */}
           <table className="admin-table">
             <thead>
@@ -166,7 +238,13 @@ export default function AdminSubcategoriesPage() {
                   <td>{s.category_name}</td>
                   <td>{s.name}</td>
                   <td>{s.slug}</td>
-                  <td>{s.is_active ? "Active" : "Inactive"}</td>
+                  <td>
+                    {s.is_deleted
+                      ? "⚫ Archived"
+                      : s.is_active
+                        ? "🟢 Active"
+                        : "🟡 Inactive"}
+                  </td>
                   <td>{s.created_by_email || "—"}</td>
                   <td className="text-right">
                     <button
@@ -181,36 +259,18 @@ export default function AdminSubcategoriesPage() {
             </tbody>
           </table>
 
-          {pagination && pagination.totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-4">
-              <button
-                className="admin-btn admin-btn-secondary text-xs"
-                disabled={page === 1}
-                onClick={() => fetchSubcategories(page - 1)}
-              >
-                Prev
-              </button>
-          
-              <span className="text-sm">
-                Page {pagination.page} of {pagination.totalPages}
-              </span>
-          
-              <button
-                className="admin-btn admin-btn-secondary text-xs"
-                disabled={page === pagination.totalPages}
-                onClick={() => fetchSubcategories(page + 1)}
-              >
-                Next
-              </button>
-            </div>
+          {!error && (
+            <Pagination
+              pagination={pagination}
+              onPageChange={setPage}
+            />
           )}
-
 
           {selected && (
             <SubcategoryDetailsModal
               subcategoryId={selected}
               onClose={() => setSelected(null)}
-              onUpdated={fetchSubcategories}
+              onUpdated={() => fetchSubcategories()}
             />
           )}
         </section>
