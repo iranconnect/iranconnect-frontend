@@ -30,6 +30,18 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   const selectedTags = data.tags || [];
   const subcategoryIds = data.subcategory_ids || [];
 
+  const generalTags = tags.filter(
+    (tag) => tag.scope === "global"
+  );
+  
+  const categoryTags = tags.filter(
+    (tag) => tag.scope === "category"
+  );
+  
+  const serviceTags = tags.filter(
+    (tag) => tag.scope === "service"
+  );
+
   const initialTagsRef = useRef(data.tags || []);
 
   const hadInitialTags =
@@ -382,30 +394,42 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
         </h4>
 
         {loadingTags ? (
-          <p className="text-sm opacity-70">
-            Loading tags…
-          </p>
-        ) : (
-          <>
-            <div className="flex flex-wrap gap-3">
-              {tags.map((t) => (
-                <label
-                  key={t.id}
-                  className="flex items-center gap-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedTags.includes(t.id)}
-                    onChange={() => toggleTag(t.id)}
-                  />
-                  <span title={t.seo_description}>
-                    {t.name}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </>
-        )}
+  <p className="text-sm opacity-70">
+    Loading tags…
+      </p>
+    ) : tags.length === 0 ? (
+      <p className="text-sm opacity-70">
+        No tags available for the selected category and services.
+      </p>
+    ) : (
+      <div className="space-y-6">
+    
+        <TagGroup
+          title="General tags"
+          description="Broad tags that can apply to many businesses."
+          tags={generalTags}
+          selectedTags={selectedTags}
+          onToggle={toggleTag}
+        />
+    
+        <TagGroup
+          title="Category tags"
+          description="Tags related to your selected business category."
+          tags={categoryTags}
+          selectedTags={selectedTags}
+          onToggle={toggleTag}
+        />
+    
+        <TagGroup
+          title="Service-specific tags"
+          description="Tags suggested from the services you selected."
+          tags={serviceTags}
+          selectedTags={selectedTags}
+          onToggle={toggleTag}
+        />
+    
+      </div>
+    )}
       </div>
 
       {shouldConfirmTagRemoval && (
@@ -451,6 +475,50 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
         >
           {stepCopy.nextLabel}
         </button>
+      </div>
+    </div>
+  );
+}
+function TagGroup({
+  title,
+  description,
+  tags,
+  selectedTags,
+  onToggle,
+}) {
+  if (!tags.length) {
+    return null;
+  }
+
+  return (
+    <div>
+      <div className="mb-2">
+        <h5 className="font-semibold text-sm">
+          {title}
+        </h5>
+
+        <p className="text-xs opacity-70 mt-1">
+          {description}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        {tags.map((tag) => (
+          <label
+            key={tag.id}
+            className="flex items-center gap-2 text-sm cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              checked={selectedTags.includes(tag.id)}
+              onChange={() => onToggle(tag.id)}
+            />
+
+            <span title={tag.seo_description}>
+              {tag.name}
+            </span>
+          </label>
+        ))}
       </div>
     </div>
   );
