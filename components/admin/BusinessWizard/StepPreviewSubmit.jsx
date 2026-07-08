@@ -299,9 +299,7 @@ export default function StepPreviewSubmit({
   
           const tagRes =
             await apiClient.get(
-              isUserCatalogMode
-                ? "/businesses/tags"
-                : "/admin/tags/for-business",
+              "/businesses/tags",
               {
                 params: {
                   category_id: data.category_id,
