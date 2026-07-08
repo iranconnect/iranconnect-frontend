@@ -360,20 +360,6 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
                       {s.name}
                     </span>
                   </label>
-        
-                  {s.service_tags?.length > 0 && (
-                    <div className="ml-6 mt-1 flex flex-wrap gap-2">
-                      {s.service_tags.map((tag) => (
-                        <span
-                          key={tag.id}
-                          title={tag.description}
-                          className="text-xs bg-slate-100 px-2 py-0.5 rounded"
-                        >
-                          #{tag.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
