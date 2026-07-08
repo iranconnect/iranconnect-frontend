@@ -1,4 +1,4 @@
-// components/admin/BusinessWizard/StepBasicInfo.jsx 
+// components/admin/BusinessWizard/StepBasicInfo.jsx
 import { useEffect, useState } from "react";
 import apiClient from "../../../utils/apiClient";
 
