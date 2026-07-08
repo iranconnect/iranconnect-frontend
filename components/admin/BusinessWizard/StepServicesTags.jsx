@@ -115,9 +115,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
 
     apiClient
       .get(
-        isUserCatalogMode
-          ? "/businesses/services"
-          : "/admin/services",
+        "/businesses/services",
         {
           params: {
             subcategory_ids:
@@ -340,9 +338,13 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
           <p className="text-sm opacity-70">
             Loading services…
           </p>
+        ) : !subcategoryIds.length ? (
+          <p className="text-sm opacity-70">
+            Please go back and select at least one subcategory.
+          </p>
         ) : services.length === 0 ? (
           <p className="text-sm opacity-70">
-            No services available for selected subcategories.
+            No active services are available for the selected subcategory.
           </p>
         ) : (
           <>
