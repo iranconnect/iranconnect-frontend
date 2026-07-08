@@ -4,6 +4,8 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../utils/apiClient";
 import TagDetailsModal from "../../components/admin/TagDetailsModal";
 import TagBulkUploadModal from "../../components/admin/TagBulkUploadModal";
+import Pagination from "../../components/ui/Pagination";
+import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 const TAG_TYPES = [
   "feature",
@@ -17,8 +19,21 @@ const TAG_SCOPES = ["global", "category", "service"];
 export default function AdminTagsPage() {
   const [tags, setTags] = useState([]);
   const [selected, setSelected] = useState(null);
-  const [page, setPage] = useState(1);
+  
   const [pagination, setPagination] = useState(null);
+  const {
+    isReady,
+    page,
+    limit,
+    filters,
+    setPage,
+    applyFilters,
+  } = usePaginationQuery({
+    filterKeys: ["status"],
+    defaultLimit: 10,
+  });
+  
+  const statusFilter = filters.status || "all";
   const [showBulk, setShowBulk] = useState(false);
 
   const [form, setForm] = useState({
@@ -65,17 +80,41 @@ export default function AdminTagsPage() {
   }
 
   useEffect(() => {
-    fetchTags(1);
-  }, []);
+    if (!isReady) {
+      return;
+    }
+  
+    fetchTags();
+  }, [
+    isReady,
+    page,
+    limit,
+    statusFilter,
+  ]);
 
-  async function fetchTags(p = 1) {
-    const res = await apiClient.get("/admin/tags", {
-      params: { page: p, pageSize: 10 },
-    });
-
-    setTags(res.data.data || []);
-    setPagination(res.data.pagination || null);
-    setPage(p);
+  async function fetchTags() {
+    setError("");
+  
+    try {
+      const res = await apiClient.get("/admin/catalog/tags", {
+        params: {
+          status: statusFilter,
+          page,
+          limit,
+        },
+      });
+  
+      setTags(res.data.rows || []);
+      setPagination(res.data.pagination || null);
+    } catch (err) {
+      setTags([]);
+      setPagination(null);
+  
+      setError(
+        err.response?.data?.error ||
+        "Failed to load tags."
+      );
+    }
   }
 
   async function handleCreate(e) {
@@ -98,7 +137,11 @@ export default function AdminTagsPage() {
         search_weight: 1,
         comment: "",
       });
-      fetchTags(1);
+      await applyFilters({
+        status: statusFilter === "all"
+          ? ""
+          : statusFilter,
+      });
     } catch (err) {
       setError(err.response?.data?.error || "Failed to create tag.");
     }
@@ -239,6 +282,30 @@ export default function AdminTagsPage() {
             </div>
           </form>
 
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <label className="text-sm font-medium">
+              Status
+            </label>
+          
+            <select
+              className="admin-input max-w-xs"
+              value={statusFilter}
+              onChange={(e) =>
+                applyFilters({
+                  status:
+                    e.target.value === "all"
+                      ? ""
+                      : e.target.value,
+                })
+              }
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+
           {/* TABLE */}
           <table className="admin-table">
             <thead>
@@ -257,7 +324,13 @@ export default function AdminTagsPage() {
                   <td>{t.name}</td>
                   <td>{t.type}</td>
                   <td>{t.scope}</td>
-                  <td>{t.is_active ? "Active" : "Inactive"}</td>
+                  <td>
+                    {t.is_deleted
+                      ? "⚫ Archived"
+                      : t.is_active
+                        ? "🟢 Active"
+                        : "🟡 Inactive"}
+                  </td>
                   <td>{t.created_by_email || "—"}</td>
                   <td className="text-right">
                     <button
@@ -272,36 +345,19 @@ export default function AdminTagsPage() {
             </tbody>
           </table>
 
-          {/* PAGINATION */}
-          {pagination && pagination.totalPages > 1 && (
-            <div className="flex justify-center items-center gap-4 mt-6">
-              <button
-                className="admin-btn admin-btn-secondary"
-                disabled={page === 1}
-                onClick={() => fetchTags(page - 1)}
-              >
-                ← Previous
-              </button>
-
-              <span className="text-sm opacity-70">
-                Page {page} of {pagination.totalPages}
-              </span>
-
-              <button
-                className="admin-btn admin-btn-secondary"
-                disabled={page === pagination.totalPages}
-                onClick={() => fetchTags(page + 1)}
-              >
-                Next →
-              </button>
-            </div>
+          {/* Central Pagination */}
+          {!error && (
+            <Pagination
+              pagination={pagination}
+              onPageChange={setPage}
+            />
           )}
 
           {selected && (
             <TagDetailsModal
               tagId={selected}
               onClose={() => setSelected(null)}
-              onUpdated={() => fetchTags(page)}
+              onUpdated={() => fetchTags()}
             />
           )}
         </section>
@@ -310,7 +366,13 @@ export default function AdminTagsPage() {
       {showBulk && (
         <TagBulkUploadModal
           onClose={() => setShowBulk(false)}
-          onSuccess={() => fetchTags(1)}
+          onSuccess={() =>
+            applyFilters({
+              status: statusFilter === "all"
+                ? ""
+                : statusFilter,
+            })
+          }
         />
       )}
     </AdminLayout>
