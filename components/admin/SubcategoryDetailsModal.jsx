@@ -33,14 +33,24 @@ export default function SubcategoryDetailsModal({
       alert("Action comment is required.");
       return;
     }
-
-    if (type === "delete") {
-      const ok = confirm("Are you sure you want to delete this subcategory?");
-      if (!ok) return;
+  
+    const confirmations = {
+      archive:
+        "Archive this subcategory? It will remain stored but will no longer be selectable.",
+      restore:
+        "Restore this subcategory? It will return as inactive and remain unavailable until reactivated.",
+      deactivate:
+        "Deactivate this subcategory? It will no longer be selectable.",
+      reactivate:
+        "Reactivate this subcategory? It will become selectable again.",
+    };
+  
+    if (confirmations[type] && !confirm(confirmations[type])) {
+      return;
     }
-
+  
     setActionLoading(true);
-
+  
     try {
       await apiClient.post(
         `/admin/subcategories/${subcategoryId}/${type}`,
@@ -51,7 +61,7 @@ export default function SubcategoryDetailsModal({
           },
         }
       );
-
+  
       onUpdated();
       onClose();
     } catch (err) {
@@ -91,7 +101,11 @@ export default function SubcategoryDetailsModal({
 
           <div>
             <strong>Status:</strong>{" "}
-            {subcategory.is_active ? "🟢 Active" : "🔴 Inactive"}
+            {subcategory.is_deleted
+              ? "⚫ Archived"
+              : subcategory.is_active
+                ? "🟢 Active"
+                : "🟡 Inactive"}
           </div>
 
           <div>
@@ -110,27 +124,44 @@ export default function SubcategoryDetailsModal({
         />
 
         {/* Actions */}
-        <div className="flex justify-between items-center gap-3 mt-5">
-
-          {/* Delete */}
-          <button
-            onClick={() => action("delete")}
-            className="admin-btn admin-btn-danger px-4 py-2 text-sm"
-            disabled={actionLoading}
-          >
-            🗑 Delete
-          </button>
-
-          {/* Activate / Deactivate */}
-          <button
-            onClick={() =>
-              action(subcategory.is_active ? "deactivate" : "activate")
-            }
-            className="admin-btn admin-btn-primary px-4 py-2 text-sm"
-            disabled={actionLoading}
-          >
-            {subcategory.is_active ? "Deactivate" : "Activate"}
-          </button>
+        <div className="flex flex-wrap justify-between items-center gap-3 mt-5">
+          {subcategory.is_deleted ? (
+            <button
+              onClick={() => action("restore")}
+              className="admin-btn admin-btn-secondary px-4 py-2 text-sm"
+              disabled={actionLoading}
+            >
+              Restore as Inactive
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => action("archive")}
+                className="admin-btn admin-btn-danger px-4 py-2 text-sm"
+                disabled={actionLoading}
+              >
+                Archive
+              </button>
+        
+              {subcategory.is_active ? (
+                <button
+                  onClick={() => action("deactivate")}
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm"
+                  disabled={actionLoading}
+                >
+                  Deactivate
+                </button>
+              ) : (
+                <button
+                  onClick={() => action("reactivate")}
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm"
+                  disabled={actionLoading}
+                >
+                  Reactivate
+                </button>
+              )}
+            </>
+          )}
         </div>
 
         {/* Audit log */}
