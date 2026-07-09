@@ -36,6 +36,11 @@ export default function AdminTagsPage() {
   const statusFilter = filters.status || "all";
   const [showBulk, setShowBulk] = useState(false);
 
+  const [catalogCategories, setCatalogCategories] = useState([]);
+  const [catalogSubcategories, setCatalogSubcategories] = useState([]);
+  const [catalogServices, setCatalogServices] = useState([]);
+  
+  const [catalogLoading, setCatalogLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -46,6 +51,9 @@ export default function AdminTagsPage() {
     seo_description: "",
     is_selectable: true,
     search_weight: 1,
+    category_id: "",
+    subcategory_id: "",
+    service_id: "",
     comment: "",
   });
 
@@ -92,6 +100,20 @@ export default function AdminTagsPage() {
     statusFilter,
   ]);
 
+    useEffect(() => {
+      if (
+        form.scope === "category" ||
+        form.scope === "service"
+      ) {
+        fetchTagCatalogCategories();
+        return;
+      }
+  
+      setCatalogCategories([]);
+      setCatalogSubcategories([]);
+      setCatalogServices([]);
+    }, [form.scope]);
+
   async function fetchTags() {
     setError("");
   
@@ -117,35 +139,157 @@ export default function AdminTagsPage() {
     }
   }
 
-  async function handleCreate(e) {
-    e.preventDefault();
-    setMessage("");
-    setError("");
+  function resetForm() {
+    setForm({
+      name: "",
+      slug: "",
+      type: "",
+      scope: "global",
+      language_code: "en",
+      seo_title: "",
+      seo_description: "",
+      is_selectable: true,
+      search_weight: 1,
+      category_id: "",
+      subcategory_id: "",
+      service_id: "",
+      comment: "",
+    });
+  
+    setCatalogCategories([]);
+    setCatalogSubcategories([]);
+    setCatalogServices([]);
+  }
 
+  async function fetchTagCatalogCategories() {
+    setCatalogLoading(true);
+    setError("");
+  
     try {
-      await apiClient.post("/admin/tags", form);
-      setMessage("✅ Tag created successfully.");
-      setForm({
-        name: "",
-        slug: "",
-        type: "",
-        scope: "global",
-        language_code: "en",
-        seo_title: "",
-        seo_description: "",
-        is_selectable: true,
-        search_weight: 1,
-        comment: "",
-      });
-      await applyFilters({
-        status: statusFilter === "all"
-          ? ""
-          : statusFilter,
-      });
+      const res = await apiClient.get(
+        "/admin/tags/catalog/categories"
+      );
+  
+      setCatalogCategories(res.data.data || []);
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to create tag.");
+      setCatalogCategories([]);
+      setError(
+        err.response?.data?.error ||
+        "Failed to load tag categories."
+      );
+    } finally {
+      setCatalogLoading(false);
     }
   }
+  
+  async function fetchTagCatalogSubcategories(categoryId) {
+    if (!categoryId) {
+      setCatalogSubcategories([]);
+      return;
+    }
+  
+    setCatalogLoading(true);
+    setError("");
+  
+    try {
+      const res = await apiClient.get(
+        "/admin/tags/catalog/subcategories",
+        {
+          params: {
+            category_id: categoryId,
+          },
+        }
+      );
+  
+      setCatalogSubcategories(res.data.data || []);
+    } catch (err) {
+      setCatalogSubcategories([]);
+      setError(
+        err.response?.data?.error ||
+        "Failed to load tag subcategories."
+      );
+    } finally {
+      setCatalogLoading(false);
+    }
+  }
+  
+  async function fetchTagCatalogServices(subcategoryId) {
+    if (!subcategoryId) {
+      setCatalogServices([]);
+      return;
+    }
+  
+    setCatalogLoading(true);
+    setError("");
+  
+    try {
+      const res = await apiClient.get(
+        "/admin/tags/catalog/services",
+        {
+          params: {
+            subcategory_id: subcategoryId,
+          },
+        }
+      );
+  
+      setCatalogServices(res.data.data || []);
+    } catch (err) {
+      setCatalogServices([]);
+      setError(
+        err.response?.data?.error ||
+        "Failed to load tag services."
+      );
+    } finally {
+      setCatalogLoading(false);
+    }
+  }
+
+    async function handleCreate(e) {
+      e.preventDefault();
+      setMessage("");
+      setError("");
+  
+      const payload = {
+        ...form,
+        search_weight: Number(form.search_weight) || 1,
+      };
+  
+      if (payload.scope === "global") {
+        delete payload.category_id;
+        delete payload.subcategory_id;
+        delete payload.service_id;
+      }
+  
+      if (payload.scope === "category") {
+        payload.category_id = Number(payload.category_id);
+        delete payload.subcategory_id;
+        delete payload.service_id;
+      }
+  
+      if (payload.scope === "service") {
+        payload.category_id = Number(payload.category_id);
+        payload.subcategory_id = Number(payload.subcategory_id);
+        payload.service_id = Number(payload.service_id);
+      }
+  
+      try {
+        await apiClient.post("/admin/tags", payload);
+  
+        setMessage("✅ Tag created successfully.");
+        resetForm();
+  
+        await applyFilters({
+          status: statusFilter === "all"
+            ? ""
+            : statusFilter,
+        });
+      } catch (err) {
+        setError(
+          err.response?.data?.error ||
+          "Failed to create tag."
+        );
+      }
+    }
 
   return (
     <AdminLayout>
@@ -202,12 +346,130 @@ export default function AdminTagsPage() {
             <select
               className="admin-input"
               value={form.scope}
-              onChange={(e) => setForm({ ...form, scope: e.target.value })}
+              onChange={(e) => {
+                setForm({
+                  ...form,
+                  scope: e.target.value,
+                  category_id: "",
+                  subcategory_id: "",
+                  service_id: "",
+                });
+            
+                setCatalogSubcategories([]);
+                setCatalogServices([]);
+              }}
             >
               {TAG_SCOPES.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
+
+            {(form.scope === "category" ||
+              form.scope === "service") && (
+              <select
+                className="admin-input"
+                required
+                value={form.category_id}
+                onChange={(e) => {
+                  const categoryId = e.target.value;
+
+                  setForm({
+                    ...form,
+                    category_id: categoryId,
+                    subcategory_id: "",
+                    service_id: "",
+                  });
+
+                  setCatalogSubcategories([]);
+                  setCatalogServices([]);
+
+                  if (form.scope === "service") {
+                    fetchTagCatalogSubcategories(categoryId);
+                  }
+                }}
+              >
+                <option value="">
+                  {catalogLoading
+                    ? "Loading categories..."
+                    : "Select category"}
+                </option>
+
+                {catalogCategories.map((category) => (
+                  <option
+                    key={category.id}
+                    value={category.id}
+                  >
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {form.scope === "service" && (
+              <select
+                className="admin-input"
+                required
+                value={form.subcategory_id}
+                disabled={!form.category_id}
+                onChange={(e) => {
+                  const subcategoryId = e.target.value;
+
+                  setForm({
+                    ...form,
+                    subcategory_id: subcategoryId,
+                    service_id: "",
+                  });
+
+                  setCatalogServices([]);
+                  fetchTagCatalogServices(subcategoryId);
+                }}
+              >
+                <option value="">
+                  {!form.category_id
+                    ? "Select category first"
+                    : "Select subcategory"}
+                </option>
+
+                {catalogSubcategories.map((subcategory) => (
+                  <option
+                    key={subcategory.id}
+                    value={subcategory.id}
+                  >
+                    {subcategory.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {form.scope === "service" && (
+              <select
+                className="admin-input"
+                required
+                value={form.service_id}
+                disabled={!form.subcategory_id}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    service_id: e.target.value,
+                  })
+                }
+              >
+                <option value="">
+                  {!form.subcategory_id
+                    ? "Select subcategory first"
+                    : "Select service"}
+                </option>
+
+                {catalogServices.map((service) => (
+                  <option
+                    key={service.id}
+                    value={service.id}
+                  >
+                    {service.name}
+                  </option>
+                ))}
+              </select>
+            )}  
 
             <input
               className="admin-input"
