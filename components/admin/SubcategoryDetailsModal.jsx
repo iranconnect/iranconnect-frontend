@@ -73,9 +73,15 @@ export default function SubcategoryDetailsModal({
 
   if (!subcategory) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="admin-card max-w-xl w-full relative p-6">
+    return (
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+        onMouseDown={onClose}
+      >
+        <div
+          className="admin-card max-w-xl w-full relative p-6"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
 
         {/* Close */}
         <button
