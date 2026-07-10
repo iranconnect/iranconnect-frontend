@@ -604,6 +604,17 @@ export default function AdminTagsPage() {
                   </td>
                 </tr>
               ))}
+            
+              {!tags.length && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="text-center py-6 text-sm text-gray-500"
+                  >
+                    No tags found for the selected filter.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
