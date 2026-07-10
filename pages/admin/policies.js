@@ -581,140 +581,6 @@ export default function PoliciesAdmin() {
         )}
 
         {/* ===== Create / Edit Form ===== */}
-        <div
-          className="p-6 rounded-2xl shadow-md mb-8 border"
-          style={{ backgroundColor: cardBg, borderColor }}
-        >
-          <div className="flex flex-col md:flex-row gap-3">
-            <div className="flex-1">
-              <label className="block text-sm mb-1" style={{ color: subtleText }}>
-                Policy Type
-              </label>
-              <select
-                value={type}
-                onChange={(e) => {
-                  setType(e.target.value);
-                  setContent("");
-                  setPreview("");
-                }}
-                className="border p-2 rounded-md w-full"
-                style={{
-                  color: textColor,
-                  backgroundColor: inputBg,
-                  borderColor,
-                }}
-              >
-                <option value="privacy">Privacy</option>
-                <option value="terms">Terms</option>
-                <option value="cookies">Cookies</option>
-                <option value="cookie_banner">Cookie Banner</option>
-              </select>
-            </div>
-
-            <div className="flex-1">
-              <label className="block text-sm mb-1" style={{ color: subtleText }}>
-                Language
-              </label>
-              <select
-                value={lang}
-                onChange={(e) => setLang(e.target.value)}
-                className="border p-2 rounded-md w-full"
-                style={{
-                  color: textColor,
-                  backgroundColor: inputBg,
-                  borderColor,
-                }}
-              >
-                <option value="en">English</option>
-                <option value="fr">Français</option>
-                <option value="fa">فارسی</option>
-              </select>
-            </div>
-          </div>
-
-          {/* ===== Editor / Preview ===== */}
-          {type !== "cookie_banner" ? (
-            <div className="grid md:grid-cols-2 gap-6 mt-4">
-              <div>
-                <h3 className="text-sm font-semibold mb-2">
-                  {editingId ? "✏️ Edit Policy" : "➕ New Policy"}
-                </h3>
-
-                <div
-                  className="relative z-0"
-                  style={{
-                    isolation: "isolate",
-                  }}
-                >
-                  <ReactQuill
-                    theme="snow"
-                    value={content}
-                    onChange={(v) => {
-                      setContent(v);
-                      setPreview(v);
-                    }}
-                    className="rounded-md border"
-                    style={quillStyle}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-semibold mb-2">👁️ Live Preview</h3>
-                <div
-                  className="border rounded-md p-3 min-h-[200px] prose prose-sm max-w-none"
-                  style={{
-                    color: textColor,
-                    backgroundColor: inputBg,
-                    borderColor,
-                  }}
-                  // 🔐 XSS-safe preview
-                  dangerouslySetInnerHTML={{
-                    __html: DOMPurify.sanitize(preview),
-                  }}
-                />
-              </div>
-            </div>
-          ) : (
-            <textarea
-              className="w-full border p-3 rounded-md mt-4"
-              placeholder='{"title":"We use cookies 🍪"}'
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              style={{
-                color: textColor,
-                backgroundColor: inputBg,
-                borderColor,
-              }}
-            />
-          )}
-
-          {/* ===== Buttons ===== */}
-          <div className="flex gap-3 mt-4">
-            <button
-              onClick={savePolicy}
-              disabled={loading}
-              className="px-4 py-2 bg-turquoise text-white rounded-md hover:bg-turquoise/80"
-            >
-              {loading
-                ? "Saving..."
-                : editingId
-                ? "💾 Update (New Version)"
-                : "Add Policy"}
-            </button>
-
-            {editingId && (
-              <button
-                onClick={resetForm}
-                className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* ===== Policies Table ===== */}
         {canManagePolicies ? (
           <div
             className="relative z-0 p-6 rounded-2xl shadow-md mb-8 border"
@@ -724,109 +590,215 @@ export default function PoliciesAdmin() {
               isolation: "isolate",
             }}
           >
-            <h2 className="text-lg font-semibold mb-3">📋 Existing Policies</h2>
-  
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border rounded-lg overflow-hidden">
-                <thead
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="flex-1">
+                <label
+                  className="block text-sm mb-1"
+                  style={{ color: subtleText }}
+                >
+                  Policy Type
+                </label>
+        
+                <select
+                  value={type}
+                  disabled={Boolean(editingId)}
+                  onChange={(e) => {
+                    setType(e.target.value);
+                    setContent("");
+                    setPreview("");
+                  }}
+                  className="border p-2 rounded-md w-full disabled:cursor-not-allowed disabled:opacity-60"
                   style={{
-                    backgroundColor: theme === "dark" ? "#1e293b" : "#f5f7fa",
+                    color: textColor,
+                    backgroundColor: inputBg,
+                    borderColor,
                   }}
                 >
-                  <tr>
-                    <th className="p-2 text-left">Type</th>
-                    <th className="p-2 text-left">Lang</th>
-                    <th className="p-2 text-left">Version</th>
-                    <th className="p-2 text-left">Created By</th>
-                    <th className="p-2 text-left">Date</th>
-                    <th className="p-2 text-center">Actions</th>
-                  </tr>
-                </thead>
-  
-                <tbody>
-                  {listLoading ? (
-                    <tr>
-                      <td
-                        colSpan="6"
-                        className="p-8 text-center"
-                        style={{ color: subtleText }}
-                      >
-                        Loading policies…
-                      </td>
-                    </tr>
-                  ) : (
-                    policies.map((p) => (
-                      <tr
-                        key={p.id}
-                        className="border-t"
-                        style={{ borderColor }}
-                      >
-                        <td className="p-2">{p.type}</td>
-                        <td className="p-2">{p.lang}</td>
-                        <td className="p-2">{p.version}</td>
-                        <td className="p-2">
-                          {p.created_by_email || "—"}
-                        </td>
-                        <td className="p-2">
-                          {new Date(
-                            p.created_at
-                          ).toLocaleString()}
-                        </td>
-  
-                        <td className="p-2 text-center">
-                          {canManagePolicies &&
-                            p.status === "published" && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  editPolicy(p.id)
-                                }
-                                disabled={detailsLoading}
-                                className="text-blue-400 hover:underline mx-1 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                Edit
-                              </button>
-                            )}
-                        
-                          <button
-                            type="button"
-                            onClick={() =>
-                              openHistory(
-                                p.type,
-                                p.lang
-                              )
-                            }
-                            className="text-turquoise hover:underline mx-1"
-                          >
-                            History
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                  
-                  {!listLoading &&
-                    policies.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan="6"
-                          className="p-4 text-center"
-                          style={{
-                            color: subtleText,
-                          }}
-                        >
-                          No policies found.
-                        </td>
-                      </tr>
-                    )}
-                </tbody>
-              </table>
+                  <option value="privacy">
+                    Privacy
+                  </option>
+        
+                  <option value="terms">
+                    Terms
+                  </option>
+        
+                  <option value="cookies">
+                    Cookies
+                  </option>
+        
+                  <option value="cookie_banner">
+                    Cookie Banner
+                  </option>
+                </select>
+              </div>
+        
+              <div className="flex-1">
+                <label
+                  className="block text-sm mb-1"
+                  style={{ color: subtleText }}
+                >
+                  Language
+                </label>
+        
+                <select
+                  value={lang}
+                  disabled={Boolean(editingId)}
+                  onChange={(e) =>
+                    setLang(e.target.value)
+                  }
+                  className="border p-2 rounded-md w-full disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    color: textColor,
+                    backgroundColor: inputBg,
+                    borderColor,
+                  }}
+                >
+                  <option value="en">
+                    English
+                  </option>
+        
+                  <option value="fr">
+                    Français
+                  </option>
+        
+                  <option value="fa">
+                    فارسی
+                  </option>
+                </select>
+              </div>
             </div>
-            <Pagination
-              pagination={pagination}
-              onPageChange={setPage}
-              disabled={listLoading}
-            />
+        
+            {/* ===== Editor / Preview ===== */}
+            {type !== "cookie_banner" ? (
+              <div className="grid md:grid-cols-2 gap-6 mt-4">
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">
+                    {editingId
+                      ? "✏️ Revise Published Policy"
+                      : "➕ New Policy"}
+                  </h3>
+        
+                  <div
+                    className="relative z-0"
+                    style={{
+                      isolation: "isolate",
+                    }}
+                  >
+                    <ReactQuill
+                      theme="snow"
+                      value={content}
+                      onChange={(value) => {
+                        setContent(value);
+                        setPreview(value);
+                      }}
+                      className="rounded-md border"
+                      style={quillStyle}
+                    />
+                  </div>
+                </div>
+        
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">
+                    👁️ Live Preview
+                  </h3>
+        
+                  <div
+                    className="border rounded-md p-3 min-h-[200px] prose prose-sm max-w-none"
+                    style={{
+                      color: textColor,
+                      backgroundColor: inputBg,
+                      borderColor,
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(
+                        preview
+                      ),
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <textarea
+                className="w-full min-h-[180px] border p-3 rounded-md mt-4"
+                placeholder='{"title":"We use cookies 🍪"}'
+                value={content}
+                onChange={(e) =>
+                  setContent(e.target.value)
+                }
+                style={{
+                  color: textColor,
+                  backgroundColor: inputBg,
+                  borderColor,
+                }}
+              />
+            )}
+        
+            {/* ===== Change Note ===== */}
+            <div className="mt-4">
+              <label
+                className="block text-sm mb-1"
+                style={{ color: subtleText }}
+              >
+                Change Note
+              </label>
+        
+              <textarea
+                value={changeNote}
+                onChange={(e) =>
+                  setChangeNote(e.target.value)
+                }
+                rows={3}
+                maxLength={1000}
+                placeholder={
+                  editingId
+                    ? "Explain what changed in this revision."
+                    : "Explain why this policy is being published."
+                }
+                className="w-full border p-3 rounded-md"
+                style={{
+                  color: textColor,
+                  backgroundColor: inputBg,
+                  borderColor,
+                }}
+              />
+        
+              <p
+                className="mt-1 text-xs"
+                style={{ color: subtleText }}
+              >
+                {changeNote.length}/1000
+              </p>
+            </div>
+        
+            {/* ===== Buttons ===== */}
+            <div className="flex gap-3 mt-4">
+              <button
+                type="button"
+                onClick={savePolicy}
+                disabled={
+                  loading ||
+                  detailsLoading
+                }
+                className="px-4 py-2 bg-turquoise text-white rounded-md hover:bg-turquoise/80 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading
+                  ? "Saving..."
+                  : editingId
+                  ? "💾 Publish New Version"
+                  : "Add Policy"}
+              </button>
+        
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  disabled={loading}
+                  className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div
@@ -841,9 +813,196 @@ export default function PoliciesAdmin() {
             Only a SuperAdmin can publish, revise, or restore policy versions.
           </div>
         )}
-
-        {/* ===== Policies Table ===== */}
         
+        {/* ===== Policies Table ===== */}
+        <div
+          className="p-6 rounded-2xl shadow-md border"
+          style={{
+            backgroundColor: cardBg,
+            borderColor,
+          }}
+        >
+          <h2 className="text-lg font-semibold mb-3">
+            📋 Existing Policies
+          </h2>
+        
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border rounded-lg overflow-hidden">
+              <thead
+                style={{
+                  backgroundColor:
+                    theme === "dark"
+                      ? "#1e293b"
+                      : "#f5f7fa",
+                }}
+              >
+                <tr>
+                  <th className="p-2 text-left">
+                    Type
+                  </th>
+        
+                  <th className="p-2 text-left">
+                    Lang
+                  </th>
+        
+                  <th className="p-2 text-left">
+                    Version
+                  </th>
+        
+                  <th className="p-2 text-left">
+                    Status
+                  </th>
+        
+                  <th className="p-2 text-left">
+                    Created By
+                  </th>
+        
+                  <th className="p-2 text-left">
+                    Published
+                  </th>
+        
+                  <th className="p-2 text-center">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+        
+              <tbody>
+                {listLoading ? (
+                  <tr>
+                    <td
+                      colSpan="7"
+                      className="p-8 text-center"
+                      style={{
+                        color: subtleText,
+                      }}
+                    >
+                      Loading policies…
+                    </td>
+                  </tr>
+                ) : (
+                  policies.map((policy) => {
+                    const isPublished =
+                      policy.status ===
+                      "published";
+        
+                    const displayedDate =
+                      policy.published_at ||
+                      policy.created_at;
+        
+                    return (
+                      <tr
+                        key={policy.id}
+                        className="border-t"
+                        style={{ borderColor }}
+                      >
+                        <td className="p-2">
+                          {policy.type}
+                        </td>
+        
+                        <td className="p-2">
+                          {policy.lang}
+                        </td>
+        
+                        <td className="p-2">
+                          {policy.version}
+                        </td>
+        
+                        <td className="p-2">
+                          <span
+                            className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                            style={{
+                              backgroundColor:
+                                isPublished
+                                  ? "rgba(34, 197, 94, 0.14)"
+                                  : "rgba(148, 163, 184, 0.18)",
+        
+                              color:
+                                isPublished
+                                  ? "#16a34a"
+                                  : subtleText,
+                            }}
+                          >
+                            {isPublished
+                              ? "Published"
+                              : "Superseded"}
+                          </span>
+                        </td>
+        
+                        <td className="p-2">
+                          {policy.created_by_email ||
+                            "—"}
+                        </td>
+        
+                        <td className="p-2">
+                          {displayedDate
+                            ? new Date(
+                                displayedDate
+                              ).toLocaleString()
+                            : "—"}
+                        </td>
+        
+                        <td className="p-2 text-center whitespace-nowrap">
+                          {canManagePolicies &&
+                            isPublished && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  editPolicy(
+                                    policy.id
+                                  )
+                                }
+                                disabled={
+                                  detailsLoading
+                                }
+                                className="text-blue-400 hover:underline mx-1 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                Edit
+                              </button>
+                            )}
+        
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openHistory(
+                                policy.type,
+                                policy.lang
+                              )
+                            }
+                            className="text-turquoise hover:underline mx-1"
+                          >
+                            History
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+        
+                {!listLoading &&
+                  policies.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan="7"
+                        className="p-4 text-center"
+                        style={{
+                          color: subtleText,
+                        }}
+                      >
+                        No policies found.
+                      </td>
+                    </tr>
+                  )}
+              </tbody>
+            </table>
+          </div>
+        
+          <Pagination
+            pagination={pagination}
+            onPageChange={setPage}
+            disabled={listLoading}
+          />
+        </div>        
 
         {/* ===== History Modal ===== */}
         {historyOpen && (
