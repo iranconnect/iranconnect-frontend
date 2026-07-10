@@ -424,7 +424,7 @@ export default function PoliciesAdmin() {
         {
           params: {
             page: requestedPage,
-            limit: 2,
+            limit: 5,
           },
           withCredentials: true,
         }
@@ -734,55 +734,92 @@ export default function PoliciesAdmin() {
               </thead>
 
               <tbody>
-                {policies.map((p) => (
-                  <tr key={p.id} className="border-t" style={{ borderColor }}>
-                    <td className="p-2">{p.type}</td>
-                    <td className="p-2">{p.lang}</td>
-                    <td className="p-2">{p.version}</td>
-                    <td className="p-2">{p.created_by_email || "—"}</td>
-                    <td className="p-2">
-                      {new Date(p.created_at).toLocaleString()}
-                    </td>
-
-                    <td className="p-2 text-center">
-                      <button
-                        onClick={() => editPolicy(p.id)}
-                        className="text-blue-400 hover:underline mx-1"
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        onClick={() => deletePolicy(p.id)}
-                        className="text-red-400 hover:underline mx-1"
-                      >
-                        Delete
-                      </button>
-
-                      <button
-                        onClick={() => openHistory(p.type, p.lang)}
-                        className="text-turquoise hover:underline mx-1"
-                      >
-                        History
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-
-                {policies.length === 0 && (
+                {listLoading ? (
                   <tr>
                     <td
                       colSpan="6"
-                      className="p-4 text-center"
+                      className="p-8 text-center"
                       style={{ color: subtleText }}
                     >
-                      No policies yet.
+                      Loading policies…
                     </td>
                   </tr>
+                ) : (
+                  policies.map((p) => (
+                    <tr
+                      key={p.id}
+                      className="border-t"
+                      style={{ borderColor }}
+                    >
+                      <td className="p-2">{p.type}</td>
+                      <td className="p-2">{p.lang}</td>
+                      <td className="p-2">{p.version}</td>
+                      <td className="p-2">
+                        {p.created_by_email || "—"}
+                      </td>
+                      <td className="p-2">
+                        {new Date(
+                          p.created_at
+                        ).toLocaleString()}
+                      </td>
+
+                      <td className="p-2 text-center">
+                        <button
+                          onClick={() =>
+                            editPolicy(p.id)
+                          }
+                          className="text-blue-400 hover:underline mx-1"
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            deletePolicy(p.id)
+                          }
+                          className="text-red-400 hover:underline mx-1"
+                        >
+                          Delete
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            openHistory(
+                              p.type,
+                              p.lang
+                            )
+                          }
+                          className="text-turquoise hover:underline mx-1"
+                        >
+                          History
+                        </button>
+                      </td>
+                    </tr>
+                  ))
                 )}
+                
+                {!listLoading &&
+                  policies.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan="6"
+                        className="p-4 text-center"
+                        style={{
+                          color: subtleText,
+                        }}
+                      >
+                        No policies found.
+                      </td>
+                    </tr>
+                  )}
               </tbody>
             </table>
           </div>
+          <Pagination
+            pagination={pagination}
+            onPageChange={setPage}
+            disabled={listLoading}
+          />
         </div>
 
         {/* ===== History Modal ===== */}
