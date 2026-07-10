@@ -257,22 +257,22 @@ export default function AdminServicesPage() {
               </tr>
             </thead>
             <tbody>
-              {services.map((s) => (
-                <tr key={s.id}>
-                  <td>{s.category_name}</td>
-                  <td>{s.subcategory_name}</td>
-                  <td>{s.name}</td>
+              {tags.map((t) => (
+                <tr key={t.id}>
+                  <td>{t.name}</td>
+                  <td>{t.type}</td>
+                  <td>{t.scope}</td>
                   <td>
-                    {s.is_deleted
+                    {t.is_deleted
                       ? "⚫ Archived"
-                      : s.is_active
+                      : t.is_active
                         ? "🟢 Active"
                         : "🟡 Inactive"}
                   </td>
-                  <td>{s.created_by_email || "—"}</td>
+                  <td>{t.created_by_email || "—"}</td>
                   <td className="text-right">
                     <button
-                      onClick={() => setSelected(s.id)}
+                      onClick={() => setSelected(t.id)}
                       className="admin-btn admin-btn-secondary text-xs"
                     >
                       View
@@ -280,6 +280,17 @@ export default function AdminServicesPage() {
                   </td>
                 </tr>
               ))}
+            
+              {!tags.length && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="text-center py-6 text-sm text-gray-500"
+                  >
+                    No services found for the selected filter.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
