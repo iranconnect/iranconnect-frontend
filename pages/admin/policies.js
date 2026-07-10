@@ -323,15 +323,6 @@ export default function PoliciesAdmin() {
   }
 
   /* ============================================================
-     ❌ Delete policy (confirm + admin)
-  ============================================================ */
-  function deletePolicy() {
-    alert(
-      "Policy deletion has been disabled. Published policy versions are immutable."
-    );
-  }
-
-  /* ============================================================
      ✏️ Edit policy
   ============================================================ */
   async function editPolicy(policyId) {
@@ -561,19 +552,26 @@ export default function PoliciesAdmin() {
       <div className="p-6" style={{ color: textColor }}>
         {/* ===== Header ===== */}
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-semibold">🧾 Policy Manager</h1>
-
-          <button
-            onClick={() => openHistory(type, lang)}
-            className="px-3 py-2 rounded-md border"
-            style={{
-              backgroundColor: inputBg,
-              borderColor,
-              color: textColor,
-            }}
-          >
-            🕓 View History ({type} / {lang})
-          </button>
+          <h1 className="text-2xl font-semibold">
+            🧾 Policy Manager
+          </h1>
+        
+          {canManagePolicies && (
+            <button
+              type="button"
+              onClick={() =>
+                openHistory(type, lang)
+              }
+              className="px-3 py-2 rounded-md border"
+              style={{
+                backgroundColor: inputBg,
+                borderColor,
+                color: textColor,
+              }}
+            >
+              🕓 View History ({type} / {lang})
+            </button>
+          )}
         </div>
 
         {error && (
@@ -642,16 +640,23 @@ export default function PoliciesAdmin() {
                   {editingId ? "✏️ Edit Policy" : "➕ New Policy"}
                 </h3>
 
-                <ReactQuill
-                  theme="snow"
-                  value={content}
-                  onChange={(v) => {
-                    setContent(v);
-                    setPreview(v);
+                <div
+                  className="relative z-0"
+                  style={{
+                    isolation: "isolate",
                   }}
-                  className="rounded-md border"
-                  style={quillStyle}
-                />
+                >
+                  <ReactQuill
+                    theme="snow"
+                    value={content}
+                    onChange={(v) => {
+                      setContent(v);
+                      setPreview(v);
+                    }}
+                    className="rounded-md border"
+                    style={quillStyle}
+                  />
+                </div>
               </div>
 
               <div>
@@ -710,117 +715,135 @@ export default function PoliciesAdmin() {
         </div>
 
         {/* ===== Policies Table ===== */}
-        <div
-          className="p-6 rounded-2xl shadow-md border"
-          style={{ backgroundColor: cardBg, borderColor }}
-        >
-          <h2 className="text-lg font-semibold mb-3">📋 Existing Policies</h2>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border rounded-lg overflow-hidden">
-              <thead
-                style={{
-                  backgroundColor: theme === "dark" ? "#1e293b" : "#f5f7fa",
-                }}
-              >
-                <tr>
-                  <th className="p-2 text-left">Type</th>
-                  <th className="p-2 text-left">Lang</th>
-                  <th className="p-2 text-left">Version</th>
-                  <th className="p-2 text-left">Created By</th>
-                  <th className="p-2 text-left">Date</th>
-                  <th className="p-2 text-center">Actions</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {listLoading ? (
+        {canManagePolicies ? (
+          <div
+            className="relative z-0 p-6 rounded-2xl shadow-md mb-8 border"
+            style={{
+              backgroundColor: cardBg,
+              borderColor,
+              isolation: "isolate",
+            }}
+          >
+            <h2 className="text-lg font-semibold mb-3">📋 Existing Policies</h2>
+  
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border rounded-lg overflow-hidden">
+                <thead
+                  style={{
+                    backgroundColor: theme === "dark" ? "#1e293b" : "#f5f7fa",
+                  }}
+                >
                   <tr>
-                    <td
-                      colSpan="6"
-                      className="p-8 text-center"
-                      style={{ color: subtleText }}
-                    >
-                      Loading policies…
-                    </td>
+                    <th className="p-2 text-left">Type</th>
+                    <th className="p-2 text-left">Lang</th>
+                    <th className="p-2 text-left">Version</th>
+                    <th className="p-2 text-left">Created By</th>
+                    <th className="p-2 text-left">Date</th>
+                    <th className="p-2 text-center">Actions</th>
                   </tr>
-                ) : (
-                  policies.map((p) => (
-                    <tr
-                      key={p.id}
-                      className="border-t"
-                      style={{ borderColor }}
-                    >
-                      <td className="p-2">{p.type}</td>
-                      <td className="p-2">{p.lang}</td>
-                      <td className="p-2">{p.version}</td>
-                      <td className="p-2">
-                        {p.created_by_email || "—"}
-                      </td>
-                      <td className="p-2">
-                        {new Date(
-                          p.created_at
-                        ).toLocaleString()}
-                      </td>
-
-                      <td className="p-2 text-center">
-                        <button
-                          onClick={() =>
-                            editPolicy(p.id)
-                          }
-                          className="text-blue-400 hover:underline mx-1"
-                        >
-                          Edit
-                        </button>
-
-                        <button
-                          onClick={() =>
-                            deletePolicy(p.id)
-                          }
-                          className="text-red-400 hover:underline mx-1"
-                        >
-                          Delete
-                        </button>
-
-                        <button
-                          onClick={() =>
-                            openHistory(
-                              p.type,
-                              p.lang
-                            )
-                          }
-                          className="text-turquoise hover:underline mx-1"
-                        >
-                          History
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-                
-                {!listLoading &&
-                  policies.length === 0 && (
+                </thead>
+  
+                <tbody>
+                  {listLoading ? (
                     <tr>
                       <td
                         colSpan="6"
-                        className="p-4 text-center"
-                        style={{
-                          color: subtleText,
-                        }}
+                        className="p-8 text-center"
+                        style={{ color: subtleText }}
                       >
-                        No policies found.
+                        Loading policies…
                       </td>
                     </tr>
+                  ) : (
+                    policies.map((p) => (
+                      <tr
+                        key={p.id}
+                        className="border-t"
+                        style={{ borderColor }}
+                      >
+                        <td className="p-2">{p.type}</td>
+                        <td className="p-2">{p.lang}</td>
+                        <td className="p-2">{p.version}</td>
+                        <td className="p-2">
+                          {p.created_by_email || "—"}
+                        </td>
+                        <td className="p-2">
+                          {new Date(
+                            p.created_at
+                          ).toLocaleString()}
+                        </td>
+  
+                        <td className="p-2 text-center">
+                          {canManagePolicies &&
+                            p.status === "published" && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  editPolicy(p.id)
+                                }
+                                disabled={detailsLoading}
+                                className="text-blue-400 hover:underline mx-1 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                Edit
+                              </button>
+                            )}
+                        
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openHistory(
+                                p.type,
+                                p.lang
+                              )
+                            }
+                            className="text-turquoise hover:underline mx-1"
+                          >
+                            History
+                          </button>
+                        </td>
+                      </tr>
+                    ))
                   )}
-              </tbody>
-            </table>
+                  
+                  {!listLoading &&
+                    policies.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan="6"
+                          className="p-4 text-center"
+                          style={{
+                            color: subtleText,
+                          }}
+                        >
+                          No policies found.
+                        </td>
+                      </tr>
+                    )}
+                </tbody>
+              </table>
+            </div>
+            <Pagination
+              pagination={pagination}
+              onPageChange={setPage}
+              disabled={listLoading}
+            />
           </div>
-          <Pagination
-            pagination={pagination}
-            onPageChange={setPage}
-            disabled={listLoading}
-          />
-        </div>
+        ) : (
+          <div
+            className="mb-8 rounded-xl border p-4 text-sm"
+            style={{
+              backgroundColor: cardBg,
+              borderColor,
+              color: subtleText,
+            }}
+          >
+            Policy management is read-only for Admin accounts.
+            Only a SuperAdmin can publish, revise, or restore policy versions.
+          </div>
+        )}
+
+        {/* ===== Policies Table ===== */}
+        
 
         {/* ===== History Modal ===== */}
         {historyOpen && (
