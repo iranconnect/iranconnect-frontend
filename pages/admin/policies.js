@@ -24,6 +24,16 @@ const POLICY_FILTER_KEYS = [
   "date_to",
 ];
 
+const EMPTY_POLICY_FILTER_FORM = {
+  type: "",
+  lang: "",
+  status: "",
+  version: "",
+  created_by: "",
+  date_from: "",
+  date_to: "",
+};
+
 export default function PoliciesAdmin() {
   const {
     isReady,
@@ -40,6 +50,13 @@ export default function PoliciesAdmin() {
 
   const [policies, setPolicies] = useState([]);
   const [pagination, setPagination] = useState(null);
+
+  const [filterForm, setFilterForm] = useState(
+    EMPTY_POLICY_FILTER_FORM
+  );
+  
+  const [filterSubmitting, setFilterSubmitting] =
+    useState(false);
 
   const [type, setType] = useState("privacy");
   const [lang, setLang] = useState("en");
@@ -217,6 +234,86 @@ export default function PoliciesAdmin() {
     isReady,
     fetchPolicies,
   ]);
+
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+  
+    setFilterForm({
+      type: filters.type || "",
+      lang: filters.lang || "",
+      status: filters.status || "",
+      version: filters.version || "",
+      created_by: filters.created_by || "",
+      date_from: filters.date_from || "",
+      date_to: filters.date_to || "",
+    });
+  }, [
+    isReady,
+    filters.type,
+    filters.lang,
+    filters.status,
+    filters.version,
+    filters.created_by,
+    filters.date_from,
+    filters.date_to,
+  ]);
+
+  function updateFilterField(event) {
+    const { name, value } = event.target;
+  
+    setFilterForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  async function searchPolicies(event) {
+    event.preventDefault();
+  
+    try {
+      setFilterSubmitting(true);
+      setError("");
+  
+      await applyFilters(filterForm);
+    } catch (err) {
+      console.error(
+        "❌ Apply policy filters error:",
+        err
+      );
+  
+      setError(
+        "Failed to apply policy filters."
+      );
+    } finally {
+      setFilterSubmitting(false);
+    }
+  }
+
+  async function resetPolicyFilters() {
+    try {
+      setFilterSubmitting(true);
+      setError("");
+  
+      setFilterForm(
+        EMPTY_POLICY_FILTER_FORM
+      );
+  
+      await clearFilters();
+    } catch (err) {
+      console.error(
+        "❌ Clear policy filters error:",
+        err
+      );
+  
+      setError(
+        "Failed to clear policy filters."
+      );
+    } finally {
+      setFilterSubmitting(false);
+    }
+  }
 
   /* ============================================================
      💾 Create / Update policy (XSS-safe)
@@ -825,6 +922,246 @@ export default function PoliciesAdmin() {
           <h2 className="text-lg font-semibold mb-3">
             📋 Existing Policies
           </h2>
+
+          <form
+            onSubmit={searchPolicies}
+            className="mb-5 rounded-xl border p-4"
+            style={{
+              borderColor,
+              backgroundColor: inputBg,
+            }}
+          >
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {/* Type */}
+              <div>
+                <label
+                  htmlFor="policy-filter-type"
+                  className="mb-1 block text-sm"
+                  style={{ color: subtleText }}
+                >
+                  Type
+                </label>
+          
+                <select
+                  id="policy-filter-type"
+                  name="type"
+                  value={filterForm.type}
+                  onChange={updateFilterField}
+                  className="w-full rounded-md border p-2"
+                  style={{
+                    color: textColor,
+                    backgroundColor: cardBg,
+                    borderColor,
+                  }}
+                >
+                  <option value="">All types</option>
+                  <option value="privacy">Privacy</option>
+                  <option value="terms">Terms</option>
+                  <option value="cookies">Cookies</option>
+                  <option value="cookie_banner">
+                    Cookie Banner
+                  </option>
+                </select>
+              </div>
+          
+              {/* Language */}
+              <div>
+                <label
+                  htmlFor="policy-filter-lang"
+                  className="mb-1 block text-sm"
+                  style={{ color: subtleText }}
+                >
+                  Language
+                </label>
+          
+                <select
+                  id="policy-filter-lang"
+                  name="lang"
+                  value={filterForm.lang}
+                  onChange={updateFilterField}
+                  className="w-full rounded-md border p-2"
+                  style={{
+                    color: textColor,
+                    backgroundColor: cardBg,
+                    borderColor,
+                  }}
+                >
+                  <option value="">All languages</option>
+                  <option value="en">English</option>
+                  <option value="fr">Français</option>
+                  <option value="fa">فارسی</option>
+                </select>
+              </div>
+          
+              {/* Status */}
+              <div>
+                <label
+                  htmlFor="policy-filter-status"
+                  className="mb-1 block text-sm"
+                  style={{ color: subtleText }}
+                >
+                  Status
+                </label>
+          
+                <select
+                  id="policy-filter-status"
+                  name="status"
+                  value={filterForm.status}
+                  onChange={updateFilterField}
+                  className="w-full rounded-md border p-2"
+                  style={{
+                    color: textColor,
+                    backgroundColor: cardBg,
+                    borderColor,
+                  }}
+                >
+                  <option value="">All statuses</option>
+                  <option value="published">
+                    Published
+                  </option>
+                  <option value="superseded">
+                    Superseded
+                  </option>
+                </select>
+              </div>
+          
+              {/* Version */}
+              <div>
+                <label
+                  htmlFor="policy-filter-version"
+                  className="mb-1 block text-sm"
+                  style={{ color: subtleText }}
+                >
+                  Version
+                </label>
+          
+                <input
+                  id="policy-filter-version"
+                  name="version"
+                  type="text"
+                  value={filterForm.version}
+                  onChange={updateFilterField}
+                  placeholder="Example: v1.2"
+                  autoComplete="off"
+                  className="w-full rounded-md border p-2"
+                  style={{
+                    color: textColor,
+                    backgroundColor: cardBg,
+                    borderColor,
+                  }}
+                />
+              </div>
+          
+              {/* Created By */}
+              <div className="md:col-span-2">
+                <label
+                  htmlFor="policy-filter-created-by"
+                  className="mb-1 block text-sm"
+                  style={{ color: subtleText }}
+                >
+                  Created by
+                </label>
+          
+                <input
+                  id="policy-filter-created-by"
+                  name="created_by"
+                  type="text"
+                  value={filterForm.created_by}
+                  onChange={updateFilterField}
+                  placeholder="Search by admin email"
+                  autoComplete="off"
+                  className="w-full rounded-md border p-2"
+                  style={{
+                    color: textColor,
+                    backgroundColor: cardBg,
+                    borderColor,
+                  }}
+                />
+              </div>
+          
+              {/* Date From */}
+              <div>
+                <label
+                  htmlFor="policy-filter-date-from"
+                  className="mb-1 block text-sm"
+                  style={{ color: subtleText }}
+                >
+                  Date from
+                </label>
+          
+                <input
+                  id="policy-filter-date-from"
+                  name="date_from"
+                  type="date"
+                  value={filterForm.date_from}
+                  onChange={updateFilterField}
+                  className="w-full rounded-md border p-2"
+                  style={{
+                    color: textColor,
+                    backgroundColor: cardBg,
+                    borderColor,
+                  }}
+                />
+              </div>
+          
+              {/* Date To */}
+              <div>
+                <label
+                  htmlFor="policy-filter-date-to"
+                  className="mb-1 block text-sm"
+                  style={{ color: subtleText }}
+                >
+                  Date to
+                </label>
+          
+                <input
+                  id="policy-filter-date-to"
+                  name="date_to"
+                  type="date"
+                  value={filterForm.date_to}
+                  onChange={updateFilterField}
+                  className="w-full rounded-md border p-2"
+                  style={{
+                    color: textColor,
+                    backgroundColor: cardBg,
+                    borderColor,
+                  }}
+                />
+              </div>
+            </div>
+          
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="submit"
+                disabled={
+                  filterSubmitting ||
+                  listLoading
+                }
+                className="rounded-md bg-turquoise px-4 py-2 font-medium text-white hover:bg-turquoise/80 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {filterSubmitting
+                  ? "Searching..."
+                  : "Search"}
+              </button>
+          
+              <button
+                type="button"
+                onClick={resetPolicyFilters}
+                disabled={
+                  filterSubmitting ||
+                  listLoading
+                }
+                className="rounded-md border px-4 py-2 font-medium disabled:cursor-not-allowed disabled:opacity-50"
+                style={{
+                  color: textColor,
+                  backgroundColor: cardBg,
+                  borderColor,
+                }}
+              >
+                Clear
+              </button>
+            </div>
+          </form>
         
           <div className="overflow-x-auto">
             <table className="w-full text-sm border rounded-lg overflow-hidden">
