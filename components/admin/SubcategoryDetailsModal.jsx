@@ -75,11 +75,11 @@ export default function SubcategoryDetailsModal({
 
     return (
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
         onMouseDown={onClose}
       >
         <div
-          className="admin-card max-w-xl w-full relative p-6"
+          className="admin-card max-w-xl w-full relative p-6 max-h-[90vh] overflow-y-auto"
           onMouseDown={(e) => e.stopPropagation()}
         >
 
