@@ -424,7 +424,7 @@ export default function PoliciesAdmin() {
         {
           params: {
             page: requestedPage,
-            limit: 5,
+            limit: 2,
           },
           withCredentials: true,
         }
