@@ -256,23 +256,25 @@ export default function AdminServicesPage() {
                 <th></th>
               </tr>
             </thead>
+
             <tbody>
-              {tags.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.name}</td>
-                  <td>{t.type}</td>
-                  <td>{t.scope}</td>
+              {services.map((service) => (
+                <tr key={service.id}>
+                  <td>{service.category_name || "—"}</td>
+                  <td>{service.subcategory_name || "—"}</td>
+                  <td>{service.name}</td>
                   <td>
-                    {t.is_deleted
+                    {service.is_deleted
                       ? "⚫ Archived"
-                      : t.is_active
+                      : service.is_active
                         ? "🟢 Active"
                         : "🟡 Inactive"}
                   </td>
-                  <td>{t.created_by_email || "—"}</td>
+                  <td>{service.created_by_email || "—"}</td>
                   <td className="text-right">
                     <button
-                      onClick={() => setSelected(t.id)}
+                      type="button"
+                      onClick={() => setSelected(service.id)}
                       className="admin-btn admin-btn-secondary text-xs"
                     >
                       View
@@ -280,8 +282,8 @@ export default function AdminServicesPage() {
                   </td>
                 </tr>
               ))}
-            
-              {!tags.length && (
+
+              {!services.length && (
                 <tr>
                   <td
                     colSpan={6}
