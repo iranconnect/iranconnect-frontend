@@ -196,23 +196,23 @@ export default function AdminCategoriesPage() {
               <th>Created By</th>
               <th></th>
             </tr>
-          </thead>
           <tbody>
-            {categories.map(c=>(
-              <tr key={c.id}>
-                <td>{c.name}</td>
-                <td>{c.slug}</td>
+            {tags.map((t) => (
+              <tr key={t.id}>
+                <td>{t.name}</td>
+                <td>{t.type}</td>
+                <td>{t.scope}</td>
                 <td>
-                  {c.is_deleted
+                  {t.is_deleted
                     ? "⚫ Archived"
-                    : c.is_active
+                    : t.is_active
                       ? "🟢 Active"
                       : "🟡 Inactive"}
                 </td>
-                <td>{c.created_by_email || "—"}</td>
+                <td>{t.created_by_email || "—"}</td>
                 <td className="text-right">
                   <button
-                    onClick={()=>setSelected(c.id)}
+                    onClick={() => setSelected(t.id)}
                     className="admin-btn admin-btn-secondary text-xs"
                   >
                     View
@@ -220,6 +220,17 @@ export default function AdminCategoriesPage() {
                 </td>
               </tr>
             ))}
+          
+            {!tags.length && (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="text-center py-6 text-sm text-gray-500"
+                >
+                  No categories found for the selected filter.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
 
