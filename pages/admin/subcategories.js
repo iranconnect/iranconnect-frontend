@@ -232,23 +232,25 @@ export default function AdminSubcategoriesPage() {
                 <th></th>
               </tr>
             </thead>
+
             <tbody>
-              {tags.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.name}</td>
-                  <td>{t.type}</td>
-                  <td>{t.scope}</td>
+              {subcategories.map((subcategory) => (
+                <tr key={subcategory.id}>
+                  <td>{subcategory.category_name || "—"}</td>
+                  <td>{subcategory.name}</td>
+                  <td>{subcategory.slug}</td>
                   <td>
-                    {t.is_deleted
+                    {subcategory.is_deleted
                       ? "⚫ Archived"
-                      : t.is_active
+                      : subcategory.is_active
                         ? "🟢 Active"
                         : "🟡 Inactive"}
                   </td>
-                  <td>{t.created_by_email || "—"}</td>
+                  <td>{subcategory.created_by_email || "—"}</td>
                   <td className="text-right">
                     <button
-                      onClick={() => setSelected(t.id)}
+                      type="button"
+                      onClick={() => setSelected(subcategory.id)}
                       className="admin-btn admin-btn-secondary text-xs"
                     >
                       View
@@ -256,8 +258,8 @@ export default function AdminSubcategoriesPage() {
                   </td>
                 </tr>
               ))}
-            
-              {!tags.length && (
+
+              {!subcategories.length && (
                 <tr>
                   <td
                     colSpan={6}
