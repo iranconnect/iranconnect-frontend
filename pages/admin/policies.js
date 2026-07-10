@@ -67,7 +67,6 @@ export default function PoliciesAdmin() {
   });
 
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyPage, setHistoryPage] = useState(1);
   const [historyPagination, setHistoryPagination] = useState(null);
 
   const canManagePolicies =
@@ -441,11 +440,6 @@ export default function PoliciesAdmin() {
         res.data?.pagination || null
       );
 
-      setHistoryPage(
-        res.data?.pagination?.page ||
-          requestedPage
-      );
-
       setHistoryOpen(true);
     } catch (err) {
       console.error(
@@ -795,7 +789,11 @@ export default function PoliciesAdmin() {
         {historyOpen && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={() => setHistoryOpen(false)}
+            onClick={() => {
+              setHistoryOpen(false);
+              setHistoryList([]);
+              setHistoryPagination(null);
+            }}
           >
             <div
               className="w-[95%] md:w-[900px] rounded-2xl shadow-2xl border overflow-hidden"
@@ -811,7 +809,11 @@ export default function PoliciesAdmin() {
                 </h3>
 
                 <button
-                  onClick={() => setHistoryOpen(false)}
+                  onClick={() => {
+                    setHistoryOpen(false);
+                    setHistoryList([]);
+                    setHistoryPagination(null);
+                  }}
                   className="px-3 py-1.5 rounded-md border"
                   style={{
                     color: textColor,
@@ -825,60 +827,156 @@ export default function PoliciesAdmin() {
 
               <div className="p-5 overflow-y-auto max-h-[75vh]">
                 {historyLoading ? (
-                  <div style={{ color: subtleText }}>Loading history…</div>
+                  <div
+                    className="py-10 text-center"
+                    style={{ color: subtleText }}
+                  >
+                    Loading history…
+                  </div>
                 ) : historyList.length > 0 ? (
-                  historyList.map((h) => (
-                    <div
-                      key={h.id}
-                      className="rounded-xl border p-4 mb-3"
-                      style={{ borderColor }}
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="text-sm" style={{ color: subtleText }}>
-                          <div>
-                            <b>Version:</b> {h.version}
-                          </div>
-                          <div>
-                            <b>Created by:</b> {h.created_by_email || "—"}
-                          </div>
-                          <div>
-                            <b>Date:</b>{" "}
-                            {new Date(h.created_at).toLocaleString()}
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => restoreVersion(h.id)}
-                          className="px-3 py-1.5 rounded-md bg-turquoise text-white hover:bg-turquoise/80"
-                        >
-                          🔁 Restore as new version
-                        </button>
-                      </div>
-
-                      {h.type !== "cookie_banner" ? (
+                  <>
+                    {historyList.map((h) => {
+                      const isPublished =
+                        h.status === "published";
+              
+                      const isSuperseded =
+                        h.status === "superseded";
+              
+                      const canRestore =
+                        canManagePolicies &&
+                        isSuperseded;
+              
+                      const displayedDate =
+                        h.published_at ||
+                        h.created_at;
+              
+                      return (
                         <div
-                          className="border rounded-md p-3 prose prose-sm max-w-none"
-                          style={{
-                            borderColor,
-                            backgroundColor: inputBg,
-                            color: textColor,
-                          }}
-                          dangerouslySetInnerHTML={{
-                            __html: DOMPurify.sanitize(h.content),
-                          }}
-                        />
-                      ) : (
-                        <div
-                          className="text-sm italic p-2 rounded-md border-dashed border"
-                          style={{ borderColor, color: subtleText }}
+                          key={h.id}
+                          className="rounded-xl border p-4 mb-3"
+                          style={{ borderColor }}
                         >
-                          (Cookie banner content stored as JSON)
+                          <div className="flex flex-col gap-3 mb-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div
+                              className="text-sm space-y-1"
+                              style={{ color: subtleText }}
+                            >
+                              <div className="flex flex-wrap items-center gap-2">
+                                <b>Version:</b>
+              
+                                <span
+                                  className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold"
+                                  style={{
+                                    borderColor,
+                                    backgroundColor: inputBg,
+                                    color: textColor,
+                                  }}
+                                >
+                                  {h.version}
+                                </span>
+                              </div>
+              
+                              <div className="flex flex-wrap items-center gap-2">
+                                <b>Status:</b>
+              
+                                <span
+                                  className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                                  style={{
+                                    backgroundColor: isPublished
+                                      ? "rgba(34, 197, 94, 0.14)"
+                                      : "rgba(148, 163, 184, 0.18)",
+              
+                                    color: isPublished
+                                      ? "#16a34a"
+                                      : subtleText,
+                                  }}
+                                >
+                                  {isPublished
+                                    ? "Published"
+                                    : isSuperseded
+                                    ? "Superseded"
+                                    : h.status || "Unknown"}
+                                </span>
+                              </div>
+              
+                              <div>
+                                <b>Created by:</b>{" "}
+                                {h.created_by_email || "—"}
+                              </div>
+              
+                              <div>
+                                <b>Published:</b>{" "}
+                                {displayedDate
+                                  ? new Date(
+                                      displayedDate
+                                    ).toLocaleString()
+                                  : "—"}
+                              </div>
+              
+                              <div>
+                                <b>Change note:</b>{" "}
+                                {h.change_note ||
+                                  "No change note recorded."}
+                              </div>
+                            </div>
+              
+                            {canRestore && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  restoreVersion(h.id)
+                                }
+                                className="shrink-0 px-3 py-1.5 rounded-md bg-turquoise text-white hover:bg-turquoise/80"
+                              >
+                                🔁 Restore as new version
+                              </button>
+                            )}
+                          </div>
+              
+                          {h.type !== "cookie_banner" ? (
+                            <div
+                              className="border rounded-md p-3 prose prose-sm max-w-none"
+                              style={{
+                                borderColor,
+                                backgroundColor: inputBg,
+                                color: textColor,
+                              }}
+                              dangerouslySetInnerHTML={{
+                                __html:
+                                  DOMPurify.sanitize(
+                                    h.content || ""
+                                  ),
+                              }}
+                            />
+                          ) : (
+                            <pre
+                              className="text-sm p-3 rounded-md border whitespace-pre-wrap break-words"
+                              style={{
+                                borderColor,
+                                backgroundColor: inputBg,
+                                color: textColor,
+                              }}
+                            >
+                              {h.content || ""}
+                            </pre>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))
+                      );
+                    })}
+              
+                    <Pagination
+                      pagination={historyPagination}
+                      onPageChange={
+                        changeHistoryPage
+                      }
+                      disabled={historyLoading}
+                    />
+                  </>
                 ) : (
-                  <div className="text-center" style={{ color: subtleText }}>
+                  <div
+                    className="py-10 text-center"
+                    style={{ color: subtleText }}
+                  >
                     No history found for this policy.
                   </div>
                 )}
