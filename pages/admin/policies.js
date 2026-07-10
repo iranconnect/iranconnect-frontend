@@ -1,30 +1,77 @@
 // frontend/pages/admin/policies.js
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import dynamic from "next/dynamic";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import Pagination from "../../components/ui/Pagination";
+import usePaginationQuery from "../../hooks/usePaginationQuery";
 import DOMPurify from "isomorphic-dompurify";
 import "react-quill/dist/quill.snow.css";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
+const POLICY_FILTER_KEYS = [
+  "type",
+  "lang",
+  "status",
+  "version",
+  "created_by",
+  "date_from",
+  "date_to",
+];
+
 export default function PoliciesAdmin() {
+  const {
+    isReady,
+    page,
+    limit,
+    filters,
+    setPage,
+    applyFilters,
+    clearFilters,
+  } = usePaginationQuery({
+    filterKeys: POLICY_FILTER_KEYS,
+    defaultLimit: 10,
+  });
+
   const [policies, setPolicies] = useState([]);
+  const [pagination, setPagination] = useState(null);
+
   const [type, setType] = useState("privacy");
   const [lang, setLang] = useState("en");
   const [content, setContent] = useState("");
   const [preview, setPreview] = useState("");
+  const [changeNote, setChangeNote] = useState("");
+
   const [loading, setLoading] = useState(false);
+  const [listLoading, setListLoading] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
 
   const [theme, setTheme] = useState("light");
   const [authChecked, setAuthChecked] = useState(false);
+  const [currentRole, setCurrentRole] = useState(null);
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyList, setHistoryList] = useState([]);
-  const [historyKey, setHistoryKey] = useState({ type: "privacy", lang: "en" });
+
+  const [historyKey, setHistoryKey] = useState({
+    type: "privacy",
+    lang: "en",
+  });
+
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPagination, setHistoryPagination] = useState(null);
+
+  const canManagePolicies =
+    currentRole === "superadmin";
 
   /* ============================================================
      🔐 Secure Auth Check — admin / superadmin only
@@ -49,8 +96,8 @@ export default function PoliciesAdmin() {
         }
 
         if (mounted) {
+          setCurrentRole(me.data.role);
           setAuthChecked(true);
-          fetchPolicies();
         }
       } catch (err) {
         window.location.href = "/auth/login";
@@ -86,24 +133,129 @@ export default function PoliciesAdmin() {
   /* ============================================================
      📄 Fetch policies (admin only)
   ============================================================ */
-  async function fetchPolicies() {
-    try {
-      const res = await apiClient.get("/policies/admin", {
-        withCredentials: true,
-      });
-      setPolicies(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      console.error("❌ Fetch policies error:", err);
-      setError(err.response?.data?.error || "Failed to load policies.");
+  const fetchPolicies = useCallback(
+    async ({
+      requestedPage = page,
+      requestedLimit = limit,
+    } = {}) => {
+      if (!authChecked || !isReady) {
+        return;
+      }
+
+      try {
+        setListLoading(true);
+        setError("");
+
+        const params = {
+          page: requestedPage,
+          limit: requestedLimit,
+        };
+
+        for (const [
+          key,
+          value,
+        ] of Object.entries(filters)) {
+          const normalized = String(
+            value || ""
+          ).trim();
+
+          if (normalized) {
+            params[key] = normalized;
+          }
+        }
+
+        const res = await apiClient.get(
+          "/policies/admin/v2",
+          {
+            params,
+            withCredentials: true,
+          }
+        );
+
+        setPolicies(
+          Array.isArray(res.data?.items)
+            ? res.data.items
+            : []
+        );
+
+        setPagination(
+          res.data?.pagination || null
+        );
+      } catch (err) {
+        console.error(
+          "❌ Fetch policies error:",
+          err
+        );
+
+        setPolicies([]);
+        setPagination(null);
+
+        setError(
+          err.response?.data?.error ||
+            "Failed to load policies."
+        );
+      } finally {
+        setListLoading(false);
+      }
+    },
+    [
+      authChecked,
+      isReady,
+      page,
+      limit,
+      filters,
+    ]
+  );
+
+  useEffect(() => {
+    if (!authChecked || !isReady) {
+      return;
     }
-  }
+
+    fetchPolicies();
+  }, [
+    authChecked,
+    isReady,
+    fetchPolicies,
+  ]);
 
   /* ============================================================
      💾 Create / Update policy (XSS-safe)
   ============================================================ */
   async function savePolicy() {
-    if (!content || content.trim().length < 10) {
-      setError("Policy content is too short.");
+    if (!canManagePolicies) {
+      setError(
+        "Only a SuperAdmin can publish policy changes."
+      );
+      return;
+    }
+
+    if (
+      !content ||
+      content.trim().length < 10
+    ) {
+      setError(
+        "Policy content is too short."
+      );
+      return;
+    }
+
+    /*
+      Temporary fallback until the change-note input
+      is added in Phase B.
+    */
+    const resolvedChangeNote =
+      changeNote.trim() ||
+      window.prompt(
+        editingId
+          ? "Please enter the reason for this policy revision:"
+          : "Please enter a note describing this policy publication:"
+      )?.trim();
+
+    if (!resolvedChangeNote) {
+      setError(
+        "A change note is required."
+      );
       return;
     }
 
@@ -111,39 +263,61 @@ export default function PoliciesAdmin() {
     setError("");
 
     try {
-      // 🛡 sanitize HTML before sending
-      const sanitized = DOMPurify.sanitize(content, {
-        USE_PROFILES: { html: true },
-      });
+      const sanitized =
+        type === "cookie_banner"
+          ? content.trim()
+          : DOMPurify.sanitize(content, {
+              USE_PROFILES: {
+                html: true,
+              },
+            });
 
       if (editingId) {
-        await apiClient.put(
-          `/policies/admin/${editingId}`,
+        await apiClient.post(
+          `/policies/admin/v2/${editingId}/revise`,
           {
-            type,
-            lang,
             content: sanitized,
+            change_note:
+              resolvedChangeNote,
           },
-          { withCredentials: true }
+          {
+            withCredentials: true,
+          }
         );
       } else {
         await apiClient.post(
-          `/policies/admin`,
+          "/policies/admin/v2",
           {
             type,
             lang,
             content: sanitized,
+            change_note:
+              resolvedChangeNote,
           },
-          { withCredentials: true }
+          {
+            withCredentials: true,
+          }
         );
       }
 
-      alert("✅ Policy saved successfully.");
+      alert(
+        editingId
+          ? "✅ A new policy version was published."
+          : "✅ Policy published successfully."
+      );
+
       resetForm();
       await fetchPolicies();
     } catch (err) {
-      console.error("❌ Save policy error:", err);
-      setError(err.response?.data?.error || "Error saving policy.");
+      console.error(
+        "❌ Save policy error:",
+        err
+      );
+
+      setError(
+        err.response?.data?.error ||
+          "Error publishing policy."
+      );
     } finally {
       setLoading(false);
     }
@@ -152,30 +326,73 @@ export default function PoliciesAdmin() {
   /* ============================================================
      ❌ Delete policy (confirm + admin)
   ============================================================ */
-  async function deletePolicy(id) {
-    if (!confirm("❗ Are you sure you want to delete this policy?")) return;
-
-    try {
-      await apiClient.delete(`/policies/admin/${id}`, {
-        withCredentials: true,
-      });
-      await fetchPolicies();
-    } catch (err) {
-      alert(err.response?.data?.error || "Error deleting policy.");
-    }
+  function deletePolicy() {
+    alert(
+      "Policy deletion has been disabled. Published policy versions are immutable."
+    );
   }
 
   /* ============================================================
      ✏️ Edit policy
   ============================================================ */
-  function editPolicy(p) {
-    setEditingId(p.id);
-    setType(p.type);
-    setLang(p.lang);
-    setContent(p.content);
-    setPreview(p.content);
+  async function editPolicy(policyId) {
+    if (!canManagePolicies) {
+      return;
+    }
 
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    try {
+      setDetailsLoading(true);
+      setError("");
+
+      const res = await apiClient.get(
+        `/policies/admin/v2/${policyId}`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      const policy =
+        res.data?.item;
+
+      if (!policy) {
+        throw new Error(
+          "Policy details were not returned."
+        );
+      }
+
+      if (
+        policy.status !== "published"
+      ) {
+        setError(
+          "Only the current published policy can be revised. Use Restore for a historical version."
+        );
+        return;
+      }
+
+      setEditingId(policy.id);
+      setType(policy.type);
+      setLang(policy.lang);
+      setContent(policy.content || "");
+      setPreview(policy.content || "");
+      setChangeNote("");
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    } catch (err) {
+      console.error(
+        "❌ Load policy details error:",
+        err
+      );
+
+      setError(
+        err.response?.data?.error ||
+          "Failed to load policy details."
+      );
+    } finally {
+      setDetailsLoading(false);
+    }
   }
 
   function resetForm() {
@@ -184,49 +401,135 @@ export default function PoliciesAdmin() {
     setLang("en");
     setContent("");
     setPreview("");
+    setChangeNote("");
+    setError("");
   }
 
   /* ============================================================
      🕓 Load policy history
   ============================================================ */
-  async function openHistory(t = type, l = lang) {
+  async function openHistory(
+    targetType = type,
+    targetLang = lang,
+    requestedPage = 1
+  ) {
     try {
       setHistoryLoading(true);
-      setHistoryKey({ type: t, lang: l });
+      setHistoryKey({
+        type: targetType,
+        lang: targetLang,
+      });
 
       const res = await apiClient.get(
-        `/policies/admin/history/${t}/${l}`,
-        { withCredentials: true }
+        `/policies/admin/v2/history/${targetType}/${targetLang}`,
+        {
+          params: {
+            page: requestedPage,
+            limit: 5,
+          },
+          withCredentials: true,
+        }
       );
 
-      setHistoryList(Array.isArray(res.data) ? res.data : []);
+      setHistoryList(
+        Array.isArray(res.data?.items)
+          ? res.data.items
+          : []
+      );
+
+      setHistoryPagination(
+        res.data?.pagination || null
+      );
+
+      setHistoryPage(
+        res.data?.pagination?.page ||
+          requestedPage
+      );
+
       setHistoryOpen(true);
     } catch (err) {
-      alert(err.response?.data?.error || "Error loading history.");
+      console.error(
+        "❌ Load policy history error:",
+        err
+      );
+
+      alert(
+        err.response?.data?.error ||
+          "Error loading history."
+      );
     } finally {
       setHistoryLoading(false);
     }
+  }
+
+  async function changeHistoryPage(
+    nextPage
+  ) {
+    await openHistory(
+      historyKey.type,
+      historyKey.lang,
+      nextPage
+    );
   }
 
   /* ============================================================
      🔁 Restore previous version (as new)
   ============================================================ */
   async function restoreVersion(id) {
-    if (!confirm("Restore this version as a new active policy?")) return;
+    if (!canManagePolicies) {
+      return;
+    }
+
+    const restoreReason =
+      window.prompt(
+        "Please explain why this historical version should be restored:"
+      )?.trim();
+
+    if (!restoreReason) {
+      return;
+    }
+
+    if (
+      !confirm(
+        "Restore this historical content as a new published version?"
+      )
+    ) {
+      return;
+    }
 
     try {
       await apiClient.post(
-        `/policies/admin/restore/${id}`,
-        {},
-        { withCredentials: true }
+        `/policies/admin/v2/${id}/restore`,
+        {
+          change_note:
+            restoreReason,
+        },
+        {
+          withCredentials: true,
+        }
       );
 
       await fetchPolicies();
-      await openHistory(historyKey.type, historyKey.lang);
 
-      alert("✅ Version restored successfully.");
+      await openHistory(
+        historyKey.type,
+        historyKey.lang,
+        1
+      );
+
+      alert(
+        "✅ Historical content was restored as a new published version."
+      );
     } catch (err) {
-      alert(err.response?.data?.error || "Error restoring version.");
+      console.error(
+        "❌ Restore policy error:",
+        err
+      );
+
+      alert(
+        err.response?.data?.error ||
+          "Error restoring policy version."
+      );
     }
   }
 
@@ -449,7 +752,7 @@ export default function PoliciesAdmin() {
 
                     <td className="p-2 text-center">
                       <button
-                        onClick={() => editPolicy(p)}
+                        onClick={() => editPolicy(p.id)}
                         className="text-blue-400 hover:underline mx-1"
                       >
                         Edit
