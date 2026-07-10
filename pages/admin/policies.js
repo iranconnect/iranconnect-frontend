@@ -34,6 +34,27 @@ const EMPTY_POLICY_FILTER_FORM = {
   date_to: "",
 };
 
+function getApiErrorMessage(
+  error,
+  fallbackMessage
+) {
+  const responseData =
+    error?.response?.data;
+
+  const firstDetail =
+    Array.isArray(
+      responseData?.details
+    )
+      ? responseData.details[0]
+      : null;
+
+  return (
+    firstDetail?.message ||
+    responseData?.error ||
+    fallbackMessage
+  );
+}
+
 export default function PoliciesAdmin() {
   const {
     isReady,
@@ -207,8 +228,10 @@ export default function PoliciesAdmin() {
         setPagination(null);
 
         setError(
-          err.response?.data?.error ||
+          getApiErrorMessage(
+            err,
             "Failed to load policies."
+          )
         );
       } finally {
         setListLoading(false);
@@ -272,11 +295,38 @@ export default function PoliciesAdmin() {
   async function searchPolicies(event) {
     event.preventDefault();
   
+    const dateFrom =
+      filterForm.date_from;
+  
+    const dateTo =
+      filterForm.date_to;
+  
+    /*
+      HTML date inputs return ISO values:
+      YYYY-MM-DD
+  
+      ISO date strings can safely be compared
+      lexicographically.
+    */
+    if (
+      dateFrom &&
+      dateTo &&
+      dateFrom > dateTo
+    ) {
+      setError(
+        '"Date from" cannot be later than "Date to".'
+      );
+  
+      return;
+    }
+  
     try {
       setFilterSubmitting(true);
       setError("");
   
-      await applyFilters(filterForm);
+      await applyFilters(
+        filterForm
+      );
     } catch (err) {
       console.error(
         "❌ Apply policy filters error:",
@@ -284,7 +334,10 @@ export default function PoliciesAdmin() {
       );
   
       setError(
-        "Failed to apply policy filters."
+        getApiErrorMessage(
+          err,
+          "Failed to apply policy filters."
+        )
       );
     } finally {
       setFilterSubmitting(false);
@@ -1094,6 +1147,10 @@ export default function PoliciesAdmin() {
                   name="date_from"
                   type="date"
                   value={filterForm.date_from}
+                  max={
+                    filterForm.date_to ||
+                    undefined
+                  }
                   onChange={updateFilterField}
                   className="w-full rounded-md border p-2"
                   style={{
@@ -1119,6 +1176,10 @@ export default function PoliciesAdmin() {
                   name="date_to"
                   type="date"
                   value={filterForm.date_to}
+                  min={
+                    filterForm.date_from ||
+                    undefined
+                  }
                   onChange={updateFilterField}
                   className="w-full rounded-md border p-2"
                   style={{
