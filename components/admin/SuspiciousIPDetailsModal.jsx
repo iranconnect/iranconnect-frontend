@@ -1,12 +1,20 @@
 /* frontend/components/admin/SuspiciousIPDetailsModal.jsx */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import apiClient from "../../utils/apiClient.js";
+
+const PAGE_SIZE = 10;
+
+const DEFAULT_PAGINATION = {
+  page: 1,
+  pageSize: PAGE_SIZE,
+  total: 0,
+  totalPages: 1,
+};
 
 export default function SuspiciousIPDetailsModal({
   ipRecord,
   onClose,
   refreshList,
-  securityConfig,
 }) {
   const ipAddress = ipRecord?.ip_address || null;
 
@@ -18,22 +26,28 @@ export default function SuspiciousIPDetailsModal({
   const [error, setError] = useState("");
 
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    pageSize: 10,
-    total: 0,
-    totalPages: 1,
-  });
+  const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
+
+  const latestRequestIdRef = useRef(0);
 
   /* --------------------------------------------------
-     🔄 Load details (safe)
+     Load details
   -------------------------------------------------- */
   useEffect(() => {
-    if (ipAddress) fetchDetails(1);
+    if (!ipAddress) {
+      return;
+    }
+
+    fetchDetails(1);
   }, [ipAddress]);
 
   async function fetchDetails(newPage) {
-    if (!ipAddress) return;
+    if (!ipAddress) {
+      return;
+    }
+
+    const requestId = latestRequestIdRef.current + 1;
+    latestRequestIdRef.current = requestId;
 
     setLoading(true);
     setError("");
@@ -41,37 +55,80 @@ export default function SuspiciousIPDetailsModal({
     try {
       const res = await apiClient.get(
         `/admin/suspicious-ips/details/ip/${ipAddress}`,
-        { params: { page: newPage, pageSize: 10 } }
+        {
+          params: {
+            page: newPage,
+            pageSize: PAGE_SIZE,
+          },
+          withCredentials: true,
+        }
       );
 
-      setIncidents(res.data.incidents || []);
-      setPagination(res.data.pagination || pagination);
-      setDetails(res.data.meta || {});
-      setPage(newPage);
+      if (requestId !== latestRequestIdRef.current) {
+        return;
+      }
+
+      const nextPagination =
+        res.data?.pagination || DEFAULT_PAGINATION;
+
+      setIncidents(res.data?.incidents || []);
+      setDetails(res.data?.meta || {});
+      setPagination({
+        page: nextPagination.page || newPage,
+        pageSize: nextPagination.pageSize || PAGE_SIZE,
+        total: nextPagination.total || 0,
+        totalPages: Math.max(nextPagination.totalPages || 1, 1),
+      });
+      setPage(nextPagination.page || newPage);
     } catch (err) {
-      console.error("❌ Failed to load suspicious IP details:", err);
-      setError("Failed to load IP details.");
+      if (requestId !== latestRequestIdRef.current) {
+        return;
+      }
+
+      console.error(
+        "❌ Failed to load suspicious IP details:",
+        err
+      );
+
+      setError(
+        err.response?.data?.error ||
+          "Failed to load IP details."
+      );
+
+      setIncidents([]);
+      setPagination(DEFAULT_PAGINATION);
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   }
 
   function goToPage(newPage) {
+    const totalPages = Math.max(
+      pagination.totalPages || 1,
+      1
+    );
+
     if (
+      loading ||
       newPage < 1 ||
-      newPage > pagination.totalPages ||
+      newPage > totalPages ||
       newPage === page
-    )
+    ) {
       return;
+    }
 
     fetchDetails(newPage);
   }
 
   /* --------------------------------------------------
-     🚫 Block / Unblock (backend enforced)
+     Block / Unblock
   -------------------------------------------------- */
   async function handleAction(type) {
-    if (actionLoading) return;
+    if (actionLoading) {
+      return;
+    }
 
     if (!note.trim()) {
       alert("⚠️ Admin note is required.");
@@ -81,10 +138,16 @@ export default function SuspiciousIPDetailsModal({
     setActionLoading(true);
 
     try {
-      await apiClient.post(`/admin/suspicious-ips/${type}`, {
-        ip_address: ipAddress,
-        reason: note,
-      });
+      await apiClient.post(
+        `/admin/suspicious-ips/${type}`,
+        {
+          ip_address: ipAddress,
+          reason: note,
+        },
+        {
+          withCredentials: true,
+        }
+      );
 
       alert(
         type === "block"
@@ -96,6 +159,12 @@ export default function SuspiciousIPDetailsModal({
       handleClose();
     } catch (err) {
       console.error("❌ Action failed:", err);
+
+      if (err.response?.status === 403) {
+        window.location.href = "/403";
+        return;
+      }
+
       alert(
         err.response?.data?.error ||
           "Operation failed. Permission denied or invalid state."
@@ -106,23 +175,45 @@ export default function SuspiciousIPDetailsModal({
   }
 
   /* --------------------------------------------------
-     🧹 Secure close (cleanup sensitive state)
+     Close + cleanup
   -------------------------------------------------- */
   function handleClose() {
+    latestRequestIdRef.current += 1;
+
     setIncidents([]);
     setDetails(null);
     setNote("");
     setPage(1);
+    setPagination(DEFAULT_PAGINATION);
     setError("");
+
     onClose();
   }
 
-  if (!ipAddress) return null;
+  if (!ipAddress) {
+    return null;
+  }
+
+  const total = pagination.total || 0;
+  const totalPages = Math.max(pagination.totalPages || 1, 1);
+  const from =
+    total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const to =
+    total === 0
+      ? 0
+      : Math.min(from + incidents.length - 1, total);
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="admin-card max-w-4xl w-full relative p-6 overflow-y-auto max-h-[90vh]">
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={handleClose}
+    >
+      <div
+        className="admin-card max-w-5xl w-full relative p-6 overflow-y-auto max-h-[90vh]"
+        onClick={(event) => event.stopPropagation()}
+      >
         <button
+          type="button"
           onClick={handleClose}
           className="absolute top-3 right-4 text-turquoise text-lg font-bold"
         >
@@ -134,104 +225,169 @@ export default function SuspiciousIPDetailsModal({
         </h2>
 
         {loading ? (
-          <p className="text-center text-gray-400">Loading...</p>
+          <p className="text-center text-gray-400">
+            Loading...
+          </p>
         ) : error ? (
-          <p className="text-center text-red-500">{error}</p>
+          <p className="text-center text-red-500">
+            {error}
+          </p>
         ) : (
           <div className="space-y-5 text-sm">
-
             {/* Incident Table */}
             <div>
-              <h3 className="font-bold mb-2">🚨 Incident Log</h3>
-              <table className="admin-table text-sm">
-                <thead>
-                  <tr>
-                    <th>Type</th>
-                    <th>Severity</th>
-                    <th>Attempts</th>
-                    <th>First Seen</th>
-                    <th>Last Seen</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {incidents.length ? (
-                    incidents.map((i) => (
-                      <tr key={i.id}>
-                        <td>{i.suspicious_type}</td>
-                        <td>{i.severity_level}</td>
-                        <td>{i.count_attempts}</td>
-                        <td>{new Date(i.first_seen).toLocaleString()}</td>
-                        <td>{new Date(i.last_seen).toLocaleString()}</td>
-                      </tr>
-                    ))
-                  ) : (
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                <h3 className="font-bold">
+                  🚨 Incident Log
+                </h3>
+
+                <span className="text-xs opacity-70">
+                  Showing {from}–{to} of {total}
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="admin-table text-sm">
+                  <thead>
                     <tr>
-                      <td colSpan="5" className="text-center opacity-70">
-                        No incidents found.
-                      </td>
+                      <th>Type</th>
+                      <th>Severity</th>
+                      <th>Attempts</th>
+                      <th>First Seen</th>
+                      <th>Last Seen</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+
+                  <tbody>
+                    {incidents.length ? (
+                      incidents.map((incident) => (
+                        <tr key={incident.id}>
+                          <td>{incident.suspicious_type}</td>
+                          <td>{incident.severity_level}</td>
+                          <td>{incident.count_attempts}</td>
+                          <td>
+                            {incident.first_seen
+                              ? new Date(
+                                  incident.first_seen
+                                ).toLocaleString()
+                              : "—"}
+                          </td>
+                          <td>
+                            {incident.last_seen
+                              ? new Date(
+                                  incident.last_seen
+                                ).toLocaleString()
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="5"
+                          className="text-center opacity-70 p-4"
+                        >
+                          No incidents found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
+                  <p className="text-xs opacity-70">
+                    Page {page} of {totalPages}
+                  </p>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={page <= 1 || loading}
+                      onClick={() => goToPage(page - 1)}
+                      className="admin-btn admin-btn-secondary px-3 py-1 text-xs disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={page >= totalPages || loading}
+                      onClick={() => goToPage(page + 1)}
+                      className="admin-btn admin-btn-secondary px-3 py-1 text-xs disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Status */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <strong>Status:</strong>{" "}
-                {details.block_status === "blocked"
+                {details?.block_status === "blocked"
                   ? "🚫 Blocked"
-                  : details.block_status === "unblocked"
+                  : details?.block_status === "unblocked"
                   ? "🟢 Unblocked"
                   : "⚪ Not Blocked"}
               </div>
 
-              {details.blocked_at && (
+              {details?.blocked_at && (
                 <div>
                   <strong>Blocked At:</strong>{" "}
-                  {new Date(details.blocked_at).toLocaleString()}
+                  {new Date(
+                    details.blocked_at
+                  ).toLocaleString()}
                 </div>
               )}
 
-              {details.unblocked_at && (
+              {details?.unblocked_at && (
                 <div>
                   <strong>Unblocked At:</strong>{" "}
-                  {new Date(details.unblocked_at).toLocaleString()}
+                  {new Date(
+                    details.unblocked_at
+                  ).toLocaleString()}
                 </div>
               )}
             </div>
 
             {/* Admin Note */}
-            {(details.block_status !== "blocked" ||
-              details.block_status === "blocked") && (
-              <textarea
-                placeholder="Admin note (required)"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="admin-input w-full"
-                rows={3}
-              />
-            )}
+            <textarea
+              placeholder="Admin note (required)"
+              value={note}
+              onChange={(event) =>
+                setNote(event.target.value)
+              }
+              className="admin-input w-full"
+              rows={3}
+            />
 
             {/* Actions */}
             <div className="flex justify-end gap-3">
-              {details.block_status !== "blocked" && (
+              {details?.block_status !== "blocked" && (
                 <button
+                  type="button"
                   className="admin-btn admin-btn-primary"
                   disabled={actionLoading}
                   onClick={() => handleAction("block")}
                 >
-                  Block IP
+                  {actionLoading ? "Processing..." : "Block IP"}
                 </button>
               )}
 
-              {details.block_status === "blocked" && (
+              {details?.block_status === "blocked" && (
                 <button
+                  type="button"
                   className="admin-btn admin-btn-secondary"
                   disabled={actionLoading}
                   onClick={() => handleAction("unblock")}
                 >
-                  Unblock IP
+                  {actionLoading
+                    ? "Processing..."
+                    : "Unblock IP"}
                 </button>
               )}
             </div>
