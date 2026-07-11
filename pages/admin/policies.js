@@ -202,7 +202,7 @@ export default function PoliciesAdmin() {
         }
 
         const res = await apiClient.get(
-          "/policies/admin/v2",
+        "/policies/admin",
           {
             params,
             withCredentials: true,
@@ -423,7 +423,7 @@ export default function PoliciesAdmin() {
 
       if (editingId) {
         await apiClient.post(
-          `/policies/admin/v2/${editingId}/revise`,
+          `/policies/admin/${editingId}/revise`
           {
             content: sanitized,
             change_note:
@@ -435,7 +435,7 @@ export default function PoliciesAdmin() {
         );
       } else {
         await apiClient.post(
-          "/policies/admin/v2",
+        "/policies/admin",
           {
             type,
             lang,
@@ -485,7 +485,7 @@ export default function PoliciesAdmin() {
       setError("");
 
       const res = await apiClient.get(
-        `/policies/admin/v2/${policyId}`,
+        `/policies/admin/${policyId}`
         {
           withCredentials: true,
         }
@@ -561,7 +561,7 @@ export default function PoliciesAdmin() {
       });
 
       const res = await apiClient.get(
-        `/policies/admin/v2/history/${targetType}/${targetLang}`,
+        `/policies/admin/history/${targetType}/${targetLang}`
         {
           params: {
             page: requestedPage,
@@ -634,7 +634,7 @@ export default function PoliciesAdmin() {
 
     try {
       await apiClient.post(
-        `/policies/admin/v2/${id}/restore`,
+        `/policies/admin/${id}/restore`
         {
           change_note:
             restoreReason,
