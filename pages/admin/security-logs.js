@@ -46,7 +46,7 @@ export default function AdminSecurityLogs() {
   const [authChecked, setAuthChecked] = useState(false);
 
   /* ============================================================
-     🔐 Secure Auth Check — admin / superadmin only
+     🔐 Secure Auth Check — superadmin only
   ============================================================ */
   useEffect(() => {
     let mounted = true;
@@ -62,7 +62,7 @@ export default function AdminSecurityLogs() {
           return;
         }
 
-        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
+        if (me.data.role !== "superadmin") {
           window.location.href = "/";
           return;
         }
