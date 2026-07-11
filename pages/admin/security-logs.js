@@ -63,7 +63,7 @@ export default function AdminSecurityLogs() {
         }
 
         if (me.data.role !== "superadmin") {
-          window.location.href = "/";
+          window.location.href = "/403";
           return;
         }
 
