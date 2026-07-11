@@ -1,6 +1,7 @@
 /* frontend/components/admin/SuspiciousIPDetailsModal.jsx */
 import { useEffect, useRef, useState } from "react";
 import apiClient from "../../utils/apiClient.js";
+import Pagination from "../ui/Pagination";
 
 const PAGE_SIZE = 10;
 
@@ -23,6 +24,7 @@ export default function SuspiciousIPDetailsModal({
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [error, setError] = useState("");
 
   const [page, setPage] = useState(1);
@@ -30,9 +32,6 @@ export default function SuspiciousIPDetailsModal({
 
   const latestRequestIdRef = useRef(0);
 
-  /* --------------------------------------------------
-     Load details
-  -------------------------------------------------- */
   useEffect(() => {
     if (!ipAddress) {
       return;
@@ -54,7 +53,9 @@ export default function SuspiciousIPDetailsModal({
 
     try {
       const res = await apiClient.get(
-        `/admin/suspicious-ips/details/ip/${ipAddress}`,
+        `/admin/suspicious-ips/details/ip/${encodeURIComponent(
+          ipAddress
+        )}`,
         {
           params: {
             page: newPage,
@@ -90,6 +91,11 @@ export default function SuspiciousIPDetailsModal({
         err
       );
 
+      if (err.response?.status === 403) {
+        window.location.href = "/403";
+        return;
+      }
+
       setError(
         err.response?.data?.error ||
           "Failed to load IP details."
@@ -122,9 +128,62 @@ export default function SuspiciousIPDetailsModal({
     fetchDetails(newPage);
   }
 
-  /* --------------------------------------------------
-     Block / Unblock
-  -------------------------------------------------- */
+  async function handleExportDetailsXLSX() {
+    if (!ipAddress || exportLoading) {
+      return;
+    }
+
+    setExportLoading(true);
+
+    try {
+      const res = await apiClient.get(
+        `/admin/suspicious-ips/details/ip/${encodeURIComponent(
+          ipAddress
+        )}/export/xlsx`,
+        {
+          withCredentials: true,
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([res.data]);
+
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
+      const safeIp = ipAddress.replace(/[^a-zA-Z0-9_.-]/g, "_");
+
+      link.href = url;
+      link.download = `IranConnect_SuspiciousIP_${safeIp}_Details.xlsx`;
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      link.remove();
+
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(
+        "❌ Suspicious IP details export failed:",
+        err
+      );
+
+      if (err.response?.status === 403) {
+        window.location.href = "/403";
+        return;
+      }
+
+      alert(
+        err.response?.data?.error ||
+          "Failed to export suspicious IP details."
+      );
+    } finally {
+      setExportLoading(false);
+    }
+  }
+
   async function handleAction(type) {
     if (actionLoading) {
       return;
@@ -174,9 +233,6 @@ export default function SuspiciousIPDetailsModal({
     }
   }
 
-  /* --------------------------------------------------
-     Close + cleanup
-  -------------------------------------------------- */
   function handleClose() {
     latestRequestIdRef.current += 1;
 
@@ -196,12 +252,27 @@ export default function SuspiciousIPDetailsModal({
 
   const total = pagination.total || 0;
   const totalPages = Math.max(pagination.totalPages || 1, 1);
-  const from =
-    total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const to =
-    total === 0
-      ? 0
-      : Math.min(from + incidents.length - 1, total);
+
+  const normalizedPagination = {
+    page,
+    limit: pagination.pageSize || PAGE_SIZE,
+    total,
+    totalPages,
+    from:
+      total === 0
+        ? 0
+        : (page - 1) * (pagination.pageSize || PAGE_SIZE) + 1,
+    to:
+      total === 0
+        ? 0
+        : Math.min(
+            (page - 1) * (pagination.pageSize || PAGE_SIZE) +
+              incidents.length,
+            total
+          ),
+    hasPreviousPage: page > 1,
+    hasNextPage: page < totalPages,
+  };
 
   return (
     <div
@@ -220,9 +291,22 @@ export default function SuspiciousIPDetailsModal({
           ✖
         </button>
 
-        <h2 className="text-xl font-semibold mb-4 text-center text-turquoise">
-          Suspicious IP: {ipAddress}
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pr-8">
+          <div></div>
+
+          <h2 className="text-xl font-semibold text-center text-turquoise">
+            Suspicious IP: {ipAddress}
+          </h2>
+
+          <button
+            type="button"
+            disabled={exportLoading || loading}
+            onClick={handleExportDetailsXLSX}
+            className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+          >
+            {exportLoading ? "Exporting..." : "Export XLSX"}
+          </button>
+        </div>
 
         {loading ? (
           <p className="text-center text-gray-400">
@@ -234,17 +318,10 @@ export default function SuspiciousIPDetailsModal({
           </p>
         ) : (
           <div className="space-y-5 text-sm">
-            {/* Incident Table */}
             <div>
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-                <h3 className="font-bold">
-                  🚨 Incident Log
-                </h3>
-
-                <span className="text-xs opacity-70">
-                  Showing {from}–{to} of {total}
-                </span>
-              </div>
+              <h3 className="font-bold mb-2">
+                🚨 Incident Log
+              </h3>
 
               <div className="overflow-x-auto">
                 <table className="admin-table text-sm">
@@ -295,36 +372,13 @@ export default function SuspiciousIPDetailsModal({
                 </table>
               </div>
 
-              {totalPages > 1 && (
-                <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
-                  <p className="text-xs opacity-70">
-                    Page {page} of {totalPages}
-                  </p>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={page <= 1 || loading}
-                      onClick={() => goToPage(page - 1)}
-                      className="admin-btn admin-btn-secondary px-3 py-1 text-xs disabled:opacity-50"
-                    >
-                      Previous
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={page >= totalPages || loading}
-                      onClick={() => goToPage(page + 1)}
-                      className="admin-btn admin-btn-secondary px-3 py-1 text-xs disabled:opacity-50"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
+              <Pagination
+                pagination={normalizedPagination}
+                onPageChange={goToPage}
+                disabled={loading}
+              />
             </div>
 
-            {/* Status */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <strong>Status:</strong>{" "}
@@ -354,7 +408,6 @@ export default function SuspiciousIPDetailsModal({
               )}
             </div>
 
-            {/* Admin Note */}
             <textarea
               placeholder="Admin note (required)"
               value={note}
@@ -365,7 +418,6 @@ export default function SuspiciousIPDetailsModal({
               rows={3}
             />
 
-            {/* Actions */}
             <div className="flex justify-end gap-3">
               {details?.block_status !== "blocked" && (
                 <button
