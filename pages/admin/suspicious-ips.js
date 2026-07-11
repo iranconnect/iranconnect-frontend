@@ -23,8 +23,12 @@ export default function AdminSuspiciousIPsPage() {
   };
   
   const [selectedIP, setSelectedIP] = useState(null);
+
+  const [authChecked, setAuthChecked] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState("");
   
-  const [currentUserRole] = useState("admin");
+  const isSuperAdmin =
+    currentUserRole === "superadmin";
   
   const [pagination, setPagination] = useState(
     DEFAULT_PAGINATION
@@ -55,6 +59,41 @@ export default function AdminSuspiciousIPsPage() {
   });
 
   useEffect(() => {
+    let mounted = true;
+  
+    async function checkAccess() {
+      try {
+        const me = await apiClient.get("/auth/me", {
+          withCredentials: true,
+        });
+  
+        if (!me.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
+        }
+  
+        if (me.data.role !== "superadmin") {
+          window.location.href = "/403";
+          return;
+        }
+  
+        if (mounted) {
+          setCurrentUserRole(me.data.role);
+          setAuthChecked(true);
+        }
+      } catch {
+        window.location.href = "/auth/login";
+      }
+    }
+  
+    checkAccess();
+  
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isReady) {
       return;
     }
@@ -74,12 +113,13 @@ export default function AdminSuspiciousIPsPage() {
   ]);
   
   useEffect(() => {
-    if (!isReady) {
+    if (!authChecked || !isReady) {
       return;
     }
   
     fetchSuspiciousIPs();
   }, [
+    authChecked,
     isReady,
     page,
     limit,
@@ -155,10 +195,21 @@ export default function AdminSuspiciousIPsPage() {
   }
 
   async function handleExport(format) {
+    if (!isSuperAdmin) {
+      window.location.href = "/403";
+      return;
+    }
+  
     try {
       const res = await apiClient.get(
         `/admin/suspicious-ips/export/${format}`,
         {
+          params: {
+            ip: filters.ip?.trim() || undefined,
+            type: filters.type || undefined,
+            severity: filters.severity || undefined,
+            status: filters.status || undefined,
+          },
           responseType: "blob",
           withCredentials: true,
         }
@@ -171,6 +222,7 @@ export default function AdminSuspiciousIPsPage() {
       const link = document.createElement("a");
   
       link.href = url;
+  
       link.download =
         format === "xlsx"
           ? "IranConnect_SuspiciousIPs_Report.xlsx"
@@ -189,11 +241,24 @@ export default function AdminSuspiciousIPsPage() {
         err
       );
   
+      if (err.response?.status === 403) {
+        window.location.href = "/403";
+        return;
+      }
+  
       alert(
         err.response?.data?.error ||
           `Failed to export ${format.toUpperCase()}.`
       );
     }
+  }
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Checking access…
+      </div>
+    );
   }
 
   return (
@@ -327,23 +392,27 @@ export default function AdminSuspiciousIPsPage() {
               Clear
             </button>
 
-            <div className="flex gap-2 ml-auto">
-              <button
-                type="button"
-                onClick={() => handleExport("xlsx")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
-              >
-                Export XLSX
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => handleExport("pdf")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
-              >
-                Export PDF
-              </button>
-            </div>
+            {isSuperAdmin && (
+              <div className="flex gap-2 ml-auto">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => handleExport("xlsx")}
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+                >
+                  Export XLSX
+                </button>
+            
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => handleExport("pdf")}
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+                >
+                  Export PDF
+                </button>
+              </div>
+            )}
           </form>
 
           {/* Table */}
