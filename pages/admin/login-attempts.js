@@ -45,6 +45,10 @@ export default function AdminLoginAttemptsPage() {
   });
 
   const [authChecked, setAuthChecked] = useState(false);
+  const [adminRole, setAdminRole] = useState("");
+
+  const isSuperAdmin =
+    adminRole === "superadmin";
 
   /* ============================================================
      🔐 Secure Auth Check (HttpOnly Cookie)
@@ -63,13 +67,14 @@ export default function AdminLoginAttemptsPage() {
           return;
         }
 
-        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
-          window.location.href = "/";
+        if (me.data.role !== "superadmin") {
+          window.location.href = "/403";
           return;
         }
-
+        
         if (mounted) {
-          setAuthChecked(true); // ⬅️ فقط ست می‌کنیم
+          setAdminRole(me.data.role);
+          setAuthChecked(true);
         }
       } catch {
         window.location.href = "/auth/login";
@@ -204,34 +209,59 @@ export default function AdminLoginAttemptsPage() {
      📤 Secure Export (SuperAdmin only)
   ============================================================ */
   async function exportLoginAttempts(type) {
+    if (!isSuperAdmin) {
+      window.location.href = "/403";
+      return;
+    }
+  
     try {
       const res = await apiClient.get(
         `/admin/login-attempts/export/${type}`,
         {
+          params: {
+            status: filters.status || undefined,
+            email:
+              filters.email?.trim() || undefined,
+            blocked:
+              filters.blocked === "true"
+                ? "true"
+                : undefined,
+          },
           withCredentials: true,
           responseType: "blob",
         }
       );
-
+  
       const blob = new Blob([res.data]);
       const url = window.URL.createObjectURL(blob);
-
+  
       const a = document.createElement("a");
+  
       a.href = url;
+  
       a.download =
         type === "xlsx"
           ? "IranConnect_Login_Attempts.xlsx"
           : "IranConnect_Login_Attempts.pdf";
-
+  
       document.body.appendChild(a);
+  
       a.click();
+  
       a.remove();
+  
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("❌ Export failed:", err);
+  
+      if (err.response?.status === 403) {
+        window.location.href = "/403";
+        return;
+      }
+  
       alert(
         err.response?.data?.error ||
-          "You are not authorized to export this file."
+          "Failed to export login attempts."
       );
     }
   }
@@ -326,23 +356,31 @@ export default function AdminLoginAttemptsPage() {
             </button>
 
             {/* Export */}
-            <div className="flex gap-3 ml-auto">
-              <button
-                type="button"
-                onClick={() => exportLoginAttempts("xlsx")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
-              >
-                Export XLSX
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => exportLoginAttempts("pdf")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
-              >
-                Export PDF
-              </button>
-            </div>
+            {isSuperAdmin && (
+              <div className="flex gap-3 ml-auto">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() =>
+                    exportLoginAttempts("xlsx")
+                  }
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+                >
+                  Export XLSX
+                </button>
+            
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() =>
+                    exportLoginAttempts("pdf")
+                  }
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+                >
+                  Export PDF
+                </button>
+              </div>
+            )}
           </form>
 
           {error && (
