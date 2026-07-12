@@ -1,109 +1,146 @@
 // frontend/components/admin/AdminLayout.jsx
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import Sidebar from "./Sidebar";
-import Topbar from "./Topbar";
-import apiClient from "../../utils/apiClient.js";
-import { useSentryBaseContext } from "../../hooks/useSentryBaseContext";
-import { SentryContextReady } from "../../hooks/useSentryContextStatus";
 import * as Sentry from "@sentry/nextjs";
 
+import Sidebar from "./Sidebar";
+import Topbar from "./Topbar";
 
+import { useAuthSession } from "../../hooks/useAuthSession";
+import { useSentryBaseContext } from "../../hooks/useSentryBaseContext";
+import { SentryContextReady } from "../../hooks/useSentryContextStatus";
 
-export default function AdminLayout({ children }) {
+import {
+  rememberLastAllowedAdminPath,
+} from "../../utils/adminAccess";
+
+const DEFAULT_ALLOWED_ROLES = ["admin", "superadmin"];
+
+export default function AdminLayout({
+  children,
+  allowedRoles = DEFAULT_ALLOWED_ROLES,
+}) {
   const router = useRouter();
+
   const [theme, setTheme] = useState("light");
-  const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
-  const [role, setRole] = useState(null);
 
-  /* 🟢 Sentry base context (role + page) */
-  const sentryReady = useSentryBaseContext({ role });
+  const {
+    status,
+    role,
+  } = useAuthSession();
 
-  /* -------------------------------------------------------
-     🟦 1) بررسی سشن و نقش (HttpOnly Cookie)
-  ---------------------------------------------------------*/
-  useEffect(() => {
-    let mounted = true;
-  
-    async function checkSession() {
-      try {
-        const res = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-  
-        if (!mounted) return;
-  
-        const role = res?.data?.role;
-  
-        if (!role) {
-          router.replace("/auth/login");
-          return;
-        }
-  
-        if (role !== "admin" && role !== "superadmin") {
-          router.replace("/");
-          return;
-        }
-  
-        setRole(role);
-        setAuthorized(true);
-      } catch (err) {
-        router.replace("/auth/login");
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-  
-    checkSession();
-  
-    return () => {
-      mounted = false;
-    };
-  }, [router]);
+  const isAuthenticated = status === "authenticated";
+  const isRoleAllowed =
+    isAuthenticated && allowedRoles.includes(role);
+
+  /*
+   * Only provide a role to Sentry after the role is actually known.
+   */
+  const sentryReady = useSentryBaseContext({
+    role: isAuthenticated ? role : null,
+  });
 
   /* -------------------------------------------------------
-     📡  Sentry — Admin Page Viewed (STANDARD)
+     Authentication and page-level authorization
   ---------------------------------------------------------*/
   useEffect(() => {
-  
-    if (!authorized || !role) {
+    if (!router.isReady || status === "checking") return;
+
+    if (status === "unauthenticated") {
+      router.replace("/auth/login");
       return;
     }
-  
+
+    if (isAuthenticated && !isRoleAllowed) {
+      router.replace("/403");
+    }
+  }, [
+    router,
+    router.isReady,
+    status,
+    isAuthenticated,
+    isRoleAllowed,
+  ]);
+
+  /* -------------------------------------------------------
+     Store only a route that the user was genuinely allowed
+     to access.
+  ---------------------------------------------------------*/
+  useEffect(() => {
+    if (!router.isReady || !isRoleAllowed) return;
+
+    rememberLastAllowedAdminPath(router.asPath);
+  }, [
+    router.isReady,
+    router.asPath,
+    isRoleAllowed,
+  ]);
+
+  /* -------------------------------------------------------
+     Sentry — authorized Admin page view
+  ---------------------------------------------------------*/
+  useEffect(() => {
+    if (!isRoleAllowed || !role) return;
+
     if (process.env.NODE_ENV !== "production") {
       Sentry.captureMessage("ADMIN_PAGE_VIEWED_DEBUG", {
         level: "info",
-        tags: { role, page: router.pathname, layout: "admin" },
+        tags: {
+          role,
+          page: router.pathname,
+          layout: "admin",
+        },
       });
     }
-  }, [authorized, role, router.pathname]);  
+  }, [
+    isRoleAllowed,
+    role,
+    router.pathname,
+  ]);
 
   /* -------------------------------------------------------
-     🎨 2) مدیریت تم (Preference فقط – امن)
+     Theme
   ---------------------------------------------------------*/
   useEffect(() => {
-    const savedTheme = localStorage.getItem("iran_theme") || "light";
+    const savedTheme =
+      localStorage.getItem("iran_theme") || "light";
+
     setTheme(savedTheme);
-    document.documentElement.setAttribute("data-theme", savedTheme);
+
+    document.documentElement.setAttribute(
+      "data-theme",
+      savedTheme
+    );
   }, []);
 
   function toggleTheme() {
-    const newTheme = theme === "light" ? "dark" : "light";
+    const newTheme =
+      theme === "light" ? "dark" : "light";
+
     setTheme(newTheme);
+
     localStorage.setItem("iran_theme", newTheme);
-    document.documentElement.setAttribute("data-theme", newTheme);
+
+    document.documentElement.setAttribute(
+      "data-theme",
+      newTheme
+    );
   }
 
   /* -------------------------------------------------------
-     🎬 3) Loading Screen (جلوگیری از Admin UI flash)
+     Prevent unauthorized Admin UI flash
   ---------------------------------------------------------*/
-  if (loading) {
+  if (status === "checking") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[var(--bg)] text-[var(--text)]">
         <div className="text-center">
           <img
-            src={theme === "dark" ? "/logo-light.png" : "/logo-dark.png"}
+            src={
+              theme === "dark"
+                ? "/logo-light.png"
+                : "/logo-dark.png"
+            }
             alt="IranConnect Logo"
             className="w-28 h-28 mx-auto mb-6 animate-pulse drop-shadow-lg"
           />
@@ -117,29 +154,31 @@ export default function AdminLayout({ children }) {
           </div>
 
           <div className="mt-6 flex justify-center">
-            <div className="w-8 h-8 border-4 border-t-transparent border-turquoise rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-t-transparent border-turquoise rounded-full animate-spin" />
           </div>
         </div>
       </div>
     );
   }
 
-  /* -------------------------------------------------------
-     ⛔ اگر مجاز نبود → هیچ UI نمایش نده
-  ---------------------------------------------------------*/
-  if (!authorized) return null;
+  /*
+   * Redirect is in progress. Render no protected UI.
+   */
+  if (!isRoleAllowed) {
+    return null;
+  }
 
-  /* -------------------------------------------------------
-     🟢 4) پنل ادمین
-  ---------------------------------------------------------*/
   return (
     <SentryContextReady.Provider value={sentryReady}>
       <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex transition-colors">
-        <Sidebar />
-  
+        <Sidebar role={role} />
+
         <div className="flex-1 min-w-0 flex flex-col">
-          <Topbar toggleTheme={toggleTheme} currentTheme={theme} />
-  
+          <Topbar
+            toggleTheme={toggleTheme}
+            currentTheme={theme}
+          />
+
           <main className="admin-main transition-all duration-300">
             {children}
           </main>
@@ -147,4 +186,4 @@ export default function AdminLayout({ children }) {
       </div>
     </SentryContextReady.Provider>
   );
-} 
+}
