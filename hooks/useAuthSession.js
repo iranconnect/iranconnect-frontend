@@ -1,21 +1,8 @@
 // frontend/hooks/useAuthSession.js
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import apiClient from "../utils/apiClient";
 
-/**
- * useAuthSession — IranConnect (Future-proof)
- *
- * Centralized auth/session hook
- * - HttpOnly cookie based
- * - Race-condition safe
- * - No redirect
- * - No UI side effects
- *
- * status:
- *  - "checking"
- *  - "authenticated"
- *  - "unauthenticated"
- */
 export function useAuthSession() {
   const [status, setStatus] = useState("checking");
   const [user, setUser] = useState(null);
@@ -26,30 +13,44 @@ export function useAuthSession() {
 
   const fetchSession = useCallback(async () => {
     if (inFlightRef.current) return;
+
     inFlightRef.current = true;
 
     try {
       const res = await apiClient.get("/auth/me", {
         withCredentials: true,
-        validateStatus: (s) => s < 500,
+
+        // Custom Axios config consumed by apiClient interceptor.
+        skipAuthRedirect: true,
+
+        validateStatus: (statusCode) => statusCode < 500,
       });
 
       if (!mountedRef.current) return;
 
       if (res.status === 200 && res.data?.ok) {
+        const sessionRole = res.data.role || "user";
+
         setUser({
           email: res.data.email || null,
-          role: res.data.role || "user",
+          role: sessionRole,
         });
-        setRole(res.data.role || "user");
+
+        setRole(sessionRole);
         setStatus("authenticated");
-      } else {
-        setUser(null);
-        setRole("guest");
-        setStatus("unauthenticated");
+        return;
       }
+
+      setUser(null);
+      setRole("guest");
+      setStatus("unauthenticated");
     } catch {
       if (!mountedRef.current) return;
+
+      /*
+       * فعلاً network/5xx نیز unauthenticated تلقی می‌شود.
+       * در فاز error-state می‌توان status مستقل "error" اضافه کرد.
+       */
       setUser(null);
       setRole("guest");
       setStatus("unauthenticated");
@@ -59,16 +60,18 @@ export function useAuthSession() {
   }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchSession();
+
     return () => {
       mountedRef.current = false;
     };
   }, [fetchSession]);
 
   return {
-    status,          // checking | authenticated | unauthenticated
-    user,            // { email, role } | null
-    role,            // user | admin | superadmin | guest
+    status,
+    user,
+    role,
     refresh: fetchSession,
   };
 }
