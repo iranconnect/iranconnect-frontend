@@ -1,36 +1,71 @@
-//frontend/pages/403.js
-import Link from "next/link";
+// frontend/pages/403.js
+
+import { useEffect } from "react";
+import { useRouter } from "next/router";
+
+import { useAuthSession } from "../hooks/useAuthSession";
+import {
+  getLastAllowedAdminPath,
+} from "../utils/adminAccess";
 
 export default function ForbiddenPage() {
+  const router = useRouter();
+
+  const {
+    status,
+  } = useAuthSession();
+
+  /*
+   * A signed-out user should not remain on the 403 page.
+   */
+  useEffect(() => {
+    if (!router.isReady || status === "checking") return;
+
+    if (status === "unauthenticated") {
+      router.replace("/auth/login");
+    }
+  }, [
+    router,
+    router.isReady,
+    status,
+  ]);
+
+  function handleGoBack() {
+    const returnPath = getLastAllowedAdminPath();
+    router.replace(returnPath);
+  }
+
+  if (status === "checking") {
+    return null;
+  }
+
+  if (status === "unauthenticated") {
+    return null;
+  }
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-white px-6">
       <div className="max-w-xl w-full text-center">
-        <div className="text-6xl mb-5">🚫</div>
+        <div className="text-6xl mb-5">
+          🚫
+        </div>
 
         <h1 className="text-3xl font-bold text-navy mb-3">
           403 — Access Denied
         </h1>
 
         <p className="text-gray-600 mb-6 leading-relaxed">
-          You are signed in, but your account does not have permission
-          to access this section.
+          You are signed in, but your account does not have
+          permission to access this section.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link
-            href="/"
-            className="admin-btn admin-btn-primary px-5 py-2"
-          >
-            Go to Home
-          </Link>
-
-          <Link
-            href="/admin"
-            className="admin-btn admin-btn-secondary px-5 py-2"
-          >
-            Back to Admin
-          </Link>
-        </div>
+        <button
+          type="button"
+          onClick={handleGoBack}
+          className="admin-btn admin-btn-primary px-5 py-2"
+        >
+          Go Back
+        </button>
       </div>
     </main>
   );
