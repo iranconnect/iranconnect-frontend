@@ -47,6 +47,11 @@ export default function AdminFileLogsPage() {
 
   const [authChecked, setAuthChecked] = useState(false);
 
+  const [adminRole, setAdminRole] = useState("");
+
+  const isSuperAdmin =
+    adminRole === "superadmin";
+
   /* ============================================================
      🔐 Secure access check (HttpOnly Cookie)
      + Hardening against unmount
@@ -60,11 +65,18 @@ export default function AdminFileLogsPage() {
           withCredentials: true,
         });
 
-        if (!me.data?.ok) return (window.location.href = "/auth/login");
-        if (me.data.role !== "admin" && me.data.role !== "superadmin")
-          return (window.location.href = "/");
-
+        if (!me.data?.ok) {
+          window.location.href = "/auth/login";
+          return;
+        }
+        
+        if (me.data.role !== "superadmin") {
+          window.location.href = "/403";
+          return;
+        }
+        
         if (mounted) {
+          setAdminRole(me.data.role);
           setAuthChecked(true);
         }
       } catch {
@@ -180,6 +192,11 @@ export default function AdminFileLogsPage() {
      📥 Secure Export (Admin/SuperAdmin – Cookie based)
   ============================================================ */
   async function exportFileLogs(type) {
+    if (!isSuperAdmin) {
+      window.location.href = "/403";
+      return;
+    }
+  
     try {
       const res = await apiClient.get(
         `/admin/files/export/${type}`,
@@ -192,27 +209,37 @@ export default function AdminFileLogsPage() {
           responseType: "blob",
         }
       );
-
+  
       const blob = new Blob([res.data]);
       const url = window.URL.createObjectURL(blob);
-
+  
       const a = document.createElement("a");
+  
       a.href = url;
+  
       a.download =
         type === "xlsx"
           ? "IranConnect_File_Logs.xlsx"
           : "IranConnect_File_Logs.pdf";
-
+  
       document.body.appendChild(a);
+  
       a.click();
+  
       a.remove();
-
+  
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("❌ Export failed:", err);
+  
+      if (err.response?.status === 403) {
+        window.location.href = "/403";
+        return;
+      }
+  
       alert(
         err.response?.data?.error ||
-          "You are not authorized to export this file."
+          "Failed to export file logs."
       );
     }
   }
@@ -287,25 +314,27 @@ export default function AdminFileLogsPage() {
               Clear
             </button>
           
-            <div className="flex gap-3 ml-auto">
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => exportFileLogs("xlsx")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
-              >
-                Export XLSX
-              </button>
-          
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => exportFileLogs("pdf")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
-              >
-                Export PDF
-              </button>
-            </div>
+            {isSuperAdmin && (
+              <div className="flex gap-3 ml-auto">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => exportFileLogs("xlsx")}
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+                >
+                  Export XLSX
+                </button>
+            
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => exportFileLogs("pdf")}
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+                >
+                  Export PDF
+                </button>
+              </div>
+            )}
           </form>
 
           {error && (
