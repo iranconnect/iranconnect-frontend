@@ -1,4 +1,4 @@
-//frontend/components/admin/BlockedIPDetailsModal.jsx
+// frontend/components/admin/BlockedIPDetailsModal.jsx
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient.js";
 
@@ -7,79 +7,64 @@ export default function BlockedIPDetailsModal({
   onClose,
   refreshList,
 }) {
+  const ipAddress = ipRecord?.ip_address || null;
+
   const [details, setDetails] = useState(null);
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
-  const [showNoteInput, setShowNoteInput] = useState(true);
+  const [error, setError] = useState("");
 
-  /* =========================================================
-     🔐 Load admin role securely (HttpOnly + /auth/me)
-  ========================================================= */
   useEffect(() => {
-    async function loadRole() {
-      try {
-        const res = await apiClient.get("/auth/me", {
-          withCredentials: true,
-          headers: {
-            "x-iranconnect-admin": "true",
-          },
-        });
-
-        setRole(res.data?.role || "");
-      } catch (err) {
-        console.error("❌ Failed to load admin role");
-        setRole("");
-      }
+    if (!ipAddress) {
+      return;
     }
 
-    loadRole();
-  }, []);
-
-  /* =========================================================
-     📦 Load full blocked IP details
-  ========================================================= */
-  useEffect(() => {
-    if (ipRecord?.ip_address) fetchDetails();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ipRecord]);
+    fetchDetails();
+  }, [ipAddress]);
 
   async function fetchDetails() {
+    setLoading(true);
+    setError("");
+
     try {
       const res = await apiClient.get(
-        `/admin/blocked-ips/details/${ipRecord.ip_address}`,
+        `/admin/blocked-ips/details/${encodeURIComponent(
+          ipAddress
+        )}`,
         {
-          headers: {
-            "x-iranconnect-admin": "true",
-          },
+          withCredentials: true,
         }
       );
 
-      setDetails(res.data);
-
-      // اگر قبلاً آنبلاک شده → نوت دیگر لازم نیست
-      if (res.data?.status === "unblocked") {
-        setShowNoteInput(false);
-      }
+      setDetails(res.data || {});
     } catch (err) {
-      console.error("❌ Error fetching blocked IP details:", err);
+      console.error(
+        "❌ Error fetching blocked IP details:",
+        err
+      );
+
+      if (err.response?.status === 403) {
+        window.location.href = "/403";
+        return;
+      }
+
+      setError(
+        err.response?.data?.error ||
+          "Failed to load details."
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  /* =========================================================
-     🚫 Unblock IP (Superadmin Only)
-  ========================================================= */
   async function handleUnblock() {
-    if (!note.trim()) {
-      alert("⚠️ Unblock reason is required.");
+    if (actionLoading) {
       return;
     }
 
-    if (role !== "superadmin") {
-      alert("❌ Only superadmin can unblock IPs.");
+    if (!note.trim()) {
+      alert("⚠️ Unblock reason is required.");
       return;
     }
 
@@ -89,42 +74,58 @@ export default function BlockedIPDetailsModal({
       await apiClient.post(
         "/admin/blocked-ips/unblock",
         {
-          ip_address: ipRecord.ip_address,
+          ip_address: ipAddress,
           reason: note.trim(),
         },
         {
-          headers: {
-            "x-iranconnect-admin": "true",
-          },
+          withCredentials: true,
         }
       );
 
       alert("🟢 IP successfully unblocked.");
 
-      setShowNoteInput(false);
-
-      if (refreshList) refreshList();
-      onClose();
+      refreshList?.();
+      handleClose();
     } catch (err) {
       console.error("❌ Unblock error:", err);
-      alert(err.response?.data?.error || "Failed to unblock IP.");
+
+      if (err.response?.status === 403) {
+        window.location.href = "/403";
+        return;
+      }
+
+      alert(
+        err.response?.data?.error ||
+          "Failed to unblock IP."
+      );
     } finally {
       setActionLoading(false);
     }
   }
 
-  if (!ipRecord) return null;
+  function handleClose() {
+    setDetails(null);
+    setNote("");
+    setError("");
+    onClose();
+  }
 
-  /* =========================================================
-     🖥 UI
-  ========================================================= */
+  if (!ipAddress) {
+    return null;
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="admin-card max-w-xl w-full relative p-6">
-
-        {/* Close */}
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={handleClose}
+    >
+      <div
+        className="admin-card max-w-xl w-full relative p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
         <button
-          onClick={onClose}
+          type="button"
+          onClick={handleClose}
           className="absolute top-3 right-4 text-turquoise text-lg font-bold"
         >
           ✖
@@ -135,15 +136,25 @@ export default function BlockedIPDetailsModal({
         </h2>
 
         {loading ? (
-          <p className="text-center text-gray-400">Loading...</p>
+          <p className="text-center text-gray-400">
+            Loading...
+          </p>
+        ) : error ? (
+          <p className="text-center text-red-500">
+            {error}
+          </p>
         ) : details ? (
           <div className="space-y-3 text-sm">
-
-            <div><strong>IP Address:</strong> {details.ip_address}</div>
+            <div>
+              <strong>IP Address:</strong>{" "}
+              {details.ip_address || ipAddress}
+            </div>
 
             <div>
               <strong>Status:</strong>{" "}
-              {details.status === "blocked" ? "🚫 Blocked" : "🟢 Unblocked"}
+              {details.status === "blocked"
+                ? "🚫 Blocked"
+                : "🟢 Unblocked"}
             </div>
 
             <div>
@@ -154,7 +165,8 @@ export default function BlockedIPDetailsModal({
             </div>
 
             <div>
-              <strong>Block Reason:</strong> {details.reason || "—"}
+              <strong>Block Reason:</strong>{" "}
+              {details.reason || "—"}
             </div>
 
             <div>
@@ -164,12 +176,13 @@ export default function BlockedIPDetailsModal({
                 : details.blocked_by_email || "—"}
             </div>
 
-            {/* Unblocked info */}
             {details.unblocked_at && (
               <>
                 <div>
                   <strong>Unblocked At:</strong>{" "}
-                  {new Date(details.unblocked_at).toLocaleString()}
+                  {new Date(
+                    details.unblocked_at
+                  ).toLocaleString()}
                 </div>
 
                 <div>
@@ -177,50 +190,48 @@ export default function BlockedIPDetailsModal({
                   {details.unblocked_reason || "—"}
                 </div>
 
-                {details.unblocked_by_email && (
-                  <div>
-                    <strong>Unblocked By:</strong>{" "}
-                    {details.unblocked_by_email}
-                  </div>
-                )}
+                <div>
+                  <strong>Unblocked By:</strong>{" "}
+                  {details.unblocked_by_email || "—"}
+                </div>
               </>
             )}
 
-            {/* 🔐 Superadmin Note Input */}
-            {showNoteInput &&
-              role === "superadmin" &&
-              details.status === "blocked" && (
-                <textarea
-                  placeholder="Unblock reason (required)"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="admin-input w-full mt-2"
-                  rows={3}
-                />
-              )}
+            {details.status === "blocked" && (
+              <textarea
+                placeholder="Unblock reason (required)"
+                value={note}
+                onChange={(event) =>
+                  setNote(event.target.value)
+                }
+                className="admin-input w-full mt-2"
+                rows={3}
+              />
+            )}
 
-            {/* Actions */}
             <div className="flex justify-end mt-4">
-              {role === "superadmin" && details.status === "blocked" && (
+              {details.status === "blocked" ? (
                 <button
-                  className="admin-btn admin-btn-primary px-4 py-2 text-sm"
+                  type="button"
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
                   onClick={handleUnblock}
                   disabled={actionLoading}
                 >
-                  {actionLoading ? "Processing..." : "Unblock IP"}
+                  {actionLoading
+                    ? "Processing..."
+                    : "Unblock IP"}
                 </button>
-              )}
-
-              {details.status === "unblocked" && (
+              ) : (
                 <span className="text-green-500 font-medium">
                   Already Unblocked
                 </span>
               )}
             </div>
-
           </div>
         ) : (
-          <p className="text-center text-red-500">Failed to load details.</p>
+          <p className="text-center text-red-500">
+            Failed to load details.
+          </p>
         )}
       </div>
     </div>
