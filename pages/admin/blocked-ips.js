@@ -46,6 +46,11 @@ export default function AdminBlockedIPs() {
   
   const [authChecked, setAuthChecked] = useState(false);
 
+  const [adminRole, setAdminRole] = useState("");
+
+  const isSuperAdmin =
+    adminRole === "superadmin";
+
 
   /* ===========================================================
      🔐 مرحله 1: احراز هویت ادمین با کوکی HttpOnly (ایمن)
@@ -64,12 +69,15 @@ export default function AdminBlockedIPs() {
           return;
         }
 
-        if (res.data.role !== "admin" && res.data.role !== "superadmin") {
-          if (mounted) window.location.href = "/";
+        if (res.data.role !== "superadmin") {
+          if (mounted) window.location.href = "/403";
           return;
         }
-
-        if (mounted) setAuthChecked(true);
+        
+        if (mounted) {
+          setAdminRole(res.data.role);
+          setAuthChecked(true);
+        }
       } catch (err) {
         if (mounted) window.location.href = "/auth/login";
       }
@@ -154,10 +162,19 @@ export default function AdminBlockedIPs() {
      📁 Export
      =========================================================== */
   async function handleExport(format) {
+    if (!isSuperAdmin) {
+      window.location.href = "/403";
+      return;
+    }
+  
     try {
       const res = await apiClient.get(
         `/admin/blocked-ips/export/${format}`,
         {
+          params: {
+            ip: filters.ip?.trim() || undefined,
+            status: filters.status || undefined,
+          },
           responseType: "blob",
           withCredentials: true,
         }
@@ -170,6 +187,7 @@ export default function AdminBlockedIPs() {
       const link = document.createElement("a");
   
       link.href = url;
+  
       link.download =
         format === "xlsx"
           ? "IranConnect_BlockedIPs_Report.xlsx"
@@ -187,6 +205,11 @@ export default function AdminBlockedIPs() {
         "❌ Blocked IP export failed:",
         err
       );
+  
+      if (err.response?.status === 403) {
+        window.location.href = "/403";
+        return;
+      }
   
       alert(
         err.response?.data?.error ||
@@ -289,22 +312,27 @@ export default function AdminBlockedIPs() {
             </button>
 
             {/* Export Buttons */}
-            <div className="flex flex-row gap-2 ml-auto">
-              <button
-                type="button"
-                onClick={() => handleExport("xlsx")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
-              >
-                Export XLSX
-              </button>
-              <button
-                type="button"
-                onClick={() => handleExport("pdf")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium"
-              >
-                Export PDF
-              </button>
-            </div>
+            {isSuperAdmin && (
+              <div className="flex flex-row gap-2 ml-auto">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => handleExport("xlsx")}
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium disabled:opacity-60"
+                >
+                  Export XLSX
+                </button>
+            
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => handleExport("pdf")}
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium disabled:opacity-60"
+                >
+                  Export PDF
+                </button>
+              </div>
+            )}
           </form>
 
           {/* Table */}
