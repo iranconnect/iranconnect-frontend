@@ -1,8 +1,14 @@
 // frontend/utils/apiClient.js
+
 import axios from "axios";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
-if (!API_BASE) throw new Error("NEXT_PUBLIC_API_BASE is not defined");
+
+if (!API_BASE) {
+  throw new Error(
+    "NEXT_PUBLIC_API_BASE is not defined"
+  );
+}
 
 const apiClient = axios.create({
   baseURL: API_BASE,
@@ -11,6 +17,7 @@ const apiClient = axios.create({
 });
 
 /* ================= REQUEST ================= */
+
 apiClient.interceptors.request.use(
   (config) => {
     config.withCredentials = true;
@@ -26,39 +33,60 @@ apiClient.interceptors.request.use(
 
 /* ================= RESPONSE ================= */
 
-let handlingConcurrentLogout = false; // 🔐 anti-loop flag
+let handlingConcurrentLogout = false;
 
+/*
+ * Centralized session termination.
+ *
+ * This function must only be used for authentication/session failures,
+ * never for authorization failures such as HTTP 403.
+ */
 function forceRedirect(message, reason = "") {
   if (handlingConcurrentLogout) return;
+
   handlingConcurrentLogout = true;
 
-  try {
+  if (typeof window === "undefined") return;
 
-    
-    // پاکسازی امن فقط کلیدهای auth
+  try {
     sessionStorage.removeItem("iran_user");
     sessionStorage.removeItem("iran_role");
     sessionStorage.removeItem("iran_token");
 
     if (message) {
-      sessionStorage.setItem("iran_auto_logout_msg", message);
+      sessionStorage.setItem(
+        "iran_auto_logout_msg",
+        message
+      );
     }
-  } catch {}
-
-  if (typeof window !== "undefined") {
-    const q = reason ? `?reason=${reason}` : "";
-    window.location.replace(`/auth/login${q}`);
+  } catch {
+    // Storage may be unavailable, but redirect must continue.
   }
+
+  const query = reason
+    ? `?reason=${encodeURIComponent(reason)}`
+    : "";
+
+  window.location.replace(`/auth/login${query}`);
 }
 
 apiClient.interceptors.response.use(
-  (res) => res,
-  async (err) => {
-    if (!err.response) return Promise.reject(err);
+  (response) => response,
 
-    const { status, data } = err.response;
+  async (err) => {
+    if (!err.response) {
+      return Promise.reject(err);
+    }
+
+    const {
+      status,
+      data,
+    } = err.response;
+
     const currentPath =
-      typeof window !== "undefined" ? window.location.pathname : "";
+      typeof window !== "undefined"
+        ? window.location.pathname
+        : "";
 
     const AUTH_PAGES = [
       "/auth/login",
@@ -69,7 +97,10 @@ apiClient.interceptors.response.use(
 
     /* 🔒 IP / Account Blocked */
     if (status === 423) {
-      forceRedirect("Your account was temporarily locked.");
+      forceRedirect(
+        "Your account was temporarily locked."
+      );
+
       return Promise.reject(err);
     }
 
@@ -80,8 +111,6 @@ apiClient.interceptors.response.use(
       !handlingConcurrentLogout &&
       !AUTH_PAGES.includes(currentPath)
     ) {
-      handlingConcurrentLogout = true;
-
       const htmlMsg = `
         <div style="
           background:#fff7d6;
@@ -112,21 +141,55 @@ apiClient.interceptors.response.use(
         </a>
       `;
 
-      sessionStorage.setItem("iran_auto_logout_msg", htmlMsg);
+      try {
+        sessionStorage.setItem(
+          "iran_auto_logout_msg",
+          htmlMsg
+        );
+      } catch {
+        // Redirect must still continue.
+      }
+
       forceRedirect(null, "security");
 
       return Promise.reject(err);
     }
 
-    /* ⏳ Expired Session */
+    /* ⏳ Invalid or Expired Session */
+    const skipAuthRedirect =
+      err.config?.skipAuthRedirect === true;
+
     if (
       status === 401 &&
-      typeof data?.error === "string" &&
-      data.error.toLowerCase().includes("expired")
+      !skipAuthRedirect &&
+      !AUTH_PAGES.includes(currentPath)
     ) {
-      forceRedirect("Your session has expired.");
+      const errorText =
+        typeof data?.error === "string"
+          ? data.error.toLowerCase()
+          : "";
+
+      const sessionExpired =
+        errorText.includes("expired");
+
+      forceRedirect(
+        sessionExpired
+          ? "Your session has expired."
+          : "Please sign in again."
+      );
+
+      return Promise.reject(err);
     }
 
+    /*
+     * Do not globally redirect HTTP 403.
+     *
+     * Page-level 403:
+     *   redirect to /403 in the page context.
+     *
+     * Modal/action-level 403:
+     *   show a local permission error.
+     */
     return Promise.reject(err);
   }
 );
