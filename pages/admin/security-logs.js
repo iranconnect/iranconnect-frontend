@@ -1,11 +1,13 @@
 // pages/admin/security-logs.js
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 export default function AdminSecurityLogs() {
+  const router = useRouter();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
@@ -43,44 +45,6 @@ export default function AdminSecurityLogs() {
     defaultLimit: 10,
   });
 
-  const [authChecked, setAuthChecked] = useState(false);
-
-  /* ============================================================
-     🔐 Secure Auth Check — superadmin only
-  ============================================================ */
-  useEffect(() => {
-    let mounted = true;
-
-    async function checkAccess() {
-      try {
-        const me = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-
-        if (!me.data?.ok) {
-          window.location.href = "/auth/login";
-          return;
-        }
-
-        if (me.data.role !== "superadmin") {
-          window.location.href = "/403";
-          return;
-        }
-
-        if (mounted) {
-          setAuthChecked(true);
-        }
-      } catch {
-        window.location.href = "/auth/login";
-      }
-    }
-
-    checkAccess();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
   /* ============================================================
      📦 Fetch logs — after auth + when filter changes
   ============================================================ */
@@ -99,20 +63,19 @@ export default function AdminSecurityLogs() {
     filters.q,
   ]);
   
-  useEffect(() => {
-    if (!authChecked || !isReady) {
-      return;
-    }
+    useEffect(() => {
+      if (!isReady) {
+        return;
+      }
   
-    fetchLogs();
-  }, [
-    authChecked,
-    isReady,
-    page,
-    limit,
-    filters.status,
-    filters.q,
-  ]);
+      fetchLogs();
+    }, [
+      isReady,
+      page,
+      limit,
+      filters.status,
+      filters.q,
+    ]);
   
   async function fetchLogs() {
     setLoading(true);
@@ -140,10 +103,17 @@ export default function AdminSecurityLogs() {
       );
     } catch (err) {
       console.error("❌ Error loading logs:", err);
-  
+
+      const status = err.response?.status;
+
+      if (status === 403) {
+        router.replace("/403");
+        return;
+      }
+
       setLogs([]);
       setPagination(DEFAULT_PAGINATION);
-  
+
       setError(
         err.response?.data?.error ||
           "Failed to load security logs."
@@ -213,7 +183,14 @@ export default function AdminSecurityLogs() {
         "❌ Security Logs export failed:",
         err
       );
-  
+
+      if (err.response?.status === 403) {
+        alert(
+          "You do not have permission to export security logs."
+        );
+        return;
+      }
+
       alert(
         err.response?.data?.error ||
           "Failed to export security logs."
@@ -222,21 +199,10 @@ export default function AdminSecurityLogs() {
   }
 
   /* ============================================================
-     🛑 Block render until auth confirmed
-  ============================================================ */
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking access…
-      </div>
-    );
-  }
-
-  /* ============================================================
      🎨 UI
   ============================================================ */
   return (
-    <AdminLayout>
+    <AdminLayout allowedRoles={["superadmin"]}>
       <div className="admin-container">
         <div className="admin-section">
           <h2 className="admin-title mb-5">
