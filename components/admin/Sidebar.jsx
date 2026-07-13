@@ -55,6 +55,7 @@ const groupedNav = [
   {
     label: "Security",
     icon: "🛡️",
+    allowedRoles: ["superadmin"],
     items: [
       { href: "/admin/security-logs", label: "Forgot Password Logs" },
       { href: "/admin/file-logs", label: "File uploaded Logs" },
@@ -75,7 +76,7 @@ const groupedNav = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ role }) {
   const router = useRouter();
   const { pathname } = router;
 
@@ -93,11 +94,18 @@ export default function Sidebar() {
      ✅ فقط اگر کاربر هنوز صفحه suspicious-ips رو ندیده باشد
   ---------------------------------------------------------*/
   useEffect(() => {
-    const alreadySeen = sessionStorage.getItem(SEEN_KEY) === "true";
+    if (role !== "superadmin") {
+      setUnblockedCount(0);
+      return;
+    }
+  
+    const alreadySeen =
+      sessionStorage.getItem(SEEN_KEY) === "true";
+  
     if (!alreadySeen) {
       fetchSuspiciousCount();
     }
-  }, []);
+  }, [role]);
 
   /* --------------------------------------------------------
      ✅ وقتی وارد صفحه suspicious-ips شدیم:
@@ -121,13 +129,30 @@ export default function Sidebar() {
       const count = res.data?.count || 0;
       setUnblockedCount(count);
     } catch (err) {
-      // اگر سشن نامعتبر بود، ریدایرکت امن
       const status = err.response?.status;
-      if (status === 401 || status === 403 || status === 440) {
+    
+      /*
+       * Session/authentication failure.
+       */
+      if (status === 401 || status === 440) {
         router.replace("/auth/login");
         return;
       }
-      console.warn("Failed to fetch suspicious IP count:", err);
+    
+      /*
+       * Permission failure is not a login failure.
+       * Hide the privileged badge and keep the page usable.
+       */
+      if (status === 403) {
+        setUnblockedCount(0);
+        return;
+      }
+    
+      console.warn(
+        "Failed to fetch suspicious IP count:",
+        err
+      );
+    
       setUnblockedCount(0);
     }
   }
@@ -158,6 +183,14 @@ export default function Sidebar() {
     setOpenGroup(openGroup === label ? null : label);
   };
 
+  const visibleGroups = groupedNav.filter((group) => {
+    if (!group.allowedRoles) {
+      return true;
+    }
+  
+    return group.allowedRoles.includes(role);
+  });
+
   return (
     <aside
       className="
@@ -170,7 +203,7 @@ export default function Sidebar() {
     >
       {/* Header */}
       <div className="px-6 py-6 border-b border-[var(--border)] flex items-center gap-4">
-        {/* ✅ تغییر ۱: لوگو لینک شود به صفحه اینترو */}
+        {/* Logo links to the public Home page */}
         <Link href="/" className="shrink-0">
           <img
             src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
@@ -185,7 +218,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 p-3 overflow-y-auto">
-        {groupedNav.map((group) => (
+        {visibleGroups.map((group) => (
           <div key={group.label} className="mb-3">
             <button
               onClick={() => toggleGroup(group.label)}
