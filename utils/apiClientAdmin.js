@@ -20,9 +20,10 @@
 *  },
 *  (err) => Promise.reject(err)
 *);
+*
+*
+*export default apiClientAdmin;
 */
-
-export default apiClientAdmin;
 
 // frontend/utils/apiClientAdmin.js
 
