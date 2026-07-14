@@ -8,7 +8,16 @@ import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 export default function AdminFileLogsPage() {
+  return (
+    <AdminLayout allowedRoles={["superadmin"]}>
+      <AdminFileLogsContent />
+    </AdminLayout>
+  );
+}
+
+function AdminFileLogsContent() {
   const router = useRouter();
+
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedLog, setSelectedLog] = useState(null);
@@ -206,7 +215,7 @@ export default function AdminFileLogsPage() {
      🖼️ UI
   ============================================================ */
   return (
-    <AdminLayout allowedRoles={["superadmin"]}>
+    <>
       <div className="admin-container">
         <section className="admin-section">
           <h2 className="text-lg font-semibold text-[var(--text)] mb-5">
@@ -383,6 +392,6 @@ export default function AdminFileLogsPage() {
           onClose={() => setSelectedLog(null)}
         />
       )}
-    </AdminLayout>
+    </>
   );
 }
