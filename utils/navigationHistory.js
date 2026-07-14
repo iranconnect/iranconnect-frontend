@@ -3,14 +3,27 @@
 const PREVIOUS_SAFE_PATH_KEY =
   "iranconnect_previous_safe_path";
 
+function getPathname(path) {
+  if (typeof path !== "string") return "";
+
+  return path
+    .trim()
+    .split("?")[0]
+    .split("#")[0];
+}
+
 export function isSafeInternalPath(path) {
   if (typeof path !== "string") return false;
 
   const normalizedPath = path.trim();
+  const pathname = getPathname(normalizedPath);
 
   if (!normalizedPath.startsWith("/")) return false;
   if (normalizedPath.startsWith("//")) return false;
-  if (normalizedPath === "/403") return false;
+  if (normalizedPath.includes("\\")) return false;
+
+  if (!pathname) return false;
+  if (pathname === "/403") return false;
 
   return true;
 }
@@ -29,13 +42,17 @@ export function rememberPreviousSafePath(path) {
   }
 }
 
-export function getPreviousSafePath() {
+export function consumePreviousSafePath() {
   if (typeof window === "undefined") {
     return "/";
   }
 
   try {
     const storedPath = sessionStorage.getItem(
+      PREVIOUS_SAFE_PATH_KEY
+    );
+
+    sessionStorage.removeItem(
       PREVIOUS_SAFE_PATH_KEY
     );
 
