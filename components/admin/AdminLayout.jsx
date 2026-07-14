@@ -12,8 +12,8 @@ import { useSentryBaseContext } from "../../hooks/useSentryBaseContext";
 import { SentryContextReady } from "../../hooks/useSentryContextStatus";
 
 import {
-  rememberLastAllowedAdminPath,
-} from "../../utils/adminAccess";
+  rememberLastSafePath,
+} from "../../utils/navigationHistory";
 
 const DEFAULT_ALLOWED_ROLES = ["admin", "superadmin"];
 
@@ -64,13 +64,14 @@ export default function AdminLayout({
   ]);
 
   /* -------------------------------------------------------
-     Store only a route that the user was genuinely allowed
-     to access.
+     Store Admin paths only after authentication and
+     page-level role authorization have both succeeded.
   ---------------------------------------------------------*/
   useEffect(() => {
-    if (!router.isReady || !isRoleAllowed) return;
-
-    rememberLastAllowedAdminPath(router.asPath);
+    if (!router.isReady || !isRoleAllowed) {
+      return;
+    }
+    rememberLastSafePath(router.asPath);
   }, [
     router.isReady,
     router.asPath,
