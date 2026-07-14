@@ -5,8 +5,8 @@ import { useRouter } from "next/router";
 
 import { useAuthSession } from "../hooks/useAuthSession";
 import {
-  getLastAllowedAdminPath,
-} from "../utils/adminAccess";
+  consumePreviousSafePath,
+} from "../utils/navigationHistory";
 
 export default function ForbiddenPage() {
   const router = useRouter();
@@ -31,8 +31,8 @@ export default function ForbiddenPage() {
   ]);
 
   function handleGoBack() {
-    const returnPath = getLastAllowedAdminPath();
-    router.replace(returnPath);
+    const previousPath = consumePreviousSafePath();
+    router.replace(previousPath);
   }
 
   if (status === "checking") {
