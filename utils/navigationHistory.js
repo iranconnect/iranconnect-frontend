@@ -1,10 +1,12 @@
 // frontend/utils/navigationHistory.js
 
-const PREVIOUS_SAFE_PATH_KEY =
-  "iranconnect_previous_safe_path";
+const LAST_SAFE_PATH_KEY =
+  "iranconnect_last_safe_path";
 
 function getPathname(path) {
-  if (typeof path !== "string") return "";
+  if (typeof path !== "string") {
+    return "";
+  }
 
   return path
     .trim()
@@ -13,7 +15,9 @@ function getPathname(path) {
 }
 
 export function isSafeInternalPath(path) {
-  if (typeof path !== "string") return false;
+  if (typeof path !== "string") {
+    return false;
+  }
 
   const normalizedPath = path.trim();
   const pathname = getPathname(normalizedPath);
@@ -21,20 +25,34 @@ export function isSafeInternalPath(path) {
   if (!normalizedPath.startsWith("/")) return false;
   if (normalizedPath.startsWith("//")) return false;
   if (normalizedPath.includes("\\")) return false;
-
   if (!pathname) return false;
   if (pathname === "/403") return false;
+  if (pathname.startsWith("/auth/")) return false;
 
   return true;
 }
 
-export function rememberPreviousSafePath(path) {
+export function isPublicSafePath(path) {
+  if (!isSafeInternalPath(path)) {
+    return false;
+  }
+
+  const pathname = getPathname(path);
+
+  /*
+   * Admin paths are stored only by AdminLayout after
+   * successful authorization.
+   */
+  return !pathname.startsWith("/admin");
+}
+
+export function rememberLastSafePath(path) {
   if (typeof window === "undefined") return;
   if (!isSafeInternalPath(path)) return;
 
   try {
     sessionStorage.setItem(
-      PREVIOUS_SAFE_PATH_KEY,
+      LAST_SAFE_PATH_KEY,
       path
     );
   } catch {
@@ -42,18 +60,18 @@ export function rememberPreviousSafePath(path) {
   }
 }
 
-export function consumePreviousSafePath() {
+export function consumeLastSafePath() {
   if (typeof window === "undefined") {
     return "/";
   }
 
   try {
     const storedPath = sessionStorage.getItem(
-      PREVIOUS_SAFE_PATH_KEY
+      LAST_SAFE_PATH_KEY
     );
 
     sessionStorage.removeItem(
-      PREVIOUS_SAFE_PATH_KEY
+      LAST_SAFE_PATH_KEY
     );
 
     if (isSafeInternalPath(storedPath)) {
