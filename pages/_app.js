@@ -13,6 +13,9 @@ import CookieConsent from "../components/CookieConsent";
 import AutoLogout from "../components/AutoLogout";
 import apiClient from "../utils/apiClient";
 import { useSessionReason } from "../hooks/useSessionReason";
+import {
+  rememberPreviousSafePath,
+} from "../utils/navigationHistory";
 
 
 export default function App({ Component, pageProps }) {
@@ -91,6 +94,55 @@ export default function App({ Component, pageProps }) {
     router.pathname.startsWith("/auth/login") ||
     router.pathname.startsWith("/auth/register") ||
     router.pathname.startsWith("/auth/forgot");
+
+  useEffect(() => {
+    function handleRouteChangeStart(nextUrl) {
+      const nextPathname = nextUrl
+        .split("?")[0]
+        .split("#")[0];
+  
+      /*
+       * هنگام انتقال به صفحه 403، مسیر ممنوع فعلی
+       * نباید به‌عنوان مسیر بازگشت ذخیره شود.
+       */
+      if (nextPathname === "/403") {
+        return;
+      }
+  
+      const currentPath = router.asPath;
+  
+      const currentPathname = currentPath
+        .split("?")[0]
+        .split("#")[0];
+  
+      /*
+       * خود صفحه 403 هرگز نباید به‌عنوان مسیر قبلی
+       * ذخیره شود.
+       */
+      if (currentPathname === "/403") {
+        return;
+      }
+  
+      if (
+        currentPath &&
+        currentPath !== nextUrl
+      ) {
+        rememberPreviousSafePath(currentPath);
+      }
+    }
+  
+    router.events.on(
+      "routeChangeStart",
+      handleRouteChangeStart
+    );
+  
+    return () => {
+      router.events.off(
+        "routeChangeStart",
+        handleRouteChangeStart
+      );
+    };
+  }, [router.asPath, router.events]);
 
   return (
     <>
