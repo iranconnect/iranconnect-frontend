@@ -8,7 +8,16 @@ import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 export default function AdminLoginAttemptsPage() {
+  return (
+    <AdminLayout allowedRoles={["superadmin"]}>
+      <AdminLoginAttemptsContent />
+    </AdminLayout>
+  );
+}
+
+function AdminLoginAttemptsContent() {
   const router = useRouter();
+
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -228,199 +237,187 @@ export default function AdminLoginAttemptsPage() {
      🎨 UI
   ============================================================ */
   return (
-    <AdminLayout allowedRoles={["superadmin"]}>
-      <div className="admin-container">
-        <section className="admin-section">
-          <h2 className="text-lg font-semibold text-[var(--text)] mb-5">
-            🔐 User Login Attempts
-          </h2>
-
-          {/* Filters */}
-          <form
-            onSubmit={handleSearch}
-            className="flex flex-wrap gap-3 mb-6 items-center"
+    <div className="admin-container">
+      <section className="admin-section">
+        <h2 className="text-lg font-semibold text-[var(--text)] mb-5">
+          🔐 User Login Attempts
+        </h2>
+         {/* Filters */}
+        <form
+          onSubmit={handleSearch}
+          className="flex flex-wrap gap-3 mb-6 items-center"
+        >
+          <select
+            className="admin-input w-40"
+            value={draftFilters.status}
+            onChange={(event) =>
+              setDraftFilters((current) => ({
+                ...current,
+                status: event.target.value,
+              }))
+            }
           >
-            <select
-              className="admin-input w-40"
-              value={draftFilters.status}
-              onChange={(event) =>
-                setDraftFilters((current) => ({
-                  ...current,
-                  status: event.target.value,
-                }))
-              }
-            >
-              <option value="">All Status</option>
-              <option value="success">Successful</option>
-              <option value="failed">Failed</option>
-            </select>
-
+            <option value="">All Status</option>
+            <option value="success">Successful</option>
+            <option value="failed">Failed</option>
+          </select>
+           <input
+            type="text"
+            placeholder="Search by email..."
+            className="admin-input w-60"
+            value={draftFilters.email}
+            onChange={(event) =>
+              setDraftFilters((current) => ({
+                ...current,
+                email: event.target.value,
+              }))
+            }
+          />
+           <label className="flex items-center gap-2">
             <input
-              type="text"
-              placeholder="Search by email..."
-              className="admin-input w-60"
-              value={draftFilters.email}
+              type="checkbox"
+              checked={draftFilters.blocked}
               onChange={(event) =>
                 setDraftFilters((current) => ({
                   ...current,
-                  email: event.target.value,
+                  blocked: event.target.checked,
                 }))
               }
             />
-
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={draftFilters.blocked}
-                onChange={(event) =>
-                  setDraftFilters((current) => ({
-                    ...current,
-                    blocked: event.target.checked,
-                  }))
-                }
-              />
-            
-              <span className="text-sm text-[var(--text)]">
-                Only Blocked Users
-              </span>
-            </label>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="admin-btn admin-btn-primary text-sm px-4 py-2 disabled:opacity-60"
-            >
-              Search
-            </button>
-
+          
+            <span className="text-sm text-[var(--text)]">
+              Only Blocked Users
+            </span>
+          </label>
+           <button
+            type="submit"
+            disabled={loading}
+            className="admin-btn admin-btn-primary text-sm px-4 py-2 disabled:opacity-60"
+          >
+            Search
+          </button>
+           <button
+            type="button"
+            disabled={loading}
+            onClick={handleClear}
+            className="admin-btn admin-btn-secondary text-sm px-4 py-2 disabled:opacity-60"
+          >
+            Clear
+          </button>
+           {/* Export */}
+          <div className="flex gap-3 ml-auto">
             <button
               type="button"
               disabled={loading}
-              onClick={handleClear}
-              className="admin-btn admin-btn-secondary text-sm px-4 py-2 disabled:opacity-60"
+              onClick={() =>
+                exportLoginAttempts("xlsx")
+              }
+              className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
             >
-              Clear
+              Export XLSX
             </button>
-
-            {/* Export */}
-            <div className="flex gap-3 ml-auto">
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() =>
-                  exportLoginAttempts("xlsx")
-                }
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
-              >
-                Export XLSX
-              </button>
-
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() =>
-                  exportLoginAttempts("pdf")
-                }
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
-              >
-                Export PDF
-              </button>
-            </div>
-          </form>
-
-          {error && (
-            <p className="text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm">
-              {error}
-            </p>
-          )}
-
-          {loading ? (
-            <p className="text-sm opacity-70">Loading login logs...</p>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Email</th>
-                      <th>IP</th>
-                      <th>Status</th>
-                      <th>Date</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-          
-                  <tbody>
-                    {logs.length ? (
-                      logs.map((log) => (
-                        <tr key={log.id}>
-                          <td className="truncate max-w-[200px]">
-                            {log.email}
-                          </td>
-          
-                          <td className="truncate max-w-[150px]">
-                            {log.ip_address}
-                          </td>
-          
-                          <td>
-                            {log.success ? (
-                              <span className="text-green-600 font-medium">
-                                Success
-                              </span>
-                            ) : (
-                              <span className="text-red-600 font-medium">
-                                Failed
-                              </span>
-                            )}
-                          </td>
-          
-                          <td>
-                            {new Date(log.created_at).toLocaleString()}
-                          </td>
-          
-                          <td className="text-right">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedAttempt(log)}
-                              className="admin-btn admin-btn-secondary text-xs px-3 py-1"
-                            >
-                              View
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan="5"
-                          className="text-center opacity-70 p-4"
-                        >
-                          No login attempts found.
+             <button
+              type="button"
+              disabled={loading}
+              onClick={() =>
+                exportLoginAttempts("pdf")
+              }
+              className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+            >
+              Export PDF
+            </button>
+          </div>
+        </form>
+         {error && (
+          <p className="text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm">
+            {error}
+          </p>
+        )}
+         {loading ? (
+          <p className="text-sm opacity-70">Loading login logs...</p>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>IP</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+        
+                <tbody>
+                  {logs.length ? (
+                    logs.map((log) => (
+                      <tr key={log.id}>
+                        <td className="truncate max-w-[200px]">
+                          {log.email}
+                        </td>
+        
+                        <td className="truncate max-w-[150px]">
+                          {log.ip_address}
+                        </td>
+        
+                        <td>
+                          {log.success ? (
+                            <span className="text-green-600 font-medium">
+                              Success
+                            </span>
+                          ) : (
+                            <span className="text-red-600 font-medium">
+                              Failed
+                            </span>
+                          )}
+                        </td>
+        
+                        <td>
+                          {new Date(log.created_at).toLocaleString()}
+                        </td>
+        
+                        <td className="text-right">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedAttempt(log)}
+                            className="admin-btn admin-btn-secondary text-xs px-3 py-1"
+                          >
+                            View
+                          </button>
                         </td>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-          
-              {!error && (
-                <Pagination
-                  pagination={pagination}
-                  onPageChange={setPage}
-                  disabled={loading}
-                />
-              )}
-            </>
-          )}
-
-          {selectedAttempt && (
-            <LoginAttemptDetailsModal
-              attempt={selectedAttempt}
-              onClose={() => setSelectedAttempt(null)}
-            />
-          )}
-        </section>
-      </div>
-    </AdminLayout>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="5"
+                        className="text-center opacity-70 p-4"
+                      >
+                        No login attempts found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+        
+            {!error && (
+              <Pagination
+                pagination={pagination}
+                onPageChange={setPage}
+                disabled={loading}
+              />
+            )}
+          </>
+        )}
+         {selectedAttempt && (
+          <LoginAttemptDetailsModal
+            attempt={selectedAttempt}
+            onClose={() => setSelectedAttempt(null)}
+          />
+        )}
+      </section>
+    </div>
   );
 }
