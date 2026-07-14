@@ -1,5 +1,6 @@
 // pages/admin/file-logs.js
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 import FileLogDetailsModal from "../../components/admin/FileLogDetailsModal";
@@ -7,6 +8,7 @@ import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 export default function AdminFileLogsPage() {
+  const router = useRouter();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedLog, setSelectedLog] = useState(null);
@@ -45,51 +47,6 @@ export default function AdminFileLogsPage() {
     defaultLimit: 10,
   });
 
-  const [authChecked, setAuthChecked] = useState(false);
-
-  const [adminRole, setAdminRole] = useState("");
-
-  const isSuperAdmin =
-    adminRole === "superadmin";
-
-  /* ============================================================
-     🔐 Secure access check (HttpOnly Cookie)
-     + Hardening against unmount
-  ============================================================ */
-  useEffect(() => {
-    let mounted = true;
-
-    async function checkAccess() {
-      try {
-        const me = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-
-        if (!me.data?.ok) {
-          window.location.href = "/auth/login";
-          return;
-        }
-        
-        if (me.data.role !== "superadmin") {
-          window.location.href = "/403";
-          return;
-        }
-        
-        if (mounted) {
-          setAdminRole(me.data.role);
-          setAuthChecked(true);
-        }
-      } catch {
-        window.location.href = "/auth/login";
-      }
-    }
-
-    checkAccess();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
   /* ============================================================
      🔄 Sync URL filters -> form state
   ============================================================ */
@@ -112,13 +69,12 @@ export default function AdminFileLogsPage() {
      📥 Fetch paginated logs
   ============================================================ */
   useEffect(() => {
-    if (!authChecked || !isReady) {
+    if (!isReady) {
       return;
     }
 
     fetchLogs();
   }, [
-    authChecked,
     isReady,
     page,
     limit,
@@ -152,6 +108,13 @@ export default function AdminFileLogsPage() {
       );
     } catch (err) {
       console.error("❌ Fetch logs error:", err);
+
+      if (err.response?.status === 403) {
+        alert(
+          "You do not have permission to export file logs."
+        );
+        return;
+      }
 
       setLogs([]);
       setPagination(DEFAULT_PAGINATION);
@@ -192,11 +155,6 @@ export default function AdminFileLogsPage() {
      📥 Secure Export (Admin/SuperAdmin – Cookie based)
   ============================================================ */
   async function exportFileLogs(type) {
-    if (!isSuperAdmin) {
-      window.location.href = "/403";
-      return;
-    }
-  
     try {
       const res = await apiClient.get(
         `/admin/files/export/${type}`,
@@ -233,7 +191,9 @@ export default function AdminFileLogsPage() {
       console.error("❌ Export failed:", err);
   
       if (err.response?.status === 403) {
-        window.location.href = "/403";
+        alert(
+          "You do not have permission to export file logs."
+        );
         return;
       }
   
@@ -244,19 +204,11 @@ export default function AdminFileLogsPage() {
     }
   }
 
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking access…
-      </div>
-    );
-  }
-
   /* ============================================================
      🖼️ UI
   ============================================================ */
   return (
-    <AdminLayout>
+    <AdminLayout allowedRoles={["superadmin"]}>
       <div className="admin-container">
         <section className="admin-section">
           <h2 className="text-lg font-semibold text-[var(--text)] mb-5">
@@ -314,27 +266,25 @@ export default function AdminFileLogsPage() {
               Clear
             </button>
           
-            {isSuperAdmin && (
-              <div className="flex gap-3 ml-auto">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => exportFileLogs("xlsx")}
-                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
-                >
-                  Export XLSX
-                </button>
-            
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => exportFileLogs("pdf")}
-                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
-                >
-                  Export PDF
-                </button>
-              </div>
-            )}
+            <div className="flex gap-3 ml-auto">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => exportFileLogs("xlsx")}
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+              >
+                Export XLSX
+              </button>
+
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => exportFileLogs("pdf")}
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+              >
+                Export PDF
+              </button>
+            </div>
           </form>
 
           {error && (
