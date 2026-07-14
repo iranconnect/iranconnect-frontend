@@ -14,7 +14,8 @@ import AutoLogout from "../components/AutoLogout";
 import apiClient from "../utils/apiClient";
 import { useSessionReason } from "../hooks/useSessionReason";
 import {
-  rememberPreviousSafePath,
+  isPublicSafePath,
+  rememberLastSafePath,
 } from "../utils/navigationHistory";
 
 
@@ -96,53 +97,44 @@ export default function App({ Component, pageProps }) {
     router.pathname.startsWith("/auth/forgot");
 
   useEffect(() => {
-    function handleRouteChangeStart(nextUrl) {
-      const nextPathname = nextUrl
-        .split("?")[0]
-        .split("#")[0];
-  
+    function handleRouteChangeComplete(url) {
       /*
-       * هنگام انتقال به صفحه 403، مسیر ممنوع فعلی
-       * نباید به‌عنوان مسیر بازگشت ذخیره شود.
+       * Only successful public routes are stored here.
+       *
+       * Admin routes are stored by AdminLayout only after
+       * authorization succeeds.
        */
-      if (nextPathname === "/403") {
-        return;
-      }
-  
-      const currentPath = router.asPath;
-  
-      const currentPathname = currentPath
-        .split("?")[0]
-        .split("#")[0];
-  
-      /*
-       * خود صفحه 403 هرگز نباید به‌عنوان مسیر قبلی
-       * ذخیره شود.
-       */
-      if (currentPathname === "/403") {
-        return;
-      }
-  
-      if (
-        currentPath &&
-        currentPath !== nextUrl
-      ) {
-        rememberPreviousSafePath(currentPath);
+      if (isPublicSafePath(url)) {
+        rememberLastSafePath(url);
       }
     }
   
+    /*
+     * Store the initial public page too.
+     */
+    if (
+      router.isReady &&
+      isPublicSafePath(router.asPath)
+    ) {
+      rememberLastSafePath(router.asPath);
+    }
+  
     router.events.on(
-      "routeChangeStart",
-      handleRouteChangeStart
+      "routeChangeComplete",
+      handleRouteChangeComplete
     );
   
     return () => {
       router.events.off(
-        "routeChangeStart",
-        handleRouteChangeStart
+        "routeChangeComplete",
+        handleRouteChangeComplete
       );
     };
-  }, [router.asPath, router.events]);
+  }, [
+    router.isReady,
+    router.asPath,
+    router.events,
+  ]);
 
   return (
     <>
