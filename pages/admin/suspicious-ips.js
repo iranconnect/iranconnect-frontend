@@ -1,5 +1,6 @@
 // frontend/pages/admin/suspicious-ips.js
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../utils/apiClient";
 import SuspiciousIPDetailsModal from "../../components/admin/SuspiciousIPDetailsModal";
@@ -7,6 +8,16 @@ import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 export default function AdminSuspiciousIPsPage() {
+  return (
+    <AdminLayout allowedRoles={["superadmin"]}>
+      <AdminSuspiciousIPsContent />
+    </AdminLayout>
+  );
+}
+
+function AdminSuspiciousIPsContent() {
+  const router = useRouter();
+
   const [ips, setIps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showRules, setShowRules] = useState(false);
@@ -23,12 +34,6 @@ export default function AdminSuspiciousIPsPage() {
   };
   
   const [selectedIP, setSelectedIP] = useState(null);
-
-  const [authChecked, setAuthChecked] = useState(false);
-  const [currentUserRole, setCurrentUserRole] = useState("");
-  
-  const isSuperAdmin =
-    currentUserRole === "superadmin";
   
   const [pagination, setPagination] = useState(
     DEFAULT_PAGINATION
@@ -59,41 +64,6 @@ export default function AdminSuspiciousIPsPage() {
   });
 
   useEffect(() => {
-    let mounted = true;
-  
-    async function checkAccess() {
-      try {
-        const me = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-  
-        if (!me.data?.ok) {
-          window.location.href = "/auth/login";
-          return;
-        }
-  
-        if (me.data.role !== "superadmin") {
-          window.location.href = "/403";
-          return;
-        }
-  
-        if (mounted) {
-          setCurrentUserRole(me.data.role);
-          setAuthChecked(true);
-        }
-      } catch {
-        window.location.href = "/auth/login";
-      }
-    }
-  
-    checkAccess();
-  
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
     if (!isReady) {
       return;
     }
@@ -112,22 +82,21 @@ export default function AdminSuspiciousIPsPage() {
     filters.status,
   ]);
   
-  useEffect(() => {
-    if (!authChecked || !isReady) {
-      return;
-    }
+    useEffect(() => {
+      if (!isReady) {
+        return;
+      }
   
-    fetchSuspiciousIPs();
-  }, [
-    authChecked,
-    isReady,
-    page,
-    limit,
-    filters.ip,
-    filters.type,
-    filters.severity,
-    filters.status,
-  ]);
+      fetchSuspiciousIPs();
+    }, [
+      isReady,
+      page,
+      limit,
+      filters.ip,
+      filters.type,
+      filters.severity,
+      filters.status,
+    ]);
   
   async function fetchSuspiciousIPs() {
     setLoading(true);
@@ -159,7 +128,12 @@ export default function AdminSuspiciousIPsPage() {
         "Failed to fetch suspicious IPs:",
         err
       );
-  
+
+      if (err.response?.status === 403) {
+        router.replace("/403");
+        return;
+      }
+
       setIps([]);
       setPagination(DEFAULT_PAGINATION);
     } finally {
@@ -195,11 +169,6 @@ export default function AdminSuspiciousIPsPage() {
   }
 
   async function handleExport(format) {
-    if (!isSuperAdmin) {
-      window.location.href = "/403";
-      return;
-    }
-  
     try {
       const res = await apiClient.get(
         `/admin/suspicious-ips/export/${format}`,
@@ -242,7 +211,9 @@ export default function AdminSuspiciousIPsPage() {
       );
   
       if (err.response?.status === 403) {
-        window.location.href = "/403";
+        alert(
+          "You do not have permission to export suspicious IP reports."
+        );
         return;
       }
   
@@ -253,16 +224,8 @@ export default function AdminSuspiciousIPsPage() {
     }
   }
 
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking access…
-      </div>
-    );
-  }
-
   return (
-    <AdminLayout>
+    <>
       <div className="admin-container">
         <section className="admin-section">
           <h2 className="admin-title mb-5">🚨 Suspicious IP Addresses</h2>
@@ -392,27 +355,25 @@ export default function AdminSuspiciousIPsPage() {
               Clear
             </button>
 
-            {isSuperAdmin && (
-              <div className="flex gap-2 ml-auto">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleExport("xlsx")}
-                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
-                >
-                  Export XLSX
-                </button>
-            
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleExport("pdf")}
-                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
-                >
-                  Export PDF
-                </button>
-              </div>
-            )}
+            <div className="flex gap-2 ml-auto">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleExport("xlsx")}
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+              >
+                Export XLSX
+              </button>
+
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleExport("pdf")}
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+              >
+                Export PDF
+              </button>
+            </div>
           </form>
 
           {/* Table */}
@@ -485,7 +446,7 @@ export default function AdminSuspiciousIPsPage() {
             <SuspiciousIPDetailsModal
               ipRecord={selectedIP}
               onClose={() => setSelectedIP(null)}
-              currentUserRole={currentUserRole}
+              currentUserRole="superadmin"
             />
           )}
         </section>
@@ -571,6 +532,6 @@ export default function AdminSuspiciousIPsPage() {
           </div>
         </div>
       )}
-    </AdminLayout>
+    </>
   );
 }
