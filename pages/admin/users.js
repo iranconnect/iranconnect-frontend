@@ -1,7 +1,7 @@
 // frontend/pages/admin/users.js
 
 import { useEffect, useState } from "react";
-
+import { useRouter } from "next/router";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 import UserDetailsModal from "../../components/admin/UserDetailsModal";
@@ -29,6 +29,16 @@ function formatDate(value) {
 }
 
 export default function UsersPage() {
+  return (
+    <AdminLayout allowedRoles={["admin", "superadmin"]}>
+      <UsersPageContent />
+    </AdminLayout>
+  );
+}
+
+function UsersPageContent() {
+  const router = useRouter();
+
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState(
     DEFAULT_PAGINATION
@@ -151,6 +161,11 @@ export default function UsersPage() {
     } catch (err) {
       console.error("❌ Fetch users error:", err);
 
+      if (err.response?.status === 403) {
+        router.replace("/403");
+        return;
+      }
+
       setUsers([]);
       setPagination(DEFAULT_PAGINATION);
 
@@ -183,15 +198,56 @@ export default function UsersPage() {
     await clearFilters();
   }
 
-  function handleExport(format) {
-    window.open(
-      `${process.env.NEXT_PUBLIC_API_BASE}/admin/users/export/${format}`,
-      "_blank"
-    );
+  async function handleExport(format) {
+    try {
+      const res = await apiClient.get(
+        `/admin/users/export/${format}`,
+        {
+          params: {
+            q: filters.q || undefined,
+            role: filters.role || undefined,
+            verified:
+              filters.verified || undefined,
+          },
+          withCredentials: true,
+          responseType: "blob",
+        }
+      );
+  
+      const blob = new Blob([res.data]);
+      const url = window.URL.createObjectURL(blob);
+  
+      const link = document.createElement("a");
+  
+      link.href = url;
+      link.download =
+        format === "xlsx"
+          ? "IranConnect_Users.xlsx"
+          : "IranConnect_Users.pdf";
+  
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+  
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("❌ User export failed:", err);
+  
+      if (err.response?.status === 403) {
+        alert(
+          "You do not have permission to export users."
+        );
+        return;
+      }
+  
+      alert(
+        err.response?.data?.error ||
+          `Failed to export users as ${format.toUpperCase()}.`
+      );
+    }
   }
-
   return (
-    <AdminLayout>
+    <>
       <div className="admin-container">
         <section className="admin-section">
           <h2 className="text-lg font-semibold text-[var(--text)] mb-5">
@@ -272,16 +328,18 @@ export default function UsersPage() {
             <div className="flex gap-3 ml-auto">
               <button
                 type="button"
+                disabled={loading}
                 onClick={() => handleExport("xlsx")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
               >
                 Export XLSX
               </button>
 
               <button
                 type="button"
+                disabled={loading}
                 onClick={() => handleExport("pdf")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
               >
                 Export PDF
               </button>
@@ -401,8 +459,9 @@ export default function UsersPage() {
         <UserDetailsModal
           user={selectedUser}
           onClose={() => setSelectedUser(null)}
+          onUpdated={fetchUsers}
         />
       )}
-    </AdminLayout>
+    </>
   );
 }
