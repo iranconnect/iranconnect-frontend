@@ -1,5 +1,6 @@
 // frontend/pages/admin/blocked-ips.js
 import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../utils/apiClient";
 import BlockedIPDetailsModal from "../../components/admin/BlockedIPDetailsModal";
@@ -7,6 +8,16 @@ import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 export default function AdminBlockedIPs() {
+  return (
+    <AdminLayout allowedRoles={["superadmin"]}>
+      <AdminBlockedIPsContent />
+    </AdminLayout>
+  );
+}
+
+function AdminBlockedIPsContent() {
+  const router = useRouter();
+
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -43,51 +54,6 @@ export default function AdminBlockedIPs() {
     filterKeys: ["ip", "status"],
     defaultLimit: 10,
   });
-  
-  const [authChecked, setAuthChecked] = useState(false);
-
-  const [adminRole, setAdminRole] = useState("");
-
-  const isSuperAdmin =
-    adminRole === "superadmin";
-
-
-  /* ===========================================================
-     🔐 مرحله 1: احراز هویت ادمین با کوکی HttpOnly (ایمن)
-     =========================================================== */
-  useEffect(() => {
-    let mounted = true;
-
-    async function checkAuth() {
-      try {
-        const res = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-
-        if (!res.data?.ok) {
-          if (mounted) window.location.href = "/auth/login";
-          return;
-        }
-
-        if (res.data.role !== "superadmin") {
-          if (mounted) window.location.href = "/403";
-          return;
-        }
-        
-        if (mounted) {
-          setAdminRole(res.data.role);
-          setAuthChecked(true);
-        }
-      } catch (err) {
-        if (mounted) window.location.href = "/auth/login";
-      }
-    }
-
-    checkAuth();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   /* ===========================================================
      📥 مرحله 2: دریافت رکوردها — فقط بعد از احراز هویت
@@ -108,13 +74,12 @@ export default function AdminBlockedIPs() {
   ]);
   
   useEffect(() => {
-    if (!authChecked || !isReady) {
+    if (!isReady) {
       return;
     }
-  
+
     fetchBlockedIPs();
   }, [
-    authChecked,
     isReady,
     page,
     limit,
@@ -150,7 +115,12 @@ export default function AdminBlockedIPs() {
         "Failed to fetch blocked IPs:",
         err
       );
-  
+
+      if (err.response?.status === 403) {
+        router.replace("/403");
+        return;
+      }
+
       setList([]);
       setPagination(DEFAULT_PAGINATION);
     } finally {
@@ -160,13 +130,8 @@ export default function AdminBlockedIPs() {
 
   /* ===========================================================
      📁 Export
-     =========================================================== */
+  =========================================================== */
   async function handleExport(format) {
-    if (!isSuperAdmin) {
-      window.location.href = "/403";
-      return;
-    }
-  
     try {
       const res = await apiClient.get(
         `/admin/blocked-ips/export/${format}`,
@@ -207,7 +172,9 @@ export default function AdminBlockedIPs() {
       );
   
       if (err.response?.status === 403) {
-        window.location.href = "/403";
+        alert(
+          "You do not have permission to export blocked IP reports."
+        );
         return;
       }
   
@@ -240,177 +207,160 @@ export default function AdminBlockedIPs() {
   }
 
   /* ===========================================================
-     ⏳ حالت لودینگ قبل از احراز نقش
-     =========================================================== */
-  if (!authChecked) {
-    return (
-      <AdminLayout>
-        <div className="p-6 text-center opacity-70">
-          Checking authentication...
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  /* ===========================================================
-     🎉 صفحه اصلی
+     🎉 UI
      =========================================================== */
   return (
-    <AdminLayout>
-      <div className="admin-container">
-        <section className="admin-section">
+    <div className="admin-container">
+      <section className="admin-section">
 
-          <h2 className="admin-title mb-5">🚫 Blocked IP Addresses</h2>
+        <h2 className="admin-title mb-5">🚫 Blocked IP Addresses</h2>
 
-          {/* Filters */}
-          <form
-            onSubmit={handleSearch}
-            className="flex flex-wrap gap-3 mb-6 items-center"
+        {/* Filters */}
+        <form
+          onSubmit={handleSearch}
+          className="flex flex-wrap gap-3 mb-6 items-center"
+        >
+          <input
+            className="admin-input w-48"
+            placeholder="Filter by IP"
+            value={draftFilters.ip}
+            onChange={(event) =>
+              setDraftFilters((current) => ({
+                ...current,
+                ip: event.target.value,
+              }))
+            }
+          />
+
+          <select
+            className="admin-input w-40"
+            value={draftFilters.status}
+            onChange={(event) =>
+              setDraftFilters((current) => ({
+                ...current,
+                status: event.target.value,
+              }))
+            }
           >
-            <input
-              className="admin-input w-48"
-              placeholder="Filter by IP"
-              value={draftFilters.ip}
-              onChange={(event) =>
-                setDraftFilters((current) => ({
-                  ...current,
-                  ip: event.target.value,
-                }))
-              }
-            />
+            <option value="">All Status</option>
+            <option value="blocked">Blocked</option>
+            <option value="unblocked">Unblocked</option>
+          </select>
 
-            <select
-              className="admin-input w-40"
-              value={draftFilters.status}
-              onChange={(event) =>
-                setDraftFilters((current) => ({
-                  ...current,
-                  status: event.target.value,
-                }))
-              }
-            >
-              <option value="">All Status</option>
-              <option value="blocked">Blocked</option>
-              <option value="unblocked">Unblocked</option>
-            </select>
+          <button
+            type="submit"
+            disabled={loading}
+            className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium disabled:opacity-60"
+          >
+            Search
+          </button>
+          
+          <button
+            type="button"
+            disabled={loading}
+            onClick={handleClear}
+            className="admin-btn admin-btn-secondary px-4 py-2 text-sm font-medium disabled:opacity-60"
+          >
+            Clear
+          </button>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium disabled:opacity-60"
-            >
-              Search
-            </button>
-            
+          {/* Export Buttons */}
+          <div className="flex flex-row gap-2 ml-auto">
             <button
               type="button"
               disabled={loading}
-              onClick={handleClear}
-              className="admin-btn admin-btn-secondary px-4 py-2 text-sm font-medium disabled:opacity-60"
+              onClick={() => handleExport("xlsx")}
+              className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium disabled:opacity-60"
             >
-              Clear
+              Export XLSX
             </button>
 
-            {/* Export Buttons */}
-            {isSuperAdmin && (
-              <div className="flex flex-row gap-2 ml-auto">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleExport("xlsx")}
-                  className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium disabled:opacity-60"
-                >
-                  Export XLSX
-                </button>
-            
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleExport("pdf")}
-                  className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium disabled:opacity-60"
-                >
-                  Export PDF
-                </button>
-              </div>
-            )}
-          </form>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => handleExport("pdf")}
+              className="admin-btn admin-btn-primary px-4 py-2 text-sm font-medium disabled:opacity-60"
+            >
+              Export PDF
+            </button>
+          </div>
+        </form>
 
-          {/* Table */}
-          {loading ? (
-            <p className="text-sm opacity-70">Loading blocked IPs...</p>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>IP</th>
-                      <th>Status</th>
-                      <th>Blocked At</th>
-                      <th>Blocked By</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
+        {/* Table */}
+        {loading ? (
+          <p className="text-sm opacity-70">Loading blocked IPs...</p>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>IP</th>
+                    <th>Status</th>
+                    <th>Blocked At</th>
+                    <th>Blocked By</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
 
-                  <tbody>
-                    {list.length ? (
-                      list.map((item) => (
-                        <tr key={item.id}>
-                          <td className="truncate max-w-[150px]">
-                            {item.ip_address}
-                          </td>
-                          <td className="truncate max-w-[100px]">
-                            {item.status}
-                          </td>
-                          <td className="truncate max-w-[160px]">
-                            {item.blocked_at
-                              ? new Date(item.blocked_at).toLocaleString()
-                              : "—"}
-                          </td>
-                          <td className="truncate max-w-[150px]">
-                            {item.automatic
-                              ? "🤖 Automatic system"
-                              : item.blocked_by_email || "—"}
-                          </td>
-                          <td className="text-right">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedIP(item)}
-                              className="admin-btn admin-btn-secondary text-xs px-3 py-1"
-                            >
-                              View
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" className="text-center opacity-70 p-4">
-                          No record found.
+                <tbody>
+                  {list.length ? (
+                    list.map((item) => (
+                      <tr key={item.id}>
+                        <td className="truncate max-w-[150px]">
+                          {item.ip_address}
+                        </td>
+                        <td className="truncate max-w-[100px]">
+                          {item.status}
+                        </td>
+                        <td className="truncate max-w-[160px]">
+                          {item.blocked_at
+                            ? new Date(item.blocked_at).toLocaleString()
+                            : "—"}
+                        </td>
+                        <td className="truncate max-w-[150px]">
+                          {item.automatic
+                            ? "🤖 Automatic system"
+                            : item.blocked_by_email || "—"}
+                        </td>
+                        <td className="text-right">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedIP(item)}
+                            className="admin-btn admin-btn-secondary text-xs px-3 py-1"
+                          >
+                            View
+                          </button>
                         </td>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="text-center opacity-70 p-4">
+                        No record found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-              <Pagination
-                pagination={pagination}
-                onPageChange={setPage}
-                disabled={loading}
-              />
-            </>
-          )}
-
-          {selectedIP && (
-            <BlockedIPDetailsModal
-              ipRecord={selectedIP}
-              onClose={() => setSelectedIP(null)}
-              refreshList={() => fetchBlockedIPs(page)}
+            <Pagination
+              pagination={pagination}
+              onPageChange={setPage}
+              disabled={loading}
             />
-          )}
-        </section>
-      </div>
-    </AdminLayout>
+          </>
+        )}
+
+        {selectedIP && (
+          <BlockedIPDetailsModal
+            ipRecord={selectedIP}
+            onClose={() => setSelectedIP(null)}
+            refreshList={fetchBlockedIPs}
+          />
+        )}
+      </section>
+    </div>
   );
 }
