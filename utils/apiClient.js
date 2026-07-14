@@ -159,10 +159,18 @@ apiClient.interceptors.response.use(
     const skipAuthRedirect =
       err.config?.skipAuthRedirect === true;
 
+    const isProtectedPage =
+      currentPath.startsWith("/admin") ||
+      currentPath.startsWith("/account");
+    
+    const requestRequiresAuth =
+      err.config?.requireAuth === true;
+    
     if (
       status === 401 &&
       !skipAuthRedirect &&
-      !AUTH_PAGES.includes(currentPath)
+      !AUTH_PAGES.includes(currentPath) &&
+      (isProtectedPage || requestRequiresAuth)
     ) {
       const errorText =
         typeof data?.error === "string"
