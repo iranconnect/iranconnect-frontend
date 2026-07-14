@@ -1,5 +1,6 @@
 // frontend/pages/admin/login-attempts.js
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../utils/apiClient";
 import LoginAttemptDetailsModal from "../../components/admin/LoginAttemptDetailsModal";
@@ -7,6 +8,7 @@ import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
 
 export default function AdminLoginAttemptsPage() {
+  const router = useRouter();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -44,51 +46,6 @@ export default function AdminLoginAttemptsPage() {
     defaultLimit: 10,
   });
 
-  const [authChecked, setAuthChecked] = useState(false);
-  const [adminRole, setAdminRole] = useState("");
-
-  const isSuperAdmin =
-    adminRole === "superadmin";
-
-  /* ============================================================
-     🔐 Secure Auth Check (HttpOnly Cookie)
-  ============================================================ */
-  useEffect(() => {
-    let mounted = true;
-
-    async function checkAccess() {
-      try {
-        const me = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-
-        if (!me.data?.ok) {
-          window.location.href = "/auth/login";
-          return;
-        }
-
-        if (me.data.role !== "superadmin") {
-          window.location.href = "/403";
-          return;
-        }
-        
-        if (mounted) {
-          setAdminRole(me.data.role);
-          setAuthChecked(true);
-        }
-      } catch {
-        window.location.href = "/auth/login";
-      }
-    }
-
-    checkAccess();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-
   useEffect(() => {
     if (!isReady) {
       return;
@@ -111,13 +68,12 @@ export default function AdminLoginAttemptsPage() {
      🔥 FIX: fetch فقط بعد از authChecked = true
   ============================================================ */
   useEffect(() => {
-    if (!authChecked || !isReady) {
+    if (!isReady) {
       return;
     }
-  
+
     fetchLogs();
   }, [
-    authChecked,
     isReady,
     page,
     limit,
@@ -166,10 +122,15 @@ export default function AdminLoginAttemptsPage() {
         "❌ Fetch login attempts error:",
         err
       );
-  
+
+      if (err.response?.status === 403) {
+        router.replace("/403");
+        return;
+      }
+
       setLogs([]);
       setPagination(DEFAULT_PAGINATION);
-  
+
       setError(
         err.response?.data?.error ||
           "Failed to load login attempts."
@@ -209,11 +170,6 @@ export default function AdminLoginAttemptsPage() {
      📤 Secure Export (SuperAdmin only)
   ============================================================ */
   async function exportLoginAttempts(type) {
-    if (!isSuperAdmin) {
-      window.location.href = "/403";
-      return;
-    }
-  
     try {
       const res = await apiClient.get(
         `/admin/login-attempts/export/${type}`,
@@ -255,7 +211,9 @@ export default function AdminLoginAttemptsPage() {
       console.error("❌ Export failed:", err);
   
       if (err.response?.status === 403) {
-        window.location.href = "/403";
+        alert(
+          "You do not have permission to export login attempts."
+        );
         return;
       }
   
@@ -267,21 +225,10 @@ export default function AdminLoginAttemptsPage() {
   }
 
   /* ============================================================
-     ⛔ Prevent render before auth check
-  ============================================================ */
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking access…
-      </div>
-    );
-  }
-
-  /* ============================================================
      🎨 UI
   ============================================================ */
   return (
-    <AdminLayout>
+    <AdminLayout allowedRoles={["superadmin"]}>
       <div className="admin-container">
         <section className="admin-section">
           <h2 className="text-lg font-semibold text-[var(--text)] mb-5">
@@ -356,31 +303,29 @@ export default function AdminLoginAttemptsPage() {
             </button>
 
             {/* Export */}
-            {isSuperAdmin && (
-              <div className="flex gap-3 ml-auto">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() =>
-                    exportLoginAttempts("xlsx")
-                  }
-                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
-                >
-                  Export XLSX
-                </button>
-            
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() =>
-                    exportLoginAttempts("pdf")
-                  }
-                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
-                >
-                  Export PDF
-                </button>
-              </div>
-            )}
+            <div className="flex gap-3 ml-auto">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() =>
+                  exportLoginAttempts("xlsx")
+                }
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+              >
+                Export XLSX
+              </button>
+
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() =>
+                  exportLoginAttempts("pdf")
+                }
+                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+              >
+                Export PDF
+              </button>
+            </div>
           </form>
 
           {error && (
