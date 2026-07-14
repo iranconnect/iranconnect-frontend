@@ -110,9 +110,7 @@ export default function AdminFileLogsPage() {
       console.error("❌ Fetch logs error:", err);
 
       if (err.response?.status === 403) {
-        alert(
-          "You do not have permission to export file logs."
-        );
+        router.replace("/403");
         return;
       }
 
