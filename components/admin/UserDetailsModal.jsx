@@ -96,16 +96,6 @@ export default function UserDetailsModal({ user, onClose }) {
         { withCredentials: true }
       );
 
-      await apiClient.post(
-        `/admin/users/logs`,
-        {
-          action_type: details.is_blocked ? "UNBLOCK_USER" : "BLOCK_USER",
-          target_user_id: user.id,
-          description: `${details.is_blocked ? "Unblocked" : "Blocked"} user ${user.email}`,
-        },
-        { withCredentials: true }
-      );
-
       alert(`✅ User ${details.is_blocked ? "unblocked" : "blocked"} successfully`);
       fetchDetails();
     } catch (err) {
