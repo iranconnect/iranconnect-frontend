@@ -4,15 +4,12 @@ import {
   useEffect,
   useState,
 } from "react";
-import dynamic from "next/dynamic";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import AdminRichTextEditor from "../../components/admin/AdminRichTextEditor";
 import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
 import DOMPurify from "isomorphic-dompurify";
-import "react-quill/dist/quill.snow.css";
-
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 const POLICY_FILTER_KEYS = [
   "type",
@@ -677,13 +674,6 @@ export default function PoliciesAdmin() {
   const inputBg = theme === "dark" ? "#1e293b" : "#ffffff";
   const subtleText = theme === "dark" ? "#cbd5e1" : "#475569";
 
-  const quillStyle = {
-    color: textColor,
-    backgroundColor: inputBg,
-    borderColor,
-    fontSize: "15px",
-  };
-
   /* ============================================================
      ⛔ Block render until auth confirmed
   ============================================================ */
@@ -828,23 +818,16 @@ export default function PoliciesAdmin() {
                       : "➕ New Policy"}
                   </h3>
         
-                  <div
-                    className="relative z-0"
-                    style={{
-                      isolation: "isolate",
+                  <AdminRichTextEditor
+                    value={content}
+                    onChange={(value) => {
+                      setContent(value);
+                      setPreview(value);
                     }}
-                  >
-                    <ReactQuill
-                      theme="snow"
-                      value={content}
-                      onChange={(value) => {
-                        setContent(value);
-                        setPreview(value);
-                      }}
-                      className="rounded-md border"
-                      style={quillStyle}
-                    />
-                  </div>
+                    placeholder="Write the policy content..."
+                    minHeight={250}
+                    enableImages
+                  />
                 </div>
         
                 <div>

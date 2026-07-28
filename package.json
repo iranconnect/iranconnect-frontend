@@ -13,6 +13,13 @@
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.1",
     "@sentry/nextjs": "^10.32.1",
+    "@tiptap/extension-color": "3.29.2",
+    "@tiptap/extension-image": "3.29.2",
+    "@tiptap/extension-text-align": "3.29.2",
+    "@tiptap/extension-text-style": "3.29.2",
+    "@tiptap/pm": "3.29.2",
+    "@tiptap/react": "3.29.2",
+    "@tiptap/starter-kit": "3.29.2",
     "@vercel/analytics": "^1.6.1",
     "axios": "^1.4.0",
     "clsx": "^1.2.1",
@@ -26,7 +33,6 @@
     "react-google-recaptcha": "^3.1.0",
     "react-google-recaptcha-v3": "^1.11.0",
     "react-is": "^18.2.0",
-    "react-quill": "^2.0.0",
     "react-select": "^5.10.2",
     "read-excel-file": "9.3.4",
     "recharts": "^3.2.1"

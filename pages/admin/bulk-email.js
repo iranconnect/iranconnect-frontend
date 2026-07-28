@@ -1,19 +1,12 @@
 // frontend/pages/admin/bulk-email.js
 import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import AdminRichTextEditor from "../../components/admin/AdminRichTextEditor";
 import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
 import DOMPurify from "isomorphic-dompurify";
-
-import "react-quill/dist/quill.snow.css";
-
-const ReactQuill = dynamic(
-  () => import("react-quill"),
-  { ssr: false }
-);
 
 const DEFAULT_PAGINATION = {
   page: 1,
@@ -442,42 +435,6 @@ export default function BulkEmailPage() {
     }
   }
 
-  /* ============================================================
-     Quill config
-  ============================================================ */
-  const quillModules = {
-    toolbar: [
-      [{ font: [] }, { size: [] }],
-      [
-        "bold",
-        "italic",
-        "underline",
-        "strike",
-      ],
-      [{ color: [] }, { background: [] }],
-      [{ align: [] }],
-      ["blockquote", "code-block"],
-      ["link", "image"],
-      ["clean"],
-    ],
-  };
-
-  const quillFormats = [
-    "font",
-    "size",
-    "bold",
-    "italic",
-    "underline",
-    "strike",
-    "color",
-    "background",
-    "align",
-    "blockquote",
-    "code-block",
-    "link",
-    "image",
-  ];
-
   if (!authChecked) {
     return (
       <AdminLayout>
@@ -585,19 +542,17 @@ export default function BulkEmailPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-              <div className="quill-wrapper bulk-email-quill-wrapper">
+              <div>
                 <label className="block mb-2 text-sm font-medium">
                   Email Content
                 </label>
 
-                <ReactQuill
-                  theme="snow"
+                <AdminRichTextEditor
                   value={body}
                   onChange={setBody}
-                  modules={quillModules}
-                  formats={quillFormats}
                   placeholder="Write your email content here..."
-                  className="min-h-[300px] bg-[var(--bg)] rounded-lg"
+                  minHeight={300}
+                  enableImages
                 />
               </div>
 

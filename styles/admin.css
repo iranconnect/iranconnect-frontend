@@ -147,78 +147,172 @@
     font-size: 1rem;
   }
 }
-/* ✅ رفع باگ عدم امکان تایپ در ReactQuill داخل card با shadow یا sticky */
-.quill-wrapper {
-  isolation: isolate;
-  overflow: visible !important;
-  position: relative;
-  z-index: 30;
-}
-
-.ql-container {
-  overflow: visible !important;
-}
-
-.ql-editor {
-  min-height: 250px;
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--text);
-  background: var(--bg);
-  border-radius: 0 0 0.5rem 0.5rem;
-}
-
-.ql-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  background: var(--card-bg);
-  border-radius: 0.5rem 0.5rem 0 0;
-}
-
-/* Google Maps Place Autocomplete – Dark mode fix */
-gmp-place-autocomplete::part(input) {
-  background-color: var(--bg-input, #0f172a);
-  color: var(--text-primary, #ffffff);
-}
-
-gmp-place-autocomplete::part(input)::placeholder {
-  color: rgba(255, 255, 255, 0.6);
-}
 
 /* ============================================================
-   Bulk Email ReactQuill
-   Scoped styles: editor must remain inside normal document flow.
+   Admin Rich Text Editor — Tiptap
 ============================================================ */
-.bulk-email-quill-wrapper {
-  position: static;
-  z-index: auto;
-  isolation: auto;
-  overflow: visible;
-}
 
-.bulk-email-quill-wrapper .ql-toolbar {
-  position: static !important;
-  top: auto !important;
-  z-index: auto !important;
+.admin-rich-text-editor {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
   background: var(--card-bg);
-  border-radius: 0.5rem 0.5rem 0 0;
+  overflow: hidden;
 }
 
-.bulk-email-quill-wrapper .ql-container {
-  position: static;
-  z-index: auto;
-  overflow: visible;
-  background: var(--bg);
-  color: var(--text);
-  border-radius: 0 0 0.5rem 0.5rem;
+.admin-rich-text-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--card-bg);
 }
 
-.bulk-email-quill-wrapper .ql-editor {
-  position: relative;
-  min-height: 250px;
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--text);
+.admin-rich-text-toolbar select {
+  height: 2.25rem;
+  min-width: 5.5rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
   background: var(--bg);
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.admin-rich-text-toolbar input[type="color"] {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0.15rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.admin-rich-text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.admin-rich-text-button:hover:not(:disabled) {
+  border-color: var(--turquoise);
+  transform: translateY(-1px);
+}
+
+.admin-rich-text-button-active {
+  border-color: var(--turquoise);
+  background: var(--turquoise);
+  color: #ffffff;
+}
+
+.admin-rich-text-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.admin-rich-text-surface {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.admin-rich-text-content {
+  min-height: inherit;
+  padding: 1rem;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.admin-rich-text-content:focus {
+  outline: none;
+}
+
+.admin-rich-text-content p {
+  margin: 0 0 0.75rem;
+}
+
+.admin-rich-text-content blockquote {
+  margin: 1rem 0;
+  padding-left: 1rem;
+  border-left: 4px solid var(--turquoise);
+  opacity: 0.9;
+}
+
+.admin-rich-text-content pre {
+  margin: 1rem 0;
+  padding: 0.85rem;
+  border-radius: 0.5rem;
+  background: rgba(15, 23, 42, 0.08);
+  overflow-x: auto;
+}
+
+.admin-rich-text-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1rem 0;
+  border-radius: 0.5rem;
+}
+
+.admin-rich-text-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  color: var(--text);
+  opacity: 0.65;
+}
+
+@media (max-width: 768px) {
+  .admin-rich-text-toolbar {
+    gap: 0.3rem;
+    padding: 0.5rem;
+  }
+
+  .admin-rich-text-button {
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.45rem;
+    font-size: 0.75rem;
+  }
+
+  .admin-rich-text-toolbar select {
+    min-width: 4.75rem;
+    height: 2rem;
+  }
+
+  .admin-rich-text-toolbar input[type="color"] {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+/* Admin Rich Text Editor — image upload */
+.admin-rich-text-file-input {
+  display: none;
+}
+
+.admin-rich-text-upload-error {
+  margin: 8px 12px;
+  color: #b42318;
+  font-size: 0.875rem;
+  line-height: 1.4;
 }
