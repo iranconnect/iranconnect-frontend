@@ -1,7 +1,17 @@
 // frontend/components/admin/ServiceBulkUploadModal.jsx
 import { useState } from "react";
-import * as XLSX from "xlsx";
+import { parseAdminBulkWorkbook } from "../../utils/parseAdminBulkWorkbook";
 import apiClient from "../../utils/apiClient";
+
+const SERVICE_BULK_HEADERS = [
+  "category_slug",
+  "subcategory_slug",
+  "name",
+  "slug",
+  "description",
+  "seo_title",
+  "seo_description",
+];
 
 export default function ServiceBulkUploadModal({
   subcategories,
@@ -25,83 +35,87 @@ export default function ServiceBulkUploadModal({
   /* -----------------------------------
      📄 Parse Excel
   ----------------------------------- */
-  function handleFile(e) {
+  async function handleFile(e) {
     setError("");
     setReportRows([]);
     setStatus("idle");
+    setServices([]);
+    setPreview(null);
 
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.endsWith(".xlsx")) {
-      setError("Only .xlsx Excel files are supported.");
-      return;
+    try {
+      const rows = await parseAdminBulkWorkbook(file, {
+        sheetName: "services",
+        expectedHeaders: SERVICE_BULK_HEADERS,
+        maxRows: 500,
+      });
+
+      const parsed = rows.map((row, index) => {
+        const service = {
+          category_slug: String(
+            row.category_slug || ""
+          ).trim(),
+          subcategory_slug: String(
+            row.subcategory_slug || ""
+          ).trim(),
+          name: String(row.name || "").trim(),
+          slug: String(row.slug || "").trim(),
+          description: String(
+            row.description || ""
+          ).trim(),
+          seo_title: String(
+            row.seo_title || ""
+          ).trim(),
+          seo_description: String(
+            row.seo_description || ""
+          ).trim(),
+        };
+
+        if (
+          !service.category_slug ||
+          !service.subcategory_slug ||
+          !service.name ||
+          !service.slug ||
+          !service.description ||
+          !service.seo_title ||
+          !service.seo_description
+        ) {
+          throw new Error(
+            `Missing required field at row ${index + 2}`
+          );
+        }
+
+        return service;
+      });
+
+      setServices(parsed);
+
+      const categories = new Set(
+        parsed.map((service) => service.category_slug)
+      );
+
+      const subcategoryPairs = new Set(
+        parsed.map(
+          (service) =>
+            `${service.category_slug} / ${service.subcategory_slug}`
+        )
+      );
+
+      setPreview({
+        services: parsed.length,
+        categories: categories.size,
+        subcategories: subcategoryPairs.size,
+      });
+    } catch (err) {
+      setError(
+        err?.message ||
+          "Failed to read Excel file."
+      );
+    } finally {
+      e.target.value = "";
     }
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-
-        if (!rows.length) {
-          setError("Excel file has no data rows. Please add at least one service.");
-          return;
-        }
-
-        if (rows.length > 500) {
-          setError("Maximum 500 services allowed per upload.");
-          return;
-        }
-
-        const parsed = rows.map((r, i) => {
-          const obj = {
-            category_slug: String(r.category_slug || "").trim(),
-            subcategory_slug: String(r.subcategory_slug || "").trim(),
-            name: String(r.name || "").trim(),
-            slug: String(r.slug || "").trim(),
-            description: String(r.description || "").trim(),
-            seo_title: String(r.seo_title || "").trim(),
-            seo_description: String(r.seo_description || "").trim(),
-          };
-        
-          if (
-            !obj.category_slug ||
-            !obj.subcategory_slug ||
-            !obj.name ||
-            !obj.slug ||
-            !obj.description ||
-            !obj.seo_title ||
-            !obj.seo_description
-          ) {
-            throw new Error(`Missing required field at row ${i + 2}`);
-          }
-        
-          return obj;
-        });
-        
-        setServices(parsed);
-
-        const categories = new Set(parsed.map(s => s.category_slug));
-        const subcategories = new Set(
-          parsed.map(s => `${s.category_slug} / ${s.subcategory_slug}`)
-        );
-        
-        setPreview({
-          services: parsed.length,
-          categories: categories.size,
-          subcategories: subcategories.size,
-        });
-
-
-      } catch (err) {
-        setError(err.message || "Failed to read Excel file.");
-      }
-    };
-
-    reader.readAsArrayBuffer(file);
   }
 
   /* -----------------------------------

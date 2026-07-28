@@ -1,7 +1,22 @@
 // frontend/components/admin/TagBulkUploadModal.jsx
 import { useState } from "react";
-import * as XLSX from "xlsx";
+import { parseAdminBulkWorkbook } from "../../utils/parseAdminBulkWorkbook";
 import apiClient from "../../utils/apiClient";
+
+const TAG_BULK_HEADERS = [
+  "name",
+  "slug",
+  "type",
+  "scope",
+  "language_code",
+  "seo_title",
+  "seo_description",
+  "is_selectable",
+  "search_weight",
+  "category_slug",
+  "subcategory_slug",
+  "service_slug",
+];
 
 export default function TagBulkUploadModal({ onClose, onSuccess }) {
   const [tags, setTags] = useState([]);
@@ -16,43 +31,85 @@ export default function TagBulkUploadModal({ onClose, onSuccess }) {
   /* -----------------------------------
      📄 Parse Excel
   ----------------------------------- */
-  function handleFile(e) {
+  async function handleFile(e) {
     setError("");
     setReportRows([]);
     setStatus("idle");
+    setTags([]);
 
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.endsWith(".xlsx")) {
-      setError("Only .xlsx Excel files are supported.");
-      return;
+    try {
+      const rows = await parseAdminBulkWorkbook(file, {
+        sheetName: "tags",
+        expectedHeaders: TAG_BULK_HEADERS,
+        maxRows: 500,
+      });
+
+      const parsed = rows.map((row, index) => {
+        const tag = {
+          name: String(row.name || "").trim(),
+          slug: String(row.slug || "").trim(),
+          type: String(row.type || "").trim(),
+          scope: String(row.scope || "global").trim(),
+          language_code: String(
+            row.language_code || "en"
+          )
+            .trim()
+            .toLowerCase(),
+          seo_title: String(
+            row.seo_title || ""
+          ).trim(),
+          seo_description: String(
+            row.seo_description || ""
+          ).trim(),
+          is_selectable:
+            row.is_selectable === false ||
+            String(row.is_selectable).toLowerCase() === "false"
+              ? false
+              : true,
+          search_weight:
+            Number.isFinite(Number(row.search_weight))
+              ? Number(row.search_weight)
+              : 1,
+          category_slug: String(
+            row.category_slug || ""
+          ).trim(),
+          subcategory_slug: String(
+            row.subcategory_slug || ""
+          ).trim(),
+          service_slug: String(
+            row.service_slug || ""
+          ).trim(),
+        };
+
+        if (
+          !tag.name ||
+          !tag.slug ||
+          !tag.type ||
+          !tag.scope ||
+          !tag.language_code ||
+          !tag.seo_title ||
+          !tag.seo_description
+        ) {
+          throw new Error(
+            `Missing required field at row ${index + 2}`
+          );
+        }
+
+        return tag;
+      });
+
+      setTags(parsed);
+    } catch (err) {
+      setError(
+        err?.message ||
+          "Failed to read Excel file."
+      );
+    } finally {
+      e.target.value = "";
     }
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const wb = XLSX.read(evt.target.result, { type: "array" });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-
-        if (!rows.length) {
-          setError("Excel file has no data rows.");
-          return;
-        }
-
-        if (rows.length > 500) {
-          setError("Maximum 500 tags allowed per upload.");
-          return;
-        }
-
-        setTags(rows);
-      } catch (err) {
-        setError(err.message || "Failed to read Excel file.");
-      }
-    };
-
-    reader.readAsArrayBuffer(file);
   }
 
   /* -----------------------------------
