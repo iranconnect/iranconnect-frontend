@@ -6,6 +6,7 @@ import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
+import DOMPurify from "isomorphic-dompurify";
 
 import "react-quill/dist/quill.snow.css";
 
@@ -608,9 +609,10 @@ export default function BulkEmailPage() {
                 <div
                   className="admin-card min-h-[300px] overflow-y-auto text-[var(--text)]"
                   dangerouslySetInnerHTML={{
-                    __html:
+                    __html: DOMPurify.sanitize(
                       body ||
-                      "<p><i>Live preview will appear here...</i></p>",
+                        "<p><i>Live preview will appear here...</i></p>"
+                    ),
                   }}
                 />
               </div>
