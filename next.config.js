@@ -15,8 +15,6 @@ const contentSecurityPolicy = `
     'unsafe-inline'
     https://www.google.com
     https://www.gstatic.com
-    https://maps.googleapis.com
-    https://maps.gstatic.com
     https://www.googletagmanager.com
     https://www.google-analytics.com
     ${isStaging ? "https://vercel.live" : ""};
@@ -32,8 +30,6 @@ const contentSecurityPolicy = `
     blob:
     ${apiOrigin}
     https://res.cloudinary.com
-    https://maps.googleapis.com
-    https://maps.gstatic.com
     https://www.google.com
     https://www.gstatic.com
     https://*.googleusercontent.com;
@@ -42,8 +38,6 @@ const contentSecurityPolicy = `
     'self'
     ${apiOrigin}
     https://*.sentry.io
-    https://maps.googleapis.com
-    https://places.googleapis.com
     https://api.cloudinary.com
     https://www.google.com
     https://www.recaptcha.net

@@ -179,31 +179,6 @@ iframe[src*="google.com/recaptcha/"] {
   position: relative !important;
 }
 
-/* 🚨 بسیار مهم — پاک‌سازی کامل نسخه‌های قدیمی Intro 🚨 */
-
-/* حذف نسخه‌های قبلی که باعث مشکل بودند */
-.intro-container,
-.intro-cards-area,
-.intro-cards-mobile-old,
-.intro-card-old,
-.intro-card-mobile-old,
-.mobile-scroll,
-.old-intro-logo,
-.intro-cards-desktop-old {  
-  display: none !important;
-}
-
-/* جلوگیری از Override شدن اندازه لوگو */
-.old-intro-logo img,
-.intro-logo img.old {
-  all: unset !important;
-}
-
-/* جلوگیری از Override شدن تراز متن */
-.old-intro-logo h1 {
-  all: unset !important;
-}
-
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
