@@ -106,7 +106,7 @@ export default function BusinessesPage() {
           role !== "superadmin"
         ) {
           if (mounted) {
-            window.location.href = "/";
+            window.location.href = "/403";
           }
   
           return;

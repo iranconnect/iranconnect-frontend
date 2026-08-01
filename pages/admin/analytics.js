@@ -37,7 +37,7 @@ export default function AnalyticsPage() {
 
         // فقط اجازه به admin و superadmin
         if (res.data.role !== "admin" && res.data.role !== "superadmin") {
-          if (isMounted) window.location.href = "/";
+          if (isMounted) window.location.href = "/403";
           return;
         }
 

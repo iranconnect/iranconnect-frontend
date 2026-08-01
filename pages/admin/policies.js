@@ -125,7 +125,7 @@ export default function PoliciesAdmin() {
         }
 
         if (!["admin", "superadmin"].includes(me.data.role)) {
-          window.location.href = "/";
+          window.location.href = "/403";
           return;
         }
 

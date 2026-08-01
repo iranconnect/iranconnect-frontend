@@ -35,7 +35,7 @@ export default function SettingsPage() {
           res.data.role !== "admin" &&
           res.data.role !== "superadmin"
         ) {
-          window.location.href = "/";
+          window.location.href = "/403";
           return;
         }
 

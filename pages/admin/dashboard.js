@@ -38,7 +38,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
         }
 
         if (me.data.role !== "admin" && me.data.role !== "superadmin") {
-          window.location.href = "/";
+          window.location.href = "/403";
           return;
         }
 
