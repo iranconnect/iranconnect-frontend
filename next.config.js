@@ -91,6 +91,11 @@ const nextConfig = {
         destination: "/admin/add-v2",
         permanent: false,
       },
+      {
+        source: "/admin/policy-update",
+        destination: "/admin/bulk-email",
+        permanent: false,
+      },
     ];
   },
 
