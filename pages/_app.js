@@ -1,7 +1,6 @@
 // frontend/pages/_app.js
 import "../styles/globals_v3.css";
 import "../styles/admin.css";
-import "../styles/intro.css";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";

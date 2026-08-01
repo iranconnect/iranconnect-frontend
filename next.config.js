@@ -75,6 +75,31 @@ const contentSecurityPolicy = `
 const nextConfig = {
   reactStrictMode: false,
 
+  async redirects() {
+    return [
+      {
+        source: "/intro",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/admin",
+        destination: "/admin/dashboard",
+        permanent: false,
+      },
+      {
+        source: "/admin/add",
+        destination: "/admin/add-v2",
+        permanent: false,
+      },
+      {
+        source: "/admin/new",
+        destination: "/admin/add-v2",
+        permanent: false,
+      },
+    ];
+  },
+
   async headers() {
     return [
       {

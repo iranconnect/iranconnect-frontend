@@ -7,23 +7,6 @@ import apiClient from '../utils/apiClient.js';
 import { useRouter } from "next/router";
 
 export default function SearchPage() {
-  const router = useRouter();
-  const [allowed, setAllowed] = useState(false);
-
-  // 🔵 جلوگیری از ورود مستقیم بدون دیدن intro
-  useEffect(() => {
-    const ok = localStorage.getItem("hasVisitedIntro");
-
-    if (!ok) {
-      router.replace("/intro");
-      return;
-    }
-
-    setAllowed(true);
-  }, []);
-
-  if (!allowed) return null;
-
   return <Home />;
 }
 
