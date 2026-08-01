@@ -11,10 +11,16 @@ export default function BusinessGallery({ biz }) {
   const scrollRef = useRef(null);
 
   const apiBase =
-    process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_API_BASE;
 
   const cdnBase =
-    process.env.NEXT_PUBLIC_CDN_BASE || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_CDN_BASE;
+
+  if (!apiBase || !cdnBase) {
+    throw new Error(
+      "NEXT_PUBLIC_API_BASE and NEXT_PUBLIC_CDN_BASE must be defined"
+    );
+  }
 
   function resolveImage(input) {
     if (!input) {
@@ -34,7 +40,8 @@ export default function BusinessGallery({ biz }) {
       return url;
     }
 
-    const fullUrl = `${apiBase.replace("/api", "")}${url}`;
+    const apiOrigin = apiBase.replace(/\/api\/?$/, "");
+    const fullUrl = `${apiOrigin}${url}`;
     const filename = fullUrl.split("/").pop().split("?")[0];
 
     return `${cdnBase}/cdn/${filename}?url=${encodeURIComponent(

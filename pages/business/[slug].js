@@ -29,7 +29,13 @@ export async function getServerSideProps(context) {
   const isStaging = process.env.NEXT_PUBLIC_ENV === "staging";
 
   const apiBase =
-    process.env.NEXT_PUBLIC_API_BASE || "https://api.iranconnect.org";
+    process.env.NEXT_PUBLIC_API_BASE;
+
+  if (!apiBase) {
+    throw new Error(
+      "NEXT_PUBLIC_API_BASE is not defined"
+    );
+  }
 
   const cookie = context.req.headers.cookie || "";
 
