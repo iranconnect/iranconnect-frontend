@@ -14,7 +14,7 @@ module.exports = withSentryConfig(
 
     // Temporarily expose Sentry build output so source-map upload
     // failures and permission problems are visible in Vercel logs.
-    silent: false,
+    silent: true,
 
     widenClientFileUpload: true,
 
