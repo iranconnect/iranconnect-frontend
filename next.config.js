@@ -96,6 +96,11 @@ const nextConfig = {
         destination: "/admin/bulk-email",
         permanent: false,
       },
+      {
+        source: "/data-removal-request",
+        destination: "/account/businesses",
+        permanent: false,
+      },
     ];
   },
 
