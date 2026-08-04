@@ -7,6 +7,7 @@ import { useRouter } from "next/router";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/react";
 import GA4 from "../components/Analytics/GA4";
+import { AuthSessionProvider } from "../contexts/AuthSessionContext";
 
 import CookieConsent from "../components/CookieConsent";
 import AutoLogout from "../components/AutoLogout";
@@ -136,7 +137,8 @@ export default function App({ Component, pageProps }) {
   ]);
 
   return (
-    <>
+    <AuthSessionProvider>
+      <>
       {hasAnalyticsConsent && (
         <GA4 measurementId={process.env.NEXT_PUBLIC_GA4_ID} />
       )}
@@ -159,7 +161,8 @@ export default function App({ Component, pageProps }) {
       />
       
       <Analytics />
-    </>
+      </>
+    </AuthSessionProvider>
   );
 }
 export function reportWebVitals(metric) {
