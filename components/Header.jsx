@@ -4,100 +4,89 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import ProfileMenu from './ProfileMenu';
 import apiClient from '../utils/apiClient.js';
+import { useAuthSession } from '../hooks/useAuthSession';
 
 export default function Header() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [theme, setTheme] = useState('light');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [hasRequests, setHasRequests] = useState(false);
   const [hasBusiness, setHasBusiness] = useState(false);
-  const [email, setEmail] = useState('');
 
-  /* 🧩 بررسی وضعیت کاربر با HttpOnly cookie */
+  const { status, role, user } = useAuthSession();
+
+  const isLoggedIn = status === "authenticated";
+  const isAdmin = role === "admin" || role === "superadmin";
+  const email = user?.email || "";
+  const hasRequests = !!user?.hasRequests;
+
+  /* 🧩 Load ownership metadata only after authentication */
   useEffect(() => {
-  
-    const isAuthPage =
-      window.location.pathname.startsWith("/auth");
-  
-    async function initUserState() {
+    let mounted = true;
+
+    async function loadOwnership() {
+      if (!isLoggedIn) {
+        setHasBusiness(false);
+        return;
+      }
+
       try {
-        // 🔐 1. auth check
-        const me = await apiClient.get("/auth/me", {
-          withCredentials: true,
-          validateStatus: (status) => status < 500,
-        });
-  
-        if (me?.status === 200 && me.data?.ok) {
-          setIsLoggedIn(true);
-  
-          const role = me.data.role || "user";
-          setIsAdmin(role === "admin" || role === "superadmin");
-          setEmail(me.data.email || "");
-  
-          // 🔥 2. NEW API (باید بسازی در بک‌اند)
-          const ownership = await apiClient.get("/users/me/ownership", {
+        const ownership = await apiClient.get(
+          "/users/me/ownership",
+          {
             withCredentials: true,
-            validateStatus: (status) => status < 500,
-          });
-          
-          if (ownership.status === 200) {
-            setHasRequests(!!me.data?.has_requests);
-            setHasBusiness(!!ownership.data?.has_verified_business);
-          
-          } else if (ownership.status === 404) {
-            // 🟡 API هنوز deploy نشده
-            setHasRequests(false);
-            setHasBusiness(false);
-          
-          } else {
-            // ❌ سایر خطاها
-            setHasRequests(false);
-            setHasBusiness(false);
+            validateStatus: (statusCode) => statusCode < 500,
           }
-  
-        } else {
-          setIsLoggedIn(false);
-          setIsAdmin(false);
-          setEmail("");
-          setHasRequests(false);
-          setHasBusiness(false);
+        );
+
+        if (!mounted) return;
+
+        if (ownership.status === 200) {
+          setHasBusiness(
+            !!ownership.data?.has_verified_business
+          );
+          return;
         }
-  
+
+        setHasBusiness(false);
       } catch {
-        setIsLoggedIn(false);
-        setIsAdmin(false);
-        setEmail("");
-        setHasRequests(false);
+        if (!mounted) return;
+
         setHasBusiness(false);
       }
     }
-  
-    if (!isAuthPage) {
-      initUserState();
-    }
-  
-    // 🎨 theme
+
+    loadOwnership();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isLoggedIn]);
+
+  /* 🎨 Observe theme changes */
+  useEffect(() => {
     const savedTheme =
-      localStorage.getItem('iran_theme') ||
-      document.documentElement.getAttribute('data-theme') ||
-      'light';
-  
-    document.documentElement.setAttribute('data-theme', savedTheme);
+      localStorage.getItem("iran_theme") ||
+      document.documentElement.getAttribute("data-theme") ||
+      "light";
+
+    document.documentElement.setAttribute(
+      "data-theme",
+      savedTheme
+    );
+
     setTheme(savedTheme);
-  
+
     const observer = new MutationObserver(() => {
-      const newTheme = document.documentElement.getAttribute('data-theme');
-      setTheme(newTheme);
+      setTheme(
+        document.documentElement.getAttribute("data-theme")
+      );
     });
-  
+
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['data-theme'],
+      attributeFilter: ["data-theme"],
     });
-  
+
     return () => observer.disconnect();
-  
   }, []);
 
   /* 🌗 تغییر تم */
@@ -167,7 +156,8 @@ export default function Header() {
           {/* Profile */}
           {isLoggedIn && (
             <ProfileMenu
-              role={isAdmin ? 'admin' : 'user'}
+              role={role}
+              email={user?.email || ""}
               hasRequests={hasRequests}
               hasBusiness={hasBusiness}
             />

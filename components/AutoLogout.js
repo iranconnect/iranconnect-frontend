@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import apiClient from "../utils/apiClient";
 import AutoLogoutModal from "./AutoLogoutModal";
 import { useSessionReason } from "../hooks/useSessionReason";
+import { useAuthSession } from "../hooks/useAuthSession";
 
 
 const INACTIVITY_LIMIT = 2 * 60 * 1000; // 2 minutes
@@ -11,13 +12,15 @@ const LOGOUT_COUNTDOWN = 30 * 1000; // 30 seconds
 
 export default function AutoLogout() {
   const [visible, setVisible] = useState(false);
-  const [enabled, setEnabled] = useState(false);
 
   const inactivityTimer = useRef(null);
   const logoutTimer = useRef(null);
 
   const router = useRouter();
   const { isSecurity, isInactive } = useSessionReason();
+  const { status } = useAuthSession();
+
+  const enabled = status === "authenticated";
 
 
   useEffect(() => {
@@ -28,20 +31,6 @@ export default function AutoLogout() {
 
 
 
-
-  /* ----------------------------------------------------
-     🔐 Check authentication via HttpOnly cookie
-  ---------------------------------------------------- */
-  async function checkAuth() {
-    try {
-      const res = await apiClient.get("/auth/me", {
-        withCredentials: true,
-      });
-      setEnabled(!!res.data?.ok);
-    } catch {
-      setEnabled(false);
-    }
-  }
 
   /* ----------------------------------------------------
      🕒 Reset inactivity timer
@@ -95,8 +84,6 @@ export default function AutoLogout() {
   ---------------------------------------------------- */
   function cleanup() {
     setVisible(false);
-    setEnabled(false);
-
     if (inactivityTimer.current)
       clearTimeout(inactivityTimer.current);
     if (logoutTimer.current)
@@ -133,13 +120,6 @@ export default function AutoLogout() {
       window.removeEventListener(e, resetInactivityTimer)
     );
   }
-
-  /* ----------------------------------------------------
-     🔁 Initial auth check (once)
-  ---------------------------------------------------- */
-  useEffect(() => {
-    checkAuth();
-  }, []);
 
   /* ----------------------------------------------------
      ▶ Enable / Disable AutoLogout based on auth

@@ -11,15 +11,15 @@ import { AuthSessionProvider } from "../contexts/AuthSessionContext";
 
 import CookieConsent from "../components/CookieConsent";
 import AutoLogout from "../components/AutoLogout";
-import apiClient from "../utils/apiClient";
 import { useSessionReason } from "../hooks/useSessionReason";
+import { useAuthSession } from "../hooks/useAuthSession";
 import {
   isPublicSafePath,
   rememberLastSafePath,
 } from "../utils/navigationHistory";
 
 
-export default function App({ Component, pageProps }) {
+function AppContent({ Component, pageProps }) {
   const router = useRouter();
 
   const hasAnalyticsConsent =
@@ -28,27 +28,11 @@ export default function App({ Component, pageProps }) {
 
 
   const [theme, setTheme] = useState("light");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  
+
   const isAuthPage = router.pathname.startsWith("/auth");
 
-
-  /* 🔐 Check login via HttpOnly cookie */
-  async function checkLoginByCookie() {
-    try {
-      const res = await apiClient.get("/auth/me", {
-        withCredentials: true,
-      });
-      setIsLoggedIn(!!res.data?.ok);
-    } catch {
-      setIsLoggedIn(false);
-    }
-  }
-
-  /* Initial auth check */
-  useEffect(() => {
-    checkLoginByCookie();
-  }, []);
+  const { status } = useAuthSession();
+  const isLoggedIn = status === "authenticated";
 
   /* 🎨 Load theme safely (client only) */
   useEffect(() => {
@@ -137,8 +121,7 @@ export default function App({ Component, pageProps }) {
   ]);
 
   return (
-    <AuthSessionProvider>
-      <>
+    <>
       {hasAnalyticsConsent && (
         <GA4 measurementId={process.env.NEXT_PUBLIC_GA4_ID} />
       )}
@@ -161,10 +144,18 @@ export default function App({ Component, pageProps }) {
       />
       
       <Analytics />
-      </>
+    </>
+  );
+}
+
+export default function App(props) {
+  return (
+    <AuthSessionProvider>
+      <AppContent {...props} />
     </AuthSessionProvider>
   );
 }
+
 export function reportWebVitals(metric) {
   if (process.env.NODE_ENV !== "production") return;
 

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import CookieSettingsModal from "./CookieSettingsModal";
 import apiClient from "../utils/apiClient";
+import { useAuthSession } from "../hooks/useAuthSession";
 
 /* ───────────────────────────────────────────────
    🔐 Cookie helpers (first-party technical cookie)
@@ -20,6 +21,7 @@ function getCookie(name) {
 }
 
 export default function CookieConsent() {
+  const { status } = useAuthSession();
   const [visible, setVisible] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [lang, setLang] = useState("en");
@@ -68,24 +70,18 @@ export default function CookieConsent() {
         return;
       }
    
-      // اگر تصمیمی نیست، فقط وقتی لاگین نیست بنر نشان بده
-      try {
-        const res = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-    
-        if (res.data?.ok) {
-          // کاربر لاگین است → بنر نده
-          return;
-        }
-      } catch {
-        // لاگین نیست → بنر مجاز است
+      if (status === "checking") {
+        return;
       }
-   
+
+      if (status === "authenticated") {
+        return;
+      }
+
       setVisible(true);
     }
     checkConsent();
-  }, []);
+  }, [status]);
 
   /* 🔁 Re-open cookie settings from footer (GDPR review) */
   useEffect(() => {

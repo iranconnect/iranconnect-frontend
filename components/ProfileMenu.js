@@ -5,37 +5,9 @@ import { useState, useEffect, useRef } from 'react';
 import { User } from 'lucide-react';
 import apiClient from '../utils/apiClient';
 
-export default function ProfileMenu({ role, hasRequests, hasBusiness }) {
+export default function ProfileMenu({ role, email, hasRequests, hasBusiness }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [email, setEmail] = useState('');
   const menuRef = useRef(null);
-
-  /* ───────────────────────────────────────────────
-     🧩 Fetch user email from HttpOnly cookie
-     (NO localStorage fallback – security critical)
-  ─────────────────────────────────────────────── */
-  useEffect(() => {
-    let mounted = true;
-
-    async function fetchEmail() {
-      try {
-        const res = await apiClient.get('/auth/me', {
-          withCredentials: true,
-        });
-
-        if (mounted && res.data?.email) {
-          setEmail(res.data.email);
-        }
-      } catch {
-        if (mounted) setEmail('');
-      }
-    }
-
-    fetchEmail();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   /* ───────────────────────────────────────────────
      🧩 Close menu on outside interaction
