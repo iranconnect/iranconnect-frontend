@@ -1,11 +1,15 @@
 /*frontend/pages/account/index.js*/
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
+import { useAuthSession } from "../../hooks/useAuthSession";
 import AccountLayout from "../../components/account/AccountLayout";
 
 export default function AccountPage() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { status, user, role } = useAuthSession();
+
+  const loading =
+    status === "checking" ||
+    (status === "authenticated" && !user);
 
   const [theme, setTheme] = useState("light");
 
@@ -28,14 +32,6 @@ export default function AccountPage() {
   }, []);
 
 
-  // فقط fetch داده — auth gate در AccountLayout
-  useEffect(() => {
-    apiClient.get("/auth/me").then((res) => {
-      setUser(res.data);
-      setLoading(false);
-    });
-  }, []);
-
   async function logout() {
     try {
       await apiClient.post("/auth/logout", {}, { withCredentials: true });
@@ -56,9 +52,7 @@ export default function AccountPage() {
   }
 
   const createdRaw =
-    user?.created_at ||
     user?.createdAt ||
-    user?.created ||
     null;
   
   const memberSince = createdRaw
@@ -86,8 +80,8 @@ export default function AccountPage() {
           </h2>
 
           <div className="space-y-3 mb-6 text-sm">
-            <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>Role:</strong> {user.role}</p>
+            <p><strong>Email:</strong> {user?.email || "—"}</p>
+            <p><strong>Role:</strong> {role}</p>
           
             {memberSince && (
               <p>

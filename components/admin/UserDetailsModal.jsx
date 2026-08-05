@@ -1,6 +1,7 @@
 // frontend/components/admin/UserDetailsModal.jsx
 import { useEffect, useState, useCallback, useRef } from "react";
 import apiClient from "../../utils/apiClient";
+import { useAuthSession } from "../../hooks/useAuthSession";
 
 export default function UserDetailsModal({ user, onClose }) {
   const mountedRef = useRef(true);
@@ -10,7 +11,7 @@ export default function UserDetailsModal({ user, onClose }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [forbidden, setForbidden] = useState(false);
 
-  const [currentRole, setCurrentRole] = useState("");
+  const { role: currentRole } = useAuthSession();
 
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailBody, setEmailBody] = useState("");
@@ -27,26 +28,6 @@ export default function UserDetailsModal({ user, onClose }) {
     return () => {
       mountedRef.current = false;
     };
-  }, []);
-
-  /* ----------------------------------------------------
-     🔐 Fetch current admin role
-  ---------------------------------------------------- */
-  useEffect(() => {
-    async function fetchRole() {
-      try {
-        const res = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-        if (mountedRef.current) {
-          setCurrentRole(res.data?.role || "");
-        }
-      } catch {
-        // fallback: least privilege
-        if (mountedRef.current) setCurrentRole("");
-      }
-    }
-    fetchRole();
   }, []);
 
   /* ----------------------------------------------------

@@ -56,6 +56,7 @@ export function AuthSessionProvider({ children }) {
             setUser({
               email: res.data.email || null,
               role: sessionRole,
+              createdAt: res.data.created_at || null,
               hasRequests: !!res.data.has_requests,
             });
 
@@ -68,6 +69,7 @@ export function AuthSessionProvider({ children }) {
             user: {
               email: res.data.email || null,
               role: sessionRole,
+              createdAt: res.data.created_at || null,
               hasRequests: !!res.data.has_requests,
             },
             role: sessionRole,

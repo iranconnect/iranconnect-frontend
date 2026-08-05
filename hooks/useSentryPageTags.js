@@ -1,33 +1,34 @@
-//frontend/hooks/useSentryPageTags.js
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import * as Sentry from "@sentry/nextjs";
 
-import { getSessionRole } from "../utils/sessionRole";
+import { useAuthSession } from "./useAuthSession";
 import { getSentryPageName } from "../utils/sentryPageName";
 
 export function useSentryPageTags({ feature }) {
   const router = useRouter();
+  const { status, role } = useAuthSession();
 
   useEffect(() => {
-    let mounted = true;
+    if (status === "checking") return;
 
-    async function apply() {
-      const role = await getSessionRole();
-      if (!mounted) return;
+    Sentry.setTag(
+      "role",
+      status === "authenticated" ? role : "guest"
+    );
 
-      Sentry.setTag("role", role);
-      Sentry.setTag("page", getSentryPageName(router.pathname));
+    Sentry.setTag(
+      "page",
+      getSentryPageName(router.pathname)
+    );
 
-      if (feature) {
-        Sentry.setTag("feature", feature);
-      }
+    if (feature) {
+      Sentry.setTag("feature", feature);
     }
-
-    apply();
-
-    return () => {
-      mounted = false;
-    };
-  }, [router.pathname, feature]);
+  }, [
+    router.pathname,
+    feature,
+    status,
+    role,
+  ]);
 }

@@ -1,11 +1,11 @@
 // frontend/components/account/AccountLayout.jsx
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 
 import Header from "../Header";
 import Footer from "../Footer";
 
-import { getSessionRole } from "../../utils/sessionRole";
+import { useAuthSession } from "../../hooks/useAuthSession";
 
 import { useSentryBaseContext } from "../../hooks/useSentryBaseContext";
 import { SentryContextReady } from "../../hooks/useSentryContextStatus";
@@ -39,57 +39,37 @@ function buildLoginRedirectUrl(returnTo) {
 export default function AccountLayout({ children }) {
   const router = useRouter();
 
-  const [role, setRole] = useState(null);
-  const [checking, setChecking] = useState(true);
+  const { status, role } = useAuthSession();
   const hasRedirectedRef = useRef(false);
 
+  const checking = status === "checking";
+  const isAllowed =
+    status === "authenticated" &&
+    ["user", "admin", "superadmin"].includes(role);
+
   /* ----------------------------------------------------
-     🔐 Auth Gate — only USER allowed
+     🔐 Auth Gate — authenticated account roles only
   ---------------------------------------------------- */
   useEffect(() => {
-    let mounted = true;
-  
-    async function checkRole() {
-      try {
-        const r = await getSessionRole();
-  
-        if (!mounted) return;
-  
-        // User, admin and superadmin can access account pages.
-        if (!["user", "admin", "superadmin"].includes(r)) {
-          if (!hasRedirectedRef.current) {
-            hasRedirectedRef.current = true;
-  
-            router.replace(
-              buildLoginRedirectUrl(router.asPath)
-            );
-          }
-  
-          return;
-        }
-  
-        setRole(r);
-      } catch {
-        if (!hasRedirectedRef.current) {
-          hasRedirectedRef.current = true;
-  
-          router.replace(
-            buildLoginRedirectUrl(router.asPath)
-          );
-        }
-      } finally {
-        if (mounted) {
-          setChecking(false);
-        }
-      }
+    if (!router.isReady || status === "checking") {
+      return;
     }
-  
-    checkRole();
-  
-    return () => {
-      mounted = false;
-    };
-  }, [router]);
+
+    if (!isAllowed && !hasRedirectedRef.current) {
+      hasRedirectedRef.current = true;
+
+      router.replace(
+        buildLoginRedirectUrl(router.asPath)
+      );
+    }
+  }, [
+    router,
+    router.isReady,
+    router.asPath,
+    status,
+    isAllowed,
+  ]);
+
   /* ----------------------------------------------------
      🧠 Sentry Base Context
   ---------------------------------------------------- */
@@ -109,7 +89,7 @@ export default function AccountLayout({ children }) {
   /* ----------------------------------------------------
      ⏳ Loading state (auth check)
   ---------------------------------------------------- */
-  if (checking) {
+  if (checking || !isAllowed) {
     return (
       <div className="min-h-screen flex flex-col bg-pagebg text-text">
         <Header />
