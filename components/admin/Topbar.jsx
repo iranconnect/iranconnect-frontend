@@ -1,13 +1,9 @@
 // frontend/components/admin/Topbar.jsx
 
-import { useRouter } from "next/router";
 import { useState, useCallback } from "react";
 import apiClient from "../../utils/apiClient";
-import { useAuthSession } from "../../hooks/useAuthSession";
 
 export default function Topbar({ toggleTheme, currentTheme }) {
-  const router = useRouter();
-  const { clearSession } = useAuthSession();
   const [loggingOut, setLoggingOut] = useState(false);
 
   /* ----------------------------------------------------
@@ -25,14 +21,9 @@ export default function Topbar({ toggleTheme, currentTheme }) {
       // خطا لاگ می‌شود اما مانع خروج کاربر نمی‌شود
       console.warn("Logout request failed:", err?.message);
     } finally {
-      clearSession();
-      router.replace("/search");
+      window.location.replace("/search");
     }
-  }, [
-    loggingOut,
-    router,
-    clearSession,
-  ]);
+  }, [loggingOut]);
 
   return (
     <div className="bg-[var(--bg)] border-b border-[var(--border)] sticky top-0 z-40 shadow-[3px_3px_6px_var(--shadow-dark),-3px_-3px_6px_var(--shadow-light)] transition">
