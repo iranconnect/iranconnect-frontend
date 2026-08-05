@@ -27,6 +27,12 @@ export function AuthSessionProvider({ children }) {
     setStatus("unauthenticated");
   }, []);
 
+  const clearSession = useCallback(() => {
+    setUser(null);
+    setRole("guest");
+    setStatus("unauthenticated");
+  }, []);
+
   const refresh = useCallback(async () => {
     /*
      * All callers share the same in-flight request.
@@ -115,12 +121,14 @@ export function AuthSessionProvider({ children }) {
       user,
       role,
       refresh,
+      clearSession,
     }),
     [
       status,
       user,
       role,
       refresh,
+      clearSession,
     ]
   );
 
