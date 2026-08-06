@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import ProfileMenu from './ProfileMenu';
 import apiClient from '../utils/apiClient.js';
+import { logoutAndRedirect } from '../utils/logoutAndRedirect';
 import { useAuthSession } from '../hooks/useAuthSession';
 
 export default function Header() {
@@ -99,11 +100,7 @@ export default function Header() {
 
   /* 🚪 خروج */
   const handleLogout = async () => {
-    try {
-      await apiClient.post('/auth/logout', {}, { withCredentials: true });
-    } catch {}
-
-    window.location.href = '/search';
+    await logoutAndRedirect();
   };
   return (
     <header className="site-header shadow-sm border-b border-[var(--border)] bg-[var(--bg)] transition">

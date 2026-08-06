@@ -1,6 +1,6 @@
 /*frontend/pages/account/index.js*/
 import { useEffect, useState } from "react";
-import apiClient from "../../utils/apiClient";
+import { logoutAndRedirect } from "../../utils/logoutAndRedirect";
 import { useAuthSession } from "../../hooks/useAuthSession";
 import AccountLayout from "../../components/account/AccountLayout";
 
@@ -33,11 +33,7 @@ export default function AccountPage() {
 
 
   async function logout() {
-    try {
-      await apiClient.post("/auth/logout", {}, { withCredentials: true });
-    } catch {}
-  
-    window.location.href = "/search";
+    await logoutAndRedirect();
   }
 
 

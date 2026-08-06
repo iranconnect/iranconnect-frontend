@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { User } from 'lucide-react';
-import apiClient from '../utils/apiClient';
+import { logoutAndRedirect } from '../utils/logoutAndRedirect';
 
 export default function ProfileMenu({ role, email, hasRequests, hasBusiness }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -28,13 +28,7 @@ export default function ProfileMenu({ role, email, hasRequests, hasBusiness }) {
      🚪 Secure logout (server-side invalidation)
   ─────────────────────────────────────────────── */
   const logout = async () => {
-    try {
-      await apiClient.post('/auth/logout', {}, { withCredentials: true });
-    } catch {
-      // non-blocking
-    }
-
-    window.location.replace('/search');
+    await logoutAndRedirect();
   };
 
   return (

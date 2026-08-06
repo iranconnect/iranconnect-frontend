@@ -1,7 +1,7 @@
 // frontend/components/admin/Topbar.jsx
 
 import { useState, useCallback } from "react";
-import apiClient from "../../utils/apiClient";
+import { logoutAndRedirect } from "../../utils/logoutAndRedirect";
 
 export default function Topbar({ toggleTheme, currentTheme }) {
   const [loggingOut, setLoggingOut] = useState(false);
@@ -14,15 +14,7 @@ export default function Topbar({ toggleTheme, currentTheme }) {
 
     setLoggingOut(true);
 
-    try {
-      // Best-effort logout (session invalidation handled server-side)
-      await apiClient.post("/auth/logout", {}, { withCredentials: true });
-    } catch (err) {
-      // خطا لاگ می‌شود اما مانع خروج کاربر نمی‌شود
-      console.warn("Logout request failed:", err?.message);
-    } finally {
-      window.location.replace("/search");
-    }
+    await logoutAndRedirect();
   }, [loggingOut]);
 
   return (
