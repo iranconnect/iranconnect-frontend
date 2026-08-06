@@ -1,7 +1,8 @@
 // pages/admin/dashboard.js
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import { useAuthSession } from "../../hooks/useAuthSession";
 import StatCard from "../../components/admin/StatCard";
 
 export default function AdminDashboard({ toggleTheme, currentTheme }) {
@@ -17,52 +18,16 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   const [loadingBiz, setLoadingBiz] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
-  const [authChecked, setAuthChecked] = useState(false);
+  const { status: authStatus, role } = useAuthSession();
 
-  /* ============================================================
-     🔐 Secure Auth Check (HttpOnly Cookie)
-     + Hardening against race conditions
-  ============================================================ */
-  useEffect(() => {
-    let mounted = true;
-
-    async function checkAccess() {
-      try {
-        const me = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-
-        if (!me.data?.ok) {
-          window.location.href = "/auth/login";
-          return;
-        }
-
-        if (me.data.role !== "admin" && me.data.role !== "superadmin") {
-          window.location.href = "/403";
-          return;
-        }
-
-        if (mounted) {
-          setAuthChecked(true);
-          fetchBusinesses();
-          fetchUsers();
-        }
-      } catch (err) {
-        window.location.href = "/auth/login";
-      }
-    }
-
-    checkAccess();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const authChecked =
+    authStatus === "authenticated" &&
+    ["admin", "superadmin"].includes(role);
 
   /* ============================================================
      📦 Fetch Businesses (Secure + Guarded)
   ============================================================ */
-  async function fetchBusinesses() {
+  const fetchBusinesses = useCallback(async () => {
     setLoadingBiz(true);
   
     try {
@@ -139,12 +104,12 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
     } finally {
       setLoadingBiz(false);
     }
-  }
+  }, []);
 
   /* ============================================================
      👥 Fetch Users (Secure + Guarded)
   ============================================================ */
-  async function fetchUsers() {
+  const fetchUsers = useCallback(async () => {
     setLoadingUsers(true);
   
     try {
@@ -185,7 +150,20 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
     } finally {
       setLoadingUsers(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    if (!authChecked) {
+      return;
+    }
+
+    fetchBusinesses();
+    fetchUsers();
+  }, [
+    authChecked,
+    fetchBusinesses,
+    fetchUsers,
+  ]);
 
   /* ============================================================
      📊 Compute Statistics (Memoized)
@@ -208,9 +186,14 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   ============================================================ */
   if (!authChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking access...
-      </div>
+      <AdminLayout
+        toggleTheme={toggleTheme}
+        currentTheme={currentTheme}
+      >
+        <div className="min-h-[50vh] flex items-center justify-center text-gray-500">
+          Checking access...
+        </div>
+      </AdminLayout>
     );
   }
 

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import { useAuthSession } from "../../hooks/useAuthSession";
 import {
   LineChart,
   Line,
@@ -15,43 +16,12 @@ import {
 export default function AnalyticsPage() {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState("");
-  const [authChecked, setAuthChecked] = useState(false);
 
-  /* ============================================================
-     🔐 مرحله 1: احراز هویت + نقش کاربر (کاملاً امن)
-     ============================================================ */
-  useEffect(() => {
-    let isMounted = true;
+  const { status: authStatus, role } = useAuthSession();
 
-    async function checkAuth() {
-      try {
-        const res = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-
-        // اگر کاربر لاگین نیست
-        if (!res.data?.ok) {
-          if (isMounted) window.location.href = "/auth/login";
-          return;
-        }
-
-        // فقط اجازه به admin و superadmin
-        if (res.data.role !== "admin" && res.data.role !== "superadmin") {
-          if (isMounted) window.location.href = "/403";
-          return;
-        }
-
-        if (isMounted) setAuthChecked(true);
-      } catch (err) {
-        if (isMounted) window.location.href = "/auth/login";
-      }
-    }
-
-    checkAuth();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const authChecked =
+    authStatus === "authenticated" &&
+    ["admin", "superadmin"].includes(role);
 
   /* ============================================================
      🔄 مرحله 2: دریافت آمار — فقط بعد از تأیید احراز هویت
@@ -87,25 +57,31 @@ export default function AnalyticsPage() {
      ============================================================ */
   if (!authChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking authentication...
-      </div>
+      <AdminLayout>
+        <div className="min-h-[50vh] flex items-center justify-center text-gray-500">
+          Checking authentication...
+        </div>
+      </AdminLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-red-600">
-        {error}
-      </div>
+      <AdminLayout>
+        <div className="min-h-[50vh] flex items-center justify-center text-red-600">
+          {error}
+        </div>
+      </AdminLayout>
     );
   }
 
   if (!stats) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Loading analytics...
-      </div>
+      <AdminLayout>
+        <div className="min-h-[50vh] flex items-center justify-center text-gray-500">
+          Loading analytics...
+        </div>
+      </AdminLayout>
     );
   }
 
