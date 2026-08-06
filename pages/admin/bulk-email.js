@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import { useAuthSession } from "../../hooks/useAuthSession";
 import AdminRichTextEditor from "../../components/admin/AdminRichTextEditor";
 import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
@@ -54,11 +55,14 @@ export default function BulkEmailPage() {
   /* ============================================================
      Auth
   ============================================================ */
-  const [authChecked, setAuthChecked] = useState(false);
-  const [adminRole, setAdminRole] = useState("");
+  const { status: authStatus, role } = useAuthSession();
+
+  const authChecked =
+    authStatus === "authenticated" &&
+    ["admin", "superadmin"].includes(role);
 
   const isSuperAdmin =
-    adminRole === "superadmin";
+    role === "superadmin";
 
   /* ============================================================
      Logs
@@ -97,47 +101,6 @@ export default function BulkEmailPage() {
     ],
     defaultLimit: 10,
   });
-
-  /* ============================================================
-     Access check
-  ============================================================ */
-  useEffect(() => {
-    let mounted = true;
-
-    async function checkAccess() {
-      try {
-        const me = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-
-        if (!me.data?.ok) {
-          window.location.href = "/auth/login";
-          return;
-        }
-
-        if (
-          me.data.role !== "admin" &&
-          me.data.role !== "superadmin"
-        ) {
-          window.location.href = "/403";
-          return;
-        }
-
-        if (mounted) {
-          setAdminRole(me.data.role);
-          setAuthChecked(true);
-        }
-      } catch {
-        window.location.href = "/auth/login";
-      }
-    }
-
-    checkAccess();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   /* ============================================================
      Sync URL filters → form state

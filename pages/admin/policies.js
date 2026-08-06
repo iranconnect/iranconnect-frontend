@@ -6,6 +6,7 @@ import {
 } from "react";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import { useAuthSession } from "../../hooks/useAuthSession";
 import AdminRichTextEditor from "../../components/admin/AdminRichTextEditor";
 import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
@@ -90,8 +91,11 @@ export default function PoliciesAdmin() {
   const [error, setError] = useState("");
 
   const [theme, setTheme] = useState("light");
-  const [authChecked, setAuthChecked] = useState(false);
-  const [currentRole, setCurrentRole] = useState(null);
+  const { status: authStatus, role } = useAuthSession();
+
+  const authChecked =
+    authStatus === "authenticated" &&
+    ["admin", "superadmin"].includes(role);
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyList, setHistoryList] = useState([]);
@@ -105,44 +109,7 @@ export default function PoliciesAdmin() {
   const [historyPagination, setHistoryPagination] = useState(null);
 
   const canManagePolicies =
-    currentRole === "superadmin";
-
-  /* ============================================================
-     🔐 Secure Auth Check — admin / superadmin only
-  ============================================================ */
-  useEffect(() => {
-    let mounted = true;
-
-    async function checkAccess() {
-      try {
-        const me = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-
-        if (!me.data?.ok) {
-          window.location.href = "/auth/login";
-          return;
-        }
-
-        if (!["admin", "superadmin"].includes(me.data.role)) {
-          window.location.href = "/403";
-          return;
-        }
-
-        if (mounted) {
-          setCurrentRole(me.data.role);
-          setAuthChecked(true);
-        }
-      } catch (err) {
-        window.location.href = "/auth/login";
-      }
-    }
-
-    checkAccess();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    role === "superadmin";
 
   /* ============================================================
      🎨 Theme sync (safe MutationObserver)
@@ -679,9 +646,11 @@ export default function PoliciesAdmin() {
   ============================================================ */
   if (!authChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking access…
-      </div>
+      <AdminLayout>
+        <div className="min-h-[50vh] flex items-center justify-center text-gray-500">
+          Checking access…
+        </div>
+      </AdminLayout>
     );
   }
   /* ============================================================

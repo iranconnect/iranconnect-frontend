@@ -7,6 +7,7 @@ import {
 
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import { useAuthSession } from "../../hooks/useAuthSession";
 
 import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
@@ -47,8 +48,11 @@ export default function AdminConsentsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [authChecked, setAuthChecked] = useState(false);
-  const [adminRole, setAdminRole] = useState("");
+  const { status: authStatus, role } = useAuthSession();
+
+  const authChecked =
+    authStatus === "authenticated" &&
+    ["admin", "superadmin"].includes(role);
 
   const [draftFilters, setDraftFilters] = useState({
     type: "",
@@ -82,48 +86,7 @@ export default function AdminConsentsPage() {
       : "current";
 
   const isSuperAdmin =
-    adminRole === "superadmin";
-
-  /* ============================================================
-     🔐 Admin access check
-  ============================================================ */
-  useEffect(() => {
-    let mounted = true;
-
-    async function checkAccess() {
-      try {
-        const res = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-
-        if (!res.data?.ok) {
-          window.location.href = "/auth/login";
-          return;
-        }
-
-        if (
-          res.data.role !== "admin" &&
-          res.data.role !== "superadmin"
-        ) {
-          window.location.href = "/403";
-          return;
-        }
-
-        if (mounted) {
-          setAdminRole(res.data.role);
-          setAuthChecked(true);
-        }
-      } catch {
-        window.location.href = "/auth/login";
-      }
-    }
-
-    checkAccess();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    role === "superadmin";
 
   /* ============================================================
      🔄 Sync URL filters → form state
@@ -408,9 +371,11 @@ export default function AdminConsentsPage() {
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking access...
-      </div>
+      <AdminLayout>
+        <div className="min-h-[50vh] flex items-center justify-center text-gray-500">
+          Checking access...
+        </div>
+      </AdminLayout>
     );
   }
 
