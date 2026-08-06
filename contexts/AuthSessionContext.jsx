@@ -51,8 +51,6 @@ export function AuthSessionProvider({ children }) {
            * interceptor redirect by itself.
            */
           skipAuthRedirect: true,
-
-          validateStatus: (statusCode) => statusCode < 500,
         });
 
         if (res.status === 200 && res.data?.ok) {

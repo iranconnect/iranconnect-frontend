@@ -141,16 +141,7 @@ apiClient.interceptors.response.use(
         </a>
       `;
 
-      try {
-        sessionStorage.setItem(
-          "iran_auto_logout_msg",
-          htmlMsg
-        );
-      } catch {
-        // Redirect must still continue.
-      }
-
-      forceRedirect(null, "security");
+      forceRedirect(htmlMsg, "security");
 
       return Promise.reject(err);
     }

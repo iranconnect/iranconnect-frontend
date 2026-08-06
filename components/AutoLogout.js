@@ -8,13 +8,12 @@ import { useAuthSession } from "../hooks/useAuthSession";
 
 
 const INACTIVITY_LIMIT = 2 * 60 * 1000; // 2 minutes
-const LOGOUT_COUNTDOWN = 30 * 1000; // 30 seconds
 
 export default function AutoLogout() {
   const [visible, setVisible] = useState(false);
 
   const inactivityTimer = useRef(null);
-  const logoutTimer = useRef(null);
+  const logoutStartedRef = useRef(false);
 
   const router = useRouter();
   const { isSecurity, isInactive } = useSessionReason();
@@ -44,39 +43,34 @@ export default function AutoLogout() {
 
     inactivityTimer.current = setTimeout(() => {
       setVisible(true);
-      startLogoutCountdown();
     }, INACTIVITY_LIMIT);
-  }
-
-  /* ----------------------------------------------------
-     ⏳ Start auto logout countdown
-  ---------------------------------------------------- */
-  function startLogoutCountdown() {
-    if (logoutTimer.current) {
-      clearTimeout(logoutTimer.current);
-    }
-
-    logoutTimer.current = setTimeout(() => {
-      handleLogout();
-    }, LOGOUT_COUNTDOWN);
   }
 
   /* ----------------------------------------------------
      🚪 Perform logout
   ---------------------------------------------------- */
   async function handleLogout() {
+    if (logoutStartedRef.current) return;
+
+    logoutStartedRef.current = true;
+    cleanup();
+
     try {
       await apiClient.post(
         "/auth/logout",
         {},
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          skipAuthRedirect: true,
+        }
       );
-    } catch {}
+    } catch {
+      // Logout navigation must continue.
+    }
 
-    cleanup();
-    setTimeout(() => {
-      window.location.href = "/auth/login?reason=inactive";
-    }, 0);
+    window.location.replace(
+      "/auth/login?reason=inactive"
+    );
   }
 
   /* ----------------------------------------------------
@@ -86,9 +80,6 @@ export default function AutoLogout() {
     setVisible(false);
     if (inactivityTimer.current)
       clearTimeout(inactivityTimer.current);
-    if (logoutTimer.current)
-      clearTimeout(logoutTimer.current);
-
     removeListeners();
   }
 
@@ -145,12 +136,8 @@ export default function AutoLogout() {
       onStay={() => {
         setVisible(false);
       
-        // ✅ CRITICAL FIX: cancel logout countdown
-        if (logoutTimer.current) {
-          clearTimeout(logoutTimer.current);
-          logoutTimer.current = null;
-        }
-      
+        logoutStartedRef.current = false;
+
         // 🔁 restart inactivity from zero
         resetInactivityTimer();
       }}
