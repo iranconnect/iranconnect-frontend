@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import { useAuthSession } from "../../hooks/useAuthSession";
 import RequestDetailsModal from "../../components/admin/RequestDetailsModal";
 
 import Pagination from "../../components/ui/Pagination";
@@ -67,7 +68,10 @@ export default function AdminBusinessRequestsPage() {
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState("");
 
-  const [authChecked, setAuthChecked] = useState(false);
+  const { status: authStatus, role } = useAuthSession();
+  const authChecked =
+    authStatus === "authenticated" &&
+    ["admin", "superadmin"].includes(role);
 
   const {
     isReady,
@@ -81,46 +85,6 @@ export default function AdminBusinessRequestsPage() {
     filterKeys: ["q", "type", "status"],
     defaultLimit: 20,
   });
-
-  /* ============================================================
-     🔐 Secure Auth Check
-  ============================================================ */
-  useEffect(() => {
-    let mounted = true;
-
-    async function checkAccess() {
-      try {
-        const me = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-
-        if (!me.data?.ok) {
-          window.location.href = "/auth/login";
-          return;
-        }
-
-        if (
-          me.data.role !== "admin" &&
-          me.data.role !== "superadmin"
-        ) {
-          window.location.href = "/403";
-          return;
-        }
-
-        if (mounted) {
-          setAuthChecked(true);
-        }
-      } catch {
-        window.location.href = "/auth/login";
-      }
-    }
-
-    checkAccess();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   /* ============================================================
      Sync URL filters -> UI inputs
@@ -292,9 +256,11 @@ export default function AdminBusinessRequestsPage() {
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking access…
-      </div>
+      <AdminLayout>
+        <div className="min-h-[50vh] flex items-center justify-center text-gray-500">
+          Checking access…
+        </div>
+      </AdminLayout>
     );
   }
 

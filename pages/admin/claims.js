@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import { useAuthSession } from "../../hooks/useAuthSession";
 import ClaimDetailsModal from "../../components/admin/ClaimDetailsModal";
 
 import Pagination from "../../components/ui/Pagination";
@@ -36,8 +37,10 @@ export default function AdminClaimsPage() {
   const [selectedClaim, setSelectedClaim] =
     useState(null);
 
-  const [authChecked, setAuthChecked] =
-    useState(false);
+  const { status: authStatus, role } = useAuthSession();
+  const authChecked =
+    authStatus === "authenticated" &&
+    ["admin", "superadmin"].includes(role);
 
   const [draftFilters, setDraftFilters] = useState({
     status: "all",
@@ -56,46 +59,6 @@ export default function AdminClaimsPage() {
     filterKeys: ["status", "q"],
     defaultLimit: 10,
   });
-
-  /* ==========================================================
-     🔐 Auth check
-  ========================================================== */
-  useEffect(() => {
-    let mounted = true;
-
-    async function checkAccess() {
-      try {
-        const me = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-
-        if (!me.data?.ok) {
-          window.location.href = "/auth/login";
-          return;
-        }
-
-        if (
-          me.data.role !== "admin" &&
-          me.data.role !== "superadmin"
-        ) {
-          window.location.href = "/403";
-          return;
-        }
-
-        if (mounted) {
-          setAuthChecked(true);
-        }
-      } catch {
-        window.location.href = "/auth/login";
-      }
-    }
-
-    checkAccess();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   /* ==========================================================
      Sync URL filters -> form state
@@ -306,9 +269,11 @@ export default function AdminClaimsPage() {
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking access...
-      </div>
+      <AdminLayout>
+        <div className="min-h-[50vh] flex items-center justify-center text-gray-500">
+          Checking access...
+        </div>
+      </AdminLayout>
     );
   }
 

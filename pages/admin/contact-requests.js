@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
+import { useAuthSession } from "../../hooks/useAuthSession";
 import ContactRequestDetailsModal from "../../components/admin/ContactRequestDetailsModal";
 
 import Pagination from "../../components/ui/Pagination";
@@ -49,8 +50,10 @@ export default function ContactRequestsPage() {
   const [selectedRequest, setSelectedRequest] =
     useState(null);
 
-  const [authChecked, setAuthChecked] =
-    useState(false);
+  const { status: authStatus, role } = useAuthSession();
+  const authChecked =
+    authStatus === "authenticated" &&
+    ["admin", "superadmin"].includes(role);
 
   const [draftFilters, setDraftFilters] = useState({
     name: "",
@@ -78,46 +81,6 @@ export default function ContactRequestsPage() {
     ],
     defaultLimit: 10,
   });
-
-  /* ============================================================
-     🔐 Admin access check
-  ============================================================ */
-  useEffect(() => {
-    let mounted = true;
-
-    async function checkAccess() {
-      try {
-        const me = await apiClient.get("/auth/me", {
-          withCredentials: true,
-        });
-
-        if (!me.data?.ok) {
-          window.location.href = "/auth/login";
-          return;
-        }
-
-        if (
-          me.data.role !== "admin" &&
-          me.data.role !== "superadmin"
-        ) {
-          window.location.href = "/403";
-          return;
-        }
-
-        if (mounted) {
-          setAuthChecked(true);
-        }
-      } catch {
-        window.location.href = "/auth/login";
-      }
-    }
-
-    checkAccess();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   /* ============================================================
      Sync URL filters -> form state
@@ -304,9 +267,11 @@ export default function ContactRequestsPage() {
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking access...
-      </div>
+      <AdminLayout>
+        <div className="min-h-[50vh] flex items-center justify-center text-gray-500">
+          Checking access...
+        </div>
+      </AdminLayout>
     );
   }
 
