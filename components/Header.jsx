@@ -34,7 +34,7 @@ export default function Header() {
           "/users/me/ownership",
           {
             withCredentials: true,
-            validateStatus: (statusCode) => statusCode < 500,
+            requireAuth: true,
           }
         );
 

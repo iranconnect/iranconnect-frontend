@@ -8,6 +8,7 @@ import Script from "next/script";
 import { Analytics } from "@vercel/analytics/react";
 import GA4 from "../components/Analytics/GA4";
 import { AuthSessionProvider } from "../contexts/AuthSessionContext";
+import apiClient from "../utils/apiClient";
 
 import CookieConsent from "../components/CookieConsent";
 import AutoLogout from "../components/AutoLogout";
