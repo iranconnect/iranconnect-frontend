@@ -132,6 +132,7 @@ export default function ClaimBusinessWidget({ businessId }) {
         formData,
         {
           withCredentials: true,
+          requireAuth: true,
           headers: { "Content-Type": "multipart/form-data" },
         }
       );

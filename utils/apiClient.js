@@ -109,7 +109,10 @@ apiClient.interceptors.response.use(
       status === 440 &&
       data?.reason === "logged_in_elsewhere" &&
       !handlingConcurrentLogout &&
-      !AUTH_PAGES.includes(currentPath)
+      (
+        !AUTH_PAGES.includes(currentPath) ||
+        err.config?.requireAuth === true
+      )
     ) {
       const htmlMsg = `
         <div style="

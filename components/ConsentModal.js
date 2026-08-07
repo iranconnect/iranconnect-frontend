@@ -67,7 +67,10 @@ export default function ConsentModal({ userId, lang = "en", onClose }) {
       await apiClient.post(
         "/auth/agree-terms",
         {},
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          requireAuth: true,
+        }
       );
   
       // ✅ بعد از صدور JWT نهایی
@@ -78,14 +81,20 @@ export default function ConsentModal({ userId, lang = "en", onClose }) {
       const status = err.response?.status;
       const msg = err.response?.data?.error || "";
   
+      if (status === 403) {
+        alert(
+          err.response?.data?.error ||
+            "You do not have permission to complete this action."
+        );
+        return;
+      }
+
       if (
         status === 401 ||
-        status === 403 ||
-        status === 440 ||
         msg.toLowerCase().includes("expired")
       ) {
         alert("⚠️ Session expired. Please log in again.");
-        window.location.href = "/auth/login";
+        window.location.replace("/auth/login");
         return;
       }
   

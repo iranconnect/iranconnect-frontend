@@ -131,10 +131,12 @@ export default function Sidebar({ role }) {
       const status = err.response?.status;
     
       /*
-       * Session/authentication failure.
+       * Authentication/session failures are handled centrally
+       * by apiClient. Do not redirect here, otherwise a security
+       * redirect such as ?reason=security could be overwritten.
        */
       if (status === 401 || status === 440) {
-        router.replace("/auth/login");
+        setUnblockedCount(0);
         return;
       }
     

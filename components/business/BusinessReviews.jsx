@@ -313,6 +313,9 @@ export default function BusinessReviews({
         {
           rating,
           comment: comment.trim() || null,
+        },
+        {
+          requireAuth: true,
         }
       );
 
@@ -382,6 +385,9 @@ export default function BusinessReviews({
         "/auth/review-display-name",
         {
           review_display_name: normalizedName,
+        },
+        {
+          requireAuth: true,
         }
       );
 
