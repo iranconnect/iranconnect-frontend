@@ -92,7 +92,13 @@ export default function SuspiciousIPDetailsModal({
       );
 
       if (err.response?.status === 403) {
-        window.location.href = "/403";
+        setError(
+          err.response?.data?.error ||
+            "You do not have permission to view these IP details."
+        );
+
+        setIncidents([]);
+        setPagination(DEFAULT_PAGINATION);
         return;
       }
 
@@ -171,7 +177,10 @@ export default function SuspiciousIPDetailsModal({
       );
 
       if (err.response?.status === 403) {
-        window.location.href = "/403";
+        alert(
+          err.response?.data?.error ||
+            "You do not have permission to export these IP details."
+        );
         return;
       }
 
@@ -220,7 +229,10 @@ export default function SuspiciousIPDetailsModal({
       console.error("❌ Action failed:", err);
 
       if (err.response?.status === 403) {
-        window.location.href = "/403";
+        alert(
+          err.response?.data?.error ||
+            "You do not have permission to perform this action."
+        );
         return;
       }
 

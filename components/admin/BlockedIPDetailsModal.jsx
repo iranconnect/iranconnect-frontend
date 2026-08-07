@@ -45,7 +45,10 @@ export default function BlockedIPDetailsModal({
       );
 
       if (err.response?.status === 403) {
-        window.location.href = "/403";
+        setError(
+          err.response?.data?.error ||
+            "You do not have permission to view these blocked IP details."
+        );
         return;
       }
 
@@ -90,7 +93,10 @@ export default function BlockedIPDetailsModal({
       console.error("❌ Unblock error:", err);
 
       if (err.response?.status === 403) {
-        window.location.href = "/403";
+        alert(
+          err.response?.data?.error ||
+            "You do not have permission to unblock this IP."
+        );
         return;
       }
 
