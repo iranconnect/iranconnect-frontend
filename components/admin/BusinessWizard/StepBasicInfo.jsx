@@ -75,9 +75,6 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
   const isUserUpdate = mode === "user-update";
   const isUserNew = mode === "user-new";
   
-  const useWizardCatalogEndpoints =
-    !isAdminEdit;
-
   const stepCopy = isAdminEdit
     ? {
         title: "Edit Business",
@@ -101,9 +98,8 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
      Load categories (no pagination)
   ───────────────────────────── */
   useEffect(() => {
-    const endpoint = useWizardCatalogEndpoints
-      ? "/businesses/onboarding/categories"
-      : "/admin/categories/all";
+    const endpoint =
+      "/businesses/onboarding/categories";
   
     apiClient
       .get(endpoint)
@@ -118,7 +114,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
       .catch(() => {
         setCategories([]);
       });
-  }, [useWizardCatalogEndpoints]);
+  }, []);
 
   /* ─────────────────────────────
      Load subcategories by category
@@ -131,9 +127,8 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
   
     setLoadingSubs(true);
   
-    const endpoint = useWizardCatalogEndpoints
-      ? "/businesses/onboarding/subcategories"
-      : "/admin/subcategories";
+    const endpoint =
+      "/businesses/onboarding/subcategories";
   
     apiClient
       .get(endpoint, {
@@ -152,7 +147,6 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
       });
   }, [
     categoryId,
-    useWizardCatalogEndpoints,
   ]);
 
   /* ─────────────────────────────

@@ -95,9 +95,6 @@ export default function StepPreviewSubmit({
   const isUserUpdate = mode === "user-update";
   const isUserNew = mode === "user-new";
 
-  const isUserCatalogMode =
-    isUserUpdate || isUserNew;
-
   const normalizedChangeSource =
     String(data.change_source_type || "").trim();
 
@@ -208,9 +205,7 @@ export default function StepPreviewSubmit({
         if (data.category_id) {
   
           const categoryRes = await apiClient.get(
-            isUserCatalogMode
-              ? "/businesses/onboarding/categories"
-              : "/admin/categories/all"
+            "/businesses/onboarding/categories"
           );
   
           const categories =
@@ -236,9 +231,7 @@ export default function StepPreviewSubmit({
   
           const subRes =
             await apiClient.get(
-              isUserCatalogMode
-                ? "/businesses/onboarding/subcategories"
-                : "/admin/subcategories",
+              "/businesses/onboarding/subcategories",
               {
                 params: {
                   category_id:
@@ -268,9 +261,7 @@ export default function StepPreviewSubmit({
   
           const serviceRes =
             await apiClient.get(
-              isUserCatalogMode
-                ? "/businesses/services"
-                : "/admin/services",
+              "/businesses/services",
               {
                 params: {
                   subcategory_ids:

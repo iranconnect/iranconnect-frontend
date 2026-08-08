@@ -59,9 +59,6 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   const isUserUpdate = mode === "user-update";
   const isUserNew = mode === "user-new";
 
-  const isUserCatalogMode =
-    isUserUpdate || isUserNew;
-
   const stepCopy = isAdminEdit
     ? {
         title: "Edit Business",
