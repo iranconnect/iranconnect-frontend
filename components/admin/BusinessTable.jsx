@@ -29,6 +29,7 @@ export default function BusinessTable({ items = [] }) {
                     src={b.logo_url || "/logo.png"}
                     width={32}
                     height={32}
+                    unoptimized
                     className="rounded object-cover"
                     alt={b.name || "Business logo"}
                   />

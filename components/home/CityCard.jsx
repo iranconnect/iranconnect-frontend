@@ -83,6 +83,7 @@ export default function CityCard({
               src={image}
               alt={imageAlt}
               fill
+              unoptimized
               sizes="160px"
               className="
                 object-contain
