@@ -8,7 +8,7 @@ import apiClient from "../../utils/apiClient";
 
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import ConsentModal from "../../components/ConsentModal";
+import ConsentReviewModal from "../../components/ConsentReviewModal";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -22,7 +22,6 @@ export default function Login() {
   const [lang, setLang] = useState("en");
 
   const [showConsent, setShowConsent] = useState(false);
-  const [userId, setUserId] = useState(null);
 
   const [verificationRequiredEmail, setVerificationRequiredEmail] =
   useState("");
@@ -188,7 +187,6 @@ export default function Login() {
       ) {
         setMsg("");
 
-        setUserId(res.data.user_id);
 
         captchaRef.current?.reset();
 
@@ -243,7 +241,6 @@ export default function Login() {
 
       /* 🚫 CONSENT REQUIRED */
       if (data.require_terms_agreement) {
-        setUserId(data.user_id);
 
         setShowConsent(true);
 
@@ -483,15 +480,82 @@ export default function Login() {
       <Footer />
 
       {showConsent && (
-        <ConsentModal
-          userId={userId}
-          lang={lang}
-          onClose={(accepted) => {
+        <ConsentReviewModal
+          initialLanguage={lang}
+          onClose={() => {
             setShowConsent(false);
-          
-            if (accepted) {
+          }}
+          onConfirmed={async (presentation) => {
+            try {
+              await apiClient.post(
+                "/auth/agree-terms",
+                {
+                  consent_presentation_token:
+                    presentation.presentationToken,
+                },
+                {
+                  withCredentials: true,
+                  requireAuth: true,
+                }
+              );
+
+              setShowConsent(false);
+
               window.location.href =
                 getSafePostLoginRedirect();
+            } catch (err) {
+              const status =
+                err.response?.status;
+
+              const code =
+                err.response?.data?.code;
+
+              const message =
+                err.response?.data?.error ||
+                "Unable to save policy acceptance.";
+
+              if (
+                status === 409 &&
+                code ===
+                  "POLICY_PRESENTATION_STALE"
+              ) {
+                setMsg(
+                  "The policies changed while you were reviewing them. Please review the current versions again."
+                );
+
+                setShowConsent(false);
+
+                setTimeout(() => {
+                  setShowConsent(true);
+                }, 0);
+
+                return;
+              }
+
+              if (
+                status === 400 &&
+                code ===
+                  "INVALID_CONSENT_PRESENTATION"
+              ) {
+                setMsg(
+                  "Your policy review expired. Please review the policies again."
+                );
+
+                setShowConsent(false);
+
+                setTimeout(() => {
+                  setShowConsent(true);
+                }, 0);
+
+                return;
+              }
+
+              console.error(
+                "Agree terms error:",
+                err
+              );
+
+              setMsg(message);
             }
           }}
         />
