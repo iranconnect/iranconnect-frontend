@@ -709,7 +709,7 @@ export default function BootstrapSetup() {
       setMode("completed");
 
       window.location.replace(
-        "/admin"
+        "/admin/dashboard"
       );
     } catch (requestError) {
       console.error(
