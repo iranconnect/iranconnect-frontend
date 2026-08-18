@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import apiClient from "../../utils/apiClient";
+import { Eye, EyeOff } from "lucide-react";
 
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
@@ -81,6 +82,21 @@ export default function BootstrapSetup() {
     claimPasswordConfirm,
     setClaimPasswordConfirm,
   ] = useState("");
+
+  const [
+    showClaimPassword,
+    setShowClaimPassword,
+  ] = useState(false);
+
+  const [
+    showClaimPasswordConfirm,
+    setShowClaimPasswordConfirm,
+  ] = useState(false);
+
+  const [
+    showResumePassword,
+    setShowResumePassword,
+  ] = useState(false);
 
   const [resumeEmail, setResumeEmail] =
     useState("");
@@ -826,15 +842,24 @@ export default function BootstrapSetup() {
         flex-col
       "
       style={{
-        background:
-          "var(--bg)",
-        color:
-          "var(--text)",
+        background: "#ffffff",
       }}
     >
       <Header />
 
-      <main className="flex-1 px-4 py-8 md:py-10">
+      <main
+        className="flex-1 px-4 py-8 md:py-10"
+        style={{
+          background: "#ffffff",
+          color: "#0A1D37",
+          "--bg": "#ffffff",
+          "--card-bg": "#ffffff",
+          "--text": "#0A1D37",
+          "--border": "#d9e2ec",
+          "--shadow-dark": "rgba(10, 29, 55, 0.12)",
+          "--shadow-light": "rgba(255, 255, 255, 0.95)",
+        }}
+      >
         <div className="mx-auto w-full max-w-5xl">
           <div className="mb-8 text-center">
             <p className="text-sm font-medium text-turquoise">
@@ -921,67 +946,135 @@ export default function BootstrapSetup() {
                 onSubmit={handleClaim}
                 className="mt-6 space-y-4"
               >
-                <input
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  placeholder="New password"
-                  value={claimPassword}
-                  onChange={(event) =>
-                    setClaimPassword(
-                      event.target.value
-                    )
-                  }
-                  className="
-                    w-full
-                    rounded-xl
-                    border
-                    p-3
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-turquoise
-                  "
-                  style={{
-                    borderColor:
-                      "var(--border)",
-                    background:
-                      "var(--bg)",
-                    color:
-                      "var(--text)",
-                  }}
-                />
+                <div className="relative">
+                  <input
+                    type={
+                      showClaimPassword
+                        ? "text"
+                        : "password"
+                    }
+                    required
+                    autoComplete="new-password"
+                    placeholder="New password"
+                    value={claimPassword}
+                    onChange={(event) =>
+                      setClaimPassword(
+                        event.target.value
+                      )
+                    }
+                    className="
+                      w-full
+                      rounded-xl
+                      border
+                      p-3
+                      pr-11
+                      focus:outline-none
+                      focus:ring-2
+                      focus:ring-turquoise
+                    "
+                    style={{
+                      borderColor:
+                        "var(--border)",
+                      background:
+                        "var(--bg)",
+                      color:
+                        "var(--text)",
+                    }}
+                  />
 
-                <input
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  placeholder="Confirm password"
-                  value={
-                    claimPasswordConfirm
-                  }
-                  onChange={(event) =>
-                    setClaimPasswordConfirm(
-                      event.target.value
-                    )
-                  }
-                  className="
-                    w-full
-                    rounded-xl
-                    border
-                    p-3
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-turquoise
-                  "
-                  style={{
-                    borderColor:
-                      "var(--border)",
-                    background:
-                      "var(--bg)",
-                    color:
-                      "var(--text)",
-                  }}
-                />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowClaimPassword(
+                        (current) => !current
+                      )
+                    }
+                    className="
+                      absolute
+                      right-3
+                      top-1/2
+                      -translate-y-1/2
+                      text-turquoise
+                    "
+                    aria-label={
+                      showClaimPassword
+                        ? "Hide password"
+                        : "Show password"
+                    }
+                  >
+                    {showClaimPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type={
+                      showClaimPasswordConfirm
+                        ? "text"
+                        : "password"
+                    }
+                    required
+                    autoComplete="new-password"
+                    placeholder="Confirm password"
+                    value={
+                      claimPasswordConfirm
+                    }
+                    onChange={(event) =>
+                      setClaimPasswordConfirm(
+                        event.target.value
+                      )
+                    }
+                    className="
+                      w-full
+                      rounded-xl
+                      border
+                      p-3
+                      pr-11
+                      focus:outline-none
+                      focus:ring-2
+                      focus:ring-turquoise
+                    "
+                    style={{
+                      borderColor:
+                        "var(--border)",
+                      background:
+                        "var(--bg)",
+                      color:
+                        "var(--text)",
+                    }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowClaimPasswordConfirm(
+                        (current) => !current
+                      )
+                    }
+                    className="
+                      absolute
+                      right-3
+                      top-1/2
+                      -translate-y-1/2
+                      text-turquoise
+                    "
+                    aria-label={
+                      showClaimPasswordConfirm
+                        ? "Hide password"
+                        : "Show password"
+                    }
+                  >
+                    {showClaimPasswordConfirm ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
 
                 <button
                   type="submit"
@@ -1080,35 +1173,69 @@ export default function BootstrapSetup() {
                   }}
                 />
 
-                <input
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                  placeholder="Password"
-                  value={resumePassword}
-                  onChange={(event) =>
-                    setResumePassword(
-                      event.target.value
-                    )
-                  }
-                  className="
-                    w-full
-                    rounded-xl
-                    border
-                    p-3
-                    focus:outline-none
-                    focus:ring-2
-                    focus:ring-turquoise
-                  "
-                  style={{
-                    borderColor:
-                      "var(--border)",
-                    background:
-                      "var(--bg)",
-                    color:
-                      "var(--text)",
-                  }}
-                />
+                <div className="relative">
+                  <input
+                    type={
+                      showResumePassword
+                        ? "text"
+                        : "password"
+                    }
+                    required
+                    autoComplete="current-password"
+                    placeholder="Password"
+                    value={resumePassword}
+                    onChange={(event) =>
+                      setResumePassword(
+                        event.target.value
+                      )
+                    }
+                    className="
+                      w-full
+                      rounded-xl
+                      border
+                      p-3
+                      pr-11
+                      focus:outline-none
+                      focus:ring-2
+                      focus:ring-turquoise
+                    "
+                    style={{
+                      borderColor:
+                        "var(--border)",
+                      background:
+                        "var(--bg)",
+                      color:
+                        "var(--text)",
+                    }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowResumePassword(
+                        (current) => !current
+                      )
+                    }
+                    className="
+                      absolute
+                      right-3
+                      top-1/2
+                      -translate-y-1/2
+                      text-turquoise
+                    "
+                    aria-label={
+                      showResumePassword
+                        ? "Hide password"
+                        : "Show password"
+                    }
+                  >
+                    {showResumePassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
 
                 <button
                   type="submit"

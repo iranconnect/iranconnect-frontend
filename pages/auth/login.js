@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import ReCAPTCHA from "react-google-recaptcha";
+import { Eye, EyeOff } from "lucide-react";
 
 import apiClient from "../../utils/apiClient";
 
@@ -13,6 +14,8 @@ import ConsentReviewModal from "../../components/ConsentReviewModal";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] =
+    useState(false);
 
   const [msg, setMsg] = useState("");
   const [securityMsg, setSecurityMsg] = useState("");
@@ -339,25 +342,59 @@ export default function Login() {
               "
             />
 
-            <input
-              type="password"
-              required
-              placeholder="Password"
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-              className="
-                w-full
-                p-3
-                rounded-lg
-                border
-                bg-[#f5f7fa]
-                text-gray-900
-                focus:ring-2
-                focus:ring-turquoise
-              "
-            />
+            <div className="relative">
+              <input
+                type={
+                  showPassword
+                    ? "text"
+                    : "password"
+                }
+                required
+                placeholder="Password"
+                value={password}
+                onChange={(e) =>
+                  setPassword(e.target.value)
+                }
+                className="
+                  w-full
+                  p-3
+                  pr-11
+                  rounded-lg
+                  border
+                  bg-[#f5f7fa]
+                  text-gray-900
+                  focus:ring-2
+                  focus:ring-turquoise
+                "
+              />
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowPassword(
+                    (current) => !current
+                  )
+                }
+                className="
+                  absolute
+                  right-3
+                  top-1/2
+                  -translate-y-1/2
+                  text-turquoise
+                "
+                aria-label={
+                  showPassword
+                    ? "Hide password"
+                    : "Show password"
+                }
+              >
+                {showPassword ? (
+                  <EyeOff size={18} />
+                ) : (
+                  <Eye size={18} />
+                )}
+              </button>
+            </div>
 
             {showCaptcha && (
               <div className="flex justify-center my-3">
