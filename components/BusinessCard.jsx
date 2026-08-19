@@ -1,6 +1,102 @@
 // frontend/components/BusinessCard.jsx
 import Link from "next/link";
-import { useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+
+function ClampedText({
+  as: Tag = "p",
+  text,
+  lines = 1,
+  expanded = false,
+  className = "",
+  overflowKey,
+  onOverflowChange,
+}) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (expanded || !text) {
+      return;
+    }
+
+    const element = ref.current;
+
+    if (!element) {
+      return;
+    }
+
+    let frameId;
+
+    const measure = () => {
+      frameId = window.requestAnimationFrame(() => {
+        const hasOverflow =
+          element.scrollHeight >
+            element.clientHeight + 1 ||
+          element.scrollWidth >
+            element.clientWidth + 1;
+
+        onOverflowChange?.(
+          overflowKey,
+          hasOverflow
+        );
+      });
+    };
+
+    measure();
+
+    window.addEventListener(
+      "resize",
+      measure
+    );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        measure
+      );
+
+      if (frameId) {
+        window.cancelAnimationFrame(
+          frameId
+        );
+      }
+    };
+  }, [
+    expanded,
+    lines,
+    onOverflowChange,
+    overflowKey,
+    text,
+  ]);
+
+  if (!text) {
+    return null;
+  }
+
+  const clampStyle = expanded
+    ? undefined
+    : {
+        display: "-webkit-box",
+        WebkitBoxOrient: "vertical",
+        WebkitLineClamp: lines,
+        overflow: "hidden",
+      };
+
+  return (
+    <Tag
+      ref={ref}
+      className={className}
+      style={clampStyle}
+    >
+      {text}
+    </Tag>
+  );
+}
 
 export default function BusinessCard({
   b,
@@ -10,6 +106,65 @@ export default function BusinessCard({
 
   const isSearchVariant =
     variant === "search";
+
+  const [expanded, setExpanded] =
+    useState(false);
+
+  const [
+    overflowFields,
+    setOverflowFields,
+  ] = useState({});
+
+  const handleOverflowChange =
+    useCallback(
+      (key, hasOverflow) => {
+        if (!key) {
+          return;
+        }
+
+        setOverflowFields(
+          (current) => {
+            if (
+              current[key] ===
+              hasOverflow
+            ) {
+              return current;
+            }
+
+            return {
+              ...current,
+              [key]: hasOverflow,
+            };
+          }
+        );
+      },
+      []
+    );
+
+  useEffect(() => {
+    setExpanded(false);
+    setOverflowFields({});
+  }, [b?.id]);
+
+  useEffect(() => {
+    if (!expanded) {
+      return undefined;
+    }
+
+    const timeoutId =
+      window.setTimeout(() => {
+        setExpanded(false);
+      }, 60000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [expanded]);
+
+  const hasOverflow =
+    Object.values(
+      overflowFields
+    ).some(Boolean);
 
   const safeText = (
     value,
@@ -47,7 +202,7 @@ export default function BusinessCard({
 
   const shortDescription = safeText(
     b?.short_description,
-    160
+    2000
   );
 
   const serviceModeLabels = {
@@ -90,236 +245,385 @@ export default function BusinessCard({
   }
 
   if (isSearchVariant) {
+    const profileHref =
+      `/business/${b.slug || b.id}`;
+
+    const reviewLabel =
+      reviewCount === 0
+        ? "No reviews yet"
+        : reviewCount === 1
+        ? "1 review"
+        : `${reviewCount} reviews`;
+
     return (
-      <Link
-        href={`/business/${b.slug || b.id}`}
-        className="block group w-full"
-        prefetch={false}
+      <article
+        className={`
+          admin-card
+          group
+          relative
+          w-full
+          rounded-3xl
+          border
+          border-slate-200
+          dark:border-cyan-900/40
+          group-hover:border-cyan-500/30
+          p-4
+          sm:p-5
+          md:p-6
+          transition-all
+          duration-300
+          hover:-translate-y-1
+          hover:shadow-2xl
+          ${
+            expanded
+              ? "min-h-[280px] md:min-h-[205px]"
+              : "h-[280px] md:h-[205px] overflow-hidden"
+          }
+        `}
       >
-        <article
+        <div
           className="
-            admin-card
-            relative
-            w-full
-            rounded-3xl
-            border
-            border-slate-200
-            dark:border-cyan-900/40
-            group-hover:border-cyan-500/30
-            p-4
-            sm:p-5
-            md:p-6
-            transition-all
-            duration-300
-            hover:-translate-y-1
-            hover:shadow-2xl
+            flex
+            h-full
+            flex-col
+            gap-4
+            md:flex-row
+            md:items-stretch
+            md:gap-6
           "
         >
           <div
             className="
               flex
-              flex-col
+              items-start
               gap-4
-              md:flex-row
-              md:items-stretch
-              md:gap-6
+              md:block
+              md:shrink-0
             "
           >
-            <div
+            <img
+              src={imageSrc}
+              alt={`${safeText(b?.name)} logo`}
+              loading="lazy"
+              decoding="async"
+              onError={(event) => {
+                if (imgErrored.current) {
+                  return;
+                }
+
+                imgErrored.current = true;
+                event.currentTarget.src =
+                  "/logo-light.png";
+              }}
               className="
-                flex
-                items-start
-                gap-4
-                md:block
-                md:shrink-0
+                w-20
+                h-20
+                md:w-28
+                md:h-28
+                rounded-2xl
+                object-cover
+                border
+                border-slate-200
+                dark:border-cyan-800/40
+                bg-white
+                p-1
+                shrink-0
               "
-            >
-              <img
-                src={imageSrc}
-                alt={`${safeText(b?.name)} logo`}
-                loading="lazy"
-                decoding="async"
-                onError={(event) => {
-                  if (imgErrored.current) {
-                    return;
-                  }
-
-                  imgErrored.current = true;
-                  event.currentTarget.src =
-                    "/logo-light.png";
-                }}
-                className="
-                  w-20
-                  h-20
-                  md:w-28
-                  md:h-28
-                  rounded-2xl
-                  object-cover
-                  border
-                  border-slate-200
-                  dark:border-cyan-800/40
-                  bg-white
-                  p-1
-                  shrink-0
-                "
-              />
-
-              <div className="min-w-0 flex-1 md:hidden">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3
-                    className="
-                      min-w-0
-                      text-[var(--text)]
-                      font-bold
-                      text-lg
-                      leading-tight
-                      transition-colors
-                      duration-300
-                      group-hover:text-turquoise
-                    "
-                  >
-                    {safeText(b?.name)}
-                  </h3>
-
-                  {b?.owner_verified === true && (
-                    <span
-                      className="
-                        inline-flex
-                        items-center
-                        rounded-full
-                        bg-emerald-500/10
-                        border
-                        border-emerald-400/20
-                        px-2
-                        py-0.5
-                        text-[11px]
-                        font-semibold
-                        text-emerald-400
-                        whitespace-nowrap
-                      "
-                      title="Verified business owner"
-                    >
-                      ✓ Verified
-                    </span>
-                  )}
-                </div>
-
-                {categoryLabel && (
-                  <p className="mt-2 text-sm text-muted">
-                    {categoryLabel}
-                  </p>
-                )}
-
-                {locationLabel && (
-                  <p className="mt-1 text-sm text-muted">
-                    {locationLabel}
-                  </p>
-                )}
-              </div>
-            </div>
+            />
 
             <div
               className="
                 min-w-0
                 flex-1
-                flex
-                flex-col
-                justify-between
-                gap-4
+                md:hidden
               "
             >
-              <div>
-                <div
+              <div
+                className="
+                  flex
+                  items-start
+                  gap-2
+                "
+              >
+                <Link
+                  href={profileHref}
+                  prefetch={false}
                   className="
-                    hidden
-                    md:flex
-                    md:items-start
-                    md:justify-between
-                    md:gap-5
+                    min-w-0
+                    flex-1
+                    text-[var(--text)]
+                    font-bold
+                    text-lg
+                    leading-tight
+                    transition-colors
+                    duration-300
+                    hover:text-turquoise
                   "
                 >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3
+                  <ClampedText
+                    as="span"
+                    text={safeText(
+                      b?.name,
+                      300
+                    )}
+                    lines={2}
+                    expanded={expanded}
+                    overflowKey="name-mobile"
+                    onOverflowChange={
+                      handleOverflowChange
+                    }
+                  />
+                </Link>
+
+                {b?.owner_verified ===
+                  true && (
+                  <span
+                    className="
+                      inline-flex
+                      shrink-0
+                      items-center
+                      rounded-full
+                      bg-emerald-500/10
+                      border
+                      border-emerald-400/20
+                      px-2
+                      py-0.5
+                      text-[11px]
+                      font-semibold
+                      text-emerald-400
+                      whitespace-nowrap
+                    "
+                    title="Verified business owner"
+                  >
+                    ✓ Verified
+                  </span>
+                )}
+              </div>
+
+              <ClampedText
+                text={categoryLabel}
+                lines={2}
+                expanded={expanded}
+                overflowKey="category-mobile"
+                onOverflowChange={
+                  handleOverflowChange
+                }
+                className="
+                  mt-2
+                  text-sm
+                  text-muted
+                  leading-5
+                "
+              />
+
+              <ClampedText
+                text={locationLabel}
+                lines={1}
+                expanded={expanded}
+                overflowKey="location-mobile"
+                onOverflowChange={
+                  handleOverflowChange
+                }
+                className="
+                  mt-1
+                  text-sm
+                  text-muted
+                  leading-5
+                "
+              />
+            </div>
+          </div>
+
+          <div
+            className="
+              min-w-0
+              flex-1
+              flex
+              flex-col
+              h-full
+            "
+          >
+            <div
+              className={
+                expanded
+                  ? ""
+                  : "min-h-0 overflow-hidden"
+              }
+            >
+              <div
+                className="
+                  hidden
+                  md:flex
+                  md:items-start
+                  md:justify-between
+                  md:gap-5
+                "
+              >
+                <div className="min-w-0 flex-1">
+                  <div
+                    className="
+                      flex
+                      items-start
+                      gap-2
+                    "
+                  >
+                    <Link
+                      href={profileHref}
+                      prefetch={false}
+                      className="
+                        min-w-0
+                        text-[var(--text)]
+                        font-bold
+                        text-xl
+                        leading-tight
+                        transition-colors
+                        duration-300
+                        hover:text-turquoise
+                      "
+                    >
+                      <ClampedText
+                        as="span"
+                        text={safeText(
+                          b?.name,
+                          300
+                        )}
+                        lines={2}
+                        expanded={expanded}
+                        overflowKey="name-desktop"
+                        onOverflowChange={
+                          handleOverflowChange
+                        }
+                      />
+                    </Link>
+
+                    {b?.owner_verified ===
+                      true && (
+                      <span
                         className="
-                          text-[var(--text)]
-                          font-bold
-                          text-xl
-                          leading-tight
-                          transition-colors
-                          duration-300
-                          group-hover:text-turquoise
+                          inline-flex
+                          shrink-0
+                          items-center
+                          rounded-full
+                          bg-emerald-500/10
+                          border
+                          border-emerald-400/20
+                          px-2
+                          py-0.5
+                          text-[11px]
+                          font-semibold
+                          text-emerald-400
+                          whitespace-nowrap
                         "
+                        title="Verified business owner"
                       >
-                        {safeText(b?.name)}
-                      </h3>
-
-                      {b?.owner_verified === true && (
-                        <span
-                          className="
-                            inline-flex
-                            items-center
-                            rounded-full
-                            bg-emerald-500/10
-                            border
-                            border-emerald-400/20
-                            px-2
-                            py-0.5
-                            text-[11px]
-                            font-semibold
-                            text-emerald-400
-                            whitespace-nowrap
-                          "
-                          title="Verified business owner"
-                        >
-                          ✓ Verified
-                        </span>
-                      )}
-                    </div>
-
-                    {categoryLabel && (
-                      <p className="mt-2 text-sm text-muted">
-                        {categoryLabel}
-                      </p>
+                        ✓ Verified
+                      </span>
                     )}
                   </div>
 
-                  {hasApprovedRating && (
-                    <span
-                      className="
-                        inline-flex
-                        shrink-0
-                        items-center
-                        gap-1
-                        rounded-full
-                        border
-                        border-cyan-400/20
-                        bg-cyan-500/10
-                        px-3
-                        py-1
-                        text-sm
-                        font-semibold
-                        text-turquoise
-                      "
-                    >
-                      ⭐ {averageRating.toFixed(1)}
-                    </span>
-                  )}
+                  <ClampedText
+                    text={categoryLabel}
+                    lines={2}
+                    expanded={expanded}
+                    overflowKey="category-desktop"
+                    onOverflowChange={
+                      handleOverflowChange
+                    }
+                    className="
+                      mt-2
+                      text-sm
+                      text-muted
+                      leading-5
+                    "
+                  />
                 </div>
 
-                {shortDescription && (
-                  <p
+                {hasApprovedRating && (
+                  <span
                     className="
-                      mt-3
+                      inline-flex
+                      shrink-0
+                      items-center
+                      gap-1
+                      rounded-full
+                      border
+                      border-cyan-400/20
+                      bg-cyan-500/10
+                      px-3
+                      py-1
                       text-sm
-                      leading-6
-                      text-muted
+                      font-semibold
+                      text-turquoise
                     "
                   >
-                    {shortDescription}
-                  </p>
+                    ⭐{" "}
+                    {averageRating.toFixed(
+                      1
+                    )}
+                  </span>
                 )}
               </div>
+
+              <ClampedText
+                text={shortDescription}
+                lines={2}
+                expanded={expanded}
+                overflowKey="description"
+                onOverflowChange={
+                  handleOverflowChange
+                }
+                className="
+                  mt-3
+                  text-sm
+                  leading-6
+                  text-muted
+                "
+              />
+            </div>
+
+            <div
+              className="
+                mt-auto
+                shrink-0
+                pt-3
+              "
+            >
+              {(hasOverflow ||
+                expanded) && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpanded(
+                      (current) =>
+                        !current
+                    )
+                  }
+                  aria-expanded={
+                    expanded
+                  }
+                  className="
+                    mb-2
+                    inline-flex
+                    items-center
+                    gap-1
+                    rounded-md
+                    text-xs
+                    font-semibold
+                    text-turquoise
+                    transition-colors
+                    duration-200
+                    hover:text-[var(--text)]
+                    focus:outline-none
+                    focus-visible:ring-2
+                    focus-visible:ring-turquoise
+                    focus-visible:ring-offset-2
+                  "
+                >
+                  {expanded
+                    ? "Less info ↑"
+                    : "More info ↓"}
+                </button>
+              )}
 
               <div
                 className="
@@ -333,45 +637,74 @@ export default function BusinessCard({
                 "
               >
                 {locationLabel && (
-                  <span className="hidden md:inline">
-                    📍 {locationLabel}
+                  <span
+                    className="
+                      hidden
+                      md:block
+                      min-w-0
+                    "
+                  >
+                    <ClampedText
+                      as="span"
+                      text={`📍 ${locationLabel}`}
+                      lines={1}
+                      expanded={expanded}
+                      overflowKey="location-desktop"
+                      onOverflowChange={
+                        handleOverflowChange
+                      }
+                      className="min-w-0"
+                    />
                   </span>
                 )}
 
                 {serviceMode && (
-                  <span>
-                    ◉ {serviceMode}
-                  </span>
+                  <ClampedText
+                    as="span"
+                    text={`◉ ${serviceMode}`}
+                    lines={1}
+                    expanded={expanded}
+                    overflowKey="service-mode"
+                    onOverflowChange={
+                      handleOverflowChange
+                    }
+                    className="min-w-0"
+                  />
                 )}
 
-                <span>
+                <span className="shrink-0">
                   {hasApprovedRating && (
                     <span className="md:hidden">
-                      ⭐ {averageRating.toFixed(1)} ·{" "}
+                      ⭐{" "}
+                      {averageRating.toFixed(
+                        1
+                      )}{" "}
+                      ·{" "}
                     </span>
                   )}
 
-                  {reviewCount === 1
-                    ? "1 review"
-                    : `${reviewCount} reviews`}
+                  {reviewLabel}
                 </span>
 
-                <span
+                <Link
+                  href={profileHref}
+                  prefetch={false}
                   className="
                     ml-auto
+                    shrink-0
                     font-semibold
                     text-[var(--text)]
                     transition-colors
-                    group-hover:text-turquoise
+                    hover:text-turquoise
                   "
                 >
                   View profile →
-                </span>
+                </Link>
               </div>
             </div>
           </div>
-        </article>
-      </Link>
+        </div>
+      </article>
     );
   }
 
