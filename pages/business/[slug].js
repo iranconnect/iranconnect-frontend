@@ -355,10 +355,16 @@ export default function BusinessBySlug({
                   description: metaDescription || undefined,
                   address: {
                     "@type": "PostalAddress",
-                    streetAddress: biz.address || undefined,
+                    streetAddress:
+                      isLoggedIn
+                        ? biz.address || undefined
+                        : undefined,
                     addressLocality: biz.city || undefined,
                     addressCountry: biz.country || undefined,
-                    postalCode: biz.postal_code || undefined,
+                    postalCode:
+                      isLoggedIn
+                        ? biz.postal_code || undefined
+                        : undefined,
                   },
                   telephone: biz.phone || undefined,
                   sameAs: [
@@ -477,7 +483,10 @@ export default function BusinessBySlug({
             </RevealOnScroll>
 
             <RevealOnScroll className="empty:hidden">
-              <BusinessLocation biz={biz} />
+              <BusinessLocation
+                biz={biz}
+                isLoggedIn={isLoggedIn}
+              />
             </RevealOnScroll>
 
             <RevealOnScroll className="empty:hidden">

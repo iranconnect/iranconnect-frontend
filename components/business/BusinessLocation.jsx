@@ -1,4 +1,6 @@
 //frontend/components/business/BusinessLocation.jsx
+import { Lock } from "lucide-react";
+
 function normalizeExternalUrl(value) {
   if (!value) return null;
 
@@ -23,7 +25,10 @@ function normalizeExternalUrl(value) {
   }
 }
 
-export default function BusinessLocation({ biz }) {
+export default function BusinessLocation({
+  biz,
+  isLoggedIn,
+}) {
   if (!biz) {
     return null;
   }
@@ -66,8 +71,13 @@ export default function BusinessLocation({ biz }) {
   const fullAddress = addressParts.join(", ");
 
   const hasBusinessLocation =
+    isLoggedIn &&
     shouldShowBusinessLocation &&
     (Boolean(fullAddress) || Boolean(businessMapUrl));
+
+  const hasLockedBusinessLocation =
+    !isLoggedIn &&
+    shouldShowBusinessLocation;
 
   /*
     طبق Policy فعلی، Base Location فقط در سطح شهر ثبت می‌شود.
@@ -92,7 +102,11 @@ export default function BusinessLocation({ biz }) {
     (Boolean(baseLocationMapUrl) ||
       Boolean(baseLocationEmbedUrl));
 
-  if (!hasBusinessLocation && !hasBaseLocation) {
+  if (
+    !hasBusinessLocation &&
+    !hasLockedBusinessLocation &&
+    !hasBaseLocation
+  ) {
     return null;
   }
 
@@ -109,6 +123,39 @@ export default function BusinessLocation({ biz }) {
       </h2>
 
       <div className="space-y-6">
+        {hasLockedBusinessLocation && (
+          <div className="rounded-xl border border-[var(--border)] p-5 text-center">
+            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border)]">
+              <Lock
+                size={19}
+                className="text-turquoise"
+                aria-hidden="true"
+              />
+            </div>
+
+            <h3 className="font-semibold">
+              Business address
+            </h3>
+
+            <p className="mt-2 text-sm text-muted">
+              {biz.city && biz.country
+                ? `${biz.city}, ${biz.country}`
+                : "Exact location available after sign in."}
+            </p>
+
+            <p className="mt-2 text-sm text-muted">
+              Sign in to view the exact address and map.
+            </p>
+
+            <a
+              href={`/auth/login?redirect=/business/${biz.slug}`}
+              className="btn-primary mt-4 inline-flex !w-auto px-6 py-2.5"
+            >
+              Sign in to view exact location
+            </a>
+          </div>
+        )}
+
         {hasBusinessLocation && (
           <div>
             <h3 className="mb-2 text-sm font-semibold">
