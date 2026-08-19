@@ -67,15 +67,17 @@ export default function RevealOnScroll({
       className={`
         ${className}
         transition-[opacity,transform]
-        duration-[720ms]
+        duration-[620ms]
+        md:duration-[720ms]
         ease-[cubic-bezier(0.22,1,0.36,1)]
+        transform-gpu
         motion-reduce:opacity-100
         motion-reduce:translate-y-0
         motion-reduce:transition-none
         ${
           isVisible
             ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-5"
+            : "opacity-0 translate-y-3 md:translate-y-5"
         }
       `}
       style={{
