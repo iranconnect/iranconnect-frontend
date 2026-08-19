@@ -2,17 +2,20 @@
 import SectionWrapper from "./SectionWrapper";
 import SectionTitle from "./SectionTitle";
 import CityCard from "./CityCard";
+import RevealOnScroll from "../ui/RevealOnScroll";
 
 import popularCities from "../../data/popularCities";
 
 export default function PopularCities() {
   return (
     <SectionWrapper>
-      <SectionTitle
-        title="Popular Cities"
-        subtitle="Explore Iranian businesses and professionals in major cities worldwide."
-        center
-      />
+      <RevealOnScroll>
+        <SectionTitle
+          title="Popular Cities"
+          subtitle="Explore Iranian businesses and professionals in major cities worldwide."
+          center
+        />
+      </RevealOnScroll>
 
       <div
         className="
@@ -22,11 +25,16 @@ export default function PopularCities() {
           lg:grid-cols-3
         "
       >
-        {popularCities.map((item) => (
-          <CityCard
+        {popularCities.map((item, index) => (
+          <RevealOnScroll
             key={item.slug}
-            {...item}
-          />
+            delayMs={Math.min(
+              (index % 4) * 45,
+              135
+            )}
+          >
+            <CityCard {...item} />
+          </RevealOnScroll>
         ))}
       </div>
     </SectionWrapper>

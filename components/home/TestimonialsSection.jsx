@@ -1,17 +1,20 @@
 //frontend/components/home/TestimonialsSection.jsx
 import SectionWrapper from "./SectionWrapper";
 import SectionTitle from "./SectionTitle";
+import RevealOnScroll from "../ui/RevealOnScroll";
 
 import testimonials from "../../data/testimonials";
 
 export default function TestimonialsSection() {
   return (
     <SectionWrapper>
-      <SectionTitle
-        title="What Our Community Says"
-        subtitle="Experiences shared by members of the Iranian community."
-        center
-      />
+      <RevealOnScroll>
+        <SectionTitle
+          title="What Our Community Says"
+          subtitle="Experiences shared by members of the Iranian community."
+          center
+        />
+      </RevealOnScroll>
 
       <div
         className="
@@ -21,52 +24,59 @@ export default function TestimonialsSection() {
           lg:grid-cols-3
         "
       >
-        {testimonials.map((item) => (
-          <div
+        {testimonials.map((item, index) => (
+          <RevealOnScroll
             key={item.id}
-            className="
-              admin-card
-              p-6
-              flex
-              flex-col
-              h-full
-            "
+            delayMs={Math.min(
+              (index % 4) * 45,
+              135
+            )}
           >
-            <div className="text-turquoise text-lg mb-4">
-              ★★★★★
-            </div>
-
-            <p
+            <div
               className="
-                text-[var(--text)]
-                leading-relaxed
-                flex-1
-                mb-6
+                admin-card
+                p-6
+                flex
+                flex-col
+                h-full
               "
             >
-              "{item.text}"
-            </p>
-
-            <div>
-              <div
-                className="
-                  font-semibold
-                  text-[var(--text)]
-                "
-              >
-                {item.name}
+              <div className="text-turquoise text-lg mb-4">
+                ★★★★★
               </div>
 
-              <div
+              <p
                 className="
-                  text-sm
-                  text-muted
+                  text-[var(--text)]
+                  leading-relaxed
+                  flex-1
+                  mb-6
                 "
               >
-                {item.city}, {item.country}
+                "{item.text}"
+              </p>
+
+              <div>
+                <div
+                  className="
+                    font-semibold
+                    text-[var(--text)]
+                  "
+                >
+                  {item.name}
+                </div>
+
+                <div
+                  className="
+                    text-sm
+                    text-muted
+                  "
+                >
+                  {item.city}, {item.country}
+                </div>
               </div>
             </div>
-          </div>
+          </RevealOnScroll>
         ))}
       </div>
     </SectionWrapper>

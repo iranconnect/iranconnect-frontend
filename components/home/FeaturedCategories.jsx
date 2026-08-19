@@ -1,6 +1,7 @@
 //frontend/components/home/FeaturedCategories.jsx
 import SectionWrapper from "./SectionWrapper";
 import SectionTitle from "./SectionTitle";
+import RevealOnScroll from "../ui/RevealOnScroll";
 import CategoryCard from "./CategoryCard";
 
 import featuredCategories from "../../data/featuredCategories";
@@ -8,11 +9,13 @@ import featuredCategories from "../../data/featuredCategories";
 export default function FeaturedCategories() {
   return (
     <SectionWrapper>
-      <SectionTitle
-        title="Popular Categories"
-        subtitle="Explore trusted Iranian professionals and local services across multiple categories."
-        center
-      />
+      <RevealOnScroll>
+        <SectionTitle
+          title="Popular Categories"
+          subtitle="Explore trusted Iranian professionals and local services across multiple categories."
+          center
+        />
+      </RevealOnScroll>
 
       <div
         className="
@@ -22,11 +25,16 @@ export default function FeaturedCategories() {
           lg:grid-cols-4
         "
       >
-        {featuredCategories.map((item) => (
-          <CategoryCard
+        {featuredCategories.map((item, index) => (
+          <RevealOnScroll
             key={item.slug}
-            {...item}
-          />
+            delayMs={Math.min(
+              (index % 4) * 45,
+              135
+            )}
+          >
+            <CategoryCard {...item} />
+          </RevealOnScroll>
         ))}
       </div>
     </SectionWrapper>

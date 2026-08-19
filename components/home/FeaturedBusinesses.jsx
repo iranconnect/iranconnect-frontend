@@ -80,11 +80,13 @@ export default function FeaturedBusinesses() {
           [&_p]:md:whitespace-nowrap
         "
       >
-        <SectionTitle
-          title="Featured Businesses"
-          subtitle="Discover trusted Iranian-owned businesses and professionals recommended by the community."
-          center
-        />
+        <RevealOnScroll>
+          <SectionTitle
+            title="Featured Businesses"
+            subtitle="Discover trusted Iranian-owned businesses and professionals recommended by the community."
+            center
+          />
+        </RevealOnScroll>
       </div>
 
       <div
