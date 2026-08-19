@@ -101,11 +101,32 @@ function ClampedText({
 export default function BusinessCard({
   b,
   variant = "default",
+  onProfileNavigate,
 }) {
   const imgErrored = useRef(false);
 
   const isSearchVariant =
     variant === "search";
+
+  function handleProfileNavigate(event) {
+    if (
+      typeof onProfileNavigate !== "function" ||
+      event.defaultPrevented
+    ) {
+      return;
+    }
+
+    if (
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    onProfileNavigate();
+  }
 
   const [expanded, setExpanded] =
     useState(false);
@@ -347,6 +368,7 @@ export default function BusinessCard({
               >
                 <Link
                   href={profileHref}
+                    onClick={handleProfileNavigate}
                   prefetch={false}
                   className="
                     min-w-0
@@ -469,6 +491,7 @@ export default function BusinessCard({
                   >
                     <Link
                       href={profileHref}
+                    onClick={handleProfileNavigate}
                       prefetch={false}
                       className="
                         min-w-0
@@ -688,6 +711,7 @@ export default function BusinessCard({
 
                 <Link
                   href={profileHref}
+                    onClick={handleProfileNavigate}
                   prefetch={false}
                   className="
                     ml-auto

@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import BusinessCard from '../components/BusinessCard';
 import RevealOnScroll from '../components/ui/RevealOnScroll';
 import ScrollToTopButton from '../components/ui/ScrollToTopButton';
+import PageLoadingOverlay from '../components/ui/PageLoadingOverlay';
 import apiClient from '../utils/apiClient.js';
 import { useRouter } from "next/router";
 
@@ -32,8 +33,40 @@ function Home() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [
+    isBusinessNavigating,
+    setIsBusinessNavigating,
+  ] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [theme, setTheme] = useState('light');
+
+  useEffect(() => {
+    function clearBusinessNavigation() {
+      setIsBusinessNavigating(false);
+    }
+
+    router.events.on(
+      "routeChangeComplete",
+      clearBusinessNavigation
+    );
+
+    router.events.on(
+      "routeChangeError",
+      clearBusinessNavigation
+    );
+
+    return () => {
+      router.events.off(
+        "routeChangeComplete",
+        clearBusinessNavigation
+      );
+
+      router.events.off(
+        "routeChangeError",
+        clearBusinessNavigation
+      );
+    };
+  }, [router.events]);
 
     function getUrlValue(key) {
       const value = router.query[key];
@@ -615,6 +648,11 @@ function Home() {
                     <BusinessCard
                       b={b}
                       variant="search"
+                      onProfileNavigate={() =>
+                        setIsBusinessNavigating(
+                          true
+                        )
+                      }
                     />
                   </RevealOnScroll>
                 ))}
@@ -651,6 +689,10 @@ function Home() {
         </div>
       </main>
   
+      <PageLoadingOverlay
+        visible={isBusinessNavigating}
+      />
+
       <ScrollToTopButton />
       <Footer />
     </div>
