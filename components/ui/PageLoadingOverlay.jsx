@@ -22,40 +22,23 @@ export default function PageLoadingOverlay({
         motion-reduce:backdrop-blur-sm
       `}
     >
-      <div
+      <img
+        src="/loading-logo.png"
+        alt=""
+        aria-hidden="true"
+        draggable="false"
         className={`
-          flex
-          h-[104px]
-          w-[104px]
-          sm:h-[116px]
-          sm:w-[116px]
-          items-center
-          justify-center
-          rounded-full
-          border
-          border-white/50
-          bg-white/55
-          shadow-2xl
-          backdrop-blur-md
+          h-[72px]
+          w-[72px]
+          sm:h-[84px]
+          sm:w-[84px]
+          select-none
+          object-contain
+          drop-shadow-[0_8px_18px_rgba(10,29,55,0.18)]
+          animate-[iranconnect-loading-spin_1.35s_linear_infinite]
+          motion-reduce:animate-none
         `}
-      >
-        <img
-          src="/loading-logo.png"
-          alt=""
-          aria-hidden="true"
-          draggable="false"
-          className={`
-            h-[72px]
-            w-[72px]
-            sm:h-[84px]
-            sm:w-[84px]
-            select-none
-            object-contain
-            animate-[iranconnect-loading-spin_1.35s_linear_infinite]
-            motion-reduce:animate-none
-          `}
-        />
-      </div>
+      />
 
       <span className="sr-only">
         Loading business profile
@@ -75,13 +58,6 @@ export default function PageLoadingOverlay({
         html[data-theme="dark"]
           [aria-label="Loading business profile"] {
           background: rgba(10, 29, 55, 0.3);
-        }
-
-        html[data-theme="dark"]
-          [aria-label="Loading business profile"]
-          > div {
-          background: rgba(10, 29, 55, 0.58);
-          border-color: rgba(64, 224, 208, 0.22);
         }
 
         @media (prefers-reduced-motion: reduce) {
