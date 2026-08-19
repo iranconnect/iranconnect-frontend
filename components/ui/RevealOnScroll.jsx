@@ -67,7 +67,7 @@ export default function RevealOnScroll({
       className={`
         ${className}
         transition-[opacity,transform]
-        duration-[560ms]
+        duration-[720ms]
         ease-[cubic-bezier(0.22,1,0.36,1)]
         motion-reduce:opacity-100
         motion-reduce:translate-y-0

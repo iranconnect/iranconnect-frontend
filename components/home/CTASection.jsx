@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import SectionWrapper from "./SectionWrapper";
+import RevealOnScroll from "../ui/RevealOnScroll";
 
 export default function CTASection() {
   return (
     <SectionWrapper>
-      <div
+      <RevealOnScroll>
+        <div
         className="
           admin-card
           overflow-hidden
@@ -160,7 +162,8 @@ export default function CTASection() {
             </Link>
           </div>
         </div>
-      </div>
+        </div>
+      </RevealOnScroll>
     </SectionWrapper>
   );
 }
