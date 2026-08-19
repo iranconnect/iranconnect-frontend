@@ -4,6 +4,7 @@ import {
 } from "react";
 export default function ScrollToTopButton({
   showAfter = 360,
+  avoidMobileStickyCTA = false,
 }) {
   const [scrolledEnough, setScrolledEnough] =
     useState(false);
@@ -88,13 +89,16 @@ export default function ScrollToTopButton({
         onClick={handleClick}
         aria-label="Scroll to top"
         title="Scroll to top"
+        data-avoid-mobile-cta={
+          avoidMobileStickyCTA
+            ? "true"
+            : "false"
+        }
         className={`
           scroll-to-top-button
           fixed
           right-4
-          bottom-6
           md:right-6
-          md:bottom-6
           z-50
           flex
           h-12
@@ -149,6 +153,7 @@ export default function ScrollToTopButton({
 
       <style jsx global>{`
         .scroll-to-top-button {
+          bottom: 1.5rem;
           color: #40e0d0;
           background: rgba(10, 29, 55, 0.88);
           border-color: rgba(64, 224, 208, 0.3);
@@ -162,6 +167,15 @@ export default function ScrollToTopButton({
         }
 
         @media (max-width: 767px) {
+          .scroll-to-top-button[
+            data-avoid-mobile-cta="true"
+          ] {
+            bottom: calc(
+              5.75rem +
+              env(safe-area-inset-bottom)
+            );
+          }
+
           html[data-theme="dark"]
             .scroll-to-top-button {
             color: #0a1d37;

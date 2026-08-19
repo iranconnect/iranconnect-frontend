@@ -478,7 +478,9 @@ export default function BusinessBySlug({
            isVisible={showCTA}
          />
 
-        <ScrollToTopButton />
+        <ScrollToTopButton
+          avoidMobileStickyCTA
+        />
         <div id="cta-sentinel" className="h-1 w-full" />         
         <div ref={footerRef}>
           <Footer />
