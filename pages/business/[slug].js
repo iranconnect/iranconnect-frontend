@@ -14,6 +14,7 @@ import BusinessContact from "../../components/business/BusinessContact";
 import BusinessStickyCTA from "../../components/business/BusinessStickyCTA";
 import BusinessInformation from "../../components/business/BusinessInformation";
 import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
+import RevealOnScroll from "../../components/ui/RevealOnScroll";
 
 import { getCountryCallingCode } from "libphonenumber-js";
 
@@ -442,32 +443,48 @@ export default function BusinessBySlug({
               phoneWithCode={phoneWithCode}
             />
 
-            <BusinessAbout biz={biz} />
+            <RevealOnScroll className="empty:hidden">
+              <BusinessAbout biz={biz} />
+            </RevealOnScroll>
 
-            <BusinessInformation biz={biz} />
+            <RevealOnScroll className="empty:hidden">
+              <BusinessInformation biz={biz} />
+            </RevealOnScroll>
 
-            <BusinessGallery biz={biz} />
+            <RevealOnScroll className="empty:hidden">
+              <BusinessGallery biz={biz} />
+            </RevealOnScroll>
 
-            <BusinessReviews
-              businessId={biz.id}
-              isLoggedIn={isLoggedIn}
-              allowReviews={biz.allow_reviews === true}
-            />
+            <RevealOnScroll className="empty:hidden">
+              <BusinessReviews
+                businessId={biz.id}
+                isLoggedIn={isLoggedIn}
+                allowReviews={biz.allow_reviews === true}
+              />
+            </RevealOnScroll>
 
-            <BusinessServices biz={biz} />
+            <RevealOnScroll className="empty:hidden">
+              <BusinessServices biz={biz} />
+            </RevealOnScroll>
 
-            <BusinessContact
-              biz={biz}
-              phoneWithCode={phoneWithCode}
-            />
+            <RevealOnScroll className="empty:hidden">
+              <BusinessContact
+                biz={biz}
+                phoneWithCode={phoneWithCode}
+              />
+            </RevealOnScroll>
 
-            <BusinessLocation biz={biz} />
+            <RevealOnScroll className="empty:hidden">
+              <BusinessLocation biz={biz} />
+            </RevealOnScroll>
 
-            <BusinessClaim
-              biz={biz}
-              isLoggedIn={isLoggedIn}
-              isAdminView={isAdminView}
-            />
+            <RevealOnScroll className="empty:hidden">
+              <BusinessClaim
+                biz={biz}
+                isLoggedIn={isLoggedIn}
+                isAdminView={isAdminView}
+              />
+            </RevealOnScroll>
           </div>
         </main>
         

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import SectionWrapper from "./SectionWrapper";
 import SectionTitle from "./SectionTitle";
 import BusinessCard from "../BusinessCard";
+import RevealOnScroll from "../ui/RevealOnScroll";
 
 import apiClient from "../../utils/apiClient";
 
@@ -99,10 +100,14 @@ export default function FeaturedBusinesses() {
           lg:flex-nowrap
         `}
       >
-        {businesses.map((business) => (
-          <div
+        {businesses.map((business, index) => (
+          <RevealOnScroll
             key={business.id}
-            className="
+            delayMs={Math.min(
+              (index % 4) * 45,
+              135
+            )}
+            className={`
               flex
               w-full
               min-w-0
@@ -110,10 +115,10 @@ export default function FeaturedBusinesses() {
               md:max-w-sm
               lg:max-w-none
               lg:flex-1
-            "
+            `}
           >
             <BusinessCard b={business} />
-          </div>
+          </RevealOnScroll>
         ))}
       </div>
     </SectionWrapper>

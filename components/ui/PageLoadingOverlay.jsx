@@ -35,7 +35,7 @@ export default function PageLoadingOverlay({
           select-none
           object-contain
           drop-shadow-[0_8px_18px_rgba(10,29,55,0.18)]
-          animate-[iranconnect-loading-spin_1.35s_linear_infinite]
+          animate-[iranconnect-loading-spin_2.2s_linear_infinite]
           motion-reduce:animate-none
         `}
       />
