@@ -606,6 +606,7 @@ function Home() {
                   <BusinessCard
                     key={b.id}
                     b={b}
+                    variant="search"
                   />
                 ))}
           
@@ -617,8 +618,15 @@ function Home() {
                       disabled={loadingMore}
                       className="
                         btn-primary
-                        min-w-[180px]
+                        w-full
+                        min-h-[48px]
+                        rounded-xl
+                        sm:w-auto
+                        sm:min-w-[200px]
+                        sm:px-8
+                        sm:rounded-full
                         disabled:opacity-60
+                        disabled:cursor-not-allowed
                       "
                     >
                       {loadingMore
