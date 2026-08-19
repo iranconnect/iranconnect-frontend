@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import BusinessCard from '../components/BusinessCard';
+import RevealOnScroll from '../components/ui/RevealOnScroll';
 import apiClient from '../utils/apiClient.js';
 import { useRouter } from "next/router";
 
@@ -602,12 +603,19 @@ function Home() {
               </p>
             ) : (
               <div className="space-y-5">
-                {businesses.map((b) => (
-                  <BusinessCard
+                {businesses.map((b, index) => (
+                  <RevealOnScroll
                     key={b.id}
-                    b={b}
-                    variant="search"
-                  />
+                    delayMs={Math.min(
+                      (index % 4) * 45,
+                      135
+                    )}
+                  >
+                    <BusinessCard
+                      b={b}
+                      variant="search"
+                    />
+                  </RevealOnScroll>
                 ))}
           
                 {hasMore && (
