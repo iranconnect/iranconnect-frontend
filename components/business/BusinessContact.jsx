@@ -9,6 +9,7 @@ import {
   Twitter,
   Send,
   MessageCircle,
+  Lock,
 } from "lucide-react";
 
 function cleanWhatsApp(value) {
@@ -42,7 +43,43 @@ function normalizeExternalUrl(value) {
 export default function BusinessContact({
   biz,
   phoneWithCode,
+  isLoggedIn,
 }) {
+  if (!isLoggedIn) {
+    const loginHref =
+      `/auth/login?redirect=/business/${biz.slug}`;
+
+    return (
+      <section className="card mt-6">
+        <div className="flex flex-col items-center py-4 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-[var(--border)]">
+            <Lock
+              size={20}
+              className="text-turquoise"
+              aria-hidden="true"
+            />
+          </div>
+
+          <h2 className="text-xl font-semibold">
+            Contact & Online Presence
+          </h2>
+
+          <p className="mt-2 max-w-lg text-sm text-muted">
+            Sign in to view contact details and connect directly
+            with this business.
+          </p>
+
+          <a
+            href={loginHref}
+            className="btn-primary mt-5 !w-auto px-6 py-2.5"
+          >
+            Sign in to view contact details
+          </a>
+        </div>
+      </section>
+    );
+  }
+
   const phoneDisplay = phoneWithCode || biz.phone || null;
 
   const phoneHref = phoneDisplay

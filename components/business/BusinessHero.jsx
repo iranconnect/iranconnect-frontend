@@ -11,7 +11,11 @@ function toPlainText(value) {
     .trim();
 }
 
-export default function BusinessHero({ biz, phoneWithCode }) {
+export default function BusinessHero({
+  biz,
+  phoneWithCode,
+  isLoggedIn,
+}) {
   const [theme, setTheme] = useState("light");
 
   useEffect(() => {
@@ -146,7 +150,8 @@ export default function BusinessHero({ biz, phoneWithCode }) {
           )}
         </div>
 
-        {(callHref || biz.whatsapp_number || biz.website) && (
+        {isLoggedIn &&
+          (callHref || biz.whatsapp_number || biz.website) && (
           <div className="mt-6 flex flex-wrap gap-3">
             {callHref && (
               <a

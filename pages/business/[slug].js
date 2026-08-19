@@ -441,6 +441,7 @@ export default function BusinessBySlug({
             <BusinessHero
               biz={biz}
               phoneWithCode={phoneWithCode}
+              isLoggedIn={isLoggedIn}
             />
 
             <RevealOnScroll className="empty:hidden">
@@ -471,6 +472,7 @@ export default function BusinessBySlug({
               <BusinessContact
                 biz={biz}
                 phoneWithCode={phoneWithCode}
+                isLoggedIn={isLoggedIn}
               />
             </RevealOnScroll>
 
@@ -493,6 +495,7 @@ export default function BusinessBySlug({
            biz={biz}
            phoneWithCode={phoneWithCode}
            isVisible={showCTA}
+           isLoggedIn={isLoggedIn}
          />
 
         <ScrollToTopButton
