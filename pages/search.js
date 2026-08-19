@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import BusinessCard from '../components/BusinessCard';
 import RevealOnScroll from '../components/ui/RevealOnScroll';
+import ScrollToTopButton from '../components/ui/ScrollToTopButton';
 import apiClient from '../utils/apiClient.js';
 import { useRouter } from "next/router";
 
@@ -650,6 +651,7 @@ function Home() {
         </div>
       </main>
   
+      <ScrollToTopButton />
       <Footer />
     </div>
   );

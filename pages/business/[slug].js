@@ -1,8 +1,6 @@
 //pages/business/[slug].js 
 import Head from "next/head";
 import { useState, useEffect, useRef } from "react";
-import { ArrowUp } from "lucide-react";
-
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import BusinessHero from "../../components/business/BusinessHero";
@@ -15,6 +13,7 @@ import BusinessClaim from "../../components/business/BusinessClaim";
 import BusinessContact from "../../components/business/BusinessContact";
 import BusinessStickyCTA from "../../components/business/BusinessStickyCTA";
 import BusinessInformation from "../../components/business/BusinessInformation";
+import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
 
 import { getCountryCallingCode } from "libphonenumber-js";
 
@@ -246,7 +245,6 @@ export default function BusinessBySlug({
   const { status, role } = useAuthSession();
 
 
-  const [showScrollTop, setShowScrollTop] = useState(false); 
   const [showCTA, setShowCTA] = useState(true); 
 
   const isAuthReady = status !== "checking";
@@ -272,15 +270,6 @@ export default function BusinessBySlug({
     isStaging || biz?.admin_preview === true;
 
   const isPublicSeoPage = biz?.admin_preview !== true; 
-
-  useEffect(() => {
-    function handleScroll() {
-      setShowScrollTop(window.scrollY > 300);
-    }
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   useEffect(() => {
     function handleCTAVisibility() {
@@ -489,26 +478,7 @@ export default function BusinessBySlug({
            isVisible={showCTA}
          />
 
-        {showScrollTop && (
-          <button
-            onClick={() =>
-              window.scrollTo({ top: 0, behavior: "smooth" })
-            }
-            className="
-            fixed right-4 md:right-6
-            bottom-[120px] md:bottom-6
-            z-50
-            bg-white/80 border border-gray-200
-            shadow-lg backdrop-blur-md
-            text-gray-700
-            p-3 rounded-full
-            hover:scale-110 hover:shadow-xl
-            transition-all duration-200
-            "
-          >
-            <ArrowUp size={18} />
-          </button>
-        )}   
+        <ScrollToTopButton />
         <div id="cta-sentinel" className="h-1 w-full" />         
         <div ref={footerRef}>
           <Footer />
