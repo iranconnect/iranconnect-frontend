@@ -39,6 +39,7 @@ const groupedNav = [
     icon: "👥",
     items: [
       { href: "/admin/users", label: "Manage Users" },
+      { href: "/admin/reviews", label: "Review Moderation" },
       { href: "/admin/consents", label: "User Consents" },
       { href: "/admin/contact-requests", label: "Contact Requests" },
     ],
