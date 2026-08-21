@@ -103,19 +103,25 @@ function formatQueueDate(value) {
   });
 }
 
-function getReviewPreview(comment) {
+function truncateQueueValue(
+  value,
+  maxLength = 20
+) {
   const normalized =
-    String(comment || "").trim();
+    String(value || "").trim();
 
   if (!normalized) {
-    return "No written comment";
+    return "";
   }
 
-  if (normalized.length <= 110) {
+  if (normalized.length <= maxLength) {
     return normalized;
   }
 
-  return `${normalized.slice(0, 107)}…`;
+  return `${normalized.slice(
+    0,
+    Math.max(1, maxLength - 1)
+  )}…`;
 }
 
 function getStatusClasses(status) {
@@ -745,15 +751,15 @@ export default function AdminReviewsPage() {
           </div>
 
           {/* Queue table */}
-          <div className="overflow-x-auto">
-            <table className="admin-table w-full table-fixed">
+          <div className="w-full max-w-full overflow-x-hidden">
+            <table className="admin-table w-full max-w-full table-fixed">
               <colgroup>
-                <col className="w-[23%]" />
+                <col className="w-[22%]" />
+                <col className="w-[9%]" />
+                <col className="w-[31%]" />
+                <col className="w-[12%]" />
+                <col className="w-[18%]" />
                 <col className="w-[8%]" />
-                <col className="w-[35%]" />
-                <col className="w-[11%]" />
-                <col className="w-[16%]" />
-                <col className="w-[7%]" />
               </colgroup>
 
               <thead>
@@ -792,31 +798,37 @@ export default function AdminReviewsPage() {
                 ) : (
                   rows.map((review) => (
                     <tr key={review.id}>
-                      <td>
+                      <td className="overflow-hidden">
                         <div
-                          className="truncate font-medium"
+                          className="block max-w-full overflow-hidden whitespace-nowrap font-medium"
                           title={
                             review.reviewer_display_name ||
                             "Unnamed reviewer"
                           }
                         >
-                          {review.reviewer_display_name ||
-                            "Unnamed reviewer"}
+                          {truncateQueueValue(
+                            review.reviewer_display_name ||
+                              "Unnamed reviewer",
+                            20
+                          )}
                         </div>
 
                         <div
-                          className="admin-muted mt-1 truncate text-xs"
+                          className="admin-muted mt-1 block max-w-full overflow-hidden whitespace-nowrap text-xs"
                           title={
                             review.reviewer_email ||
                             "No email"
                           }
                         >
-                          {review.reviewer_email ||
-                            "No email"}
+                          {truncateQueueValue(
+                            review.reviewer_email ||
+                              "No email",
+                            20
+                          )}
                         </div>
                       </td>
 
-                      <td>
+                      <td className="overflow-hidden">
                         <span
                           aria-label={`${review.rating} out of 5 stars`}
                           className="whitespace-nowrap"
@@ -825,21 +837,23 @@ export default function AdminReviewsPage() {
                         </span>
                       </td>
 
-                      <td>
+                      <td className="overflow-hidden">
                         <div
-                          className="truncate whitespace-nowrap"
+                          className="block max-w-full overflow-hidden whitespace-nowrap"
                           title={
                             review.comment ||
-                            ""
+                            "No written comment"
                           }
                         >
-                          {getReviewPreview(
-                            review.comment
+                          {truncateQueueValue(
+                            review.comment ||
+                              "No written comment",
+                            20
                           )}
                         </div>
                       </td>
 
-                      <td>
+                      <td className="overflow-hidden">
                         <span
                           className={`
                             inline-flex
@@ -889,7 +903,7 @@ export default function AdminReviewsPage() {
                           )}
                       </td>
 
-                      <td>
+                      <td className="overflow-hidden">
                         <Link
                           href={`/admin/reviews/${encodeURIComponent(
                             review.id
