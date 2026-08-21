@@ -127,6 +127,13 @@ export default function BusinessReviews({
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
 
+  const [
+    reviewSubmissionRestriction,
+    setReviewSubmissionRestriction,
+  ] = useState({
+    active: false,
+  });
+
   const [restrictionNotice, setRestrictionNotice] =
     useState(null);
 
@@ -190,6 +197,19 @@ export default function BusinessReviews({
 
         const ownReview =
           response.data?.user_review || null;
+
+        const nextRestriction =
+          response.data
+            ?.review_submission_restriction;
+
+        if (
+          nextRestriction &&
+          typeof nextRestriction === "object"
+        ) {
+          setReviewSubmissionRestriction(
+            nextRestriction
+          );
+        }
 
         setReviews((currentReviews) => {
           if (!append) {
@@ -291,6 +311,55 @@ export default function BusinessReviews({
     });
   }, [businessId, fetchReviewPage]);
 
+  useEffect(() => {
+    if (
+      !reviewSubmissionRestriction?.active ||
+      !reviewSubmissionRestriction
+        ?.restricted_until
+    ) {
+      return;
+    }
+
+    const restrictedUntilMs =
+      new Date(
+        reviewSubmissionRestriction
+          .restricted_until
+      ).getTime();
+
+    if (
+      !Number.isFinite(restrictedUntilMs)
+    ) {
+      return;
+    }
+
+    const remainingMs =
+      restrictedUntilMs - Date.now();
+
+    if (remainingMs <= 0) {
+      setReviewSubmissionRestriction({
+        active: false,
+      });
+      return;
+    }
+
+    const timer = window.setTimeout(
+      () => {
+        setReviewSubmissionRestriction({
+          active: false,
+        });
+      },
+      remainingMs + 250
+    );
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [
+    reviewSubmissionRestriction?.active,
+    reviewSubmissionRestriction
+      ?.restricted_until,
+  ]);
+
   async function handleRatingFilterChange(nextRating) {
     if (loading || loadingMore) {
       return;
@@ -349,6 +418,17 @@ export default function BusinessReviews({
         }
       );
 
+      setReviewSubmissionRestriction({
+        active: true,
+        restricted_until:
+          restrictionNotice.restrictedUntil ||
+          null,
+        retry_after_seconds:
+          restrictionNotice.retryAfterSeconds ??
+          null,
+        acknowledged: true,
+      });
+
       setRestrictionNotice(null);
     } catch (error) {
       setAcknowledgementError(
@@ -360,8 +440,21 @@ export default function BusinessReviews({
     }
   }
 
+  const reviewSubmissionDisabled =
+    Boolean(
+      reviewSubmissionRestriction?.active &&
+        reviewSubmissionRestriction
+          ?.acknowledged
+    );
+
   async function submitReview() {
-    if (!isLoggedIn || !allowReviews || !rating || submitting) {
+    if (
+      !isLoggedIn ||
+      !allowReviews ||
+      !rating ||
+      submitting ||
+      reviewSubmissionDisabled
+    ) {
       return;
     }
 
@@ -432,6 +525,15 @@ export default function BusinessReviews({
           setMessage("");
           setAcknowledgementError("");
 
+          setReviewSubmissionRestriction({
+            active: true,
+            restricted_until:
+              data.restricted_until || null,
+            retry_after_seconds:
+              data.retry_after_seconds ?? null,
+            acknowledged: false,
+          });
+
           setRestrictionNotice({
             message:
               typeof data.error === "string"
@@ -461,6 +563,10 @@ export default function BusinessReviews({
   }
 
   async function saveReviewDisplayName() {
+    if (reviewSubmissionDisabled) {
+      return;
+    }
+
     const normalizedName = reviewDisplayName
       .replace(/\s+/g, " ")
       .trim();
@@ -502,6 +608,24 @@ export default function BusinessReviews({
       setSavingDisplayName(false);
     }
   }
+
+  const restrictionUntilLabel =
+    reviewSubmissionDisabled &&
+    reviewSubmissionRestriction
+      ?.restricted_until
+      ? (() => {
+          const date = new Date(
+            reviewSubmissionRestriction
+              .restricted_until
+          );
+
+          return Number.isNaN(
+            date.getTime()
+          )
+            ? null
+            : date.toLocaleString();
+        })()
+      : null;
 
   const statusMeta = getReviewStatusMeta(
     userReview?.status
@@ -723,28 +847,65 @@ export default function BusinessReviews({
 
               <button
                 type="button"
-                disabled={savingDisplayName}
+                disabled={
+                  savingDisplayName ||
+                  reviewSubmissionDisabled
+                }
                 onClick={saveReviewDisplayName}
                 className="btn-primary mt-3 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {savingDisplayName
                   ? "Saving..."
-                  : "Save name and submit review"}
+                  : reviewSubmissionDisabled
+                    ? "Review submissions temporarily disabled"
+                    : "Save name and submit review"}
               </button>
             </div>
           ) : (
             <button
               type="button"
-              disabled={!rating || submitting}
+              disabled={
+                !rating ||
+                submitting ||
+                reviewSubmissionDisabled
+              }
               onClick={submitReview}
               className="btn-primary px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting
                 ? "Submitting..."
-                : userReview
-                  ? "Update review"
-                  : "Submit review"}
+                : reviewSubmissionDisabled
+                  ? "Review submissions temporarily disabled"
+                  : userReview
+                    ? "Update review"
+                    : "Submit review"}
             </button>
+          )}
+
+          {reviewSubmissionDisabled && (
+            <div
+              className="
+                mt-3
+                rounded-xl
+                border
+                border-amber-500/30
+                bg-amber-500/10
+                p-3
+                text-sm
+                text-justify-pro
+              "
+            >
+              <p className="font-medium">
+                Review submissions are temporarily disabled.
+              </p>
+
+              {restrictionUntilLabel && (
+                <p className="mt-1 opacity-75">
+                  You can submit or update reviews again after{" "}
+                  {restrictionUntilLabel}.
+                </p>
+              )}
+            </div>
           )}
 
           {message && (
