@@ -85,6 +85,24 @@ function formatDateTime(value) {
   return date.toLocaleString();
 }
 
+function formatQueueDate(value) {
+  if (!value) {
+    return "—";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function getReviewPreview(comment) {
   const normalized =
     String(comment || "").trim();
@@ -730,18 +748,16 @@ export default function AdminReviewsPage() {
           <div className="overflow-x-auto">
             <table className="admin-table w-full table-fixed">
               <colgroup>
-                <col className="w-[18%]" />
-                <col className="w-[19%]" />
+                <col className="w-[23%]" />
                 <col className="w-[8%]" />
-                <col className="w-[25%]" />
-                <col className="w-[10%]" />
-                <col className="w-[15%]" />
-                <col className="w-[5%]" />
+                <col className="w-[35%]" />
+                <col className="w-[11%]" />
+                <col className="w-[16%]" />
+                <col className="w-[7%]" />
               </colgroup>
 
               <thead>
                 <tr>
-                  <th>Business</th>
                   <th>Reviewer</th>
                   <th>Rating</th>
                   <th>Review</th>
@@ -758,7 +774,7 @@ export default function AdminReviewsPage() {
                 rows.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={6}
                       className="text-center py-8"
                     >
                       Loading review queue…
@@ -767,7 +783,7 @@ export default function AdminReviewsPage() {
                 ) : rows.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={6}
                       className="text-center py-8"
                     >
                       No reviews match the current filters.
@@ -776,46 +792,6 @@ export default function AdminReviewsPage() {
                 ) : (
                   rows.map((review) => (
                     <tr key={review.id}>
-                      <td>
-                        <div
-                          className="truncate font-medium"
-                          title={
-                            review.business_name ||
-                            "Unknown business"
-                          }
-                        >
-                          {review.business_name ||
-                            "Unknown business"}
-                        </div>
-
-                        <div
-                          className="admin-muted mt-1 truncate text-xs"
-                          title={
-                            [
-                              review.business_city,
-                              review.business_country,
-                            ]
-                              .filter(Boolean)
-                              .join(", ") ||
-                            "Location unavailable"
-                          }
-                        >
-                          {[
-                            review.business_city,
-                            review.business_country,
-                          ]
-                            .filter(Boolean)
-                            .join(", ") ||
-                            "Location unavailable"}
-                        </div>
-
-                        {review.business_is_deleted && (
-                          <div className="mt-1 text-xs">
-                            ⚠ Deleted business
-                          </div>
-                        )}
-                      </td>
-
                       <td>
                         <div
                           className="truncate font-medium"
@@ -884,9 +860,14 @@ export default function AdminReviewsPage() {
                         </span>
                       </td>
 
-                      <td className="whitespace-nowrap">
-                        <div>
-                          {formatDateTime(
+                      <td className="overflow-hidden">
+                        <div
+                          className="truncate whitespace-nowrap"
+                          title={formatDateTime(
+                            review.created_at
+                          )}
+                        >
+                          {formatQueueDate(
                             review.created_at
                           )}
                         </div>
@@ -894,9 +875,14 @@ export default function AdminReviewsPage() {
                         {review.updated_at &&
                           review.updated_at !==
                             review.created_at && (
-                            <div className="admin-muted text-xs mt-1">
+                            <div
+                              className="admin-muted mt-1 truncate whitespace-nowrap text-xs"
+                              title={`Updated ${formatDateTime(
+                                review.updated_at
+                              )}`}
+                            >
                               Updated{" "}
-                              {formatDateTime(
+                              {formatQueueDate(
                                 review.updated_at
                               )}
                             </div>
