@@ -297,6 +297,34 @@ export default function Sidebar({ role }) {
                 <span>{group.icon}</span>
                 <span>{group.label}</span>
 
+                {/* ⭐ Pending review work-queue badge */}
+                {group.label === "Users" &&
+                  pendingReviewCount > 0 && (
+                    <span
+                      className="
+                        ml-2
+                        inline-flex
+                        min-w-5
+                        items-center
+                        justify-center
+                        rounded-full
+                        bg-red-600
+                        px-1.5
+                        py-0.5
+                        text-[10px]
+                        font-semibold
+                        leading-none
+                        text-white
+                      "
+                      aria-label={`${pendingReviewCount} pending reviews`}
+                      title={`${pendingReviewCount} pending reviews`}
+                    >
+                      {pendingReviewCount > 99
+                        ? "99+"
+                        : pendingReviewCount}
+                    </span>
+                  )}
+
                 {/* ✅ badge فقط اگر هنوز صفحه suspicious دیده نشده باشد */}
                 {group.label === "Security" &&
                   openGroup !== "Security" &&
