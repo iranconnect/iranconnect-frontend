@@ -97,8 +97,21 @@ apiClient.interceptors.response.use(
 
     /* 🔒 IP / Account Blocked */
     if (status === 423) {
+      const blockedMessage =
+        typeof data?.error === "string" &&
+        data.error.trim()
+          ? data.error.trim()
+          : "Your account is currently locked. Please contact IranConnect support for assistance.";
+
+      const blockedReason =
+        typeof data?.code === "string" &&
+        data.code.trim()
+          ? data.code.trim()
+          : "account_locked";
+
       forceRedirect(
-        "Your account was temporarily locked."
+        blockedMessage,
+        blockedReason
       );
 
       return Promise.reject(err);
