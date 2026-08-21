@@ -123,6 +123,35 @@ export default function Sidebar({ role }) {
     fetchPendingReviewCount();
   }, [role, pathname]);
 
+  /*
+   * Refresh the authoritative pending-review work queue
+   * immediately after a successful moderation action.
+   *
+   * This event carries no count. Sidebar always re-reads the
+   * server source of truth.
+   */
+  useEffect(() => {
+    if (!["admin", "superadmin"].includes(role)) {
+      return;
+    }
+
+    function handleReviewModerationChanged() {
+      fetchPendingReviewCount();
+    }
+
+    window.addEventListener(
+      "iranconnect:review-moderation-changed",
+      handleReviewModerationChanged
+    );
+
+    return () => {
+      window.removeEventListener(
+        "iranconnect:review-moderation-changed",
+        handleReviewModerationChanged
+      );
+    };
+  }, [role]);
+
   async function fetchPendingReviewCount() {
     try {
       const res = await apiClient.get(

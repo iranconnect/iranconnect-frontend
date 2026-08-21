@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 
 import apiClient from "../../../utils/apiClient";
 import AdminLayout from "../../../components/admin/AdminLayout";
+import ReviewModerationDialog from "../../../components/admin/ReviewModerationDialog";
 import { useAuthSession } from "../../../hooks/useAuthSession";
 
 const STATUS_META = {
@@ -128,6 +129,17 @@ export default function AdminReviewDetailPage() {
   const [historyError, setHistoryError] =
     useState("");
 
+  const [moderationAction, setModerationAction] =
+    useState(null);
+  const [moderationLoading, setModerationLoading] =
+    useState(false);
+  const [moderationError, setModerationError] =
+    useState("");
+  const [moderationFeedback, setModerationFeedback] =
+    useState("");
+  const [refreshNonce, setRefreshNonce] =
+    useState(0);
+
   const {
     status: authStatus,
     role,
@@ -233,6 +245,7 @@ export default function AdminReviewDetailPage() {
     router,
     reviewId,
     authChecked,
+    refreshNonce,
   ]);
 
   /*
@@ -314,6 +327,7 @@ export default function AdminReviewDetailPage() {
     authChecked,
     isSuperAdmin,
     reviewId,
+    refreshNonce,
   ]);
 
   const statusMeta =
@@ -323,6 +337,172 @@ export default function AdminReviewDetailPage() {
         review?.status || "Unknown",
       icon: "•",
     };
+
+  const availableActions = useMemo(() => {
+    if (!review) {
+      return [];
+    }
+
+    switch (review.status) {
+      case "pending":
+        return ["approve", "reject"];
+
+      case "approved":
+        return isSuperAdmin
+          ? ["hide"]
+          : [];
+
+      case "hidden":
+        return isSuperAdmin
+          ? ["restore"]
+          : [];
+
+      default:
+        return [];
+    }
+  }, [review, isSuperAdmin]);
+
+  function openModerationDialog(action) {
+    if (!availableActions.includes(action)) {
+      return;
+    }
+
+    setModerationError("");
+    setModerationFeedback("");
+    setModerationAction(action);
+  }
+
+  function closeModerationDialog() {
+    if (moderationLoading) {
+      return;
+    }
+
+    setModerationAction(null);
+    setModerationError("");
+  }
+
+  async function submitModeration({
+    reasonCode,
+    note,
+  }) {
+    if (
+      !review ||
+      !reviewId ||
+      !moderationAction
+    ) {
+      return;
+    }
+
+    setModerationLoading(true);
+    setModerationError("");
+    setModerationFeedback("");
+
+    try {
+      const response =
+        await apiClient.patch(
+          `/admin/reviews/${reviewId}/moderation`,
+          {
+            action: moderationAction,
+            expected_status:
+              review.status,
+            reason_code:
+              reasonCode,
+            note,
+          }
+        );
+
+      const nextStatus =
+        response.data?.transition?.status ||
+        response.data?.review?.status ||
+        "";
+
+      setModerationAction(null);
+
+      setModerationFeedback(
+        nextStatus
+          ? `Review moderation succeeded. Current status: ${formatActionType(
+              nextStatus
+            )}.`
+          : "Review moderation succeeded."
+      );
+
+      /*
+       * Refresh authoritative detail/history data.
+       */
+      setRefreshNonce(
+        (value) => value + 1
+      );
+
+      /*
+       * Sidebar owns the pending count and re-reads it
+       * from the server when this event is emitted.
+       */
+      if (
+        typeof window !== "undefined"
+      ) {
+        window.dispatchEvent(
+          new Event(
+            "iranconnect:review-moderation-changed"
+          )
+        );
+      }
+    } catch (err) {
+      const status =
+        err.response?.status;
+
+      const code =
+        err.response?.data?.code;
+
+      const serverMessage =
+        err.response?.data?.error;
+
+      if (status === 403) {
+        setModerationError(
+          serverMessage ||
+            "You do not have permission to perform this moderation action."
+        );
+        return;
+      }
+
+      if (status === 409) {
+        setModerationAction(null);
+
+        setModerationFeedback(
+          "This review changed before your moderation action could be completed. The latest review state has been reloaded."
+        );
+
+        setRefreshNonce(
+          (value) => value + 1
+        );
+
+        /*
+         * A stale conflict means the authoritative review state
+         * changed elsewhere. Pending queue count may therefore
+         * have changed as well.
+         */
+        if (
+          typeof window !== "undefined"
+        ) {
+          window.dispatchEvent(
+            new Event(
+              "iranconnect:review-moderation-changed"
+            )
+          );
+        }
+
+        return;
+      }
+
+      setModerationError(
+        serverMessage ||
+          (code
+            ? `Moderation failed (${code}).`
+            : "Unable to moderate this review.")
+      );
+    } finally {
+      setModerationLoading(false);
+    }
+  }
 
   return (
     <AdminLayout>
@@ -451,6 +631,156 @@ export default function AdminReviewDetailPage() {
                   review.updated_at
                 )}
               </DetailField>
+            </section>
+
+            <section className="admin-section">
+              <div
+                className="
+                  flex
+                  flex-col
+                  gap-3
+                  sm:flex-row
+                  sm:items-center
+                  sm:justify-between
+                  mb-4
+                "
+              >
+                <div>
+                  <h3 className="font-semibold">
+                    Moderation Actions
+                  </h3>
+
+                  <p className="admin-muted text-sm mt-1">
+                    Available actions are determined by the current review status and your Admin role.
+                  </p>
+                </div>
+              </div>
+
+              {moderationFeedback && (
+                <div
+                  role="status"
+                  className="
+                    mb-4
+                    rounded-lg
+                    border
+                    border-[var(--border)]
+                    bg-[var(--card-bg)]
+                    p-3
+                    text-sm
+                  "
+                >
+                  {moderationFeedback}
+                </div>
+              )}
+
+              {availableActions.length === 0 ? (
+                <div className="admin-card">
+                  <p className="admin-muted text-sm">
+                    No moderation actions are available for this review.
+                  </p>
+                </div>
+              ) : (
+                <div
+                  className="
+                    admin-card
+                    flex
+                    flex-wrap
+                    gap-3
+                  "
+                >
+                  {availableActions.includes(
+                    "approve"
+                  ) && (
+                    <button
+                      type="button"
+                      className="
+                        admin-btn
+                        admin-btn-primary
+                        px-4
+                        py-2
+                        text-sm
+                      "
+                      disabled={moderationLoading}
+                      onClick={() =>
+                        openModerationDialog(
+                          "approve"
+                        )
+                      }
+                    >
+                      Approve Review
+                    </button>
+                  )}
+
+                  {availableActions.includes(
+                    "reject"
+                  ) && (
+                    <button
+                      type="button"
+                      className="
+                        admin-btn
+                        admin-btn-danger
+                        px-4
+                        py-2
+                        text-sm
+                      "
+                      disabled={moderationLoading}
+                      onClick={() =>
+                        openModerationDialog(
+                          "reject"
+                        )
+                      }
+                    >
+                      Reject Review
+                    </button>
+                  )}
+
+                  {availableActions.includes(
+                    "hide"
+                  ) && (
+                    <button
+                      type="button"
+                      className="
+                        admin-btn
+                        admin-btn-danger
+                        px-4
+                        py-2
+                        text-sm
+                      "
+                      disabled={moderationLoading}
+                      onClick={() =>
+                        openModerationDialog(
+                          "hide"
+                        )
+                      }
+                    >
+                      Hide Review
+                    </button>
+                  )}
+
+                  {availableActions.includes(
+                    "restore"
+                  ) && (
+                    <button
+                      type="button"
+                      className="
+                        admin-btn
+                        admin-btn-primary
+                        px-4
+                        py-2
+                        text-sm
+                      "
+                      disabled={moderationLoading}
+                      onClick={() =>
+                        openModerationDialog(
+                          "restore"
+                        )
+                      }
+                    >
+                      Restore Review
+                    </button>
+                  )}
+                </div>
+              )}
             </section>
 
             <section className="admin-section">
@@ -809,6 +1139,15 @@ export default function AdminReviewDetailPage() {
           </div>
         )}
       </main>
+
+      <ReviewModerationDialog
+        open={Boolean(moderationAction)}
+        action={moderationAction}
+        loading={moderationLoading}
+        error={moderationError}
+        onClose={closeModerationDialog}
+        onSubmit={submitModeration}
+      />
     </AdminLayout>
   );
 }
