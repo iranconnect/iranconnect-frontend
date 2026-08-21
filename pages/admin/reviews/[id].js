@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 
 import apiClient from "../../../utils/apiClient";
 import AdminLayout from "../../../components/admin/AdminLayout";
+import { useAuthSession } from "../../../hooks/useAuthSession";
 
 const STATUS_META = {
   pending: {
@@ -120,12 +121,36 @@ export default function AdminReviewDetailPage() {
   const [notFound, setNotFound] =
     useState(false);
 
+  const [historyData, setHistoryData] =
+    useState(null);
+  const [historyLoading, setHistoryLoading] =
+    useState(false);
+  const [historyError, setHistoryError] =
+    useState("");
+
+  const {
+    status: authStatus,
+    role,
+  } = useAuthSession();
+
+  const authChecked =
+    authStatus === "authenticated" &&
+    ["admin", "superadmin"].includes(role);
+
+  const isSuperAdmin =
+    role === "superadmin";
+
   const review = data?.review || null;
   const business = data?.business || null;
   const reviewer = data?.reviewer || null;
-  const moderator = data?.moderator || null;
-  const history = Array.isArray(data?.history)
-    ? data.history
+
+  const moderator =
+    historyData?.moderator || null;
+
+  const history = Array.isArray(
+    historyData?.history
+  )
+    ? historyData.history
     : [];
 
   const reviewId = useMemo(() => {
@@ -143,7 +168,9 @@ export default function AdminReviewDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!router.isReady) return;
+    if (!router.isReady || !authChecked) {
+      return;
+    }
 
     if (!reviewId) {
       setLoading(false);
@@ -204,6 +231,88 @@ export default function AdminReviewDetailPage() {
   }, [
     router.isReady,
     router,
+    reviewId,
+    authChecked,
+  ]);
+
+  /*
+   * SuperAdmin-only audit data.
+   *
+   * Admin users must never request this endpoint.
+   * Backend RBAC remains authoritative.
+   */
+  useEffect(() => {
+    if (
+      !router.isReady ||
+      !authChecked ||
+      !reviewId
+    ) {
+      return;
+    }
+
+    if (!isSuperAdmin) {
+      setHistoryData(null);
+      setHistoryError("");
+      setHistoryLoading(false);
+      return;
+    }
+
+    let mounted = true;
+
+    async function loadHistory() {
+      setHistoryLoading(true);
+      setHistoryError("");
+
+      try {
+        const res = await apiClient.get(
+          `/admin/reviews/${reviewId}/history`
+        );
+
+        if (!mounted) return;
+
+        setHistoryData(res.data);
+      } catch (err) {
+        if (!mounted) return;
+
+        const status =
+          err.response?.status;
+
+        setHistoryData(null);
+
+        if (status === 404) {
+          setHistoryError(
+            "Review history was not found."
+          );
+          return;
+        }
+
+        if (status === 403) {
+          setHistoryError(
+            "SuperAdmin audit access was denied."
+          );
+          return;
+        }
+
+        setHistoryError(
+          err.response?.data?.error ||
+            "Unable to load moderation history."
+        );
+      } finally {
+        if (mounted) {
+          setHistoryLoading(false);
+        }
+      }
+    }
+
+    loadHistory();
+
+    return () => {
+      mounted = false;
+    };
+  }, [
+    router.isReady,
+    authChecked,
+    isSuperAdmin,
     reviewId,
   ]);
 
@@ -479,22 +588,27 @@ export default function AdminReviewDetailPage() {
                   )}
                 </DetailField>
 
-                <DetailField label="Moderated By">
-                  {moderator?.email ||
-                    (review.moderated_by
-                      ? `User #${review.moderated_by}`
-                      : "—")}
-                </DetailField>
+                {isSuperAdmin && (
+                  <>
+                    <DetailField label="Moderated By">
+                      {historyLoading
+                        ? "Loading..."
+                        : moderator?.email || "—"}
+                    </DetailField>
 
-                <DetailField label="Moderator Role">
-                  {moderator?.role || "—"}
-                </DetailField>
+                    <DetailField label="Moderator Role">
+                      {historyLoading
+                        ? "Loading..."
+                        : moderator?.role || "—"}
+                    </DetailField>
 
-                <DetailField label="Moderator User ID">
-                  {moderator?.id ??
-                    review.moderated_by ??
-                    "—"}
-                </DetailField>
+                    <DetailField label="Moderator User ID">
+                      {historyLoading
+                        ? "Loading..."
+                        : moderator?.id ?? "—"}
+                    </DetailField>
+                  </>
+                )}
 
                 <div className="md:col-span-2">
                   <DetailField label="Message shown to reviewer">
@@ -512,42 +626,63 @@ export default function AdminReviewDetailPage() {
               </div>
             </section>
 
-            <section className="admin-section">
-              <div
-                className="
-                  flex
-                  flex-col
-                  gap-1
-                  sm:flex-row
-                  sm:items-center
-                  sm:justify-between
-                  mb-4
-                "
-              >
-                <h3 className="font-semibold">
-                  Moderation History
-                </h3>
+            {isSuperAdmin && (
+              <section className="admin-section">
+                <div
+                  className="
+                    flex
+                    flex-col
+                    gap-1
+                    sm:flex-row
+                    sm:items-center
+                    sm:justify-between
+                    mb-4
+                  "
+                >
+                  <h3 className="font-semibold">
+                    Moderation History
+                  </h3>
 
-                <span className="admin-muted text-sm">
-                  {history.length} event
-                  {history.length === 1
-                    ? ""
-                    : "s"}
-                </span>
-              </div>
-
-              {history.length === 0 ? (
-                <div className="admin-card">
-                  <p className="admin-muted">
-                    No moderation history
-                    was found.
-                  </p>
+                  {!historyLoading &&
+                    !historyError && (
+                      <span className="admin-muted text-sm">
+                        {history.length} event
+                        {history.length === 1
+                          ? ""
+                          : "s"}
+                      </span>
+                    )}
                 </div>
-              ) : (
-                <ol className="space-y-4">
-                  {history.map(
-                    (event, index) => (
-                      <li
+
+                {historyLoading ? (
+                  <div className="admin-card">
+                    <p className="admin-muted">
+                      Loading moderation history...
+                    </p>
+                  </div>
+                ) : historyError ? (
+                  <div className="admin-card">
+                    <p
+                      className="
+                        text-red-600
+                        text-sm
+                      "
+                    >
+                      {historyError}
+                    </p>
+                  </div>
+                ) : history.length === 0 ? (
+                  <div className="admin-card">
+                    <p className="admin-muted">
+                      No moderation history
+                      was found.
+                    </p>
+                  </div>
+                ) : (
+                  <ol className="space-y-4">
+                    {history.map(
+                      (event, index) => (
+                        <li
                         key={event.id}
                         className="
                           admin-card
@@ -664,12 +799,13 @@ export default function AdminReviewDetailPage() {
                             </pre>
                           </div>
                         </div>
-                      </li>
-                    )
-                  )}
-                </ol>
-              )}
-            </section>
+                        </li>
+                      )
+                    )}
+                  </ol>
+                )}
+              </section>
+            )}
           </div>
         )}
       </main>
