@@ -1,6 +1,11 @@
 //frontend/components/business/BusinessReviews.jsx
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import RatingStars from "../RatingStars";
+import ReviewRestrictionAcknowledgementModal from "./ReviewRestrictionAcknowledgementModal";
 import apiClient from "../../utils/apiClient";
 
 const REVIEW_PAGE_SIZE = 5;
@@ -121,6 +126,19 @@ export default function BusinessReviews({
 
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+
+  const [restrictionNotice, setRestrictionNotice] =
+    useState(null);
+
+  const [
+    acknowledgingRestriction,
+    setAcknowledgingRestriction,
+  ] = useState(false);
+
+  const [
+    acknowledgementError,
+    setAcknowledgementError,
+  ] = useState("");
 
   const fetchReviewPage = useCallback(
     async ({
@@ -299,6 +317,49 @@ export default function BusinessReviews({
     });
   }
 
+  async function acknowledgeRestrictionNotice() {
+    if (
+      !restrictionNotice?.acknowledgement ||
+      acknowledgingRestriction
+    ) {
+      return;
+    }
+
+    const acknowledgement =
+      restrictionNotice.acknowledgement;
+
+    try {
+      setAcknowledgingRestriction(true);
+      setAcknowledgementError("");
+
+      await apiClient.post(
+        "/policy-acknowledgements",
+        {
+          policy_key:
+            acknowledgement.policy_key,
+
+          source_type:
+            acknowledgement.source_type,
+
+          source_ref:
+            acknowledgement.source_ref,
+        },
+        {
+          requireAuth: true,
+        }
+      );
+
+      setRestrictionNotice(null);
+    } catch (error) {
+      setAcknowledgementError(
+        error.response?.data?.error ||
+          "Unable to record your acknowledgement. Please try again."
+      );
+    } finally {
+      setAcknowledgingRestriction(false);
+    }
+  }
+
   async function submitReview() {
     if (!isLoggedIn || !allowReviews || !rating || submitting) {
       return;
@@ -351,6 +412,43 @@ export default function BusinessReviews({
         setNeedsDisplayName(true);
         setMessage("");
         return;
+      }
+
+      if (
+        errorCode ===
+        "REVIEW_SUBMISSION_RESTRICTED"
+      ) {
+        const data =
+          error.response?.data || {};
+
+        const acknowledgement =
+          data.acknowledgement;
+
+        if (
+          acknowledgement?.policy_key &&
+          acknowledgement?.source_type &&
+          acknowledgement?.source_ref
+        ) {
+          setMessage("");
+          setAcknowledgementError("");
+
+          setRestrictionNotice({
+            message:
+              typeof data.error === "string"
+                ? data.error
+                : "Review submissions are temporarily disabled.",
+
+            restrictedUntil:
+              data.restricted_until || null,
+
+            retryAfterSeconds:
+              data.retry_after_seconds ?? null,
+
+            acknowledgement,
+          });
+
+          return;
+        }
       }
 
       setMessage(
@@ -461,6 +559,15 @@ export default function BusinessReviews({
 
   return (
     <section className="card mt-6">
+      <ReviewRestrictionAcknowledgementModal
+        notice={restrictionNotice}
+        loading={acknowledgingRestriction}
+        error={acknowledgementError}
+        onAcknowledge={
+          acknowledgeRestrictionNotice
+        }
+      />
+
       <h2 className="mb-5 text-xl font-semibold">
         Reviews
       </h2>
