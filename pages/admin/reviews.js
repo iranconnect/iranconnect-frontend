@@ -728,7 +728,17 @@ export default function AdminReviewsPage() {
 
           {/* Queue table */}
           <div className="overflow-x-auto">
-            <table className="admin-table w-full">
+            <table className="admin-table w-full table-fixed">
+              <colgroup>
+                <col className="w-[18%]" />
+                <col className="w-[19%]" />
+                <col className="w-[8%]" />
+                <col className="w-[25%]" />
+                <col className="w-[10%]" />
+                <col className="w-[15%]" />
+                <col className="w-[5%]" />
+              </colgroup>
+
               <thead>
                 <tr>
                   <th>Business</th>
@@ -767,12 +777,29 @@ export default function AdminReviewsPage() {
                   rows.map((review) => (
                     <tr key={review.id}>
                       <td>
-                        <div className="font-medium">
+                        <div
+                          className="truncate font-medium"
+                          title={
+                            review.business_name ||
+                            "Unknown business"
+                          }
+                        >
                           {review.business_name ||
                             "Unknown business"}
                         </div>
 
-                        <div className="admin-muted text-xs mt-1">
+                        <div
+                          className="admin-muted mt-1 truncate text-xs"
+                          title={
+                            [
+                              review.business_city,
+                              review.business_country,
+                            ]
+                              .filter(Boolean)
+                              .join(", ") ||
+                            "Location unavailable"
+                          }
+                        >
                           {[
                             review.business_city,
                             review.business_country,
@@ -790,12 +817,24 @@ export default function AdminReviewsPage() {
                       </td>
 
                       <td>
-                        <div className="font-medium">
+                        <div
+                          className="truncate font-medium"
+                          title={
+                            review.reviewer_display_name ||
+                            "Unnamed reviewer"
+                          }
+                        >
                           {review.reviewer_display_name ||
                             "Unnamed reviewer"}
                         </div>
 
-                        <div className="admin-muted text-xs mt-1">
+                        <div
+                          className="admin-muted mt-1 truncate text-xs"
+                          title={
+                            review.reviewer_email ||
+                            "No email"
+                          }
+                        >
                           {review.reviewer_email ||
                             "No email"}
                         </div>
@@ -810,8 +849,9 @@ export default function AdminReviewsPage() {
                         </span>
                       </td>
 
-                      <td className="min-w-[260px] max-w-[420px]">
-                        <span
+                      <td>
+                        <div
+                          className="truncate whitespace-nowrap"
                           title={
                             review.comment ||
                             ""
@@ -820,7 +860,7 @@ export default function AdminReviewsPage() {
                           {getReviewPreview(
                             review.comment
                           )}
-                        </span>
+                        </div>
                       </td>
 
                       <td>
