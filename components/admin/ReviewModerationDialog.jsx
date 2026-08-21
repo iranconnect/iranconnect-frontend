@@ -467,7 +467,7 @@ export default function ReviewModerationDialog({
                 ${
                   action === "reject" ||
                   action === "hide"
-                    ? "admin-btn-danger"
+                    ? "bg-red-600 hover:bg-red-700 text-white"
                     : "admin-btn-primary"
                 }
               `}

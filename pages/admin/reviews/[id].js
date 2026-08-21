@@ -718,7 +718,9 @@ export default function AdminReviewDetailPage() {
                       type="button"
                       className="
                         admin-btn
-                        admin-btn-danger
+                        bg-red-600
+                        hover:bg-red-700
+                        text-white
                         px-4
                         py-2
                         text-sm
@@ -741,7 +743,9 @@ export default function AdminReviewDetailPage() {
                       type="button"
                       className="
                         admin-btn
-                        admin-btn-danger
+                        bg-red-600
+                        hover:bg-red-700
+                        text-white
                         px-4
                         py-2
                         text-sm
