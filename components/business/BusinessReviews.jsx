@@ -504,6 +504,35 @@ export default function BusinessReviews({
               <p className="mt-1 text-justify-pro opacity-75">
                 {statusMeta.message}
               </p>
+
+              {userReview?.moderation_note && (
+                <div
+                  className="
+                    mt-3
+                    rounded-lg
+                    border
+                    border-[var(--border)]
+                    bg-[var(--card-bg)]
+                    p-3
+                  "
+                >
+                  <p className="text-sm font-medium">
+                    Moderator message
+                  </p>
+
+                  <p
+                    className="
+                      mt-1
+                      whitespace-pre-wrap
+                      break-words
+                      text-justify-pro
+                      opacity-80
+                    "
+                  >
+                    {userReview.moderation_note}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
