@@ -85,6 +85,7 @@ export default function Sidebar({ role }) {
   const [openSubGroup, setOpenSubGroup] = useState(null);
 
   const [unblockedCount, setUnblockedCount] = useState(0);
+  const [pendingReviewCount, setPendingReviewCount] = useState(0);
 
   // ✅ کلید per-admin (per-browser-tab/session) برای اینکه بعد از دیدن صفحه suspicious پاک بشه
   const SEEN_KEY = "iranconnect_seen_suspicious_ips";
@@ -106,6 +107,68 @@ export default function Sidebar({ role }) {
       fetchSuspiciousCount();
     }
   }, [role]);
+
+  /* --------------------------------------------------------
+     ⭐ Pending review moderation count
+     - Admin + SuperAdmin
+     - Authoritative work-queue indicator
+     - Opening the Reviews page does NOT clear it
+  ---------------------------------------------------------*/
+  useEffect(() => {
+    if (!["admin", "superadmin"].includes(role)) {
+      setPendingReviewCount(0);
+      return;
+    }
+
+    fetchPendingReviewCount();
+  }, [role, pathname]);
+
+  async function fetchPendingReviewCount() {
+    try {
+      const res = await apiClient.get(
+        "/admin/reviews/count-pending"
+      );
+
+      const count = Number(
+        res.data?.count || 0
+      );
+
+      setPendingReviewCount(
+        Number.isFinite(count) && count > 0
+          ? count
+          : 0
+      );
+    } catch (err) {
+      const status = err.response?.status;
+
+      /*
+       * Session failures are handled centrally by apiClient.
+       * Sidebar should not perform another redirect.
+       */
+      if (
+        status === 401 ||
+        status === 440
+      ) {
+        setPendingReviewCount(0);
+        return;
+      }
+
+      /*
+       * Permission failure must not break the Admin shell.
+       */
+      if (status === 403) {
+        setPendingReviewCount(0);
+        return;
+      }
+
+      console.warn(
+        "Failed to fetch pending review count:",
+        err
+      );
+
+      setPendingReviewCount(0);
+    }
+  }
 
   /* --------------------------------------------------------
      ✅ وقتی وارد صفحه suspicious-ips شدیم:
@@ -333,7 +396,35 @@ export default function Sidebar({ role }) {
                       }`}
                     >
                       <span className="flex items-center justify-between">
-                        <span>{item.label}</span>
+                        <span className="flex items-center gap-2">
+                          <span>{item.label}</span>
+
+                          {item.href === "/admin/reviews" &&
+                            pendingReviewCount > 0 && (
+                              <span
+                                className="
+                                  inline-flex
+                                  min-w-5
+                                  items-center
+                                  justify-center
+                                  rounded-full
+                                  bg-red-600
+                                  px-1.5
+                                  py-0.5
+                                  text-[10px]
+                                  font-semibold
+                                  leading-none
+                                  text-white
+                                "
+                                aria-label={`${pendingReviewCount} pending reviews`}
+                                title={`${pendingReviewCount} pending reviews`}
+                              >
+                                {pendingReviewCount > 99
+                                  ? "99+"
+                                  : pendingReviewCount}
+                              </span>
+                            )}
+                        </span>
 
                         {/* ✅ badge کنار آیتم اصلی Suspicious IPs */}
                         {isSuspiciousGroup &&
