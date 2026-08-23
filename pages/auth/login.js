@@ -20,6 +20,9 @@ export default function Login() {
   const [msg, setMsg] = useState("");
   const [securityMsg, setSecurityMsg] = useState("");
 
+  const [accountBlocked, setAccountBlocked] =
+    useState(false);
+
   const [loading, setLoading] = useState(false);
 
   const [lang, setLang] = useState("en");
@@ -67,12 +70,36 @@ export default function Login() {
      🔵 Auto logout message
   ─────────────────────────────────────────────── */
   useEffect(() => {
-    const saved = sessionStorage.getItem("iran_auto_logout_msg");
+    const saved =
+      sessionStorage.getItem(
+        "iran_auto_logout_msg"
+      );
 
-    if (saved) {
-      setSecurityMsg(saved);
-      sessionStorage.removeItem("iran_auto_logout_msg");
+    if (!saved) {
+      return;
     }
+
+    const reason =
+      new URLSearchParams(
+        window.location.search
+      ).get("reason") || "";
+
+    const isSuspension =
+      reason.startsWith(
+        "ACCOUNT_SUSPENDED"
+      ) ||
+      reason === "account_locked";
+
+    if (isSuspension) {
+      setAccountBlocked(true);
+      setMsg(saved);
+    } else {
+      setSecurityMsg(saved);
+    }
+
+    sessionStorage.removeItem(
+      "iran_auto_logout_msg"
+    );
   }, []);
 
   /* ───────────────────────────────────────────────
@@ -81,6 +108,7 @@ export default function Login() {
   async function syncCaptchaStatus(typedEmail) {
     if (!typedEmail || typedEmail.length < 3) {
       setShowCaptcha(false);
+      setAccountBlocked(false);
       return;
     }
 
@@ -90,14 +118,20 @@ export default function Login() {
       );
 
       if (res.data.blocked) {
+        setAccountBlocked(true);
+
         setMsg(
           res.data.error ||
             "Your account has been suspended. Please contact IranConnect Support."
         );
+
         return;
       }
 
-      const required = res.data.captcha_required === true;
+      setAccountBlocked(false);
+
+      const required =
+        res.data.captcha_required === true;
 
       if (required !== showCaptcha) {
         setShowCaptcha(required);
@@ -146,6 +180,14 @@ export default function Login() {
   async function submit(e) {
     e.preventDefault();
 
+    if (
+      accountBlocked ||
+      !email.trim() ||
+      !password
+    ) {
+      return;
+    }
+
     setLoading(true);
     setMsg("");
     setVerificationRequiredEmail("");
@@ -181,6 +223,8 @@ export default function Login() {
 
       /* 🚫 BLOCKED */
       if (res.data.blocked) {
+        setAccountBlocked(true);
+
         setMsg(
           res.data.error ||
             "Your account has been suspended. Please contact IranConnect Support."
@@ -223,6 +267,8 @@ export default function Login() {
 
       /* 🚫 BLOCKED */
       if (data.blocked) {
+        setAccountBlocked(true);
+
         setMsg(
           data.error ||
             "Your account has been suspended. Please contact IranConnect Support."
@@ -336,9 +382,14 @@ export default function Login() {
               required
               placeholder="Email address"
               value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
+              onChange={(e) => {
+                setEmail(e.target.value);
+
+                if (accountBlocked) {
+                  setAccountBlocked(false);
+                  setMsg("");
+                }
+              }}
               className="
                 w-full
                 p-3
@@ -431,7 +482,12 @@ export default function Login() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={
+                loading ||
+                accountBlocked ||
+                !email.trim() ||
+                !password
+              }
               className="
                 w-full
                 bg-turquoise
@@ -440,6 +496,9 @@ export default function Login() {
                 rounded-lg
                 shadow-md
                 hover:bg-turquoise/90
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+                disabled:hover:bg-turquoise
               "
             >
               {loading
@@ -449,18 +508,45 @@ export default function Login() {
           </form>
 
           {msg && (
-            <p
-              className="
-                text-sm
-                text-center
-                mt-4
-              "
-              style={{
-                color: "var(--text)",
-              }}
-            >
-              {msg}
-            </p>
+            accountBlocked ? (
+              <div
+                role="alert"
+                className="
+                  mt-4
+                  rounded-xl
+                  border
+                  border-red-500/35
+                  bg-red-500/10
+                  px-4
+                  py-3
+                  text-center
+                "
+              >
+                <p
+                  className="
+                    text-sm
+                    font-semibold
+                    leading-relaxed
+                    text-red-500
+                  "
+                >
+                  {msg}
+                </p>
+              </div>
+            ) : (
+              <p
+                className="
+                  mt-4
+                  text-center
+                  text-sm
+                "
+                style={{
+                  color: "var(--text)",
+                }}
+              >
+                {msg}
+              </p>
+            )
           )}
 
           {verificationRequiredEmail && (
