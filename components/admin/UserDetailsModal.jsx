@@ -61,7 +61,11 @@ const DEFAULT_ADMIN_HISTORY_PAGINATION = {
   hasNextPage: false,
 };
 
-export default function UserDetailsModal({ user, onClose }) {
+export default function UserDetailsModal({
+  user,
+  onClose,
+  onUpdated,
+}) {
   const mountedRef = useRef(true);
 
   const [details, setDetails] = useState(null);
@@ -136,6 +140,11 @@ export default function UserDetailsModal({ user, onClose }) {
 
   const historyRequestIdRef =
     useRef(0);
+
+  const [
+    expandedHistoryId,
+    setExpandedHistoryId,
+  ] = useState(null);
 
   /* ----------------------------------------------------
      🧹 Prevent state update after unmount
@@ -389,6 +398,7 @@ export default function UserDetailsModal({ user, onClose }) {
 
           await fetchDetails();
           await refreshAdministrativeHistory();
+          await onUpdated?.();
         } catch (err) {
           if (
             err.response?.status === 403
@@ -419,6 +429,7 @@ export default function UserDetailsModal({ user, onClose }) {
         user,
         fetchDetails,
         refreshAdministrativeHistory,
+        onUpdated,
       ]
     );
   /* ----------------------------------------------------
@@ -484,6 +495,7 @@ export default function UserDetailsModal({ user, onClose }) {
 
           await fetchDetails();
           await refreshAdministrativeHistory();
+          await onUpdated?.();
         } catch (err) {
           if (
             err.response?.status === 403
@@ -516,6 +528,7 @@ export default function UserDetailsModal({ user, onClose }) {
         user,
         fetchDetails,
         refreshAdministrativeHistory,
+        onUpdated,
       ]
     );
 
@@ -595,6 +608,7 @@ export default function UserDetailsModal({ user, onClose }) {
             "🗑️ User deleted successfully"
           );
 
+          await onUpdated?.();
           onClose();
         } catch (err) {
           if (
@@ -627,6 +641,7 @@ export default function UserDetailsModal({ user, onClose }) {
         deleteConfirmationEmail,
         user,
         onClose,
+        onUpdated,
       ]
     );
 
@@ -703,6 +718,7 @@ export default function UserDetailsModal({ user, onClose }) {
 
           await fetchDetails();
           await refreshAdministrativeHistory();
+          await onUpdated?.();
         } catch (err) {
           if (
             err.response?.status === 403
@@ -737,6 +753,7 @@ export default function UserDetailsModal({ user, onClose }) {
         user,
         fetchDetails,
         refreshAdministrativeHistory,
+        onUpdated,
       ]
     );
 
@@ -824,6 +841,24 @@ export default function UserDetailsModal({ user, onClose }) {
                   <strong>Role:</strong>{" "}
                   {details.role}
                 </div>
+
+                {details.current_account_status
+                  ?.is_deleted &&
+                  details.latest_administrative_context
+                    ?.canonical_action_type ===
+                    "user.delete" && (
+                  <div className="sm:col-span-2">
+                    <strong>
+                      Original email at deletion:
+                    </strong>{" "}
+                    <span className="break-all">
+                      {details
+                        .latest_administrative_context
+                        .target?.email ||
+                        "Not recorded"}
+                    </span>
+                  </div>
+                )}
 
                 <div>
                   <strong>Verified:</strong>{" "}
@@ -1079,128 +1114,118 @@ export default function UserDetailsModal({ user, onClose }) {
                   </p>
                 ) : (
                   <>
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {administrativeHistory.map(
-                        (entry) => (
-                          <article
-                            key={entry.id}
-                            className="rounded-lg border border-white/10 p-4 text-sm"
-                          >
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                <strong>
-                                  Action:
-                                </strong>{" "}
-                                {formatAdminActionLabel(
-                                  entry
-                                    .canonical_action_type
-                                )}
-                              </div>
+                        (entry) => {
+                          const expanded =
+                            expandedHistoryId ===
+                            entry.id;
 
-                              <div>
-                                <strong>
-                                  Result:
-                                </strong>{" "}
-                                {formatAuditResult(
-                                  entry.result
-                                )}
-                              </div>
-
-                              <div>
-                                <strong>
-                                  Actor:
-                                </strong>{" "}
-                                <span className="break-all">
-                                  {entry.actor
-                                    ?.email ||
-                                    "Not recorded"}
+                          return (
+                            <article
+                              key={entry.id}
+                              className="rounded-lg border border-[var(--border)] overflow-hidden"
+                            >
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setExpandedHistoryId(
+                                    expanded
+                                      ? null
+                                      : entry.id
+                                  )
+                                }
+                                className="w-full flex items-center justify-between gap-4 p-4 text-left hover:bg-[var(--bg)]/50 transition"
+                                aria-expanded={
+                                  expanded
+                                }
+                              >
+                                <span className="font-semibold">
+                                  {formatAdminActionLabel(
+                                    entry
+                                      .canonical_action_type
+                                  )}
                                 </span>
-                              </div>
 
-                              <div>
-                                <strong>
-                                  Actor role:
-                                </strong>{" "}
-                                {entry.actor
-                                  ?.role ||
-                                  "Not recorded"}
-                              </div>
+                                <span className="text-sm opacity-70 whitespace-nowrap">
+                                  {formatDateTime(
+                                    entry.created_at
+                                  )}
+                                  {" · "}
+                                  {formatAuditResult(
+                                    entry.result
+                                  )}
+                                </span>
+                              </button>
 
-                              <div>
-                                <strong>
-                                  Recorded:
-                                </strong>{" "}
-                                {formatDateTime(
-                                  entry.created_at
-                                )}
-                              </div>
+                              {expanded && (
+                                <div className="border-t border-[var(--border)] p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                  <div>
+                                    <strong>Actor:</strong>{" "}
+                                    <span className="break-all">
+                                      {entry.actor?.email ||
+                                        "Not recorded"}
+                                    </span>
+                                  </div>
 
-                              <div>
-                                <strong>
-                                  Raw action:
-                                </strong>{" "}
-                                <code className="break-all text-xs">
-                                  {entry.raw_action_type ||
-                                    "Not recorded"}
-                                </code>
-                              </div>
+                                  <div>
+                                    <strong>Actor role:</strong>{" "}
+                                    {entry.actor?.role ||
+                                      "Not recorded"}
+                                  </div>
 
-                              <div>
-                                <strong>
-                                  Role before:
-                                </strong>{" "}
-                                {entry.target
-                                  ?.role_before ||
-                                  "Not recorded"}
-                              </div>
+                                  <div>
+                                    <strong>Raw action:</strong>{" "}
+                                    <code className="text-xs">
+                                      {entry.raw_action_type ||
+                                        "Not recorded"}
+                                    </code>
+                                  </div>
 
-                              <div>
-                                <strong>
-                                  Role after:
-                                </strong>{" "}
-                                {entry.target
-                                  ?.role_after ||
-                                  "Not recorded"}
-                              </div>
+                                  <div>
+                                    <strong>Role change:</strong>{" "}
+                                    {entry.target
+                                      ?.role_before ||
+                                      "—"}
+                                    {" → "}
+                                    {entry.target
+                                      ?.role_after ||
+                                      "—"}
+                                  </div>
 
-                              <div className="sm:col-span-2">
-                                <strong>
-                                  Admin note:
-                                </strong>
+                                  <div className="sm:col-span-2">
+                                    <strong>Admin note:</strong>
+                                    <div className="mt-1 whitespace-pre-wrap break-words">
+                                      {entry.admin_note ||
+                                        "Not recorded"}
+                                    </div>
+                                  </div>
 
-                                <div className="mt-1 whitespace-pre-wrap break-words opacity-90">
-                                  {entry.admin_note ||
-                                    "Not recorded"}
-                                </div>
-                              </div>
+                                  {entry.failure_reason && (
+                                    <div className="sm:col-span-2">
+                                      <strong>
+                                        Failure reason:
+                                      </strong>
+                                      <div className="mt-1 text-red-500 whitespace-pre-wrap">
+                                        {
+                                          entry.failure_reason
+                                        }
+                                      </div>
+                                    </div>
+                                  )}
 
-                              {entry.failure_reason && (
-                                <div className="sm:col-span-2">
-                                  <strong>
-                                    Failure reason:
-                                  </strong>
-
-                                  <div className="mt-1 whitespace-pre-wrap break-words text-red-500">
-                                    {
-                                      entry.failure_reason
-                                    }
+                                  <div className="sm:col-span-2">
+                                    <strong>Request ID:</strong>{" "}
+                                    <span className="break-all text-xs">
+                                      {entry.request_id ||
+                                        "Not recorded"}
+                                    </span>
                                   </div>
                                 </div>
                               )}
-
-                              <div className="sm:col-span-2">
-                                <strong>
-                                  Request ID:
-                                </strong>{" "}
-
-                                <span className="break-all text-xs">
-                                  {entry.request_id ||
-                                    "Not recorded"}
-                                </span>
-                              </div>
-                            </div>
-                          </article>
-                        )
+                            </article>
+                          );
+                        }
                       )}
                     </div>
 
@@ -1220,8 +1245,10 @@ export default function UserDetailsModal({ user, onClose }) {
               </section>
             )}
 
-            {!forbidden && (
-              <div className="flex flex-wrap gap-3 mt-6 justify-end">
+            {!forbidden &&
+              !details.current_account_status
+                ?.is_deleted && (
+              <div className="sticky bottom-0 z-20 mt-6 -mx-1 px-1 py-4 flex flex-wrap gap-3 justify-end border-t border-[var(--border)] bg-[var(--card-bg)]">
                 {currentRole === "superadmin" && (
                   <button
                     onClick={

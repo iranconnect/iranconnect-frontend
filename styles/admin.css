@@ -316,3 +316,15 @@
   font-size: 0.875rem;
   line-height: 1.4;
 }
+
+
+.admin-btn-danger {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.admin-btn-danger:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}

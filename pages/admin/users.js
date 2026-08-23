@@ -48,6 +48,7 @@ function UsersPageContent() {
     q: "",
     role: "",
     verified: "",
+    status: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -65,7 +66,12 @@ function UsersPageContent() {
     applyFilters,
     clearFilters,
   } = usePaginationQuery({
-    filterKeys: ["q", "role", "verified"],
+    filterKeys: [
+      "q",
+      "role",
+      "verified",
+      "status",
+    ],
     defaultLimit: 10,
   });
 
@@ -81,12 +87,14 @@ function UsersPageContent() {
       q: filters.q || "",
       role: filters.role || "",
       verified: filters.verified || "",
+      status: filters.status || "",
     });
   }, [
     isReady,
     filters.q,
     filters.role,
     filters.verified,
+    filters.status,
   ]);
 
   /* ============================================================
@@ -105,6 +113,7 @@ function UsersPageContent() {
     filters.q,
     filters.role,
     filters.verified,
+    filters.status,
   ]);
 
   async function fetchUsers() {
@@ -123,6 +132,8 @@ function UsersPageContent() {
             role: filters.role || undefined,
             verified:
               filters.verified || undefined,
+            status:
+              filters.status || undefined,
           },
           withCredentials: true,
         }
@@ -185,6 +196,7 @@ function UsersPageContent() {
       q: draftFilters.q,
       role: draftFilters.role,
       verified: draftFilters.verified,
+      status: draftFilters.status,
     });
   }
 
@@ -193,6 +205,7 @@ function UsersPageContent() {
       q: "",
       role: "",
       verified: "",
+      status: "",
     });
   
     await clearFilters();
@@ -306,6 +319,30 @@ function UsersPageContent() {
               </option>
             </select>
 
+            <select
+              className="admin-input w-40"
+              value={draftFilters.status}
+              onChange={(event) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
+              }
+            >
+              <option value="">
+                All Statuses
+              </option>
+              <option value="active">
+                Active
+              </option>
+              <option value="blocked">
+                Blocked
+              </option>
+              <option value="deleted">
+                Deleted
+              </option>
+            </select>
+
             <div className="flex gap-3">
               <button
                 type="submit"
@@ -378,7 +415,7 @@ function UsersPageContent() {
                         Verified
                       </th>
                       <th className="text-center p-3">
-                        Blocked
+                        Account Status
                       </th>
                       <th className="text-left p-3">
                         Created
@@ -395,8 +432,14 @@ function UsersPageContent() {
                         key={user.id}
                         className="border-t border-[var(--border)] hover:bg-[var(--bg)]/40 transition"
                       >
-                        <td className="p-3">
-                          {user.email}
+                        <td className="p-3 whitespace-nowrap">
+                          <span
+                            title={user.email}
+                          >
+                            {user.email?.length > 25
+                              ? `${user.email.slice(0, 22)}...`
+                              : user.email}
+                          </span>
                         </td>
 
                         <td className="p-3 capitalize">
@@ -407,8 +450,12 @@ function UsersPageContent() {
                           {user.is_verified ? "✅" : "❌"}
                         </td>
 
-                        <td className="p-3 text-center">
-                          {user.is_blocked ? "🚫" : "🟢"}
+                        <td className="p-3 text-center whitespace-nowrap">
+                          {user.is_deleted
+                            ? "Deleted"
+                            : user.is_blocked
+                              ? "Blocked"
+                              : "Active"}
                         </td>
 
                         <td className="p-3">
