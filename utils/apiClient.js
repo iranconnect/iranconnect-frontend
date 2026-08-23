@@ -109,10 +109,16 @@ apiClient.interceptors.response.use(
           ? data.code.trim()
           : "account_locked";
 
-      forceRedirect(
-        blockedMessage,
-        blockedReason
-      );
+      /*
+       * Auth pages handle suspension responses locally so
+       * the exact server-authoritative message can be shown.
+       */
+      if (!AUTH_PAGES.includes(currentPath)) {
+        forceRedirect(
+          blockedMessage,
+          blockedReason
+        );
+      }
 
       return Promise.reject(err);
     }

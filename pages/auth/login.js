@@ -90,7 +90,10 @@ export default function Login() {
       );
 
       if (res.data.blocked) {
-        setMsg("Your account is suspended. Contact support.");
+        setMsg(
+          res.data.error ||
+            "Your account has been suspended. Please contact IranConnect Support."
+        );
         return;
       }
 
@@ -178,7 +181,10 @@ export default function Login() {
 
       /* 🚫 BLOCKED */
       if (res.data.blocked) {
-        setMsg("Your account has been suspended. Please contact support.");
+        setMsg(
+          res.data.error ||
+            "Your account has been suspended. Please contact IranConnect Support."
+        );
 
         setLoading(false);
         return;
@@ -217,7 +223,10 @@ export default function Login() {
 
       /* 🚫 BLOCKED */
       if (data.blocked) {
-        setMsg("Your account has been suspended.");
+        setMsg(
+          data.error ||
+            "Your account has been suspended. Please contact IranConnect Support."
+        );
 
         setLoading(false);
         return;
