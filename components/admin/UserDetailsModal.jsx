@@ -73,7 +73,29 @@ export default function UserDetailsModal({
   const [errorMsg, setErrorMsg] = useState("");
   const [forbidden, setForbidden] = useState(false);
 
-  const { role: currentRole } = useAuthSession();
+  const {
+    role: currentRole,
+    user: currentSessionUser,
+  } = useAuthSession();
+
+  const displayEmail =
+    details?.display_email ||
+    details?.email ||
+    user?.display_email ||
+    user?.email ||
+    null;
+
+  const isCurrentSessionAccount =
+    Boolean(
+      currentSessionUser?.email &&
+      displayEmail &&
+      currentSessionUser.email
+        .trim()
+        .toLowerCase() ===
+        displayEmail
+          .trim()
+          .toLowerCase()
+    );
 
   const [
     emailActionModalOpen,
@@ -803,7 +825,7 @@ export default function UserDetailsModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="admin-card max-w-2xl w-full relative overflow-y-auto max-h-[90vh]">
+      <div className="admin-card max-w-2xl w-full relative max-h-[90vh] flex flex-col overflow-hidden">
         <button
           onClick={onClose}
           className="absolute top-3 right-4 text-turquoise text-lg font-bold"
@@ -815,6 +837,7 @@ export default function UserDetailsModal({
           User Details
         </h2>
 
+        <div className="flex-1 min-h-0 overflow-y-auto">
         {loading ? (
           <p className="text-center text-gray-400">Loading...</p>
         ) : errorMsg ? (
@@ -833,7 +856,8 @@ export default function UserDetailsModal({
                 <div>
                   <strong>Email:</strong>{" "}
                   <span className="break-all">
-                    {details.email}
+                    {displayEmail ||
+                      "Not recorded"}
                   </span>
                 </div>
 
@@ -841,24 +865,6 @@ export default function UserDetailsModal({
                   <strong>Role:</strong>{" "}
                   {details.role}
                 </div>
-
-                {details.current_account_status
-                  ?.is_deleted &&
-                  details.latest_administrative_context
-                    ?.canonical_action_type ===
-                    "user.delete" && (
-                  <div className="sm:col-span-2">
-                    <strong>
-                      Original email at deletion:
-                    </strong>{" "}
-                    <span className="break-all">
-                      {details
-                        .latest_administrative_context
-                        .target?.email ||
-                        "Not recorded"}
-                    </span>
-                  </div>
-                )}
 
                 <div>
                   <strong>Verified:</strong>{" "}
@@ -1245,69 +1251,94 @@ export default function UserDetailsModal({
               </section>
             )}
 
-            {!forbidden &&
-              !details.current_account_status
-                ?.is_deleted && (
-              <div className="sticky bottom-0 z-20 mt-6 -mx-1 px-1 py-4 flex flex-wrap gap-3 justify-end border-t border-[var(--border)] bg-[var(--card-bg)]">
-                {currentRole === "superadmin" && (
-                  <button
-                    onClick={
-                      openRoleActionModal
-                    }
-                    className="admin-btn admin-btn-secondary"
-                    disabled={actionLoading}
-                  >
-                    Change Role
-                  </button>
-                )}
-
-                <button
-                  onClick={
-                    openBlockActionModal
-                  }
-                  className="admin-btn admin-btn-secondary"
-                  disabled={actionLoading}
-                >
-                  {details.is_blocked
-                    ? "Unblock"
-                    : "Block"}
-                </button>
-
-                {currentRole === "superadmin" && (
-                  <button
-                    onClick={
-                      openEmailActionModal
-                    }
-                    className="admin-btn admin-btn-secondary"
-                    disabled={sendingEmail}
-                  >
-                    Send Email
-                  </button>
-                )}
-
-                {currentRole === "superadmin" && (
-                  <button
-                    onClick={
-                      openDeleteActionModal
-                    }
-                    className="admin-btn admin-btn-danger"
-                    disabled={actionLoading}
-                  >
-                    Delete
-                  </button>
-                )}
-              </div>
-            )}
           </>
         )}
+        </div>
+
+        {details &&
+          !forbidden &&
+          !details.current_account_status
+            ?.is_deleted && (
+            <div className="shrink-0 -mx-6 -mb-6 mt-0 px-6 py-4 border-t border-[var(--border)] bg-[var(--card-bg)]">
+              {isCurrentSessionAccount ? (
+                <div className="text-sm text-center px-4 py-3 rounded-lg border border-[var(--turquoise)] text-[var(--text)] bg-[var(--bg)]">
+                  No administrative actions are available for this account because you are currently signed in with it.
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-3 justify-end">
+                  {currentRole ===
+                    "superadmin" && (
+                    <button
+                      type="button"
+                      onClick={
+                        openRoleActionModal
+                      }
+                      className="admin-btn admin-btn-primary"
+                      disabled={
+                        actionLoading
+                      }
+                    >
+                      Change Role
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={
+                      openBlockActionModal
+                    }
+                    className="admin-btn admin-btn-primary"
+                    disabled={
+                      actionLoading
+                    }
+                  >
+                    {details.is_blocked
+                      ? "Unblock"
+                      : "Block"}
+                  </button>
+
+                  {currentRole ===
+                    "superadmin" && (
+                    <button
+                      type="button"
+                      onClick={
+                        openEmailActionModal
+                      }
+                      className="admin-btn admin-btn-primary"
+                      disabled={
+                        sendingEmail
+                      }
+                    >
+                      Send Email
+                    </button>
+                  )}
+
+                  {currentRole ===
+                    "superadmin" && (
+                    <button
+                      type="button"
+                      onClick={
+                        openDeleteActionModal
+                      }
+                      className="admin-btn admin-btn-danger"
+                      disabled={
+                        actionLoading
+                      }
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
         <UserAdministrativeActionModal
           open={roleActionModalOpen}
           title="Change User Role"
           actionLabel="Change Role"
           targetLabel={
-            details?.email ||
-            user?.email ||
+            displayEmail ||
             `User #${user?.id}`
           }
           description="Select the new role and provide the required administrative note. This change will be recorded in the audit history."
@@ -1402,8 +1433,7 @@ export default function UserDetailsModal({
               : "Block"
           }
           targetLabel={
-            details?.email ||
-            user?.email ||
+            displayEmail ||
             `User #${user?.id}`
           }
           description={
@@ -1452,8 +1482,7 @@ export default function UserDetailsModal({
           title="Delete User"
           actionLabel="Delete"
           targetLabel={
-            details?.email ||
-            user?.email ||
+            displayEmail ||
             `User #${user?.id}`
           }
           description="This action soft-deletes and anonymizes the account, revokes active access, invalidates reset material, and records the administrative action. The user ID and required audit history are preserved."
@@ -1542,8 +1571,7 @@ export default function UserDetailsModal({
           title="Send Email"
           actionLabel="Send Email"
           targetLabel={
-            details?.email ||
-            user?.email ||
+            displayEmail ||
             `User #${user?.id}`
           }
           description="Send an email to this user and provide the required administrative note. The email body itself is not duplicated into the administrative audit history."

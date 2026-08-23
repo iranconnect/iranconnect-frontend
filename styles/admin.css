@@ -321,10 +321,19 @@
 .admin-btn-danger {
   background: #dc2626;
   color: #ffffff;
-  border-color: #dc2626;
+  border: 1px solid #dc2626;
+  padding: 0.5rem 2rem;
+  box-shadow:
+    4px 4px 10px rgba(127, 29, 29, 0.28),
+    -4px -4px 10px rgba(255, 255, 255, 0.08);
 }
 
 .admin-btn-danger:hover {
   background: #b91c1c;
   border-color: #b91c1c;
+}
+
+.admin-btn-danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }

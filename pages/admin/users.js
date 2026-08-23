@@ -434,11 +434,20 @@ function UsersPageContent() {
                       >
                         <td className="p-3 whitespace-nowrap">
                           <span
-                            title={user.email}
+                            title={
+                              user.display_email ||
+                              user.email
+                            }
                           >
-                            {user.email?.length > 25
-                              ? `${user.email.slice(0, 22)}...`
-                              : user.email}
+                            {(user.display_email ||
+                              user.email)?.length >
+                            25
+                              ? `${(
+                                  user.display_email ||
+                                  user.email
+                                ).slice(0, 22)}...`
+                              : user.display_email ||
+                                user.email}
                           </span>
                         </td>
 
