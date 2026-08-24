@@ -984,19 +984,19 @@ export default function UserDetailsModal({
               </div>
             </section>
 
-            {/* Latest Administrative Context */}
+            {/* Latest Suspension Context */}
             <section className="mt-6 pt-5 border-t border-white/10">
               <h3 className="text-base font-semibold text-turquoise mb-3">
-                Latest Administrative Context
+                Latest Suspension Context
               </h3>
 
-              {details.latest_administrative_context ? (
+              {details.latest_suspension_context ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div>
                     <strong>Action:</strong>{" "}
                     {formatAdminActionLabel(
                       details
-                        .latest_administrative_context
+                        .latest_suspension_context
                         .canonical_action_type
                     )}
                   </div>
@@ -1005,7 +1005,7 @@ export default function UserDetailsModal({
                     <strong>Result:</strong>{" "}
                     {formatAuditResult(
                       details
-                        .latest_administrative_context
+                        .latest_suspension_context
                         .result
                     )}
                   </div>
@@ -1014,7 +1014,7 @@ export default function UserDetailsModal({
                     <strong>Actor:</strong>{" "}
                     <span className="break-all">
                       {details
-                        .latest_administrative_context
+                        .latest_suspension_context
                         .actor?.email ||
                         "Not recorded"}
                     </span>
@@ -1023,7 +1023,7 @@ export default function UserDetailsModal({
                   <div>
                     <strong>Actor role:</strong>{" "}
                     {details
-                      .latest_administrative_context
+                      .latest_suspension_context
                       .actor?.role ||
                       "Not recorded"}
                   </div>
@@ -1032,7 +1032,7 @@ export default function UserDetailsModal({
                     <strong>Recorded at:</strong>{" "}
                     {formatDateTime(
                       details
-                        .latest_administrative_context
+                        .latest_suspension_context
                         .created_at
                     )}
                   </div>
@@ -1041,7 +1041,7 @@ export default function UserDetailsModal({
                     <strong>Request ID:</strong>{" "}
                     <span className="break-all">
                       {details
-                        .latest_administrative_context
+                        .latest_suspension_context
                         .request_id ||
                         "Not recorded"}
                     </span>
@@ -1051,21 +1051,21 @@ export default function UserDetailsModal({
                     <strong>Admin note:</strong>
                     <div className="mt-1 whitespace-pre-wrap break-words opacity-90">
                       {details
-                        .latest_administrative_context
+                        .latest_suspension_context
                         .admin_note ||
                         "Not recorded"}
                     </div>
                   </div>
 
                   {details
-                    .latest_administrative_context
+                    .latest_suspension_context
                     .failure_reason && (
                     <div className="sm:col-span-2">
                       <strong>Failure reason:</strong>
                       <div className="mt-1 whitespace-pre-wrap break-words text-red-500">
                         {
                           details
-                            .latest_administrative_context
+                            .latest_suspension_context
                             .failure_reason
                         }
                       </div>
@@ -1074,7 +1074,7 @@ export default function UserDetailsModal({
                 </div>
               ) : (
                 <p className="text-sm opacity-70">
-                  No administrative history has been recorded for this user.
+                  No suspension history has been recorded for this user.
                 </p>
               )}
             </section>
