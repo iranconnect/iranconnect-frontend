@@ -102,6 +102,9 @@ export default function UserDetailsModal({
     setEmailActionModalOpen,
   ] = useState(false);
 
+  const EMAIL_SUBJECT_MAX_LENGTH = 200;
+  const EMAIL_MESSAGE_MAX_LENGTH = 5000;
+
   const [emailBody, setEmailBody] =
     useState("");
 
@@ -711,6 +714,26 @@ export default function UserDetailsModal({
           return;
         }
 
+        if (
+          subject.length >
+          EMAIL_SUBJECT_MAX_LENGTH
+        ) {
+          alert(
+            `Subject must be at most ${EMAIL_SUBJECT_MAX_LENGTH} characters.`
+          );
+          return;
+        }
+
+        if (
+          message.length >
+          EMAIL_MESSAGE_MAX_LENGTH
+        ) {
+          alert(
+            `Message must be at most ${EMAIL_MESSAGE_MAX_LENGTH} characters.`
+          );
+          return;
+        }
+
         setSendingEmail(true);
 
         try {
@@ -1209,6 +1232,61 @@ export default function UserDetailsModal({
                                       "—"}
                                   </div>
 
+                                  {entry.canonical_action_type ===
+                                    "user.send_email" && (
+                                    <>
+                                      <div className="sm:col-span-2">
+                                        <strong>Recipient:</strong>{" "}
+                                        <span className="break-all">
+                                          {entry.target?.email ||
+                                            "Not recorded"}
+                                        </span>
+                                      </div>
+
+                                      <div className="sm:col-span-2">
+                                        <strong>Subject:</strong>
+                                        <div className="mt-1 whitespace-pre-wrap break-words">
+                                          {entry.metadata?.subject ||
+                                            "Not recorded"}
+                                        </div>
+                                      </div>
+
+                                      <div className="sm:col-span-2">
+                                        <strong>Message:</strong>
+                                        <div className="mt-1 whitespace-pre-wrap break-words">
+                                          {entry.metadata?.message ||
+                                            "Not recorded"}
+                                        </div>
+                                      </div>
+
+                                      <div>
+                                        <strong>Delivery status:</strong>{" "}
+                                        {entry.metadata
+                                          ?.email_delivery_attempted ===
+                                        false
+                                          ? "Not attempted"
+                                          : entry.metadata
+                                                ?.email_delivery_succeeded ===
+                                              true
+                                            ? "Succeeded"
+                                            : entry.metadata
+                                                  ?.email_delivery_succeeded ===
+                                                false
+                                              ? "Failed"
+                                              : "Not recorded"}
+                                      </div>
+
+                                      <div>
+                                        <strong>Audit recovery:</strong>{" "}
+                                        {entry.metadata
+                                          ?.audit_recovery ===
+                                        true
+                                          ? "Yes"
+                                          : "No"}
+                                      </div>
+                                    </>
+                                  )}
+
                                   <div className="sm:col-span-2">
                                     <strong>Admin note:</strong>
                                     <div className="mt-1 whitespace-pre-wrap break-words">
@@ -1589,7 +1667,7 @@ export default function UserDetailsModal({
             displayEmail ||
             `User #${user?.id}`
           }
-          description="Send an email to this user and provide the required administrative note. The email body itself is not duplicated into the administrative audit history."
+          description="Send an email to this user and provide the required administrative note. The recipient, subject, message, and delivery result are recorded in the SuperAdmin administrative history."
           contextItems={[
             {
               key: "role",
@@ -1631,9 +1709,18 @@ export default function UserDetailsModal({
                 }
                 className="admin-input w-full"
                 placeholder="Subject"
+                maxLength={
+                  EMAIL_SUBJECT_MAX_LENGTH
+                }
                 disabled={sendingEmail}
                 required
               />
+
+              <p className="mt-1 text-xs opacity-70 text-right">
+                {emailSubject.trim().length}
+                {" / "}
+                {EMAIL_SUBJECT_MAX_LENGTH}
+              </p>
             </div>
 
             <div>
@@ -1655,9 +1742,18 @@ export default function UserDetailsModal({
                 }
                 className="admin-input w-full resize-y"
                 placeholder="Message"
+                maxLength={
+                  EMAIL_MESSAGE_MAX_LENGTH
+                }
                 disabled={sendingEmail}
                 required
               />
+
+              <p className="mt-1 text-xs opacity-70 text-right">
+                {emailBody.trim().length}
+                {" / "}
+                {EMAIL_MESSAGE_MAX_LENGTH}
+              </p>
             </div>
           </div>
         </UserAdministrativeActionModal>
