@@ -57,33 +57,67 @@
   box-shadow: 0 0 0 2px var(--turquoise, #00bfa6);
 }
 
-/* 🩵 Buttons */
+/* 🩵 Buttons — aligned with Login button */
 .admin-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+
   font-weight: 500;
-  transition: all 0.25s ease;
+  line-height: 1.5;
+
   cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    opacity 0.2s ease,
+    box-shadow 0.2s ease;
 }
-.admin-btn-primary {
+
+/*
+ * Primary and secondary Admin actions intentionally share
+ * the same visual language as the public Login button.
+ */
+.admin-btn-primary,
+.admin-btn-secondary {
   background: var(--turquoise);
   color: var(--navy);
-  padding: 0.5rem 2rem;
-  box-shadow: 4px 4px 10px #b8e0dd, -4px -4px 10px #ffffff;
+  border: 1px solid transparent;
+
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
-.admin-btn-primary:hover {
+
+.admin-btn-primary:hover:not(:disabled),
+.admin-btn-secondary:hover:not(:disabled) {
   background: rgba(64, 224, 208, 0.9);
 }
-.admin-btn-secondary {
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  padding: 0.5rem 1rem;
+
+/*
+ * Destructive action:
+ * same geometry, spacing, shadow and interaction model
+ * as the Login/Admin buttons, but with destructive red.
+ */
+.admin-btn-danger {
+  background: #dc2626;
+  color: #ffffff;
+  border: 1px solid transparent;
+
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
-.admin-btn-secondary:hover {
-  opacity: 0.85;
+
+.admin-btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.admin-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 /* 🩵 Tables */
