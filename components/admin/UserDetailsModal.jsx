@@ -714,17 +714,18 @@ export default function UserDetailsModal({
         setSendingEmail(true);
 
         try {
-          await apiClient.post(
-            `/admin/users/${user.id}/send-email`,
-            {
-              subject,
-              message,
-              admin_note: adminNote,
-            },
-            {
-              withCredentials: true,
-            }
-          );
+          const response =
+            await apiClient.post(
+              `/admin/users/${user.id}/send-email`,
+              {
+                subject,
+                message,
+                admin_note: adminNote,
+              },
+              {
+                withCredentials: true,
+              }
+            );
 
           if (mountedRef.current) {
             setEmailActionModalOpen(
@@ -734,9 +735,18 @@ export default function UserDetailsModal({
             setEmailBody("");
           }
 
-          alert(
-            "✅ Email sent successfully"
-          );
+          if (
+            response.data?.code ===
+            "EMAIL_SENT_AUDIT_UNCONFIRMED"
+          ) {
+            alert(
+              "⚠️ Email was sent, but its audit record could not be confirmed. Do not resend this email. Please report the issue."
+            );
+          } else {
+            alert(
+              "✅ Email sent successfully"
+            );
+          }
 
           await fetchDetails();
           await refreshAdministrativeHistory();
