@@ -1261,8 +1261,13 @@ export default function UserDetailsModal({
             ?.is_deleted && (
             <div className="shrink-0 -mx-6 -mb-6 mt-0 px-6 py-4 border-t border-[var(--border)] bg-[var(--card-bg)]">
               {isCurrentSessionAccount ? (
-                <div className="text-sm text-center px-4 py-3 rounded-lg border border-[var(--turquoise)] text-[var(--text)] bg-[var(--bg)]">
-                  No administrative actions are available for this account because you are currently signed in with it.
+                <div className="text-sm text-center px-4 py-3 rounded-lg border border-[var(--turquoise)] text-[var(--text)] bg-[var(--bg)] leading-relaxed">
+                  <span className="block">
+                    No administrative actions are available for this account
+                  </span>
+                  <span className="block">
+                    because you are currently signed in with it.
+                  </span>
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-3 justify-end">
