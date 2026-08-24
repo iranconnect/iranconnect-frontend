@@ -1260,17 +1260,17 @@ export default function UserDetailsModal({
                                       </div>
 
                                       <div>
-                                        <strong>Delivery status:</strong>{" "}
+                                        <strong>Email send status:</strong>{" "}
                                         {entry.metadata
-                                          ?.email_delivery_attempted ===
+                                          ?.email_send_attempted ===
                                         false
                                           ? "Not attempted"
                                           : entry.metadata
-                                                ?.email_delivery_succeeded ===
+                                                ?.email_send_succeeded ===
                                               true
-                                            ? "Succeeded"
+                                            ? "Sent"
                                             : entry.metadata
-                                                  ?.email_delivery_succeeded ===
+                                                  ?.email_send_succeeded ===
                                                 false
                                               ? "Failed"
                                               : "Not recorded"}
