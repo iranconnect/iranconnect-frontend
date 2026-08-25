@@ -699,7 +699,9 @@ export default function BusinessReviews({
       {hasApprovedReviews && (
         <div className="mb-7 flex flex-wrap items-center gap-3 border-b border-[var(--border)] pb-6">
           <div className="text-3xl font-bold">
-            {summary.average_rating.toFixed(1)}
+            {Number(
+              summary.average_rating.toFixed(2)
+            )}
           </div>
 
           <ReviewStars
