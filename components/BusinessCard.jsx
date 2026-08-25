@@ -1,3 +1,4 @@
+import { formatPublicRating } from "../utils/formatPublicRating.js";
 // frontend/components/BusinessCard.jsx
 import Link from "next/link";
 import {
@@ -580,9 +581,7 @@ export default function BusinessCard({
                     "
                   >
                     ⭐{" "}
-                    {averageRating.toFixed(
-                      1
-                    )}
+                    {formatPublicRating(averageRating)}
                   </span>
                 )}
               </div>
@@ -699,9 +698,7 @@ export default function BusinessCard({
                   {hasApprovedRating && (
                     <span className="md:hidden">
                       ⭐{" "}
-                      {averageRating.toFixed(
-                        1
-                      )}{" "}
+                      {formatPublicRating(averageRating)}{" "}
                       ·{" "}
                     </span>
                   )}
@@ -874,7 +871,7 @@ export default function BusinessCard({
               backdrop-blur-sm
             "
           >
-            ⭐ {averageRating.toFixed(1)}
+            ⭐ {formatPublicRating(averageRating)}
           </div>
         )}
       </div>

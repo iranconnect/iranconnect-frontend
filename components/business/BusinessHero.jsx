@@ -1,3 +1,4 @@
+import { formatPublicRating } from "../../utils/formatPublicRating.js";
 //frontend/components/business/BusinessHero.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Phone, Globe, MessageCircle } from "lucide-react";
@@ -143,7 +144,9 @@ export default function BusinessHero({
 
           {hasApprovedRating && (
             <p className="text-lg font-medium">
-              ⭐ {averageRating.toFixed(1)}{" "}
+              ⭐ {formatPublicRating(
+                averageRating
+              )}{" "}
               ({reviewCount}{" "}
               {reviewCount === 1 ? "review" : "reviews"})
             </p>

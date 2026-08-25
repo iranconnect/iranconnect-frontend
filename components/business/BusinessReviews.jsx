@@ -1,3 +1,4 @@
+import { formatPublicRating } from "../../utils/formatPublicRating.js";
 //frontend/components/business/BusinessReviews.jsx
 import {
   useCallback,
@@ -699,8 +700,8 @@ export default function BusinessReviews({
       {hasApprovedReviews && (
         <div className="mb-7 flex flex-wrap items-center gap-3 border-b border-[var(--border)] pb-6">
           <div className="text-3xl font-bold">
-            {Number(
-              summary.average_rating.toFixed(2)
+            {formatPublicRating(
+              summary.average_rating
             )}
           </div>
 
