@@ -37,6 +37,9 @@ export default function ReviewModerationDialog({
   const [note, setNote] =
     useState("");
 
+  const [adminNote, setAdminNote] =
+    useState("");
+
   const requiresViolationReason =
     action === "reject" ||
     action === "hide";
@@ -51,12 +54,23 @@ export default function ReviewModerationDialog({
     requiresOtherNote &&
     note.trim().length < 10;
 
+  const normalizedAdminNote =
+    adminNote.trim();
+
+  const adminNoteTooShort =
+    normalizedAdminNote.length < 10;
+
+  const adminNoteTooLong =
+    normalizedAdminNote.length > 1000;
+
   const canSubmit =
     !loading &&
     (!requiresViolationReason ||
       Boolean(reasonCode)) &&
     !noteTooLong &&
-    !otherNoteTooShort;
+    !otherNoteTooShort &&
+    !adminNoteTooShort &&
+    !adminNoteTooLong;
 
   useEffect(() => {
     if (!open) return;
@@ -70,6 +84,7 @@ export default function ReviewModerationDialog({
         : "approved"
     );
     setNote("");
+    setAdminNote("");
 
     requestAnimationFrame(() => {
       initialFocusRef.current?.focus();
@@ -195,6 +210,8 @@ export default function ReviewModerationDialog({
           : "approved",
       note:
         note.trim() || null,
+      adminNote:
+        normalizedAdminNote,
     });
   }
 
@@ -413,6 +430,71 @@ export default function ReviewModerationDialog({
               </div>
             </div>
           )}
+
+          <div>
+            <label
+              htmlFor={`${titleId}-admin-note`}
+              className="
+                block
+                text-sm
+                font-medium
+                mb-2
+              "
+            >
+              Administrative Note *
+            </label>
+
+            <textarea
+              id={`${titleId}-admin-note`}
+              className="
+                admin-input
+                w-full
+                min-h-28
+                resize-y
+              "
+              value={adminNote}
+              disabled={loading}
+              maxLength={1001}
+              onChange={(event) =>
+                setAdminNote(
+                  event.target.value
+                )
+              }
+              placeholder="Required. Add the internal administrative justification for this action."
+              required
+            />
+
+            <div
+              className="
+                mt-1
+                flex
+                justify-between
+                gap-4
+                text-xs
+              "
+            >
+              <span
+                className={
+                  adminNoteTooShort ||
+                  adminNoteTooLong
+                    ? "text-red-600"
+                    : "admin-muted"
+                }
+              >
+                Private administrative note. Required: 10–1000 characters.
+              </span>
+
+              <span
+                className={
+                  adminNoteTooLong
+                    ? "text-red-600"
+                    : "admin-muted"
+                }
+              >
+                {adminNote.length}/1000
+              </span>
+            </div>
+          </div>
 
           {error && (
             <div

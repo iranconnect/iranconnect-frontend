@@ -165,6 +165,13 @@ export default function AdminReviewDetailPage() {
     ? historyData.history
     : [];
 
+  const administrativeHistory =
+    Array.isArray(
+      historyData?.administrative_history
+    )
+      ? historyData.administrative_history
+      : [];
+
   const reviewId = useMemo(() => {
     const raw = String(id || "").trim();
 
@@ -384,6 +391,7 @@ export default function AdminReviewDetailPage() {
   async function submitModeration({
     reasonCode,
     note,
+    adminNote,
   }) {
     if (
       !review ||
@@ -408,6 +416,8 @@ export default function AdminReviewDetailPage() {
             reason_code:
               reasonCode,
             note,
+            admin_note:
+              adminNote,
           }
         );
 
@@ -1133,6 +1143,182 @@ export default function AdminReviewDetailPage() {
                             </pre>
                           </div>
                         </div>
+                        </li>
+                      )
+                    )}
+                  </ol>
+                )}
+              </section>
+            )}
+
+            {isSuperAdmin && (
+              <section className="admin-section">
+                <div
+                  className="
+                    flex
+                    flex-col
+                    gap-1
+                    sm:flex-row
+                    sm:items-center
+                    sm:justify-between
+                    mb-4
+                  "
+                >
+                  <div>
+                    <h3 className="font-semibold">
+                      Administrative History
+                    </h3>
+
+                    <p className="admin-muted text-sm mt-1">
+                      Private administrative audit trail for review moderation actions.
+                    </p>
+                  </div>
+
+                  {!historyLoading &&
+                    !historyError && (
+                      <span className="admin-muted text-sm">
+                        {administrativeHistory.length} event
+                        {administrativeHistory.length === 1
+                          ? ""
+                          : "s"}
+                      </span>
+                    )}
+                </div>
+
+                {historyLoading ? (
+                  <div className="admin-card">
+                    <p className="admin-muted">
+                      Loading administrative history...
+                    </p>
+                  </div>
+                ) : historyError ? (
+                  <div className="admin-card">
+                    <p
+                      className="
+                        text-red-600
+                        text-sm
+                      "
+                    >
+                      {historyError}
+                    </p>
+                  </div>
+                ) : administrativeHistory.length === 0 ? (
+                  <div className="admin-card">
+                    <p className="admin-muted">
+                      No administrative history was found.
+                    </p>
+                  </div>
+                ) : (
+                  <ol className="space-y-4">
+                    {administrativeHistory.map(
+                      (event, index) => (
+                        <li
+                          key={event.id}
+                          className="
+                            admin-card
+                            relative
+                          "
+                        >
+                          <div
+                            className="
+                              flex
+                              flex-col
+                              gap-2
+                              sm:flex-row
+                              sm:items-start
+                              sm:justify-between
+                              mb-4
+                            "
+                          >
+                            <div>
+                              <div className="font-semibold">
+                                {index + 1}.{" "}
+                                {formatActionType(
+                                  event.action_type
+                                )}
+                              </div>
+
+                              <div className="admin-muted text-xs mt-1">
+                                Audit #{event.id}
+                              </div>
+                            </div>
+
+                            <div className="admin-muted text-xs">
+                              {formatDate(
+                                event.created_at
+                              )}
+                            </div>
+                          </div>
+
+                          <div
+                            className="
+                              grid
+                              grid-cols-1
+                              md:grid-cols-2
+                              gap-4
+                            "
+                          >
+                            <DetailField label="Result">
+                              {event.action_result || "—"}
+                            </DetailField>
+
+                            <DetailField label="Performed By">
+                              {event.actor?.email ||
+                                (event.admin_id
+                                  ? `Admin #${event.admin_id}`
+                                  : "—")}
+                            </DetailField>
+
+                            <DetailField label="Actor Role">
+                              {event.actor?.role || "—"}
+                            </DetailField>
+
+                            <DetailField label="Actor User ID">
+                              {event.actor?.id ??
+                                event.admin_id ??
+                                "—"}
+                            </DetailField>
+
+                            <div className="md:col-span-2">
+                              <DetailField label="Administrative Note">
+                                <div
+                                  className="
+                                    whitespace-pre-wrap
+                                    break-words
+                                  "
+                                >
+                                  {event.admin_note || "—"}
+                                </div>
+                              </DetailField>
+                            </div>
+
+                            <div className="md:col-span-2">
+                              <DetailField label="Failure Reason">
+                                <div
+                                  className="
+                                    whitespace-pre-wrap
+                                    break-words
+                                  "
+                                >
+                                  {event.failure_reason || "—"}
+                                </div>
+                              </DetailField>
+                            </div>
+
+                            <div className="md:col-span-2">
+                              <DetailField label="Request ID">
+                                <div
+                                  className="
+                                    font-mono
+                                    text-xs
+                                    break-all
+                                  "
+                                >
+                                  {event.request_id || "—"}
+                                </div>
+                              </DetailField>
+                            </div>
+                          </div>
                         </li>
                       )
                     )}
