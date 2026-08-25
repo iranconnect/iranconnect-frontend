@@ -1092,9 +1092,11 @@ export default function AdminReviewDetailPage() {
                       "—"}
                   </DetailField>
 
-                  <DetailField label="Email">
-                    {reviewer?.email || "—"}
-                  </DetailField>
+                  {isSuperAdmin && (
+                    <DetailField label="Email">
+                      {reviewer?.email || "—"}
+                    </DetailField>
+                  )}
 
                   <DetailField label="Role">
                     {reviewer?.role || "—"}

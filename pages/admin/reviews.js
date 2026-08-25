@@ -196,6 +196,9 @@ export default function AdminReviewsPage() {
       role
     );
 
+  const isSuperAdmin =
+    role === "superadmin";
+
   const [
     draftFilters,
     setDraftFilters,
@@ -813,19 +816,21 @@ export default function AdminReviewsPage() {
                           )}
                         </div>
 
-                        <div
-                          className="admin-muted mt-1 block max-w-full overflow-hidden whitespace-nowrap text-xs"
-                          title={
-                            review.reviewer_email ||
-                            "No email"
-                          }
-                        >
-                          {truncateQueueValue(
-                            review.reviewer_email ||
-                              "No email",
-                            20
-                          )}
-                        </div>
+                        {isSuperAdmin && (
+                          <div
+                            className="admin-muted mt-1 block max-w-full overflow-hidden whitespace-nowrap text-xs"
+                            title={
+                              review.reviewer_email ||
+                              "No email"
+                            }
+                          >
+                            {truncateQueueValue(
+                              review.reviewer_email ||
+                                "No email",
+                              20
+                            )}
+                          </div>
+                        )}
                       </td>
 
                       <td className="overflow-hidden">
