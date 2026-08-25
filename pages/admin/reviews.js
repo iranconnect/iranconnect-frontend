@@ -548,7 +548,7 @@ export default function AdminReviewsPage() {
                       disabled:opacity-60
                       ${
                         active
-                          ? "admin-btn-primary scale-[1.04] brightness-95 font-semibold"
+                          ? "admin-btn-primary scale-[1.06] brightness-[0.92] font-semibold"
                           : "admin-btn-secondary"
                       }
                     `}
