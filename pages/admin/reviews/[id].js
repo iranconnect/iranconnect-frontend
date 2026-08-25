@@ -122,12 +122,61 @@ export default function AdminReviewDetailPage() {
   const [notFound, setNotFound] =
     useState(false);
 
-  const [historyData, setHistoryData] =
-    useState(null);
-  const [historyLoading, setHistoryLoading] =
-    useState(false);
-  const [historyError, setHistoryError] =
-    useState("");
+  const [
+    moderationHistoryOpen,
+    setModerationHistoryOpen,
+  ] = useState(false);
+
+  const [
+    moderationHistory,
+    setModerationHistory,
+  ] = useState([]);
+
+  const [
+    moderationHistoryLoading,
+    setModerationHistoryLoading,
+  ] = useState(false);
+
+  const [
+    moderationHistoryError,
+    setModerationHistoryError,
+  ] = useState("");
+
+  const [
+    moderationHistoryPagination,
+    setModerationHistoryPagination,
+  ] = useState({
+    has_more: false,
+    next_cursor: null,
+  });
+
+  const [
+    administrativeHistoryOpen,
+    setAdministrativeHistoryOpen,
+  ] = useState(false);
+
+  const [
+    administrativeHistory,
+    setAdministrativeHistory,
+  ] = useState([]);
+
+  const [
+    administrativeHistoryLoading,
+    setAdministrativeHistoryLoading,
+  ] = useState(false);
+
+  const [
+    administrativeHistoryError,
+    setAdministrativeHistoryError,
+  ] = useState("");
+
+  const [
+    administrativeHistoryPagination,
+    setAdministrativeHistoryPagination,
+  ] = useState({
+    has_more: false,
+    next_cursor: null,
+  });
 
   const [moderationAction, setModerationAction] =
     useState(null);
@@ -157,20 +206,7 @@ export default function AdminReviewDetailPage() {
   const reviewer = data?.reviewer || null;
 
   const moderator =
-    historyData?.moderator || null;
-
-  const history = Array.isArray(
-    historyData?.history
-  )
-    ? historyData.history
-    : [];
-
-  const administrativeHistory =
-    Array.isArray(
-      historyData?.administrative_history
-    )
-      ? historyData.administrative_history
-      : [];
+    data?.moderator || null;
 
   const reviewId = useMemo(() => {
     const raw = String(id || "").trim();
@@ -256,86 +292,226 @@ export default function AdminReviewDetailPage() {
   ]);
 
   /*
-   * SuperAdmin-only audit data.
+   * History is deliberately lazy-loaded.
    *
-   * Admin users must never request this endpoint.
-   * Backend RBAC remains authoritative.
+   * Opening Review Detail must not trigger either history
+   * endpoint. Each stream owns its own pagination lifecycle.
    */
-  useEffect(() => {
+  async function loadModerationHistory({
+    reset = false,
+  } = {}) {
     if (
-      !router.isReady ||
-      !authChecked ||
-      !reviewId
+      !isSuperAdmin ||
+      !reviewId ||
+      moderationHistoryLoading
     ) {
       return;
     }
 
-    if (!isSuperAdmin) {
-      setHistoryData(null);
-      setHistoryError("");
-      setHistoryLoading(false);
-      return;
-    }
+    const cursor =
+      reset
+        ? null
+        : moderationHistoryPagination
+            .next_cursor;
 
-    let mounted = true;
+    setModerationHistoryLoading(true);
+    setModerationHistoryError("");
 
-    async function loadHistory() {
-      setHistoryLoading(true);
-      setHistoryError("");
+    try {
+      const params = {
+        limit: 20,
+      };
 
-      try {
-        const res = await apiClient.get(
-          `/admin/reviews/${reviewId}/history`
+      if (cursor) {
+        params.cursor = cursor;
+      }
+
+      const res = await apiClient.get(
+        `/admin/reviews/${reviewId}/moderation-history`,
+        {
+          params,
+        }
+      );
+
+      const rows =
+        Array.isArray(res.data?.data)
+          ? res.data.data
+          : [];
+
+      setModerationHistory(
+        (current) =>
+          reset
+            ? rows
+            : [...current, ...rows]
+      );
+
+      setModerationHistoryPagination({
+        has_more:
+          Boolean(
+            res.data?.pagination?.has_more
+          ),
+        next_cursor:
+          res.data?.pagination
+            ?.next_cursor || null,
+      });
+    } catch (err) {
+      const status =
+        err.response?.status;
+
+      if (status === 404) {
+        setModerationHistoryError(
+          "Review history was not found."
         );
-
-        if (!mounted) return;
-
-        setHistoryData(res.data);
-      } catch (err) {
-        if (!mounted) return;
-
-        const status =
-          err.response?.status;
-
-        setHistoryData(null);
-
-        if (status === 404) {
-          setHistoryError(
-            "Review history was not found."
-          );
-          return;
-        }
-
-        if (status === 403) {
-          setHistoryError(
-            "SuperAdmin audit access was denied."
-          );
-          return;
-        }
-
-        setHistoryError(
+      } else if (status === 403) {
+        setModerationHistoryError(
+          "SuperAdmin audit access was denied."
+        );
+      } else {
+        setModerationHistoryError(
           err.response?.data?.error ||
             "Unable to load moderation history."
         );
-      } finally {
-        if (mounted) {
-          setHistoryLoading(false);
-        }
       }
+    } finally {
+      setModerationHistoryLoading(false);
+    }
+  }
+
+  async function loadAdministrativeHistory({
+    reset = false,
+  } = {}) {
+    if (
+      !isSuperAdmin ||
+      !reviewId ||
+      administrativeHistoryLoading
+    ) {
+      return;
     }
 
-    loadHistory();
+    const cursor =
+      reset
+        ? null
+        : administrativeHistoryPagination
+            .next_cursor;
 
-    return () => {
-      mounted = false;
-    };
-  }, [
-    router.isReady,
-    authChecked,
-    isSuperAdmin,
-    reviewId,
-    refreshNonce,
-  ]);
+    setAdministrativeHistoryLoading(true);
+    setAdministrativeHistoryError("");
+
+    try {
+      const params = {
+        limit: 20,
+      };
+
+      if (cursor) {
+        params.cursor = cursor;
+      }
+
+      const res = await apiClient.get(
+        `/admin/reviews/${reviewId}/administrative-history`,
+        {
+          params,
+        }
+      );
+
+      const rows =
+        Array.isArray(res.data?.data)
+          ? res.data.data
+          : [];
+
+      setAdministrativeHistory(
+        (current) =>
+          reset
+            ? rows
+            : [...current, ...rows]
+      );
+
+      setAdministrativeHistoryPagination({
+        has_more:
+          Boolean(
+            res.data?.pagination?.has_more
+          ),
+        next_cursor:
+          res.data?.pagination
+            ?.next_cursor || null,
+      });
+    } catch (err) {
+      const status =
+        err.response?.status;
+
+      if (status === 404) {
+        setAdministrativeHistoryError(
+          "Administrative history was not found."
+        );
+      } else if (status === 403) {
+        setAdministrativeHistoryError(
+          "SuperAdmin audit access was denied."
+        );
+      } else {
+        setAdministrativeHistoryError(
+          err.response?.data?.error ||
+            "Unable to load administrative history."
+        );
+      }
+    } finally {
+      setAdministrativeHistoryLoading(false);
+    }
+  }
+
+  async function toggleModerationHistory() {
+    if (moderationHistoryOpen) {
+      setModerationHistoryOpen(false);
+      return;
+    }
+
+    setModerationHistoryOpen(true);
+
+    if (
+      moderationHistory.length === 0
+    ) {
+      await loadModerationHistory({
+        reset: true,
+      });
+    }
+  }
+
+  async function toggleAdministrativeHistory() {
+    if (administrativeHistoryOpen) {
+      setAdministrativeHistoryOpen(false);
+      return;
+    }
+
+    setAdministrativeHistoryOpen(true);
+
+    if (
+      administrativeHistory.length === 0
+    ) {
+      await loadAdministrativeHistory({
+        reset: true,
+      });
+    }
+  }
+
+  /*
+   * A different Review must never inherit cached history from
+   * the previous Review.
+   */
+  useEffect(() => {
+    setModerationHistoryOpen(false);
+    setModerationHistory([]);
+    setModerationHistoryError("");
+    setModerationHistoryPagination({
+      has_more: false,
+      next_cursor: null,
+    });
+
+    setAdministrativeHistoryOpen(false);
+    setAdministrativeHistory([]);
+    setAdministrativeHistoryError("");
+    setAdministrativeHistoryPagination({
+      has_more: false,
+      next_cursor: null,
+    });
+  }, [reviewId]);
 
   const statusMeta =
     STATUS_META[review?.status] ||
@@ -437,11 +613,26 @@ export default function AdminReviewDetailPage() {
       );
 
       /*
-       * Refresh authoritative detail/history data.
+       * Always refresh authoritative Review Detail.
+       *
+       * History streams remain lazy: refresh only the streams
+       * the SuperAdmin is actively viewing.
        */
       setRefreshNonce(
         (value) => value + 1
       );
+
+      if (moderationHistoryOpen) {
+        void loadModerationHistory({
+          reset: true,
+        });
+      }
+
+      if (administrativeHistoryOpen) {
+        void loadAdministrativeHistory({
+          reset: true,
+        });
+      }
 
       /*
        * Sidebar owns the pending count and re-reads it
@@ -935,21 +1126,15 @@ export default function AdminReviewDetailPage() {
                 {isSuperAdmin && (
                   <>
                     <DetailField label="Moderated By">
-                      {historyLoading
-                        ? "Loading..."
-                        : moderator?.email || "—"}
+                      {moderator?.email || "—"}
                     </DetailField>
 
                     <DetailField label="Moderator Role">
-                      {historyLoading
-                        ? "Loading..."
-                        : moderator?.role || "—"}
+                      {moderator?.role || "—"}
                     </DetailField>
 
                     <DetailField label="Moderator User ID">
-                      {historyLoading
-                        ? "Loading..."
-                        : moderator?.id ?? "—"}
+                      {moderator?.id ?? "—"}
                     </DetailField>
                   </>
                 )}
@@ -983,28 +1168,60 @@ export default function AdminReviewDetailPage() {
                     mb-4
                   "
                 >
-                  <h3 className="font-semibold">
-                    Moderation History
-                  </h3>
+                  <div>
+                    <h3 className="font-semibold">
+                      Moderation History
+                    </h3>
 
-                  {!historyLoading &&
-                    !historyError && (
-                      <span className="admin-muted text-sm">
-                        {history.length} event
-                        {history.length === 1
-                          ? ""
-                          : "s"}
-                      </span>
-                    )}
+                    <p className="admin-muted text-sm mt-1">
+                      Immutable review lifecycle events. Loaded only when requested.
+                    </p>
+                  </div>
+
+                  <div
+                    className="
+                      flex
+                      items-center
+                      gap-3
+                    "
+                  >
+                    {moderationHistoryOpen &&
+                      !moderationHistoryLoading &&
+                      !moderationHistoryError && (
+                        <span className="admin-muted text-sm">
+                          {moderationHistory.length} event
+                          {moderationHistory.length === 1
+                            ? ""
+                            : "s"}
+                        </span>
+                      )}
+
+                    <button
+                      type="button"
+                      className="admin-btn-secondary"
+                      onClick={toggleModerationHistory}
+                      disabled={moderationHistoryLoading}
+                    >
+                      {moderationHistoryOpen
+                        ? "Hide history"
+                        : "Show history"}
+                    </button>
+                  </div>
                 </div>
 
-                {historyLoading ? (
+                {!moderationHistoryOpen ? (
+                  <div className="admin-card">
+                    <p className="admin-muted">
+                      History is not loaded until you request it.
+                    </p>
+                  </div>
+                ) : moderationHistoryLoading ? (
                   <div className="admin-card">
                     <p className="admin-muted">
                       Loading moderation history...
                     </p>
                   </div>
-                ) : historyError ? (
+                ) : moderationHistoryError ? (
                   <div className="admin-card">
                     <p
                       className="
@@ -1012,10 +1229,10 @@ export default function AdminReviewDetailPage() {
                         text-sm
                       "
                     >
-                      {historyError}
+                      {moderationHistoryError}
                     </p>
                   </div>
-                ) : history.length === 0 ? (
+                ) : moderationHistory.length === 0 ? (
                   <div className="admin-card">
                     <p className="admin-muted">
                       No moderation history
@@ -1024,7 +1241,7 @@ export default function AdminReviewDetailPage() {
                   </div>
                 ) : (
                   <ol className="space-y-4">
-                    {history.map(
+                    {moderationHistory.map(
                       (event, index) => (
                         <li
                         key={event.id}
@@ -1148,6 +1365,24 @@ export default function AdminReviewDetailPage() {
                     )}
                   </ol>
                 )}
+
+                {moderationHistoryOpen &&
+                  !moderationHistoryLoading &&
+                  !moderationHistoryError &&
+                  moderationHistoryPagination.has_more && (
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        className="admin-btn-secondary"
+                        onClick={() =>
+                          loadModerationHistory()
+                        }
+                      >
+                        Load more
+                      </button>
+                    </div>
+                  )}
+
               </section>
             )}
 
@@ -1170,28 +1405,54 @@ export default function AdminReviewDetailPage() {
                     </h3>
 
                     <p className="admin-muted text-sm mt-1">
-                      Private administrative audit trail for review moderation actions.
+                      Private administrative audit trail. Loaded only when requested.
                     </p>
                   </div>
 
-                  {!historyLoading &&
-                    !historyError && (
-                      <span className="admin-muted text-sm">
-                        {administrativeHistory.length} event
-                        {administrativeHistory.length === 1
-                          ? ""
-                          : "s"}
-                      </span>
-                    )}
+                  <div
+                    className="
+                      flex
+                      items-center
+                      gap-3
+                    "
+                  >
+                    {administrativeHistoryOpen &&
+                      !administrativeHistoryLoading &&
+                      !administrativeHistoryError && (
+                        <span className="admin-muted text-sm">
+                          {administrativeHistory.length} event
+                          {administrativeHistory.length === 1
+                            ? ""
+                            : "s"}
+                        </span>
+                      )}
+
+                    <button
+                      type="button"
+                      className="admin-btn-secondary"
+                      onClick={toggleAdministrativeHistory}
+                      disabled={administrativeHistoryLoading}
+                    >
+                      {administrativeHistoryOpen
+                        ? "Hide history"
+                        : "Show history"}
+                    </button>
+                  </div>
                 </div>
 
-                {historyLoading ? (
+                {!administrativeHistoryOpen ? (
+                  <div className="admin-card">
+                    <p className="admin-muted">
+                      Administrative history is not loaded until you request it.
+                    </p>
+                  </div>
+                ) : administrativeHistoryLoading ? (
                   <div className="admin-card">
                     <p className="admin-muted">
                       Loading administrative history...
                     </p>
                   </div>
-                ) : historyError ? (
+                ) : administrativeHistoryError ? (
                   <div className="admin-card">
                     <p
                       className="
@@ -1199,7 +1460,7 @@ export default function AdminReviewDetailPage() {
                         text-sm
                       "
                     >
-                      {historyError}
+                      {administrativeHistoryError}
                     </p>
                   </div>
                 ) : administrativeHistory.length === 0 ? (
@@ -1324,6 +1585,24 @@ export default function AdminReviewDetailPage() {
                     )}
                   </ol>
                 )}
+
+                {administrativeHistoryOpen &&
+                  !administrativeHistoryLoading &&
+                  !administrativeHistoryError &&
+                  administrativeHistoryPagination.has_more && (
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        className="admin-btn-secondary"
+                        onClick={() =>
+                          loadAdministrativeHistory()
+                        }
+                      >
+                        Load more
+                      </button>
+                    </div>
+                  )}
+
               </section>
             )}
           </div>
