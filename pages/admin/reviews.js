@@ -544,10 +544,11 @@ export default function AdminReviewsPage() {
                       admin-btn
                       px-4 py-2
                       text-sm
+                      transition-transform
                       disabled:opacity-60
                       ${
                         active
-                          ? "admin-btn-primary"
+                          ? "admin-btn-primary scale-[1.04] brightness-95 font-semibold"
                           : "admin-btn-secondary"
                       }
                     `}
