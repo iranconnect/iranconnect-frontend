@@ -1198,7 +1198,7 @@ export default function AdminReviewDetailPage() {
 
                     <button
                       type="button"
-                      className="admin-btn-secondary"
+                      className="admin-btn admin-btn-secondary text-sm"
                       onClick={toggleModerationHistory}
                       disabled={moderationHistoryLoading}
                     >
@@ -1373,7 +1373,7 @@ export default function AdminReviewDetailPage() {
                     <div className="mt-4">
                       <button
                         type="button"
-                        className="admin-btn-secondary"
+                        className="admin-btn admin-btn-secondary text-sm"
                         onClick={() =>
                           loadModerationHistory()
                         }
@@ -1429,7 +1429,7 @@ export default function AdminReviewDetailPage() {
 
                     <button
                       type="button"
-                      className="admin-btn-secondary"
+                      className="admin-btn admin-btn-secondary text-sm"
                       onClick={toggleAdministrativeHistory}
                       disabled={administrativeHistoryLoading}
                     >
@@ -1593,7 +1593,7 @@ export default function AdminReviewDetailPage() {
                     <div className="mt-4">
                       <button
                         type="button"
-                        className="admin-btn-secondary"
+                        className="admin-btn admin-btn-secondary text-sm"
                         onClick={() =>
                           loadAdministrativeHistory()
                         }
