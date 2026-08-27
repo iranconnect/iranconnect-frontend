@@ -40,6 +40,17 @@ export default function Login() {
 
   const captchaRef = useRef(null);
 
+  function openConsentReview() {
+    /*
+     * Google reCAPTCHA may render its challenge outside the
+     * normal React stacking context. Reset its active state
+     * before opening the policy review modal.
+     */
+    captchaRef.current?.reset();
+    setCaptchaToken(null);
+    setShowConsent(true);
+  }
+
   function getSafePostLoginRedirect() {
     const redirect = new URLSearchParams(
       window.location.search
@@ -241,7 +252,7 @@ export default function Login() {
         setShowCaptcha(false);
 
         if (!res.data.all_consents_accepted) {
-          setShowConsent(true);
+          openConsentReview();
         } else {
           window.location.href =
             getSafePostLoginRedirect();
@@ -294,7 +305,7 @@ export default function Login() {
       /* 🚫 CONSENT REQUIRED */
       if (data.require_terms_agreement) {
 
-        setShowConsent(true);
+        openConsentReview();
 
         setMsg(
           "Please review and accept our updated policies."
@@ -450,7 +461,7 @@ export default function Login() {
               </button>
             </div>
 
-            {showCaptcha && (
+            {showCaptcha && !showConsent && (
               <div className="flex justify-center my-3">
                 <ReCAPTCHA
                   ref={captchaRef}

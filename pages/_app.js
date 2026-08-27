@@ -4,7 +4,6 @@ import "../styles/admin.css";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import Script from "next/script";
 import { Analytics } from "@vercel/analytics/react";
 import GA4 from "../components/Analytics/GA4";
 import { AuthSessionProvider } from "../contexts/AuthSessionContext";
@@ -75,12 +74,6 @@ function AppContent({ Component, pageProps }) {
     }
   }
 
-  /* 🧩 Load reCAPTCHA ONLY when needed */
-  const needsCaptcha =
-    router.pathname.startsWith("/auth/login") ||
-    router.pathname.startsWith("/auth/register") ||
-    router.pathname.startsWith("/auth/forgot");
-
   useEffect(() => {
     function handleRouteChangeComplete(url) {
       /*
@@ -125,13 +118,6 @@ function AppContent({ Component, pageProps }) {
     <>
       {hasAnalyticsConsent && (
         <GA4 measurementId={process.env.NEXT_PUBLIC_GA4_ID} />
-      )}
-    
-      {needsCaptcha && (
-        <Script
-          src="https://www.google.com/recaptcha/api.js"
-          strategy="afterInteractive"
-        />
       )}
     
       <CookieConsent />

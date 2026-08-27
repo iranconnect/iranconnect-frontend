@@ -1,5 +1,5 @@
 //frontend/pages/auth/change-password.js
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
@@ -24,6 +24,49 @@ export default function ChangePassword() {
   const [theme, setTheme] = useState("light");
   const [captchaToken, setCaptchaToken] = useState(null);
 
+  const captchaRef = useRef(null);
+
+  const passwordChecks = {
+    length: password.length >= 8,
+    letter: /[A-Za-z]/.test(password),
+    number: /[0-9]/.test(password),
+  };
+
+  const passwordPolicyValid =
+    passwordChecks.length &&
+    passwordChecks.letter &&
+    passwordChecks.number;
+
+  const passwordsMatch =
+    confirmPassword.length > 0 &&
+    password === confirmPassword;
+
+  const strengthSignals = [
+    password.length >= 8,
+    password.length >= 12,
+    /[a-z]/.test(password),
+    /[A-Z]/.test(password),
+    /[0-9]/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ];
+
+  const strengthScore =
+    strengthSignals.filter(Boolean).length;
+
+  const strengthLabel =
+    !password
+      ? ""
+      : strengthScore <= 2
+        ? "Weak"
+        : strengthScore <= 3
+          ? "Fair"
+          : strengthScore <= 4
+            ? "Good"
+            : "Strong";
+
+  const strengthPercent =
+    Math.round((strengthScore / strengthSignals.length) * 100);
+
   /* 🔍 توکن را از بک‌اند چک می‌کنیم */
 useEffect(() => {
   if (!token) return;
@@ -37,7 +80,7 @@ useEffect(() => {
       // اگر لینک نامعتبر است
       if (!res.data.valid) {
         setMsg(res.data.error || "Invalid or expired link.");
-        setMsgType("error");
+        setMsgType("link-error");
         return;
       }
 
@@ -52,7 +95,7 @@ useEffect(() => {
 
     } catch (err) {
       setMsg(err.response?.data?.error || "Invalid or expired link.");
-      setMsgType("error");
+      setMsgType("link-error");
     }
   }
 
@@ -95,6 +138,14 @@ useEffect(() => {
       return;
     }
 
+    if (!passwordPolicyValid) {
+      setMsg(
+        "Choose a password with at least 8 characters, including a letter and a number."
+      );
+      setMsgType("error");
+      return;
+    }
+
     if (!captchaToken) {
       setMsg("Please complete CAPTCHA verification.");
       setMsgType("error");
@@ -119,13 +170,33 @@ useEffect(() => {
       } else {
         setMsg(res.data.error || "Error resetting password.");
         setMsgType("error");
+
+        setCaptchaToken(null);
+        captchaRef.current?.reset();
       }
     } catch (err) {
+      const data = err.response?.data || {};
+
+      const linkRejected =
+        data.code === "RESET_LINK_INVALID" ||
+        data.code === "RESET_LINK_EXPIRED" ||
+        data.valid === false;
+
       setMsg(
-        err.response?.data?.error ||
-          "Link expired or invalid. Please try again."
+        data.error ||
+          (linkRejected
+            ? "Link expired or invalid. Please request a new reset link."
+            : "Unable to reset the password. Please review the form and try again.")
       );
-      setMsgType("error");
+
+      setMsgType(
+        linkRejected
+          ? "link-error"
+          : "error"
+      );
+
+      setCaptchaToken(null);
+      captchaRef.current?.reset();
     }
 
     setLoading(false);
@@ -158,8 +229,8 @@ useEffect(() => {
             Set a New Password
           </h2>
 
-          {/* ❌ اگر توکن نامعتبر بود */}
-          {msgType === "error" ? (
+          {/* Only an unusable reset link replaces the form. */}
+          {msgType === "link-error" ? (
             <div className="text-center">
               <p className="text-lg mb-4">{msg}</p>
               <button
@@ -190,6 +261,62 @@ useEffect(() => {
                 </button>
               </div>
 
+              <div
+                className="rounded-xl border p-4 text-sm"
+                style={{
+                  borderColor: "var(--border)",
+                  background:
+                    theme === "dark"
+                      ? "rgba(255,255,255,0.04)"
+                      : "#f8fafc",
+                }}
+                aria-live="polite"
+              >
+                <p className="font-medium mb-3">
+                  Password requirements
+                </p>
+
+                <div className="space-y-1.5">
+                  <p>
+                    {passwordChecks.length ? "✓" : "○"}{" "}
+                    At least 8 characters
+                  </p>
+
+                  <p>
+                    {passwordChecks.letter ? "✓" : "○"}{" "}
+                    At least one letter
+                  </p>
+
+                  <p>
+                    {passwordChecks.number ? "✓" : "○"}{" "}
+                    At least one number
+                  </p>
+                </div>
+
+                {password && (
+                  <div className="mt-4">
+                    <div className="mb-1 flex items-center justify-between">
+                      <span>Password strength</span>
+                      <span className="font-medium">
+                        {strengthLabel}
+                      </span>
+                    </div>
+
+                    <div
+                      className="h-2 overflow-hidden rounded-full bg-gray-200"
+                      aria-hidden="true"
+                    >
+                      <div
+                        className="h-full rounded-full bg-turquoise transition-all duration-200"
+                        style={{
+                          width: `${strengthPercent}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Confirm Password */}
               <div className="relative">
                 <input
@@ -214,19 +341,49 @@ useEffect(() => {
                 </button>
               </div>
 
+              {confirmPassword && (
+                <p
+                  className="text-sm"
+                  aria-live="polite"
+                >
+                  {passwordsMatch
+                    ? "✓ Passwords match"
+                    : "○ Passwords do not match yet"}
+                </p>
+              )}
+
               {/* Google reCAPTCHA */}
               <div className="flex justify-center">
                 <ReCAPTCHA
+                  ref={captchaRef}
                   sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
-                  onChange={(t) => setCaptchaToken(t)}
+                  onChange={(t) => {
+                    setCaptchaToken(t);
+
+                    if (t && msgType === "error") {
+                      setMsg("");
+                    }
+                  }}
+                  onExpired={() => {
+                    setCaptchaToken(null);
+                    setMsg(
+                      "reCAPTCHA expired. Please verify again."
+                    );
+                    setMsgType("error");
+                  }}
                 />
               </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full bg-turquoise text-navy py-2 rounded-lg font-medium shadow-md hover:bg-turquoise/90 transition-all duration-200"
+                disabled={
+                  loading ||
+                  !passwordPolicyValid ||
+                  !passwordsMatch ||
+                  !captchaToken
+                }
+                className="w-full bg-turquoise text-navy py-2 rounded-lg font-medium shadow-md hover:bg-turquoise/90 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? "Processing..." : "Change Password"}
               </button>
