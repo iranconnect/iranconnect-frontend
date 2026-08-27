@@ -117,17 +117,11 @@ export default function Login() {
         `/auth/login-status?email=${encodeURIComponent(typedEmail)}`
       );
 
-      if (res.data.blocked) {
-        setAccountBlocked(true);
-
-        setMsg(
-          res.data.error ||
-            "Your account has been suspended. Please contact IranConnect Support."
-        );
-
-        return;
-      }
-
+      /*
+       * login-status exposes only CAPTCHA requirements.
+       * Account suspension is handled by the actual login
+       * response after credential processing.
+       */
       setAccountBlocked(false);
 
       const required =
