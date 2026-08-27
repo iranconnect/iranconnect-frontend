@@ -1,5 +1,6 @@
 export default function PageLoadingOverlay({
   visible = false,
+  label = "Loading business profile",
 }) {
   if (!visible) {
     return null;
@@ -9,7 +10,8 @@ export default function PageLoadingOverlay({
     <div
       role="status"
       aria-live="polite"
-      aria-label="Loading business profile"
+      aria-label={label}
+      data-page-loading-overlay="true"
       className={`
         fixed
         inset-0
@@ -41,7 +43,7 @@ export default function PageLoadingOverlay({
       />
 
       <span className="sr-only">
-        Loading business profile
+        {label}
       </span>
 
       <style jsx global>{`
@@ -56,12 +58,12 @@ export default function PageLoadingOverlay({
         }
 
         html[data-theme="dark"]
-          [aria-label="Loading business profile"] {
+          [data-page-loading-overlay="true"] {
           background: rgba(10, 29, 55, 0.3);
         }
 
         @media (prefers-reduced-motion: reduce) {
-          [aria-label="Loading business profile"] img {
+          [data-page-loading-overlay="true"] img {
             transform: none !important;
           }
         }

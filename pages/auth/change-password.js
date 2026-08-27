@@ -6,6 +6,7 @@ import Footer from "../../components/Footer";
 import ReCAPTCHA from "react-google-recaptcha";
 import { Eye, EyeOff } from "lucide-react";
 import apiClient from "../../utils/apiClient"; // ✅ جایگزین axios
+import PageLoadingOverlay from "../../components/ui/PageLoadingOverlay";
 
 export default function ChangePassword() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function ChangePassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [msg, setMsg] = useState("");
-  const [msgType, setMsgType] = useState("info");
+  const [msgType, setMsgType] = useState("validating");
   const [loading, setLoading] = useState(false);
 
   const [theme, setTheme] = useState("light");
@@ -229,8 +230,12 @@ useEffect(() => {
             Set a New Password
           </h2>
 
-          {/* Only an unusable reset link replaces the form. */}
-          {msgType === "link-error" ? (
+          {msgType === "validating" ? (
+            <PageLoadingOverlay
+              visible
+              label="Validating reset link"
+            />
+          ) : msgType === "link-error" ? (
             <div className="text-center">
               <p className="text-lg mb-4">{msg}</p>
               <button
