@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import ReCAPTCHA from "react-google-recaptcha";
-import { Eye, EyeOff } from "lucide-react";
 
 import apiClient from "../../utils/apiClient";
 
@@ -14,7 +13,7 @@ import ConsentReviewModal from "../../components/ConsentReviewModal";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] =
+  const [rememberEmail, setRememberEmail] =
     useState(false);
 
   const [msg, setMsg] = useState("");
@@ -39,6 +38,33 @@ export default function Login() {
   const router = useRouter();
 
   const captchaRef = useRef(null);
+
+  const REMEMBERED_EMAIL_KEY =
+    "iranconnect_remembered_login_email";
+
+  function saveRememberedEmail() {
+    if (!rememberEmail) {
+      return;
+    }
+
+    const normalizedEmail =
+      email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        REMEMBERED_EMAIL_KEY,
+        normalizedEmail
+      );
+    } catch {}
+  }
+
+  function clearPasswordState() {
+    setPassword("");
+  }
 
   function openConsentReview() {
     /*
@@ -66,6 +92,23 @@ export default function Login() {
   
     return "/search";
   }
+
+  /* ───────────────────────────────────────────────
+     🔵 Load explicitly remembered login email
+  ─────────────────────────────────────────────── */
+  useEffect(() => {
+    try {
+      const remembered =
+        localStorage.getItem(
+          REMEMBERED_EMAIL_KEY
+        );
+
+      if (remembered) {
+        setEmail(remembered);
+        setRememberEmail(true);
+      }
+    } catch {}
+  }, []);
 
   /* ───────────────────────────────────────────────
      🔵 Load language
@@ -228,6 +271,7 @@ export default function Login() {
 
       /* 🚫 BLOCKED */
       if (res.data.blocked) {
+        clearPasswordState();
         setAccountBlocked(true);
 
         setMsg(
@@ -243,8 +287,9 @@ export default function Login() {
       if (
         res.data.message?.toLowerCase().includes("successful")
       ) {
+        saveRememberedEmail();
+        clearPasswordState();
         setMsg("");
-
 
         captchaRef.current?.reset();
 
@@ -272,6 +317,7 @@ export default function Login() {
 
       /* 🚫 BLOCKED */
       if (data.blocked) {
+        clearPasswordState();
         setAccountBlocked(true);
 
         setMsg(
@@ -285,6 +331,8 @@ export default function Login() {
 
       /* 📩 VERIFIED PASSWORD, BUT EMAIL VERIFICATION IS REQUIRED */
       if (data.code === "email_verification_required") {
+        clearPasswordState();
+
         const verifiedEmail = String(
           data.verification_email || email
         )
@@ -305,6 +353,8 @@ export default function Login() {
       /* 🚫 CONSENT REQUIRED */
       if (data.require_terms_agreement) {
 
+        saveRememberedEmail();
+        clearPasswordState();
         openConsentReview();
 
         setMsg(
@@ -314,6 +364,8 @@ export default function Login() {
         setLoading(false);
         return;
       }
+
+      clearPasswordState();
 
       setMsg(data.error || "Login failed.");
 
@@ -385,6 +437,7 @@ export default function Login() {
             <input
               type="email"
               required
+              autoComplete="username"
               placeholder="Email address"
               value={email}
               onChange={(e) => {
@@ -407,59 +460,60 @@ export default function Login() {
               "
             />
 
-            <div className="relative">
+            <input
+              type="password"
+              required
+              autoComplete="current-password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) =>
+                setPassword(e.target.value)
+              }
+              className="
+                w-full
+                p-3
+                rounded-lg
+                border
+                bg-[#f5f7fa]
+                text-gray-900
+                focus:ring-2
+                focus:ring-turquoise
+              "
+            />
+
+            <label
+              className="
+                flex
+                items-center
+                gap-2
+                text-sm
+                cursor-pointer
+                select-none
+              "
+            >
               <input
-                type={
-                  showPassword
-                    ? "text"
-                    : "password"
-                }
-                required
-                placeholder="Password"
-                value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
-                className="
-                  w-full
-                  p-3
-                  pr-11
-                  rounded-lg
-                  border
-                  bg-[#f5f7fa]
-                  text-gray-900
-                  focus:ring-2
-                  focus:ring-turquoise
-                "
+                type="checkbox"
+                checked={rememberEmail}
+                onChange={(e) => {
+                  const checked =
+                    e.target.checked;
+
+                  setRememberEmail(checked);
+
+                  if (!checked) {
+                    try {
+                      localStorage.removeItem(
+                        REMEMBERED_EMAIL_KEY
+                      );
+                    } catch {}
+                  }
+                }}
               />
 
-              <button
-                type="button"
-                onClick={() =>
-                  setShowPassword(
-                    (current) => !current
-                  )
-                }
-                className="
-                  absolute
-                  right-3
-                  top-1/2
-                  -translate-y-1/2
-                  text-turquoise
-                "
-                aria-label={
-                  showPassword
-                    ? "Hide password"
-                    : "Show password"
-                }
-              >
-                {showPassword ? (
-                  <EyeOff size={18} />
-                ) : (
-                  <Eye size={18} />
-                )}
-              </button>
-            </div>
+              <span>
+                Remember my email on this device
+              </span>
+            </label>
 
             {showCaptcha && !showConsent && (
               <div className="flex justify-center my-3">
