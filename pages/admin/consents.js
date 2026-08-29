@@ -80,13 +80,14 @@ export default function AdminConsentsPage() {
     defaultLimit: 10,
   });
 
-  const activeTab =
-    filters.tab === "audit"
-      ? "audit"
-      : "current";
-
   const isSuperAdmin =
     role === "superadmin";
+
+  const activeTab =
+    filters.tab === "audit" &&
+    isSuperAdmin
+      ? "audit"
+      : "current";
 
   /* ============================================================
      🔄 Sync URL filters → form state
@@ -405,19 +406,21 @@ export default function AdminConsentsPage() {
               Current Consent State
             </button>
 
-            <button
-              type="button"
-              onClick={() =>
-                handleTabChange("audit")
-              }
-              className={`admin-btn px-4 py-2 text-sm ${
-                activeTab === "audit"
-                  ? "admin-btn-primary"
-                  : "admin-btn-secondary"
-              }`}
-            >
-              Consent Audit History
-            </button>
+            {isSuperAdmin && (
+              <button
+                type="button"
+                onClick={() =>
+                  handleTabChange("audit")
+                }
+                className={`admin-btn px-4 py-2 text-sm ${
+                  activeTab === "audit"
+                    ? "admin-btn-primary"
+                    : "admin-btn-secondary"
+                }`}
+              >
+                Consent Audit History
+              </button>
+            )}
           </div>
 
           {/* ==================================================
@@ -613,7 +616,9 @@ export default function AdminConsentsPage() {
                         <th>Consent Type</th>
                         <th>Version</th>
                         <th>Choice</th>
-                        <th>IP Address</th>
+                        {isSuperAdmin && (
+                          <th>IP Address</th>
+                        )}
                         <th>Updated At</th>
                       </tr>
                     </thead>
@@ -641,9 +646,11 @@ export default function AdminConsentsPage() {
                             {consent.choice || "—"}
                           </td>
 
-                          <td>
-                            {consent.ip_address || "—"}
-                          </td>
+                          {isSuperAdmin && (
+                            <td>
+                              {consent.ip_address || "—"}
+                            </td>
+                          )}
 
                           <td>
                             {formatDateTime(
@@ -656,7 +663,9 @@ export default function AdminConsentsPage() {
                       {!rows.length && (
                         <tr>
                           <td
-                            colSpan="6"
+                            colSpan={
+                              isSuperAdmin ? 6 : 5
+                            }
                             className="text-center opacity-70 p-4"
                           >
                             No consent records found.
