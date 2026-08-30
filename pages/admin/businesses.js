@@ -81,6 +81,8 @@ export default function BusinessesPage() {
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteReason, setDeleteReason] = useState("");
+  const [deleteSourceType, setDeleteSourceType] = useState("");
+  const [deleteTicketCode, setDeleteTicketCode] = useState("");
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   const [restoreTarget, setRestoreTarget] = useState(null);
@@ -203,6 +205,8 @@ export default function BusinessesPage() {
   function openSoftDeleteModal(business) {
     setDeleteTarget(business);
     setDeleteReason("");
+    setDeleteSourceType("");
+    setDeleteTicketCode("");
     setError("");
   }
 
@@ -211,6 +215,8 @@ export default function BusinessesPage() {
 
     setDeleteTarget(null);
     setDeleteReason("");
+    setDeleteSourceType("");
+    setDeleteTicketCode("");
   }
 
   async function submitSoftDelete() {
@@ -232,6 +238,29 @@ export default function BusinessesPage() {
       return;
     }
 
+    if (
+      deleteSourceType !== "ticket" &&
+      deleteSourceType !== "admin_note"
+    ) {
+      setError(
+        "Select a deletion authorization method."
+      );
+      return;
+    }
+
+    const normalizedTicketCode =
+      deleteTicketCode.trim();
+
+    if (
+      deleteSourceType === "ticket" &&
+      !normalizedTicketCode
+    ) {
+      setError(
+        "Ticket code is required for ticket-based deletion."
+      );
+      return;
+    }
+
     setDeleteSubmitting(true);
     setError("");
 
@@ -240,11 +269,19 @@ export default function BusinessesPage() {
         `/admin/businesses/${deleteTarget.id}/soft-delete`,
         {
           reason: normalizedReason,
+          change_source_type:
+            deleteSourceType,
+          ticket_code:
+            deleteSourceType === "ticket"
+              ? normalizedTicketCode
+              : "",
         }
       );
 
       setDeleteTarget(null);
       setDeleteReason("");
+      setDeleteSourceType("");
+      setDeleteTicketCode("");
 
       await fetchBusinesses();
     } catch (err) {
@@ -617,6 +654,79 @@ export default function BusinessesPage() {
               restored later, but it will remain private until
               published again.
             </p>
+
+            <div className="mt-5">
+              <p className="text-sm font-medium text-[#0A1D37]">
+                Delete Authorization
+              </p>
+
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Was this deletion requested through an existing ticket?
+              </p>
+
+              <label className="mt-3 flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="delete_change_source_type"
+                  value="ticket"
+                  checked={deleteSourceType === "ticket"}
+                  onChange={() => {
+                    setDeleteSourceType("ticket");
+                  }}
+                />
+
+                <span className="text-sm text-slate-700">
+                  Yes, I have a pending delete ticket.
+                </span>
+              </label>
+
+              <label className="mt-3 flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="delete_change_source_type"
+                  value="admin_note"
+                  checked={deleteSourceType === "admin_note"}
+                  onChange={() => {
+                    setDeleteSourceType("admin_note");
+                    setDeleteTicketCode("");
+                  }}
+                />
+
+                <span className="text-sm text-slate-700">
+                  No, this is an admin-initiated deletion.
+                </span>
+              </label>
+
+              {deleteSourceType === "ticket" && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-[#0A1D37]">
+                    Ticket code *
+                  </label>
+
+                  <input
+                    type="text"
+                    value={deleteTicketCode}
+                    onChange={(event) =>
+                      setDeleteTicketCode(
+                        event.target.value
+                      )
+                    }
+                    placeholder="e.g. IC-BD-000123"
+                    autoComplete="off"
+                    className="
+                      mt-2 w-full rounded-lg border border-slate-300
+                      px-3 py-2 text-sm text-slate-900
+                      focus:outline-none focus:ring-2
+                      focus:ring-turquoise
+                    "
+                  />
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    Only a pending delete ticket for this business can be used.
+                  </p>
+                </div>
+              )}
+            </div>
 
             <label className="mt-5 block text-sm font-medium text-[#0A1D37]">
               Reason for deletion

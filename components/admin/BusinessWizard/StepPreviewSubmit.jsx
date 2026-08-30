@@ -104,8 +104,11 @@ export default function StepPreviewSubmit({
   const normalizedAdminNote =
     String(data.admin_note || "").trim();
 
-  const isValidAdminEditAuthorization =
-    !isAdminEdit ||
+  const requiresAdminAuthorization =
+    isAdminCreate || isAdminEdit;
+
+  const isValidAdminAuthorization =
+    !requiresAdminAuthorization ||
     (
       normalizedChangeSource === "ticket" &&
       normalizedTicketCode.length > 0
@@ -118,7 +121,7 @@ export default function StepPreviewSubmit({
   const isSubmitDisabled =
     loading ||
     submitSuccess ||
-    !isValidAdminEditAuthorization;
+    !isValidAdminAuthorization;
 
   function setChangeSourceType(nextSourceType) {
     setData((prev) => ({
@@ -136,7 +139,7 @@ export default function StepPreviewSubmit({
   }
 
   function handleFinalSubmit() {
-    if (!isValidAdminEditAuthorization) {
+    if (!isValidAdminAuthorization) {
       return;
     }
 
@@ -963,8 +966,14 @@ export default function StepPreviewSubmit({
       
       </Section>
 
-      {isAdminEdit && (
-        <Section title="Update Authorization">
+      {requiresAdminAuthorization && (
+        <Section
+          title={
+            isAdminCreate
+              ? "Create Authorization"
+              : "Update Authorization"
+          }
+        >
           <p
             style={{
               marginBottom: 16,
@@ -973,7 +982,9 @@ export default function StepPreviewSubmit({
               lineHeight: 1.7,
             }}
           >
-            Was this business update requested through an existing ticket?
+            {isAdminCreate
+              ? "Was this business creation requested through an existing ticket?"
+              : "Was this business update requested through an existing ticket?"}
           </p>
       
           <label className="flex items-center gap-3 cursor-pointer">
@@ -986,7 +997,9 @@ export default function StepPreviewSubmit({
             />
       
             <span>
-              Yes, I have a pending update ticket.
+              {isAdminCreate
+                ? "Yes, I have a pending new business ticket."
+                : "Yes, I have a pending update ticket."}
             </span>
           </label>
       
@@ -1000,7 +1013,9 @@ export default function StepPreviewSubmit({
             />
       
             <span>
-              No, this is an admin-initiated update.
+              {isAdminCreate
+                ? "No, this is an admin-initiated creation."
+                : "No, this is an admin-initiated update."}
             </span>
           </label>
       
@@ -1020,12 +1035,18 @@ export default function StepPreviewSubmit({
                     ticket_code: event.target.value,
                   }))
                 }
-                placeholder="e.g. IC-BU-000123"
+                placeholder={
+                  isAdminCreate
+                    ? "e.g. IC-BN-000123"
+                    : "e.g. IC-BU-000123"
+                }
                 autoComplete="off"
               />
       
               <p className="admin-hint mt-2">
-                Only a pending update ticket for this business can be used.
+                {isAdminCreate
+                  ? "Only a pending new business ticket can be used."
+                  : "Only a pending update ticket for this business can be used."}
               </p>
             </div>
           )}
@@ -1033,7 +1054,9 @@ export default function StepPreviewSubmit({
           {normalizedChangeSource === "admin_note" && (
             <div style={{ marginTop: 18 }}>
               <label className="admin-label">
-                Admin note / reason for update *
+                {isAdminCreate
+                  ? "Admin note / reason for creation *"
+                  : "Admin note / reason for update *"}
               </label>
       
               <textarea
@@ -1046,7 +1069,11 @@ export default function StepPreviewSubmit({
                     admin_note: event.target.value,
                   }))
                 }
-                placeholder="Explain why this direct administrative update is being made."
+                placeholder={
+                  isAdminCreate
+                    ? "Explain why this direct administrative creation is being made."
+                    : "Explain why this direct administrative update is being made."
+                }
               />
       
               <p className="admin-hint mt-2">
@@ -1055,10 +1082,10 @@ export default function StepPreviewSubmit({
             </div>
           )}
       
-          {!isValidAdminEditAuthorization && (
+          {!isValidAdminAuthorization && (
             <p className="text-red-500 text-sm mt-4">
               Select an authorization method and complete the required field before
-              submitting this update.
+              submitting this {isAdminCreate ? "creation" : "update"}.
             </p>
           )}
         </Section>
