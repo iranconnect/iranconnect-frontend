@@ -113,7 +113,18 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
     );
   };
 
-  const isActionable = details?.status === "pending";
+  const isActionable =
+    details?.status === "pending" ||
+    details?.status === "pending_review";
+
+  const isPendingNewRequest =
+    isActionable &&
+    details?.request_type === "new";
+
+  const isNewRequestFulfilled =
+    isPendingNewRequest &&
+    Boolean(details?.business_id);
+
   const files = safeParseAttachments(details?.attachments);
 
   /* ---------------------------------------------------------
@@ -258,16 +269,30 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
                     >
                       Reject
                     </button>
-                    <button
-                      className="admin-btn admin-btn-primary"
-                      onClick={() => {
-                        setShowApproveBox(true);
-                        setShowRejectBox(false);
-                        setNote("");
-                      }}
-                    >
-                      Approve
-                    </button>
+
+                    {isPendingNewRequest &&
+                    !isNewRequestFulfilled ? (
+                      <button
+                        className="admin-btn admin-btn-primary"
+                        onClick={() => {
+                          window.location.href =
+                            `/admin/add-v2?requestId=${details.id}`;
+                        }}
+                      >
+                        Add Business
+                      </button>
+                    ) : (
+                      <button
+                        className="admin-btn admin-btn-primary"
+                        onClick={() => {
+                          setShowApproveBox(true);
+                          setShowRejectBox(false);
+                          setNote("");
+                        }}
+                      >
+                        Approve
+                      </button>
+                    )}
                   </div>
                 )}
               </>

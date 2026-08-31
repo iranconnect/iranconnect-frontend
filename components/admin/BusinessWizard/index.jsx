@@ -322,7 +322,9 @@ export default function BusinessWizard({
       const endpoint =
         mode === "user-update"
           ? "/requests"
-          : "/admin/businesses/create-v2";
+          : mode === "admin-create-ticket"
+            ? `/admin/businesses/requests/${data.business_request_id}/create-v2`
+            : "/admin/businesses/create-v2";
       
       const res = await apiClient.post(
         endpoint,
@@ -355,6 +357,23 @@ export default function BusinessWizard({
         throw new Error(
           "Business created but slug was not returned."
         );
+      }
+
+      if (mode === "admin-create-ticket") {
+        setSubmitError(false);
+
+        setSubmitMessage(
+          "Business created and linked to the request successfully. The request still requires a separate approval decision."
+        );
+
+        setSubmitSuccess(true);
+
+        window.setTimeout(() => {
+          window.location.href =
+            "/admin/requests";
+        }, 1800);
+
+        return;
       }
       
       window.location.href =

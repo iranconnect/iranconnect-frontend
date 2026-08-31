@@ -91,6 +91,8 @@ export default function StepPreviewSubmit({
   const [tagNames, setTagNames] = useState([]);
 
   const isAdminCreate = mode === "admin-create";
+  const isAdminTicketCreate =
+    mode === "admin-create-ticket";
   const isAdminEdit = mode === "admin-edit";
   const isUserUpdate = mode === "user-update";
   const isUserNew = mode === "user-new";
@@ -107,16 +109,33 @@ export default function StepPreviewSubmit({
   const requiresAdminAuthorization =
     isAdminCreate || isAdminEdit;
 
+  const hasValidTicketContext =
+    isAdminTicketCreate &&
+    Number.isInteger(
+      Number(data.business_request_id)
+    ) &&
+    Number(data.business_request_id) > 0 &&
+    normalizedTicketCode.length > 0;
+
   const isValidAdminAuthorization =
-    !requiresAdminAuthorization ||
-    (
-      normalizedChangeSource === "ticket" &&
-      normalizedTicketCode.length > 0
-    ) ||
-    (
-      normalizedChangeSource === "admin_note" &&
-      normalizedAdminNote.length > 0
-    );
+    isAdminTicketCreate
+      ? hasValidTicketContext
+      : !requiresAdminAuthorization ||
+        (
+          isAdminCreate &&
+          normalizedChangeSource === "admin_note" &&
+          normalizedAdminNote.length > 0
+        ) ||
+        (
+          isAdminEdit &&
+          normalizedChangeSource === "ticket" &&
+          normalizedTicketCode.length > 0
+        ) ||
+        (
+          isAdminEdit &&
+          normalizedChangeSource === "admin_note" &&
+          normalizedAdminNote.length > 0
+        );
 
   const isSubmitDisabled =
     loading ||
@@ -966,6 +985,34 @@ export default function StepPreviewSubmit({
       
       </Section>
 
+      {isAdminTicketCreate && (
+        <Section title="Request Authorization">
+          <p
+            style={{
+              marginBottom: 12,
+              color: "var(--text)",
+              opacity: 0.8,
+              lineHeight: 1.7,
+            }}
+          >
+            This creation is permanently bound to the
+            selected NEW business request.
+          </p>
+
+          <div>
+            <strong>Ticket:</strong>{" "}
+            <span className="font-mono">
+              {normalizedTicketCode || "—"}
+            </span>
+          </div>
+
+          <div style={{ marginTop: 6 }}>
+            <strong>Request ID:</strong>{" "}
+            {data.business_request_id || "—"}
+          </div>
+        </Section>
+      )}
+
       {requiresAdminAuthorization && (
         <Section
           title={
@@ -974,57 +1021,76 @@ export default function StepPreviewSubmit({
               : "Update Authorization"
           }
         >
-          <p
-            style={{
-              marginBottom: 16,
-              color: "var(--text)",
-              opacity: 0.8,
-              lineHeight: 1.7,
-            }}
-          >
-            {isAdminCreate
-              ? "Was this business creation requested through an existing ticket?"
-              : "Was this business update requested through an existing ticket?"}
-          </p>
-      
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="radio"
-              name="change_source_type"
-              value="ticket"
-              checked={normalizedChangeSource === "ticket"}
-              onChange={() => setChangeSourceType("ticket")}
-            />
-      
-            <span>
-              {isAdminCreate
-                ? "Yes, I have a pending new business ticket."
-                : "Yes, I have a pending update ticket."}
-            </span>
-          </label>
-      
+          {isAdminCreate ? (
+            <p
+              style={{
+                marginBottom: 16,
+                color: "var(--text)",
+                opacity: 0.8,
+                lineHeight: 1.7,
+              }}
+            >
+              Generic business creation is an
+              admin-initiated action and requires a
+              permanent administrative justification.
+            </p>
+          ) : (
+            <>
+              <p
+                style={{
+                  marginBottom: 16,
+                  color: "var(--text)",
+                  opacity: 0.8,
+                  lineHeight: 1.7,
+                }}
+              >
+                Was this business update requested
+                through an existing ticket?
+              </p>
+
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="change_source_type"
+                  value="ticket"
+                  checked={normalizedChangeSource === "ticket"}
+                  onChange={() =>
+                    setChangeSourceType("ticket")
+                  }
+                />
+
+                <span>
+                  Yes, I have a pending update ticket.
+                </span>
+              </label>
+            </>
+          )}
+
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="radio"
               name="change_source_type"
               value="admin_note"
               checked={normalizedChangeSource === "admin_note"}
-              onChange={() => setChangeSourceType("admin_note")}
+              onChange={() =>
+                setChangeSourceType("admin_note")
+              }
             />
-      
+
             <span>
               {isAdminCreate
-                ? "No, this is an admin-initiated creation."
+                ? "Admin-initiated creation"
                 : "No, this is an admin-initiated update."}
             </span>
           </label>
       
-          {normalizedChangeSource === "ticket" && (
+          {isAdminEdit &&
+          normalizedChangeSource === "ticket" && (
             <div style={{ marginTop: 18 }}>
               <label className="admin-label">
                 Ticket code *
               </label>
-      
+
               <input
                 type="text"
                 className="admin-input"
@@ -1035,18 +1101,13 @@ export default function StepPreviewSubmit({
                     ticket_code: event.target.value,
                   }))
                 }
-                placeholder={
-                  isAdminCreate
-                    ? "e.g. IC-BN-000123"
-                    : "e.g. IC-BU-000123"
-                }
+                placeholder="e.g. IC-BU0000123"
                 autoComplete="off"
               />
-      
+
               <p className="admin-hint mt-2">
-                {isAdminCreate
-                  ? "Only a pending new business ticket can be used."
-                  : "Only a pending update ticket for this business can be used."}
+                Only a pending update ticket for this
+                business can be used.
               </p>
             </div>
           )}
