@@ -29,27 +29,46 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString();
 }
 
-function getStatusClass(status) {
-  if (status === "approved") {
+function isFulfilledNewRequest(request) {
+  return (
+    request?.request_type === "new" &&
+    (
+      request?.status === "pending" ||
+      request?.status === "pending_review"
+    ) &&
+    Boolean(request?.business_id)
+  );
+}
+
+function getStatusClass(request) {
+  if (request?.status === "approved") {
     return "bg-green-100 text-green-700";
   }
 
-  if (status === "rejected") {
+  if (request?.status === "rejected") {
     return "bg-red-100 text-red-700";
+  }
+
+  if (isFulfilledNewRequest(request)) {
+    return "bg-blue-100 text-blue-700";
   }
 
   return "bg-yellow-100 text-yellow-700";
 }
 
-function getStatusLabel(status) {
+function getStatusLabel(request) {
+  if (isFulfilledNewRequest(request)) {
+    return "Fulfilled — Awaiting approval";
+  }
+
   if (
-    status === "pending" ||
-    status === "pending_review"
+    request?.status === "pending" ||
+    request?.status === "pending_review"
   ) {
     return "Pending review";
   }
 
-  return status || "—";
+  return request?.status || "—";
 }
 
 export default function AdminBusinessRequestsPage() {
@@ -416,11 +435,11 @@ export default function AdminBusinessRequestsPage() {
                         <span
                           className={
                             "px-2 py-1 rounded text-xs font-semibold " +
-                            getStatusClass(request.status)
+                            getStatusClass(request)
                           }
                         >
                           {getStatusLabel(
-                            request.status
+                            request
                           )}
                         </span>
                       </td>
