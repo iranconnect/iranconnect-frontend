@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import apiClient from "../../utils/apiClient";
 import AdminLayout from "../../components/admin/AdminLayout";
 import UserDetailsModal from "../../components/admin/UserDetailsModal";
+import { useAuthSession } from "../../hooks/useAuthSession";
 
 import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
@@ -38,6 +39,10 @@ export default function UsersPage() {
 
 function UsersPageContent() {
   const router = useRouter();
+
+  const {
+    role,
+  } = useAuthSession();
 
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState(
@@ -212,6 +217,10 @@ function UsersPageContent() {
   }
 
   async function handleExport(format) {
+    if (role !== "superadmin") {
+      return;
+    }
+
     try {
       const res = await apiClient.get(
         `/admin/users/export/${format}`,
@@ -362,25 +371,31 @@ function UsersPageContent() {
               </button>
             </div>
 
-            <div className="flex gap-3 ml-auto">
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => handleExport("xlsx")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
-              >
-                Export XLSX
-              </button>
+            {role === "superadmin" && (
+              <div className="flex gap-3 ml-auto">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() =>
+                    handleExport("xlsx")
+                  }
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+                >
+                  Export XLSX
+                </button>
 
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => handleExport("pdf")}
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
-              >
-                Export PDF
-              </button>
-            </div>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() =>
+                    handleExport("pdf")
+                  }
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm disabled:opacity-60"
+                >
+                  Export PDF
+                </button>
+              </div>
+            )}
           </form>
 
           {msg && (
