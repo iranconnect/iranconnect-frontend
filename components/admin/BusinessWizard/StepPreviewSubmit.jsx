@@ -659,13 +659,19 @@ export default function StepPreviewSubmit({
                         : 500,
                     }}
                   >
-                    {isRemoved(
-                      "logo",
-                      data.logo_url,
-                      data.removed_media
-                    )
-                      ? "Marked for removal"
-                      : "Current image"}
+                    {isAdminTicketCreate
+                      ? (
+                          data.logo_file
+                            ? "Requested image — will be replaced"
+                            : "Requested image — will be preserved"
+                        )
+                      : isRemoved(
+                          "logo",
+                          data.logo_url,
+                          data.removed_media
+                        )
+                        ? "Marked for removal"
+                        : "Current image"}
                   </div>
               
                   <img
@@ -706,7 +712,9 @@ export default function StepPreviewSubmit({
                       color: "#16a34a",
                     }}
                   >
-                    New logo
+                    {isAdminTicketCreate
+                      ? "Replacement logo"
+                      : "New logo"}
                   </div>
       
                   <img
@@ -773,13 +781,19 @@ export default function StepPreviewSubmit({
                         : 500,
                     }}
                   >
-                    {isRemoved(
-                      "cover",
-                      data.cover_image_url,
-                      data.removed_media
-                    )
-                      ? "Marked for removal"
-                      : "Current image"}
+                    {isAdminTicketCreate
+                      ? (
+                          data.cover_file
+                            ? "Requested image — will be replaced"
+                            : "Requested image — will be preserved"
+                        )
+                      : isRemoved(
+                          "cover",
+                          data.cover_image_url,
+                          data.removed_media
+                        )
+                        ? "Marked for removal"
+                        : "Current image"}
                   </div>
               
                   <img
@@ -818,7 +832,9 @@ export default function StepPreviewSubmit({
                       color: "#16a34a",
                     }}
                   >
-                    New cover
+                    {isAdminTicketCreate
+                      ? "Replacement cover"
+                      : "New cover"}
                   </div>
       
                   <img
@@ -882,9 +898,18 @@ export default function StepPreviewSubmit({
                             : 500,
                         }}
                       >
-                        {removed
-                          ? "Marked for removal"
-                          : "Current image"}
+                        {isAdminTicketCreate
+                          ? (
+                              Array.isArray(
+                                data.gallery_files
+                              ) &&
+                              data.gallery_files.length > 0
+                                ? "Requested image — will be replaced"
+                                : "Requested image — will be preserved"
+                            )
+                          : removed
+                            ? "Marked for removal"
+                            : "Current image"}
                       </div>
                       <img
                         src={img.url}
@@ -919,7 +944,9 @@ export default function StepPreviewSubmit({
                           color: "#16a34a",
                         }}
                       >
-                        New image
+                        {isAdminTicketCreate
+                          ? "Replacement image"
+                          : "New image"}
                       </div>
       
                       <img

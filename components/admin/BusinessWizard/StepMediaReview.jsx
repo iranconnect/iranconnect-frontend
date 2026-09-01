@@ -86,6 +86,9 @@ export default function StepMediaReview({
   const isUserUpdateMode =
     mode === "user-update";
 
+  const isTicketCreateMode =
+    mode === "admin-create-ticket";
+
   const stepCopy = isAdminEditMode
     ? {
         title: "Edit Business",
@@ -111,18 +114,39 @@ export default function StepMediaReview({
             "I confirm that I am authorized to request updates for this business.",
           nextLabel: "Continue to Review & Submit",
         }
-      : {
-          title: "Add New Business",
-          subtitle:
-            "Step 4 of 5 — Upload media and configure profile visibility",
-          logoLabel: "Business logo *",
-          logoUploadLabel: "Upload business logo",
-          coverUploadLabel: "Upload cover image",
-          galleryUploadLabel: "Upload gallery images",
-          confirmationLabel:
-            "I confirm that I am authorized to manage this business.",
-          nextLabel: "Continue to Review & Create",
-        };
+      : isTicketCreateMode
+        ? {
+            title: "Add New Business",
+            subtitle:
+              "Step 4 of 5 — Review requested media or upload replacements",
+            logoLabel: "Business logo *",
+            logoUploadLabel:
+              "Upload replacement logo",
+            coverUploadLabel:
+              "Upload replacement cover",
+            galleryUploadLabel:
+              "Upload replacement gallery",
+            confirmationLabel:
+              "I confirm that I am authorized to manage this business.",
+            nextLabel:
+              "Continue to Review & Create",
+          }
+        : {
+            title: "Add New Business",
+            subtitle:
+              "Step 4 of 5 — Upload media and configure profile visibility",
+            logoLabel: "Business logo *",
+            logoUploadLabel:
+              "Upload business logo",
+            coverUploadLabel:
+              "Upload cover image",
+            galleryUploadLabel:
+              "Upload gallery images",
+            confirmationLabel:
+              "I confirm that I am authorized to manage this business.",
+            nextLabel:
+              "Continue to Review & Create",
+          };
 
   /* --------------------------------------------------
   🔐 NORMALIZED DATA
@@ -423,13 +447,18 @@ export default function StepMediaReview({
             : [];
 
         const existingCount =
-          Array.isArray(data.gallery)
-            ? data.gallery.filter(
-                (img) =>
-                  !isRemoved("gallery", img)
-              ).length
-            : 0;
-        
+          isTicketCreateMode
+            ? 0
+            : Array.isArray(data.gallery)
+              ? data.gallery.filter(
+                  (img) =>
+                    !isRemoved(
+                      "gallery",
+                      img
+                    )
+                ).length
+              : 0;
+
         const remainingSlots =
           MAX_GALLERY_IMAGES -
           existingCount -
@@ -480,6 +509,7 @@ export default function StepMediaReview({
         data.gallery,
         safeSetData,
         isRemoved,
+        isTicketCreateMode,
       ]
     );
 
@@ -628,8 +658,15 @@ export default function StepMediaReview({
     // CREATE BUSINESS MODE
     // =========================
 
+    const hasRequiredLogo =
+      !!data.logo_file ||
+      (
+        isTicketCreateMode &&
+        !!data.logo_url
+      );
+
     return (
-      !!data.logo_file &&
+      hasRequiredLogo &&
       normalized.owner_confirmed ===
         true &&
       busy === false
@@ -647,19 +684,34 @@ export default function StepMediaReview({
   ]);
 
   const activeGalleryCount =
-    (
-      Array.isArray(data.gallery)
-        ? data.gallery.filter(
-            (img) =>
-              !isRemoved("gallery", img)
-          ).length
-        : 0
-    ) +
-    (
-      Array.isArray(data.gallery_files)
-        ? data.gallery_files.length
-        : 0
-    );
+    isTicketCreateMode
+      ? (
+          Array.isArray(
+            data.gallery_files
+          )
+            ? data.gallery_files.length
+            : 0
+        )
+      : (
+          (
+            Array.isArray(data.gallery)
+              ? data.gallery.filter(
+                  (img) =>
+                    !isRemoved(
+                      "gallery",
+                      img
+                    )
+                ).length
+              : 0
+          ) +
+          (
+            Array.isArray(
+              data.gallery_files
+            )
+              ? data.gallery_files.length
+              : 0
+          )
+        );
   
   const remainingGallerySlots =
     MAX_GALLERY_IMAGES -
@@ -710,6 +762,48 @@ export default function StepMediaReview({
         marginBottom: 12,
       }}
     >
+      {isTicketCreateMode &&
+        data.logo_url && (
+          <div>
+            <p
+              className="admin-hint"
+              style={{
+                marginBottom: 10,
+                fontWeight: 600,
+                opacity: .9,
+              }}
+            >
+              Requested logo
+            </p>
+
+            <div
+              style={{
+                width: MEDIA_BOX_SIZE,
+                height: MEDIA_BOX_SIZE,
+              }}
+            >
+              <img
+                src={data.logo_url}
+                alt="Requested logo"
+                onClick={() =>
+                  setZoomImage(
+                    data.logo_url
+                  )
+                }
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  borderRadius: 12,
+                  cursor: "zoom-in",
+                  border:
+                    "2px solid var(--border)",
+                }}
+              />
+            </div>
+          </div>
+        )}
+
       {isExistingBusinessMode &&
         data.logo_url && (
         <div>
@@ -1004,6 +1098,48 @@ export default function StepMediaReview({
     >
   
       {/* CURRENT COVER */}
+      {isTicketCreateMode &&
+        data.cover_image_url && (
+          <div>
+            <p
+              className="admin-hint"
+              style={{
+                marginBottom: 10,
+                fontWeight: 600,
+                opacity: .9,
+              }}
+            >
+              Requested cover
+            </p>
+
+            <div
+              style={{
+                width: MEDIA_BOX_SIZE,
+                height: MEDIA_BOX_SIZE,
+              }}
+            >
+              <img
+                src={data.cover_image_url}
+                alt="Requested cover"
+                onClick={() =>
+                  setZoomImage(
+                    data.cover_image_url
+                  )
+                }
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  borderRadius: 12,
+                  cursor: "zoom-in",
+                  border:
+                    "2px solid var(--border)",
+                }}
+              />
+            </div>
+          </div>
+        )}
+
       {isExistingBusinessMode &&
         data.cover_image_url && (
         <div>
@@ -1302,6 +1438,58 @@ export default function StepMediaReview({
     <label className="admin-label">
       Gallery images (max {MAX_GALLERY_IMAGES})
     </label>
+
+    {isTicketCreateMode &&
+      Array.isArray(data.gallery) &&
+      data.gallery.length > 0 && (
+
+      <div className="mb-5">
+
+        <p className="admin-hint mb-3">
+          Requested gallery images
+          {" "}
+          ({data.gallery.length})
+        </p>
+
+        <p className="admin-hint mb-3">
+          These images will be preserved unless
+          you upload a replacement gallery.
+        </p>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+          {data.gallery.map(
+            (img, index) => (
+              <div
+                key={
+                  img.url ||
+                  `requested-${index}`
+                }
+              >
+                <img
+                  src={img.url}
+                  alt=""
+                  onClick={() =>
+                    setZoomImage(img.url)
+                  }
+                  style={{
+                    width: "100%",
+                    height: 140,
+                    objectFit: "cover",
+                    borderRadius: 10,
+                    cursor: "zoom-in",
+                    border:
+                      "2px solid var(--border)",
+                  }}
+                />
+              </div>
+            )
+          )}
+
+        </div>
+
+      </div>
+    )}
 
     {isExistingBusinessMode &&
       Array.isArray(data.gallery) &&

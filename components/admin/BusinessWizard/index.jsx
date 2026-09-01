@@ -288,6 +288,24 @@ export default function BusinessWizard({
             ? data.availability_hours
             : null,
       };
+
+      /*
+       * F15-20A — Ticket media displayed in the wizard is
+       * presentation-only context.
+       *
+       * Request-bound business creation must resolve immutable
+       * business_request_assets server-side from the request ID.
+       * Never send archived media URLs back as authoritative
+       * business media input.
+       */
+      if (mode === "admin-create-ticket") {
+        delete cleanedData.logo_url;
+        delete cleanedData.cover_image_url;
+        delete cleanedData.gallery;
+        delete cleanedData.logo;
+        delete cleanedData.cover;
+        delete cleanedData.removed_media;
+      }
   
       const form = new FormData();
   
