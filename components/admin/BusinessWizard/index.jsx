@@ -31,6 +31,18 @@ export default function BusinessWizard({
   const [ticketCode, setTicketCode] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  const [rejectOpen, setRejectOpen] =
+    useState(false);
+
+  const [rejectNote, setRejectNote] =
+    useState("");
+
+  const [rejectError, setRejectError] =
+    useState("");
+
+  const [rejectLoading, setRejectLoading] =
+    useState(false);
+
   const defaultData = {
     name: "",
     category_id: "",
@@ -132,6 +144,70 @@ export default function BusinessWizard({
 
   function back() {
     setStep((s) => Math.max(s - 1, 0));
+  }
+
+  async function rejectTicketRequest() {
+    if (mode !== "admin-create-ticket") {
+      return;
+    }
+
+    const requestId =
+      Number(data.business_request_id);
+
+    if (
+      !Number.isInteger(requestId) ||
+      requestId <= 0
+    ) {
+      setRejectError(
+        "Invalid business request context."
+      );
+      return;
+    }
+
+    const note =
+      String(rejectNote || "").trim();
+
+    if (!note) {
+      setRejectError(
+        "Admin note is required."
+      );
+      return;
+    }
+
+    setRejectLoading(true);
+    setRejectError("");
+
+    try {
+      await apiClient.put(
+        `/admin/requests/${requestId}/status`,
+        {
+          status: "rejected",
+          admin_note: note,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "x-iranconnect-admin": "1",
+          },
+        }
+      );
+
+      window.dispatchEvent(
+        new Event(
+          "iranconnect:business-request-changed"
+        )
+      );
+
+      window.location.href =
+        "/admin/requests";
+    } catch (err) {
+      setRejectError(
+        err?.response?.data?.error ||
+        "Unable to reject this request."
+      );
+    } finally {
+      setRejectLoading(false);
+    }
   }
 
   async function submit(submitData = data) {
@@ -500,6 +576,39 @@ export default function BusinessWizard({
 
   return (
     <>
+      {mode === "admin-create-ticket" && (
+        <div className="admin-card mb-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="font-semibold">
+                Ticket review workflow
+              </div>
+
+              <div className="admin-hint mt-1">
+                Reject the request at any step if the submitted
+                information cannot be accepted.
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="admin-btn admin-btn-secondary"
+              disabled={
+                loading ||
+                rejectLoading
+              }
+              onClick={() => {
+                setRejectOpen(true);
+                setRejectNote("");
+                setRejectError("");
+              }}
+            >
+              Reject Request
+            </button>
+          </div>
+        </div>
+      )}
+
       {step === 0 && (
         <StepBasicInfo data={data} setData={setData} onNext={next} mode={mode} initialData={initialData} />
       )}
@@ -549,6 +658,78 @@ export default function BusinessWizard({
         />
       )}
 
+
+      {rejectOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => {
+            if (!rejectLoading) {
+              setRejectOpen(false);
+            }
+          }}
+        >
+          <div
+            className="admin-card w-full max-w-lg"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <h3 className="admin-title">
+              Reject Business Request
+            </h3>
+
+            <p className="admin-hint mt-2">
+              Add an administrative note explaining why this
+              request is being rejected.
+            </p>
+
+            <textarea
+              className="admin-input min-h-[120px] mt-4"
+              value={rejectNote}
+              disabled={rejectLoading}
+              placeholder="Enter admin note..."
+              onChange={(event) => {
+                setRejectNote(
+                  event.target.value
+                );
+                setRejectError("");
+              }}
+            />
+
+            {rejectError && (
+              <p className="admin-error mt-3">
+                {rejectError}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                type="button"
+                className="admin-btn admin-btn-secondary"
+                disabled={rejectLoading}
+                onClick={() => {
+                  setRejectOpen(false);
+                  setRejectNote("");
+                  setRejectError("");
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="admin-btn admin-btn-primary bg-red-600 hover:bg-red-700 text-white"
+                disabled={rejectLoading}
+                onClick={rejectTicketRequest}
+              >
+                {rejectLoading
+                  ? "Rejecting..."
+                  : "Reject Request"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {duplicate && (
         <DuplicateModal

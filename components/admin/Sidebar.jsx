@@ -86,6 +86,7 @@ export default function Sidebar({ role }) {
 
   const [unblockedCount, setUnblockedCount] = useState(0);
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
+  const [pendingRequestCount, setPendingRequestCount] = useState(0);
 
   // ✅ کلید per-admin (per-browser-tab/session) برای اینکه بعد از دیدن صفحه suspicious پاک بشه
   const SEEN_KEY = "iranconnect_seen_suspicious_ips";
@@ -196,6 +197,79 @@ export default function Sidebar({ role }) {
       );
 
       setPendingReviewCount(0);
+    }
+  }
+
+  /* --------------------------------------------------------
+     🧾 Pending business request count
+     - Admin + SuperAdmin
+     - Authoritative work-queue indicator
+     - Fulfilled NEW requests remain counted until decision
+  ---------------------------------------------------------*/
+  useEffect(() => {
+    if (!["admin", "superadmin"].includes(role)) {
+      setPendingRequestCount(0);
+      return;
+    }
+
+    fetchPendingRequestCount();
+  }, [role, pathname]);
+
+  useEffect(() => {
+    if (!["admin", "superadmin"].includes(role)) {
+      return;
+    }
+
+    function handleBusinessRequestChanged() {
+      fetchPendingRequestCount();
+    }
+
+    window.addEventListener(
+      "iranconnect:business-request-changed",
+      handleBusinessRequestChanged
+    );
+
+    return () => {
+      window.removeEventListener(
+        "iranconnect:business-request-changed",
+        handleBusinessRequestChanged
+      );
+    };
+  }, [role]);
+
+  async function fetchPendingRequestCount() {
+    try {
+      const res = await apiClient.get(
+        "/admin/requests/count-pending"
+      );
+
+      const count = Number(
+        res.data?.count || 0
+      );
+
+      setPendingRequestCount(
+        Number.isFinite(count) && count > 0
+          ? count
+          : 0
+      );
+    } catch (err) {
+      const status = err.response?.status;
+
+      if (
+        status === 401 ||
+        status === 440 ||
+        status === 403
+      ) {
+        setPendingRequestCount(0);
+        return;
+      }
+
+      console.warn(
+        "Failed to fetch pending business request count:",
+        err
+      );
+
+      setPendingRequestCount(0);
     }
   }
 
@@ -455,6 +529,32 @@ export default function Sidebar({ role }) {
                       <span className="flex items-center justify-between">
                         <span className="flex items-center gap-2">
                           <span>{item.label}</span>
+
+                          {item.href === "/admin/requests" &&
+                            pendingRequestCount > 0 && (
+                              <span
+                                className="
+                                  inline-flex
+                                  min-w-5
+                                  items-center
+                                  justify-center
+                                  rounded-full
+                                  bg-red-600
+                                  px-1.5
+                                  py-0.5
+                                  text-[10px]
+                                  font-semibold
+                                  leading-none
+                                  text-white
+                                "
+                                aria-label={`${pendingRequestCount} pending business requests`}
+                                title={`${pendingRequestCount} pending business requests`}
+                              >
+                                {pendingRequestCount > 99
+                                  ? "99+"
+                                  : pendingRequestCount}
+                              </span>
+                            )}
 
                           {item.href === "/admin/reviews" &&
                             pendingReviewCount > 0 && (

@@ -369,27 +369,29 @@ export default function AdminBusinessRequestsPage() {
               Clear
             </button>
 
-            <div className="flex gap-3 ml-auto">
-              <button
-                type="button"
-                onClick={() =>
-                  handleExport("xlsx")
-                }
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
-              >
-                Export XLSX
-              </button>
+            {role === "superadmin" && (
+              <div className="flex gap-3 ml-auto">
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleExport("xlsx")
+                  }
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm"
+                >
+                  Export XLSX
+                </button>
 
-              <button
-                type="button"
-                onClick={() =>
-                  handleExport("pdf")
-                }
-                className="admin-btn admin-btn-primary px-4 py-2 text-sm"
-              >
-                Export PDF
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleExport("pdf")
+                  }
+                  className="admin-btn admin-btn-primary px-4 py-2 text-sm"
+                >
+                  Export PDF
+                </button>
+              </div>
+            )}
           </form>
 
           {loading ? (
@@ -491,6 +493,7 @@ export default function AdminBusinessRequestsPage() {
       {selected && (
         <RequestDetailsModal
           request={selected}
+          role={role}
           onClose={() => setSelected(null)}
           refresh={fetchRequests}
         />

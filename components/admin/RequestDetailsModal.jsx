@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../utils/apiClient.js";
 
-export default function RequestDetailsModal({ request, onClose, refresh }) {
+export default function RequestDetailsModal({
+  request,
+  role,
+  onClose,
+  refresh,
+}) {
   const [details, setDetails] = useState(null);
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
@@ -66,6 +71,12 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
           headers: { "x-iranconnect-admin": "true" },
         }
       );
+      window.dispatchEvent(
+        new Event(
+          "iranconnect:business-request-changed"
+        )
+      );
+
       refresh();
       onClose();
     } catch (err) {
@@ -124,6 +135,19 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
   const isNewRequestFulfilled =
     isPendingNewRequest &&
     Boolean(details?.business_id);
+
+  const isSuperAdmin =
+    role === "superadmin";
+
+  const canProcessRequest =
+    isActionable &&
+    (
+      details?.request_type === "new" ||
+      isSuperAdmin
+    );
+
+  const canDownloadFiles =
+    isSuperAdmin;
 
   const files = safeParseAttachments(details?.attachments);
 
@@ -194,8 +218,9 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
               </div>
             )}
 
-            <div className="flex justify-end mt-6">
-              <button
+            {canDownloadFiles && (
+              <div className="flex justify-end mt-6">
+                <button
                 onClick={async () => {
                   try {
                     const res = await apiClient.get(
@@ -222,11 +247,12 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
                 className="admin-btn admin-btn-primary text-sm px-4 py-2"
               >
                 Download Files
-              </button>
-            </div>
+                </button>
+              </div>
+            )}
 
             {/* ✳️ Admin Decision */}
-            {isActionable ? (
+            {canProcessRequest ? (
               <>
                 {errorMsg && (
                   <p className="text-red-500 text-xs text-center">{errorMsg}</p>
@@ -298,6 +324,14 @@ export default function RequestDetailsModal({ request, onClose, refresh }) {
               </>
             ) : (
               <div className="text-center mt-6 text-gray-400 text-sm">
+                {isActionable &&
+                  !canProcessRequest && (
+                    <p>
+                      SuperAdmin access is required to process
+                      update or delete business requests.
+                    </p>
+                  )}
+
                 {details.status === "approved" && <p>✅ This request has been approved.</p>}
                 {details.status === "rejected" && (
                   <div>
