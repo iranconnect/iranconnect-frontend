@@ -97,7 +97,9 @@ export default function Register() {
       setMsgType("success");
       setMsg(res.data.message || "✅ Verification email sent successfully.");
     } catch (err) {
-      console.error(err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error(err);
+      }
       setMsgType("error");
       setMsg(err.response?.data?.error || "Server error");
     } finally {

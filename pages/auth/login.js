@@ -311,7 +311,9 @@ export default function Login() {
 
       setMsg("Invalid email or password.");
     } catch (err) {
-      console.error("Login error:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Login error:", err);
+      }
 
       const data = err.response?.data || {};
 
@@ -741,10 +743,12 @@ export default function Login() {
                 return;
               }
 
-              console.error(
-                "Agree terms error:",
-                err
-              );
+              if (process.env.NODE_ENV !== "production") {
+                console.error(
+                  "Agree terms error:",
+                  err
+                );
+              }
 
               setMsg(message);
             }

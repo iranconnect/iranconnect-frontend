@@ -96,7 +96,12 @@ export default function ChangePasswordPage() {
         setMsg(res.data.error || "Error changing password.");
       }
     } catch (err) {
-      console.error("Change Password Error:", err.response?.data || err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error(
+          "Change Password Error:",
+          err.response?.data || err
+        );
+      }
       setMsg(err.response?.data?.error || "Error changing password.");
     }
     setLoading(false);

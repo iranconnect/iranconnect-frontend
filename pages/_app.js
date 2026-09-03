@@ -22,12 +22,24 @@ import {
 function AppContent({ Component, pageProps }) {
   const router = useRouter();
 
-  const hasAnalyticsConsent =
-    typeof window !== "undefined" &&
-    localStorage.getItem("cookie_consent") === "accepted";
-
+  const [hasAnalyticsConsent, setHasAnalyticsConsent] =
+    useState(false);
 
   const [theme, setTheme] = useState("light");
+
+  /* Analytics consent is sourced from the same first-party
+     decision cookie used by CookieConsent. */
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const match = document.cookie.match(
+      /(?:^|; )ic_cookie_banner_decided=([^;]+)/
+    );
+
+    setHasAnalyticsConsent(
+      match?.[1] === "accepted"
+    );
+  }, []);
 
   const isAuthPage = router.pathname.startsWith("/auth");
 
@@ -120,7 +132,9 @@ function AppContent({ Component, pageProps }) {
         <GA4 measurementId={process.env.NEXT_PUBLIC_GA4_ID} />
       )}
     
-      <CookieConsent />
+      <CookieConsent
+        onConsentChange={setHasAnalyticsConsent}
+      />
     
       {!isAuthPage && <AutoLogout />}
     

@@ -401,10 +401,12 @@ export default function BootstrapSetup() {
         "SuperAdmin account claimed successfully. Continue with the required legal policies."
       );
     } catch (requestError) {
-      console.error(
-        "Bootstrap claim failed:",
-        requestError
-      );
+      if (process.env.NODE_ENV !== "production") {
+        console.error(
+          "Bootstrap claim failed:",
+          requestError
+        );
+      }
 
       setError(
         requestError
@@ -488,10 +490,12 @@ export default function BootstrapSetup() {
         "Bootstrap setup resumed securely."
       );
     } catch (requestError) {
-      console.error(
-        "Bootstrap resume failed:",
-        requestError
-      );
+      if (process.env.NODE_ENV !== "production") {
+        console.error(
+          "Bootstrap resume failed:",
+          requestError
+        );
+      }
 
       setCapability("");
 
@@ -617,10 +621,12 @@ export default function BootstrapSetup() {
         setMode("legal");
       }
     } catch (requestError) {
-      console.error(
-        "Bootstrap policy publication failed:",
-        requestError
-      );
+      if (process.env.NODE_ENV !== "production") {
+        console.error(
+          "Bootstrap policy publication failed:",
+          requestError
+        );
+      }
 
       if (
         isCapabilityError(
@@ -712,10 +718,12 @@ export default function BootstrapSetup() {
         "/admin/dashboard"
       );
     } catch (requestError) {
-      console.error(
-        "Bootstrap completion failed:",
-        requestError
-      );
+      if (process.env.NODE_ENV !== "production") {
+        console.error(
+          "Bootstrap completion failed:",
+          requestError
+        );
+      }
 
       const statusCode =
         requestError

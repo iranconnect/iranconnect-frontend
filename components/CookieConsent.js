@@ -20,7 +20,9 @@ function getCookie(name) {
   return match ? decodeURIComponent(match[2]) : null;
 }
 
-export default function CookieConsent() {
+export default function CookieConsent({
+  onConsentChange,
+}) {
   const { status } = useAuthSession();
   const [visible, setVisible] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -107,21 +109,12 @@ export default function CookieConsent() {
       // ✅ ONLY local cookie — NO API — NO DB
       setDecisionCookie(choice);
    
-      // Load analytics فقط در صورت Accept
-      if (choice === "accepted") {
-        const script = document.createElement("script");
-        script.src =
-          "https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX";
-        script.async = true;
-        document.body.appendChild(script);
-   
-        window.dataLayer = window.dataLayer || [];
-        function gtag() {
-          window.dataLayer.push(arguments);
-        }
-        gtag("js", new Date());
-        gtag("config", "G-XXXXXXX");
-      }
+      /*
+       * Analytics itself is owned by _app via the GA4
+       * component. CookieConsent only records the user's
+       * decision and updates the reactive consent state.
+       */
+      onConsentChange?.(choice === "accepted");
    
       setVisible(false);
     } catch (err) {

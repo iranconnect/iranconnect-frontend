@@ -60,7 +60,9 @@ export default function ForgotPassword() {
       setMsgType("success");
       setCaptchaToken(null);
     } catch (err) {
-      console.error(err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error(err);
+      }
       setMsg("If the email exists, we sent a reset link.");
       setMsgType("info");
     }
