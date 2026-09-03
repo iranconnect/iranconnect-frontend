@@ -97,6 +97,10 @@ export default function UserDetailsModal({
           .toLowerCase()
     );
 
+  const isProtectedSuperAdminTarget =
+    currentRole === "admin" &&
+    details?.role === "superadmin";
+
   const [
     emailActionModalOpen,
     setEmailActionModalOpen,
@@ -368,7 +372,8 @@ export default function UserDetailsModal({
       if (
         actionLoading ||
         forbidden ||
-        !details
+        !details ||
+        isProtectedSuperAdminTarget
       ) {
         return;
       }
@@ -378,6 +383,7 @@ export default function UserDetailsModal({
       actionLoading,
       forbidden,
       details,
+      isProtectedSuperAdminTarget,
     ]);
 
   const confirmBlockAction =
@@ -386,7 +392,8 @@ export default function UserDetailsModal({
         if (
           actionLoading ||
           forbidden ||
-          !details
+          !details ||
+          isProtectedSuperAdminTarget
         ) {
           return;
         }
@@ -451,6 +458,7 @@ export default function UserDetailsModal({
         actionLoading,
         forbidden,
         details,
+        isProtectedSuperAdminTarget,
         user,
         fetchDetails,
         refreshAdministrativeHistory,
@@ -1375,20 +1383,22 @@ export default function UserDetailsModal({
                     </button>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={
-                      openBlockActionModal
-                    }
-                    className="admin-btn admin-btn-primary"
-                    disabled={
-                      actionLoading
-                    }
-                  >
-                    {details.is_blocked
-                      ? "Unblock"
-                      : "Block"}
-                  </button>
+                  {!isProtectedSuperAdminTarget && (
+                    <button
+                      type="button"
+                      onClick={
+                        openBlockActionModal
+                      }
+                      className="admin-btn admin-btn-primary"
+                      disabled={
+                        actionLoading
+                      }
+                    >
+                      {details.is_blocked
+                        ? "Unblock"
+                        : "Block"}
+                    </button>
+                  )}
 
                   {currentRole ===
                     "superadmin" && (
