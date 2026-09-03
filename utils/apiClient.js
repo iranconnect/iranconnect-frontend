@@ -196,7 +196,10 @@ apiClient.interceptors.response.use(
       forceRedirect(
         sessionExpired
           ? "Your session has expired."
-          : "Please sign in again."
+          : "Please sign in again.",
+        sessionExpired
+          ? "expired"
+          : ""
       );
 
       return Promise.reject(err);
