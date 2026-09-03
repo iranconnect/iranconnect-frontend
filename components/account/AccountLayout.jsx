@@ -6,6 +6,7 @@ import Header from "../Header";
 import Footer from "../Footer";
 
 import { useAuthSession } from "../../hooks/useAuthSession";
+import { isSafeInternalPath } from "../../utils/navigationHistory";
 
 import { useSentryBaseContext } from "../../hooks/useSentryBaseContext";
 import { SentryContextReady } from "../../hooks/useSentryContextStatus";
@@ -13,9 +14,7 @@ import { useSafePageEvent } from "../../hooks/useSafePageEvent";
 
 function buildLoginRedirectUrl(returnTo) {
   const safeReturnTo =
-    typeof returnTo === "string" &&
-    returnTo.startsWith("/") &&
-    !returnTo.startsWith("//")
+    isSafeInternalPath(returnTo)
       ? returnTo
       : "/account";
 

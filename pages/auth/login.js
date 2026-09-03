@@ -9,6 +9,7 @@ import apiClient from "../../utils/apiClient";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import ConsentReviewModal from "../../components/ConsentReviewModal";
+import { isSafeInternalPath } from "../../utils/navigationHistory";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -82,11 +83,7 @@ export default function Login() {
       window.location.search
     ).get("redirect");
   
-    if (
-      redirect &&
-      redirect.startsWith("/") &&
-      !redirect.startsWith("//")
-    ) {
+    if (isSafeInternalPath(redirect)) {
       return redirect;
     }
   
