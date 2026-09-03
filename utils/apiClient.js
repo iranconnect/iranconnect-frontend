@@ -1,6 +1,7 @@
 // frontend/utils/apiClient.js
 
 import axios from "axios";
+import { isSafeInternalPath } from "./navigationHistory";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE;
 
@@ -41,7 +42,11 @@ let handlingConcurrentLogout = false;
  * This function must only be used for authentication/session failures,
  * never for authorization failures such as HTTP 403.
  */
-function forceRedirect(message, reason = "") {
+function forceRedirect(
+  message,
+  reason = "",
+  returnTo = ""
+) {
   if (handlingConcurrentLogout) return;
 
   handlingConcurrentLogout = true;
@@ -63,11 +68,24 @@ function forceRedirect(message, reason = "") {
     // Storage may be unavailable, but redirect must continue.
   }
 
-  const query = reason
-    ? `?reason=${encodeURIComponent(reason)}`
-    : "";
+  const params = new URLSearchParams();
 
-  window.location.replace(`/auth/login${query}`);
+  if (reason) {
+    params.set("reason", reason);
+  }
+
+  if (
+    returnTo &&
+    isSafeInternalPath(returnTo)
+  ) {
+    params.set("redirect", returnTo);
+  }
+
+  const query = params.toString();
+
+  window.location.replace(
+    `/auth/login${query ? `?${query}` : ""}`
+  );
 }
 
 apiClient.interceptors.response.use(
@@ -86,6 +104,11 @@ apiClient.interceptors.response.use(
     const currentPath =
       typeof window !== "undefined"
         ? window.location.pathname
+        : "";
+
+    const currentPathWithSearch =
+      typeof window !== "undefined"
+        ? `${window.location.pathname}${window.location.search}`
         : "";
 
     const AUTH_PAGES = [
@@ -193,13 +216,20 @@ apiClient.interceptors.response.use(
       const sessionExpired =
         errorText.includes("expired");
 
+      const accountReturnTo =
+        currentPath.startsWith("/account") &&
+        isSafeInternalPath(currentPathWithSearch)
+          ? currentPathWithSearch
+          : "";
+
       forceRedirect(
         sessionExpired
           ? "Your session has expired."
           : "Please sign in again.",
         sessionExpired
           ? "expired"
-          : ""
+          : "",
+        accountReturnTo
       );
 
       return Promise.reject(err);
