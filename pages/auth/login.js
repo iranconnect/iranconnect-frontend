@@ -182,14 +182,13 @@ export default function Login() {
         res.data.captcha_required === true;
 
       if (required !== showCaptcha) {
+        /*
+         * Mounting ReCAPTCHA already creates a fresh widget.
+         * Do not imperatively reset it during initial display;
+         * doing so can restart the Google challenge lifecycle.
+         */
         setShowCaptcha(required);
         setCaptchaToken(null);
-
-        if (required) {
-          setTimeout(() => {
-            captchaRef.current?.reset();
-          }, 150);
-        }
       }
     } catch (err) {
       console.warn("login-status sync failed:", err?.message);
@@ -208,19 +207,6 @@ export default function Login() {
 
     return () => clearTimeout(t);
   }, [email]);
-
-  /* ───────────────────────────────────────────────
-     🔵 Reset CAPTCHA
-  ─────────────────────────────────────────────── */
-  useEffect(() => {
-    if (!showCaptcha) return;
-
-    setCaptchaToken(null);
-
-    setTimeout(() => {
-      captchaRef.current?.reset();
-    }, 150);
-  }, [showCaptcha]);
 
   /* ───────────────────────────────────────────────
      🔵 Submit Login
