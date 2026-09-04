@@ -422,10 +422,12 @@ export default function PoliciesAdmin() {
       resetForm();
       await fetchPolicies();
     } catch (err) {
-      console.error(
-        "❌ Save policy error:",
-        err
-      );
+      if (process.env.NODE_ENV !== "production") {
+        console.error(
+          "❌ Save policy error:",
+          err
+        );
+      }
 
       setError(
         err.response?.data?.error ||
@@ -620,10 +622,12 @@ export default function PoliciesAdmin() {
         "✅ Historical content was restored as a new published version."
       );
     } catch (err) {
-      console.error(
-        "❌ Restore policy error:",
-        err
-      );
+      if (process.env.NODE_ENV !== "production") {
+        console.error(
+          "❌ Restore policy error:",
+          err
+        );
+      }
 
       alert(
         err.response?.data?.error ||

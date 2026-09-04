@@ -275,7 +275,10 @@ export default function BusinessWizard({
   
         const status = err?.response?.status;
 
-        if (!status || status >= 500) {
+        if (
+          process.env.NODE_ENV !== "production" &&
+          (!status || status >= 500)
+        ) {
           console.error(
             "Business wizard external submit failed",
             err
