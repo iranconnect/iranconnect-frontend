@@ -226,7 +226,9 @@ export default function SuspiciousIPDetailsModal({
       refreshList?.();
       handleClose();
     } catch (err) {
-      console.error("❌ Action failed:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("❌ Action failed:", err);
+      }
 
       if (err.response?.status === 403) {
         alert(

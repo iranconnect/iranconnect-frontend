@@ -80,7 +80,9 @@ export default function RequestDetailsModal({
       refresh();
       onClose();
     } catch (err) {
-      console.error("❌ Action failed:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("❌ Action failed:", err);
+      }
       alert(err.response?.data?.error || "Action failed.");
     }
   }

@@ -384,10 +384,12 @@ export default function BulkEmailPage() {
 
       await fetchLogs();
     } catch (err) {
-      console.error(
-        "❌ Error sending bulk emails:",
-        err
-      );
+      if (process.env.NODE_ENV !== "production") {
+        console.error(
+          "❌ Error sending bulk emails:",
+          err
+        );
+      }
 
       alert(
         err.response?.data?.error ||

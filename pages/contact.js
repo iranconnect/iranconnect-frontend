@@ -110,7 +110,9 @@ export default function ContactPage() {
       setCaptchaToken(null);
       if (recaptchaRef.current) recaptchaRef.current.reset();
     } catch (err) {
-      console.error('❌ Contact submit error:', err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error('❌ Contact submit error:', err);
+      }
       const msg = err.response?.data?.error || 'Server error. Please try again later.';
       setErrors({ global: msg });
     } finally {

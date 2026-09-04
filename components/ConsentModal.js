@@ -76,7 +76,9 @@ export default function ConsentModal({ userId, lang = "en", onClose }) {
       // ✅ بعد از صدور JWT نهایی
       onClose(true);
     } catch (err) {
-      console.error("❌ Agree terms error:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("❌ Agree terms error:", err);
+      }
   
       const status = err.response?.status;
       const msg = err.response?.data?.error || "";

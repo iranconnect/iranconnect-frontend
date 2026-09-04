@@ -83,7 +83,9 @@ export default function ContactRequestDetailsModal({
       fetchDetails();
       if (refresh) refresh();
     } catch (err) {
-      console.error("❌ Error sending reply:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("❌ Error sending reply:", err);
+      }
       alert(err.response?.data?.error || "Failed to send reply.");
     } finally {
       setSending(false);

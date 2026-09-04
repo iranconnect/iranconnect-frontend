@@ -121,7 +121,9 @@ export default function DeleteBusinessRequest() {
       setDescription("");
       setErrors({});
     } catch (err) {
-      console.error(err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error(err);
+      }
       setMsg(err.response?.data?.error || "Error submitting request.");
     }
 

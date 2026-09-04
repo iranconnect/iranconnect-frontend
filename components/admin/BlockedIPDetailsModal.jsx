@@ -90,7 +90,9 @@ export default function BlockedIPDetailsModal({
       refreshList?.();
       handleClose();
     } catch (err) {
-      console.error("❌ Unblock error:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("❌ Unblock error:", err);
+      }
 
       if (err.response?.status === 403) {
         alert(

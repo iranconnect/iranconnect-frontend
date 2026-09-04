@@ -475,10 +475,12 @@ export default function BusinessWizard({
   
     } catch (err) {
 
-      console.error(
-        "Business wizard submit failed",
-        err
-      );
+      if (process.env.NODE_ENV !== "production") {
+        console.error(
+          "Business wizard submit failed",
+          err
+        );
+      }
     
       const status =
         err?.response?.status;
