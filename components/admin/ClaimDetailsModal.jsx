@@ -301,22 +301,47 @@ export default function ClaimDetailsModal({
           ) : (
             <div className="text-sm text-center w-full text-gray-500">
               {claim.status === 'verified' && (
-                <p>
+                <p className="text-center">
                   ✅ This claim has been approved on{' '}
                   {formatDate(claim.verified_at)}
                 </p>
               )}
+
               {claim.status === 'rejected' && (
-                <div>
-                  <p>
-                    ❌ This claim was rejected on{' '}
-                    {formatDate(claim.processed_at)}
+                <p className="text-center">
+                  ❌ This claim was rejected on{' '}
+                  {formatDate(claim.processed_at)}
+                </p>
+              )}
+
+              {(claim.status === 'verified' ||
+                claim.status === 'rejected') && (
+                <div className="mt-4 pt-3 border-t border-gray-200 text-left space-y-2">
+                  <p className="font-semibold text-[var(--text)]">
+                    Processing Details
                   </p>
-                  {claim.admin_note && (
-                    <p className="italic text-xs text-gray-400 mt-2">
-                      Note from admin: {claim.admin_note}
+
+                  <div>
+                    <strong>Processed by:</strong>
+                    <p>{claim.admin_email || '—'}</p>
+                  </div>
+
+                  <div>
+                    <strong>Processed at:</strong>
+                    <p>
+                      {formatDate(
+                        claim.processed_at ||
+                          claim.verified_at
+                      )}
                     </p>
-                  )}
+                  </div>
+
+                  <div>
+                    <strong>Admin Note:</strong>
+                    <p className="whitespace-pre-wrap break-words">
+                      {claim.admin_note || '—'}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
