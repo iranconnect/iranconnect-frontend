@@ -22,15 +22,16 @@ export default function ClaimBusinessWidget({ businessId }) {
     en: {
       title: "Claim this business",
       desc: "If you are the owner of this business, please complete the form below.",
-      name: "Full name",
-      email: "Business email",
-      phone: "Business phone (with country code)",
-      role: "Your role",
+      name: "Full name *",
+      email: "Business email *",
+      phone: "Business phone (with country code) *",
+      role: "Your role *",
       descLabel: "Additional information",
-      file: "Proof of ownership (required — PDF, JPG, PNG, max 2 MB)",
+      requiredLegend: "* Required fields",
+      file: "Proof of ownership * (PDF, JPG, PNG, max 2 MB)",
       fileHelp: `Please upload an official document proving that you are the legal owner of this business.
       Accepted formats: PDF, JPG, PNG. Maximum file size: 2 MB.`,
-      confirm: "I confirm that the information above is accurate.",
+      confirm: "I confirm that the information above is accurate. *",
       submit: "Submit claim",
       success: "✅ Your claim was successfully submitted.",
       review: "Your request is under review. We will contact you soon.",
@@ -40,15 +41,16 @@ export default function ClaimBusinessWidget({ businessId }) {
     fr: {
       title: "Revendiquer cette entreprise",
       desc: "Si vous êtes le propriétaire de cette entreprise, veuillez compléter le formulaire.",
-      name: "Nom complet",
-      email: "Email professionnel",
-      phone: "Téléphone professionnel",
-      role: "Votre rôle",
+      name: "Nom complet *",
+      email: "Email professionnel *",
+      phone: "Téléphone professionnel *",
+      role: "Votre rôle *",
       descLabel: "Informations complémentaires",
-      file: "Justificatif de propriété (obligatoire — PDF, JPG, PNG, max. 2 Mo)",
+      requiredLegend: "* Champs obligatoires",
+      file: "Justificatif de propriété * (PDF, JPG, PNG, max. 2 Mo)",
       fileHelp: `Veuillez télécharger un document officiel prouvant que vous êtes le propriétaire légal de cette entreprise.
       Formats acceptés : PDF, JPG, PNG. Taille maximale : 2 Mo.`,
-      confirm: "Je confirme que les informations ci-dessus sont exactes.",
+      confirm: "Je confirme que les informations ci-dessus sont exactes. *",
       submit: "Soumettre la demande",
       success: "✅ Votre demande a été envoyée avec succès.",
       review: "Votre demande est en cours d'examen.",
@@ -58,15 +60,16 @@ export default function ClaimBusinessWidget({ businessId }) {
     fa: {
       title: "درخواست مالکیت کسب‌وکار",
       desc: "اگر مالک این کسب‌وکار هستید، لطفاً فرم زیر را تکمیل کنید.",
-      name: "نام و نام خانوادگی",
-      email: "ایمیل کسب‌وکار",
-      phone: "شماره تماس",
-      role: "نقش شما",
+      name: "نام و نام خانوادگی *",
+      email: "ایمیل کسب‌وکار *",
+      phone: "شماره تماس *",
+      role: "نقش شما *",
       descLabel: "توضیحات تکمیلی",
-      file: "مدرک مالکیت (اجباری — PDF، JPG، PNG، حداکثر ۲ مگابایت)",
+      requiredLegend: "* فیلدهای اجباری",
+      file: "مدرک مالکیت * (PDF، JPG، PNG، حداکثر ۲ مگابایت)",
       fileHelp: `لطفاً یک مدرک رسمی بارگذاری کنید که نشان دهد مالک قانونی این کسب‌وکار هستید.
       فرمت‌های قابل قبول: PDF، JPG، PNG. حداکثر حجم فایل: ۲ مگابایت.`,
-      confirm: "اینجانب تأیید می‌کنم اطلاعات وارد شده صحیح است.",
+      confirm: "اینجانب تأیید می‌کنم اطلاعات وارد شده صحیح است. *",
       submit: "ارسال درخواست",
       success: "✅ درخواست شما با موفقیت ثبت شد.",
       review: "درخواست شما در حال بررسی است.",
@@ -86,11 +89,16 @@ export default function ClaimBusinessWidget({ businessId }) {
       "image/png",
     ];
   
+    const normalizedEmail = email.trim();
+    const normalizedPhone = phone.trim();
+    const normalizedFullName = fullName.trim();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (
       role !== "owner" ||
-      !email ||
-      !phone ||
-      !fullName ||
+      !normalizedEmail ||
+      !normalizedPhone ||
+      normalizedFullName.length < 3 ||
       !document
     ) {
       setMsg(
@@ -98,14 +106,19 @@ export default function ClaimBusinessWidget({ businessId }) {
       );
       return;
     }
-  
+
+    if (!emailPattern.test(normalizedEmail)) {
+      setMsg("Please enter a valid email address.");
+      return;
+    }
+
     if (document.size > maxFileSizeBytes) {
       setMsg(
         "The ownership document must be 2 MB or smaller."
       );
       return;
     }
-  
+
     if (!allowedFileTypes.includes(document.type)) {
       setMsg(
         "Invalid document type. Only PDF, JPG, and PNG files are allowed."
@@ -118,9 +131,9 @@ export default function ClaimBusinessWidget({ businessId }) {
 
     try {
       const formData = new FormData();
-      formData.append("email", email);
-      formData.append("phone", phone);
-      formData.append("full_name", fullName);
+      formData.append("email", normalizedEmail);
+      formData.append("phone", normalizedPhone);
+      formData.append("full_name", normalizedFullName);
       formData.append("applicant_role", role);
       formData.append("description", description);
       
@@ -174,12 +187,14 @@ export default function ClaimBusinessWidget({ businessId }) {
       {step === 1 && (
         <>
           <p className="text-sm text-[var(--text)] mb-4">{t.desc}</p>
+          <p className="text-xs opacity-70 mb-4">{t.requiredLegend}</p>
 
           <div className="flex flex-col gap-3">
             <input
               placeholder={t.name}
               className="input-default"
               value={fullName}
+              required
               onChange={(e) => setFullName(e.target.value)}
             />
             <input
@@ -187,12 +202,14 @@ export default function ClaimBusinessWidget({ businessId }) {
               placeholder={t.email}
               className="input-default"
               value={email}
+              required
               onChange={(e) => setEmail(e.target.value)}
             />
             <input
               placeholder={t.phone}
               className="input-default"
               value={phone}
+              required
               onChange={(e) => setPhone(e.target.value)}
             />
 
@@ -200,6 +217,7 @@ export default function ClaimBusinessWidget({ businessId }) {
             <select
               className="input-default"
               value={role}
+              required
               onChange={(e) => setRole(e.target.value)}
             >
               <option value="">-- {t.role} --</option>
@@ -243,6 +261,7 @@ export default function ClaimBusinessWidget({ businessId }) {
               <input
                 type="checkbox"
                 checked={confirmed}
+                required
                 onChange={(e) => setConfirmed(e.target.checked)}
               />
               {t.confirm}
@@ -253,9 +272,9 @@ export default function ClaimBusinessWidget({ businessId }) {
               disabled={
                 loading ||
                 !confirmed ||
-                !email ||
-                !phone ||
-                !fullName ||
+                !email.trim() ||
+                !phone.trim() ||
+                fullName.trim().length < 3 ||
                 !document ||
                 role !== "owner"
               }

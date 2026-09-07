@@ -40,7 +40,7 @@ const faqItems = [
   {
     question: "Can I claim an existing business profile?",
     answer:
-      "Yes. If a business profile already exists on IranConnect, an eligible owner or representative can use the claim process to request ownership verification.",
+      "Yes. If a business profile already exists on IranConnect, the eligible business owner can use the claim process to request ownership verification.",
   },
   {
     question:
