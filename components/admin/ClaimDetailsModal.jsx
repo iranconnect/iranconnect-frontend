@@ -66,10 +66,8 @@ export default function ClaimDetailsModal({
       const fallbackName = `claim-document-${claim.id}`;
   
       link.download =
-        claim.document_url
-          ?.split("/")
-          .pop()
-          ?.split("?")[0] || fallbackName;
+        claim.document_original_name ||
+        fallbackName;
   
       document.body.appendChild(link);
       link.click();
@@ -182,7 +180,7 @@ export default function ClaimDetailsModal({
           </div>
 
           {/* 📎 دکمه دانلود مدرک مالکیت */}
-          {claim.document_url && (
+          {claim.document_available && (
             <div>
               <strong>Ownership Document:</strong>
               <div className="mt-1">
