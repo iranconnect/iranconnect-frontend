@@ -1,18 +1,28 @@
 //frontend/components/business/BusinessGallery.jsx
-import { useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  X,
 } from "lucide-react";
+import GalleryLightbox from "./GalleryLightbox";
 
 export default function BusinessGallery({ biz }) {
   const [activeIndex, setActiveIndex] = useState(null);
+  const [stripState, setStripState] = useState({
+    hasOverflow: false,
+    canScrollLeft: false,
+    canScrollRight: false,
+  });
+
   const scrollRef = useRef(null);
 
   const apiBase =
     process.env.NEXT_PUBLIC_API_BASE;
-
   const cdnBase =
     process.env.NEXT_PUBLIC_CDN_BASE;
 
@@ -42,7 +52,10 @@ export default function BusinessGallery({ biz }) {
 
     const apiOrigin = apiBase.replace(/\/api\/?$/, "");
     const fullUrl = `${apiOrigin}${url}`;
-    const filename = fullUrl.split("/").pop().split("?")[0];
+    const filename = fullUrl
+      .split("/")
+      .pop()
+      .split("?")[0];
 
     return `${cdnBase}/cdn/${filename}?url=${encodeURIComponent(
       fullUrl
@@ -56,7 +69,8 @@ export default function BusinessGallery({ biz }) {
 
     try {
       const parsed = new URL(url);
-      const proxiedOriginal = parsed.searchParams.get("url");
+      const proxiedOriginal =
+        parsed.searchParams.get("url");
 
       return proxiedOriginal || parsed.href;
     } catch {
@@ -64,89 +78,142 @@ export default function BusinessGallery({ biz }) {
     }
   }
 
-  const coverImage = resolveImage(biz.cover_image_url);
-
-  const coverIdentity = getImageIdentity(
-    coverImage
+  const coverImage = resolveImage(
+    biz.cover_image_url
   );
 
+  const coverIdentity =
+    getImageIdentity(coverImage);
+
   const rawGallery = Array.isArray(biz.gallery)
-    ? biz.gallery.map(resolveImage).filter(Boolean)
+    ? biz.gallery
+        .map(resolveImage)
+        .filter(Boolean)
     : [];
 
   const uniqueGallery = Array.from(
     new Set(rawGallery)
   );
 
-  const gallery = uniqueGallery.filter((image) => {
-    return getImageIdentity(image) !== coverIdentity;
-  });
+  const gallery = uniqueGallery.filter(
+    (image) =>
+      getImageIdentity(image) !== coverIdentity
+  );
 
-  const hasMultipleImages = gallery.length > 1;
+  const hasMultipleImages =
+    gallery.length > 1;
 
-  useEffect(() => {
-    function handleKeyDown(event) {
-      if (activeIndex === null || gallery.length === 0) {
-        return;
-      }
+  const updateStripState = useCallback(() => {
+    const element = scrollRef.current;
 
-      if (event.key === "Escape") {
-        setActiveIndex(null);
-      }
-
-      if (event.key === "ArrowRight") {
-        setActiveIndex((previous) =>
-          previous === gallery.length - 1
-            ? 0
-            : previous + 1
-        );
-      }
-
-      if (event.key === "ArrowLeft") {
-        setActiveIndex((previous) =>
-          previous === 0
-            ? gallery.length - 1
-            : previous - 1
-        );
-      }
+    if (!element) {
+      return;
     }
 
-    window.addEventListener("keydown", handleKeyDown);
+    const maxScrollLeft = Math.max(
+      0,
+      element.scrollWidth -
+        element.clientWidth
+    );
+
+    const epsilon = 2;
+
+    setStripState({
+      hasOverflow: maxScrollLeft > epsilon,
+      canScrollLeft:
+        element.scrollLeft > epsilon,
+      canScrollRight:
+        element.scrollLeft <
+        maxScrollLeft - epsilon,
+    });
+  }, []);
+
+  useEffect(() => {
+    const element = scrollRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    const frame =
+      window.requestAnimationFrame(
+        updateStripState
+      );
+
+    element.addEventListener(
+      "scroll",
+      updateStripState,
+      { passive: true }
+    );
+
+    window.addEventListener(
+      "resize",
+      updateStripState
+    );
+
+    let resizeObserver = null;
+
+    if (
+      typeof ResizeObserver !== "undefined"
+    ) {
+      resizeObserver = new ResizeObserver(
+        updateStripState
+      );
+
+      resizeObserver.observe(element);
+    }
 
     return () => {
-      window.removeEventListener(
-        "keydown",
-        handleKeyDown
+      window.cancelAnimationFrame(frame);
+
+      element.removeEventListener(
+        "scroll",
+        updateStripState
       );
+
+      window.removeEventListener(
+        "resize",
+        updateStripState
+      );
+
+      resizeObserver?.disconnect();
     };
-  }, [activeIndex, gallery.length]);
+  }, [gallery.length, updateStripState]);
 
   if (gallery.length === 0) {
     return null;
   }
 
   function scrollGallery(direction) {
-    scrollRef.current?.scrollBy({
+    const element = scrollRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    if (
+      direction < 0 &&
+      !stripState.canScrollLeft
+    ) {
+      return;
+    }
+
+    if (
+      direction > 0 &&
+      !stripState.canScrollRight
+    ) {
+      return;
+    }
+
+    element.scrollBy({
       left: direction * 300,
       behavior: "smooth",
     });
   }
 
-  function showPreviousImage() {
-    setActiveIndex((previous) =>
-      previous === 0
-        ? gallery.length - 1
-        : previous - 1
-    );
-  }
-
-  function showNextImage() {
-    setActiveIndex((previous) =>
-      previous === gallery.length - 1
-        ? 0
-        : previous + 1
-    );
-  }
+  const showStripControls =
+    hasMultipleImages &&
+    stripState.hasOverflow;
 
   return (
     <section className="card mt-6">
@@ -155,122 +222,137 @@ export default function BusinessGallery({ biz }) {
       </h2>
 
       <div className="relative mt-4">
-        {hasMultipleImages && (
+        {showStripControls && (
           <button
             type="button"
-            onClick={() => scrollGallery(-1)}
+            onClick={() =>
+              scrollGallery(-1)
+            }
+            disabled={
+              !stripState.canScrollLeft
+            }
             aria-label="Scroll gallery left"
             className="
               absolute left-2 top-1/2 z-10
-              flex h-10 w-10 -translate-y-1/2 items-center justify-center
-              rounded-full border border-gray-200 bg-white/90
-              shadow-md backdrop-blur transition-all duration-200
-              hover:scale-105 hover:bg-white hover:shadow-lg
+              flex h-10 w-10
+              -translate-y-1/2
+              items-center justify-center
+              rounded-full
+              border border-gray-200
+              bg-white/90
+              shadow-md backdrop-blur
+              transition-all duration-200
+              hover:scale-105
+              hover:bg-white
+              hover:shadow-lg
+              disabled:cursor-not-allowed
+              disabled:opacity-40
+              disabled:hover:scale-100
+              disabled:hover:shadow-md
             "
           >
-            <ChevronLeft size={18} className="text-black" />
+            <ChevronLeft
+              size={18}
+              className="text-black"
+              aria-hidden="true"
+            />
           </button>
         )}
 
         <div
           ref={scrollRef}
-          className="flex gap-3 overflow-x-auto scroll-smooth no-scrollbar px-8"
+          className="
+            flex gap-3 overflow-x-auto
+            scroll-smooth no-scrollbar px-8
+          "
         >
-          {gallery.map((image, index) => (
-            <button
-              key={image}
-              type="button"
-              onClick={() => setActiveIndex(index)}
-              className="min-w-[160px] overflow-hidden rounded-xl"
-              aria-label={`Open gallery image ${
-                index + 1
-              } for ${biz.name}`}
-            >
-              <img
-                src={image}
-                alt={`Gallery image ${
+          {gallery.map(
+            (image, index) => (
+              <button
+                key={image}
+                type="button"
+                onClick={() =>
+                  setActiveIndex(index)
+                }
+                className="
+                  min-w-[160px]
+                  overflow-hidden
+                  rounded-xl
+                "
+                aria-label={`Open gallery image ${
                   index + 1
                 } for ${biz.name}`}
-                loading="lazy"
-                decoding="async"
-                className="h-[120px] w-full object-cover transition-transform duration-200 hover:scale-105"
-              />
-            </button>
-          ))}
+              >
+                <img
+                  src={image}
+                  alt={`Gallery image ${
+                    index + 1
+                  } for ${biz.name}`}
+                  loading="lazy"
+                  decoding="async"
+                  className="
+                    h-[120px] w-full
+                    object-cover
+                    transition-transform
+                    duration-200
+                    hover:scale-105
+                  "
+                />
+              </button>
+            )
+          )}
         </div>
 
-        {hasMultipleImages && (
+        {showStripControls && (
           <button
             type="button"
-            onClick={() => scrollGallery(1)}
+            onClick={() =>
+              scrollGallery(1)
+            }
+            disabled={
+              !stripState.canScrollRight
+            }
             aria-label="Scroll gallery right"
             className="
               absolute right-2 top-1/2 z-10
-              flex h-10 w-10 -translate-y-1/2 items-center justify-center
-              rounded-full border border-gray-200 bg-white/90
-              shadow-md backdrop-blur transition-all duration-200
-              hover:scale-105 hover:bg-white hover:shadow-lg
+              flex h-10 w-10
+              -translate-y-1/2
+              items-center justify-center
+              rounded-full
+              border border-gray-200
+              bg-white/90
+              shadow-md backdrop-blur
+              transition-all duration-200
+              hover:scale-105
+              hover:bg-white
+              hover:shadow-lg
+              disabled:cursor-not-allowed
+              disabled:opacity-40
+              disabled:hover:scale-100
+              disabled:hover:shadow-md
             "
           >
-            <ChevronRight size={18} className="text-black" />
+            <ChevronRight
+              size={18}
+              className="text-black"
+              aria-hidden="true"
+            />
           </button>
         )}
       </div>
 
       {activeIndex !== null && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 px-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`${biz.name} gallery preview`}
-          onClick={() => setActiveIndex(null)}
-        >
-          <button
-            type="button"
-            onClick={() => setActiveIndex(null)}
-            aria-label="Close gallery preview"
-            className="absolute right-4 top-4 text-white"
-          >
-            <X size={28} />
-          </button>
-
-          {hasMultipleImages && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                showPreviousImage();
-              }}
-              aria-label="Previous gallery image"
-              className="absolute left-4 text-4xl text-white md:left-8"
-            >
-              ‹
-            </button>
-          )}
-
-          <img
-            src={gallery[activeIndex]}
-            alt={`Gallery image ${
-              activeIndex + 1
-            } for ${biz.name}`}
-            className="max-h-[90vh] max-w-[90vw] rounded-xl"
-            onClick={(event) => event.stopPropagation()}
-          />
-
-          {hasMultipleImages && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                showNextImage();
-              }}
-              aria-label="Next gallery image"
-              className="absolute right-4 text-4xl text-white md:right-8"
-            >
-              ›
-            </button>
-          )}
-        </div>
+        <GalleryLightbox
+          images={gallery}
+          activeIndex={activeIndex}
+          businessName={biz.name}
+          onActiveIndexChange={
+            setActiveIndex
+          }
+          onClose={() =>
+            setActiveIndex(null)
+          }
+        />
       )}
     </section>
   );
