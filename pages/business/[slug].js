@@ -19,6 +19,7 @@ import RevealOnScroll from "../../components/ui/RevealOnScroll";
 import { getCountryCallingCode } from "libphonenumber-js";
 
 import { useAuthSession } from "../../hooks/useAuthSession";
+import apiClient from "../../utils/apiClient";
 
 /* ======================================================
    SSR — Fetch business by slug
@@ -238,21 +239,50 @@ function buildOpeningHoursSchema(biz) {
    Page
 ====================================================== */
 export default function BusinessBySlug({
-  biz,
+  biz: initialBiz,
   isStaging,
 }) {
 
-  const footerRef = useRef(null); 
+  const footerRef = useRef(null);
+  const reconciliationVersionRef = useRef(0);
+
   const { status, role } = useAuthSession();
 
+  const [profileState, setProfileState] = useState(() => ({
+    slug: initialBiz?.slug || null,
+    audience: "guest",
+    data: initialBiz,
+  }));
 
-  const [showCTA, setShowCTA] = useState(true); 
+  const [showCTA, setShowCTA] = useState(true);
+
+  const hasCurrentProfile =
+    profileState.slug === initialBiz?.slug;
+
+  const biz =
+    hasCurrentProfile
+      ? profileState.data
+      : initialBiz;
+
+  const profileAudience =
+    hasCurrentProfile
+      ? profileState.audience
+      : "guest";
 
   const isAuthReady = status !== "checking";
   const isLoggedIn = status === "authenticated";
   const isAdminView = role === "admin" || role === "superadmin";
 
-  const coverImage = biz.cover_image_url || biz.logo_url || null;
+  /*
+   * SEO / structured-data source must remain Guest-safe.
+   * Runtime authenticated reconciliation is UI-only.
+   */
+  const seoBiz = initialBiz;
+
+  const coverImage =
+    seoBiz?.cover_image_url ||
+    seoBiz?.logo_url ||
+    null;
 
   let phoneWithCode = biz?.phone || "";
 
@@ -264,13 +294,110 @@ export default function BusinessBySlug({
     phoneWithCode = biz?.phone || "";
   }
 
-  const metaDescription = buildMetaDescription(biz);
-  const canonicalUrl = `https://iranconnect.org/business/${biz.slug}`;
+  const metaDescription =
+    buildMetaDescription(seoBiz);
+
+  const canonicalUrl =
+    `https://iranconnect.org/business/${seoBiz.slug}`;
 
   const shouldNoIndex =
-    isStaging || biz?.admin_preview === true;
+    isStaging ||
+    seoBiz?.admin_preview === true;
 
-  const isPublicSeoPage = biz?.admin_preview !== true; 
+  const isPublicSeoPage =
+    seoBiz?.admin_preview !== true;
+
+  useEffect(() => {
+    const version =
+      ++reconciliationVersionRef.current;
+
+    if (
+      !initialBiz?.slug ||
+      status === "checking"
+    ) {
+      return;
+    }
+
+    if (status !== "authenticated") {
+      setProfileState({
+        slug: initialBiz.slug,
+        audience: "guest",
+        data: initialBiz,
+      });
+
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    /*
+     * Authentication is known, but the profile DTO has not yet
+     * been reconciled for this authenticated browser session.
+     *
+     * Keep the SSR Guest DTO as the fail-closed fallback while
+     * preventing it from being treated as the authenticated DTO.
+     */
+    setProfileState({
+      slug: initialBiz.slug,
+      audience: "reconciling",
+      data: initialBiz,
+    });
+
+    (async () => {
+      try {
+        const response =
+          await apiClient.get(
+            `/public-businesses/by-slug/${encodeURIComponent(
+              initialBiz.slug
+            )}`,
+            {
+              signal: controller.signal,
+              skipAuthRedirect: true,
+            }
+          );
+
+        if (
+          controller.signal.aborted ||
+          version !==
+            reconciliationVersionRef.current
+        ) {
+          return;
+        }
+
+        setProfileState({
+          slug: initialBiz.slug,
+          audience: "authenticated",
+          data: response.data,
+        });
+      } catch {
+        if (
+          controller.signal.aborted ||
+          version !==
+            reconciliationVersionRef.current
+        ) {
+          return;
+        }
+
+        /*
+         * Fail closed: uncertainty must never preserve or
+         * synthesize privileged profile data.
+         */
+        setProfileState({
+          slug: initialBiz.slug,
+          audience: "guest-fallback",
+          data: initialBiz,
+        });
+      }
+    })();
+
+    return () => {
+      controller.abort();
+    };
+  }, [
+    initialBiz,
+    status,
+  ]);
 
   useEffect(() => {
     function handleCTAVisibility() {
@@ -295,24 +422,39 @@ export default function BusinessBySlug({
   }, []);
    
   
-  if (!biz || !isAuthReady) {
+  const isProfileReady =
+    !isLoggedIn
+      ? profileAudience === "guest"
+      : (
+          profileAudience === "authenticated" ||
+          profileAudience === "guest-fallback"
+        );
+
+  if (
+    !biz ||
+    !isAuthReady ||
+    !isProfileReady
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>Loading...</p>
       </div>
     );
   }
-  const openingHours = biz ? buildOpeningHoursSchema(biz) : null; 
+  const openingHours =
+    seoBiz
+      ? buildOpeningHoursSchema(seoBiz)
+      : null;
   return (
     <>
       <Head>
         <title>
-          {biz.name} in {biz.city} | {biz.category} | IranConnect
+          {seoBiz.name} in {seoBiz.city} | {seoBiz.category} | IranConnect
         </title>
 
         <meta
           name="description"
-          content={`${biz.name} - ${biz.category} in ${biz.city}. ${metaDescription}`}
+          content={`${seoBiz.name} - ${seoBiz.category} in ${seoBiz.city}. ${metaDescription}`}
         />
 
         <meta
@@ -324,7 +466,7 @@ export default function BusinessBySlug({
           <>
             <link rel="canonical" href={canonicalUrl} />
         
-            <meta property="og:title" content={biz.name} />
+            <meta property="og:title" content={seoBiz.name} />
             <meta
               property="og:description"
               content={metaDescription}
@@ -348,42 +490,36 @@ export default function BusinessBySlug({
                   "@context": "https://schema.org",
                   "@type": "LocalBusiness",
                   "@id": canonicalUrl,
-                  name: biz.name,
+                  name: seoBiz.name,
                   url: canonicalUrl,
-                  logo: biz.logo_url || undefined,
+                  logo: seoBiz.logo_url || undefined,
                   image: coverImage || undefined,
                   description: metaDescription || undefined,
                   address: {
                     "@type": "PostalAddress",
-                    streetAddress:
-                      isLoggedIn
-                        ? biz.address || undefined
-                        : undefined,
-                    addressLocality: biz.city || undefined,
-                    addressCountry: biz.country || undefined,
-                    postalCode:
-                      isLoggedIn
-                        ? biz.postal_code || undefined
-                        : undefined,
+                    streetAddress: undefined,
+                    addressLocality: seoBiz.city || undefined,
+                    addressCountry: seoBiz.country || undefined,
+                    postalCode: undefined,
                   },
-                  telephone: biz.phone || undefined,
+                  telephone: seoBiz.phone || undefined,
                   sameAs: [
-                    biz.website,
-                    biz.instagram_url,
-                    biz.facebook_url,
-                    biz.linkedin_url,
-                    biz.twitter_url,
-                    biz.telegram_url,
+                    seoBiz.website,
+                    seoBiz.instagram_url,
+                    seoBiz.facebook_url,
+                    seoBiz.linkedin_url,
+                    seoBiz.twitter_url,
+                    seoBiz.telegram_url,
                   ].filter(Boolean),
                   ...(openingHours?.length > 0 && {
                     openingHoursSpecification: openingHours,
                   }),
                   aggregateRating:
-                    biz.avg_rating && biz.review_count > 0
+                    seoBiz.avg_rating && seoBiz.review_count > 0
                       ? {
                           "@type": "AggregateRating",
-                          ratingValue: Number(biz.avg_rating),
-                          reviewCount: Number(biz.review_count),
+                          ratingValue: Number(seoBiz.avg_rating),
+                          reviewCount: Number(seoBiz.review_count),
                           bestRating: 5,
                           worstRating: 1,
                         }
@@ -408,15 +544,15 @@ export default function BusinessBySlug({
                     {
                       "@type": "ListItem",
                       position: 2,
-                      name: biz.category || "Category",
+                      name: seoBiz.category || "Category",
                       item: `https://iranconnect.org/search?category=${encodeURIComponent(
-                        biz.category || ""
+                        seoBiz.category || ""
                       )}`,
                     },
                     {
                       "@type": "ListItem",
                       position: 3,
-                      name: biz.name,
+                      name: seoBiz.name,
                       item: canonicalUrl,
                     },
                   ],
