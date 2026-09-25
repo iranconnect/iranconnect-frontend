@@ -9,6 +9,8 @@ import {
   getCountryCallingCode,
 } from "libphonenumber-js";
 
+import { isValidGoogleMapsUrl } from "../../../utils/business/mapValidation";
+
 /* ======================================================
    Dark-mode friendly react-select styles (Enterprise)
 ====================================================== */
@@ -563,10 +565,7 @@ export default function StepLocationContact({
     }
 
     const ok =
-      /^(https:\/\/)(www\.)?(google\.com\/maps|maps\.app\.goo\.gl|goo\.gl\/maps)\//i.test(
-        value.trim()
-      ) ||
-      /^(https:\/\/)(www\.)?google\.[a-z.]+\/maps/i.test(value.trim());
+      isValidGoogleMapsUrl(value);
 
     setError(
       "location_map_url",
@@ -586,9 +585,7 @@ export default function StepLocationContact({
     }
   
     const ok =
-      /^(https:\/\/)(www\.)?(google\.com\/maps|maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(
-        value.trim()
-      );
+      isValidGoogleMapsUrl(value);
   
     setError(
       "base_location_map_url",
@@ -1251,6 +1248,11 @@ export default function StepLocationContact({
           }
           placeholder="e.g. Available weekends, emergency calls accepted"
         />
+
+        <p className="admin-hint">
+          This note is shown publicly on your business profile.
+          Do not include private, sensitive, or personal information.
+        </p>
         {validationErrors.has("availability_note") && (
           <p className="text-red-500 text-sm mt-1">
             You removed an existing value from this field.
@@ -1379,12 +1381,13 @@ export default function StepLocationContact({
               setField("location_map_url", v);
               validateLocationMapUrl(v, true);
             }}
-            placeholder="Paste Google Maps link (e.g. https://maps.google.com/?q=...)"
+            placeholder="Paste Google Maps link (e.g. https://www.google.com/maps/place/...)"
           />
 
           {!errors.location_map_url && (
             <p className="admin-hint">
-              Paste the location link copied from Google Maps.
+              Use the Google Maps location of the physical business address.
+              This is required for businesses that receive customers at their location.
             </p>
           )}
           {errors.location_map_url && (
@@ -1423,9 +1426,9 @@ export default function StepLocationContact({
           />
       
           <p className="admin-hint">
-            This location will be shown as your service starting point.
-            If you have privacy concerns, you may choose an approximate
-            location on Google Maps.
+            Choose the approximate starting area you use to provide services.
+            The exact Google Maps link is used for business management and is
+            not shown directly on your public profile.
           </p>
       
           {errors.base_location_map_url && (
@@ -1528,6 +1531,11 @@ export default function StepLocationContact({
             }
             placeholder="e.g. 10"
           />
+          <p className="admin-hint">
+            Enter the approximate distance you serve from your service area.
+            This radius is shown publicly on your business profile.
+          </p>
+
           {errors.service_radius_km && (
             <p className="admin-error">
               {errors.service_radius_km}
