@@ -1391,7 +1391,7 @@ export default function StepLocationContact({
             </p>
           )}
           {errors.location_map_url && (
-            <p className="admin-error">
+            <p className="text-red-500 text-sm mt-1">
               {errors.location_map_url}
             </p>
           )}
@@ -1432,7 +1432,7 @@ export default function StepLocationContact({
           </p>
       
           {errors.base_location_map_url && (
-            <p className="admin-error">
+            <p className="text-red-500 text-sm mt-1">
               {errors.base_location_map_url}
             </p>
           )}
