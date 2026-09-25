@@ -245,6 +245,7 @@ export default function BusinessBySlug({
 }) {
 
   const footerRef = useRef(null);
+  const heroPrimaryCTARef = useRef(null);
   const reconciliationVersionRef = useRef(0);
 
   const { status, role } = useAuthSession();
@@ -256,6 +257,10 @@ export default function BusinessBySlug({
   }));
 
   const [showCTA, setShowCTA] = useState(true);
+  const [
+    isHeroPrimaryCTAVisible,
+    setIsHeroPrimaryCTAVisible,
+  ] = useState(true);
 
   const hasCurrentProfile =
     profileState.slug === initialBiz?.slug;
@@ -414,7 +419,7 @@ export default function BusinessBySlug({
       const footerTop = footer.getBoundingClientRect().top;
       const screenHeight = window.innerHeight;
 
-      // 👇 وقتی footer نزدیک شد → CTA hide
+      // Hide the sticky CTA when the footer approaches.
       if (footerTop < screenHeight - 120) {
         setShowCTA(false);
       } else {
@@ -423,10 +428,59 @@ export default function BusinessBySlug({
     }
 
     window.addEventListener("scroll", handleCTAVisibility);
-    handleCTAVisibility(); // initial check
+    handleCTAVisibility();
 
-    return () => window.removeEventListener("scroll", handleCTAVisibility);
+    return () =>
+      window.removeEventListener(
+        "scroll",
+        handleCTAVisibility
+      );
   }, []);
+
+  useEffect(() => {
+    if (
+      !isLoggedIn ||
+      !contactModel.hasPrimaryCTA
+    ) {
+      return;
+    }
+
+    const target =
+      heroPrimaryCTARef.current;
+
+    if (
+      !target ||
+      typeof IntersectionObserver === "undefined"
+    ) {
+      // Fail safe: avoid showing duplicate primary CTAs.
+      setIsHeroPrimaryCTAVisible(true);
+      return;
+    }
+
+    setIsHeroPrimaryCTAVisible(true);
+
+    const observer =
+      new IntersectionObserver(
+        ([entry]) => {
+          setIsHeroPrimaryCTAVisible(
+            entry.isIntersecting
+          );
+        },
+        {
+          threshold: 0,
+        }
+      );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [
+    isLoggedIn,
+    contactModel.hasPrimaryCTA,
+    initialBiz?.slug,
+  ]);
    
   
   const isProfileReady =
@@ -591,6 +645,7 @@ export default function BusinessBySlug({
               biz={biz}
               contactModel={contactModel}
               isLoggedIn={isLoggedIn}
+              primaryCTARef={heroPrimaryCTARef}
             />
 
             <RevealOnScroll className="empty:hidden">
@@ -646,7 +701,13 @@ export default function BusinessBySlug({
         <BusinessStickyCTA
            biz={biz}
            contactModel={contactModel}
-           isVisible={showCTA}
+           isVisible={
+             showCTA &&
+             (
+               !isLoggedIn ||
+               !isHeroPrimaryCTAVisible
+             )
+           }
            isLoggedIn={isLoggedIn}
          />
 

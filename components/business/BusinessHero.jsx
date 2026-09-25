@@ -17,6 +17,7 @@ export default function BusinessHero({
   biz,
   contactModel,
   isLoggedIn,
+  primaryCTARef,
 }) {
   const [theme, setTheme] = useState("light");
 
@@ -155,29 +156,38 @@ export default function BusinessHero({
             contactModel.whatsapp.available ||
             contactModel.website.available) && (
           <div className="mt-6 flex flex-wrap gap-3">
-            {contactModel.phone.available && (
-              <a
-                href={contactModel.phone.href}
-                className="btn-primary !w-auto flex items-center gap-2 text-sm px-4 py-2"
+            {(contactModel.phone.available ||
+              contactModel.whatsapp.available) && (
+              <div
+                ref={primaryCTARef}
+                data-hero-primary-cta
+                className="flex flex-wrap gap-3"
               >
-                <Phone size={16} />
-                Call
-              </a>
-            )}
+                {contactModel.phone.available && (
+                  <a
+                    href={contactModel.phone.href}
+                    className="btn-primary !w-auto flex items-center gap-2 text-sm px-4 py-2"
+                  >
+                    <Phone size={16} />
+                    Call
+                  </a>
+                )}
 
-            {contactModel.whatsapp.available && (
-              <a
-                href={contactModel.whatsapp.href}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-primary !w-auto flex items-center gap-2 text-sm px-4 py-2"
-              >
-                <SocialBrandIcon
-                  platform="whatsapp"
-                  size={16}
-                />
-                WhatsApp
-              </a>
+                {contactModel.whatsapp.available && (
+                  <a
+                    href={contactModel.whatsapp.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-primary !w-auto flex items-center gap-2 text-sm px-4 py-2"
+                  >
+                    <SocialBrandIcon
+                      platform="whatsapp"
+                      size={16}
+                    />
+                    WhatsApp
+                  </a>
+                )}
+              </div>
             )}
 
             {contactModel.website.available && (
