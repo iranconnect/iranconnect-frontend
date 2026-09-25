@@ -20,6 +20,7 @@ import { getCountryCallingCode } from "libphonenumber-js";
 
 import { useAuthSession } from "../../hooks/useAuthSession";
 import apiClient from "../../utils/apiClient";
+import { buildBusinessContactModel } from "../../utils/business/buildBusinessContactModel";
 
 /* ======================================================
    SSR — Fetch business by slug
@@ -293,6 +294,12 @@ export default function BusinessBySlug({
   } catch {
     phoneWithCode = biz?.phone || "";
   }
+
+  const contactModel =
+    buildBusinessContactModel({
+      biz,
+      phoneWithCode,
+    });
 
   const metaDescription =
     buildMetaDescription(seoBiz);
@@ -582,7 +589,7 @@ export default function BusinessBySlug({
 
             <BusinessHero
               biz={biz}
-              phoneWithCode={phoneWithCode}
+              contactModel={contactModel}
               isLoggedIn={isLoggedIn}
             />
 
@@ -613,7 +620,7 @@ export default function BusinessBySlug({
             <RevealOnScroll className="empty:hidden">
               <BusinessContact
                 biz={biz}
-                phoneWithCode={phoneWithCode}
+                contactModel={contactModel}
                 isLoggedIn={isLoggedIn}
               />
             </RevealOnScroll>
@@ -638,7 +645,7 @@ export default function BusinessBySlug({
         {/* 🔥 Sticky CTA (Mobile Only) */}
         <BusinessStickyCTA
            biz={biz}
-           phoneWithCode={phoneWithCode}
+           contactModel={contactModel}
            isVisible={showCTA}
            isLoggedIn={isLoggedIn}
          />

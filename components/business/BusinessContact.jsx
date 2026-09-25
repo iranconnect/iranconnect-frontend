@@ -1,48 +1,15 @@
-//frontend/components/business/BusinessContact.jsx
 import {
   Globe,
   Phone,
   Mail,
-  Instagram,
-  Facebook,
-  Linkedin,
-  Twitter,
-  Send,
-  MessageCircle,
   Lock,
 } from "lucide-react";
 
-function cleanWhatsApp(value) {
-  return String(value || "").replace(/\D/g, "");
-}
-
-function normalizeExternalUrl(value) {
-  if (!value) return null;
-
-  const rawValue = String(value).trim();
-
-  if (!rawValue) return null;
-
-  const candidate = /^https?:\/\//i.test(rawValue)
-    ? rawValue
-    : `https://${rawValue}`;
-
-  try {
-    const parsed = new URL(candidate);
-
-    if (!["http:", "https:"].includes(parsed.protocol)) {
-      return null;
-    }
-
-    return parsed.href;
-  } catch {
-    return null;
-  }
-}
+import SocialBrandIcon from "./contact/SocialBrandIcon";
 
 export default function BusinessContact({
   biz,
-  phoneWithCode,
+  contactModel,
   isLoggedIn,
 }) {
   if (!isLoggedIn) {
@@ -80,51 +47,15 @@ export default function BusinessContact({
     );
   }
 
-  const phoneDisplay = phoneWithCode || biz.phone || null;
-
-  const phoneHref = phoneDisplay
-    ? `tel:${String(phoneDisplay).replace(/\s+/g, "")}`
-    : null;
-
-  const email = biz.email
-    ? String(biz.email).trim()
-    : null;
-
-  const websiteUrl = normalizeExternalUrl(biz.website);
-  const instagramUrl = normalizeExternalUrl(
-    biz.instagram_url
-  );
-  const facebookUrl = normalizeExternalUrl(
-    biz.facebook_url
-  );
-  const linkedinUrl = normalizeExternalUrl(
-    biz.linkedin_url
-  );
-  const twitterUrl = normalizeExternalUrl(
-    biz.twitter_url
-  );
-  const telegramUrl = normalizeExternalUrl(
-    biz.telegram_url
-  );
-
-  const whatsappNumber = cleanWhatsApp(
-    biz.whatsapp_number
-  );
-
-  const hasSocialLinks = Boolean(
-    instagramUrl ||
-      facebookUrl ||
-      linkedinUrl ||
-      twitterUrl ||
-      telegramUrl ||
-      whatsappNumber
-  );
-
-  const hasAnyContact =
-    Boolean(phoneHref) ||
-    Boolean(email) ||
-    Boolean(websiteUrl) ||
-    hasSocialLinks;
+  const {
+    phone,
+    email,
+    website,
+    whatsapp,
+    social,
+    hasSocialLinks,
+    hasAnyContact,
+  } = contactModel;
 
   if (!hasAnyContact) {
     return null;
@@ -137,46 +68,46 @@ export default function BusinessContact({
       </h2>
 
       <div className="space-y-4 text-sm">
-        {phoneHref && (
+        {phone.available && (
           <div>
             <h3 className="mb-1 font-semibold">
               Phone
             </h3>
 
             <a
-              href={phoneHref}
+              href={phone.href}
               className="inline-flex items-center gap-2 text-turquoise hover:underline"
             >
               <Phone size={17} />
-              {phoneDisplay}
+              {phone.displayValue}
             </a>
           </div>
         )}
 
-        {email && (
+        {email.available && (
           <div>
             <h3 className="mb-1 font-semibold">
               Email
             </h3>
 
             <a
-              href={`mailto:${email}`}
+              href={email.href}
               className="inline-flex items-center gap-2 break-all text-turquoise hover:underline"
             >
               <Mail size={17} />
-              {email}
+              {email.displayValue}
             </a>
           </div>
         )}
 
-        {websiteUrl && (
+        {website.available && (
           <div>
             <h3 className="mb-1 font-semibold">
               Website
             </h3>
 
             <a
-              href={websiteUrl}
+              href={website.href}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 break-all text-turquoise hover:underline"
@@ -194,81 +125,99 @@ export default function BusinessContact({
             </h3>
 
             <div className="flex flex-wrap gap-3">
-              {instagramUrl && (
+              {social.instagram.available && (
                 <a
-                  href={instagramUrl}
+                  href={social.instagram.href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Instagram"
                   title="Instagram"
                   className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] transition hover:text-pink-500"
                 >
-                  <Instagram size={19} />
+                  <SocialBrandIcon
+                    platform="instagram"
+                    size={19}
+                  />
                 </a>
               )}
 
-              {facebookUrl && (
+              {social.facebook.available && (
                 <a
-                  href={facebookUrl}
+                  href={social.facebook.href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Facebook"
                   title="Facebook"
                   className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] transition hover:text-blue-600"
                 >
-                  <Facebook size={19} />
+                  <SocialBrandIcon
+                    platform="facebook"
+                    size={19}
+                  />
                 </a>
               )}
 
-              {linkedinUrl && (
+              {social.linkedin.available && (
                 <a
-                  href={linkedinUrl}
+                  href={social.linkedin.href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="LinkedIn"
                   title="LinkedIn"
                   className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] transition hover:text-blue-700"
                 >
-                  <Linkedin size={19} />
+                  <SocialBrandIcon
+                    platform="linkedin"
+                    size={19}
+                  />
                 </a>
               )}
 
-              {twitterUrl && (
+              {social.x.available && (
                 <a
-                  href={twitterUrl}
+                  href={social.x.href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="X"
                   title="X"
                   className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] transition hover:text-black"
                 >
-                  <Twitter size={19} />
+                  <SocialBrandIcon
+                    platform="x"
+                    size={19}
+                  />
                 </a>
               )}
 
-              {telegramUrl && (
+              {social.telegram.available && (
                 <a
-                  href={telegramUrl}
+                  href={social.telegram.href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Telegram"
                   title="Telegram"
                   className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] transition hover:text-sky-500"
                 >
-                  <Send size={19} />
+                  <SocialBrandIcon
+                    platform="telegram"
+                    size={19}
+                  />
                 </a>
               )}
 
-              {whatsappNumber && (
+              {whatsapp.available && (
                 <a
-                  href={`https://wa.me/${whatsappNumber}`}
+                  href={whatsapp.href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="WhatsApp"
                   title="WhatsApp"
                   className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] transition hover:text-green-500"
                 >
-                  <MessageCircle size={19} />
+                  <SocialBrandIcon
+                    platform="whatsapp"
+                    size={19}
+                  />
                 </a>
               )}
             </div>

@@ -1,17 +1,13 @@
-//frontend/components/business/BusinessStickyCTA.jsx
 import {
   Phone,
-  MessageCircle,
   Lock,
 } from "lucide-react";
 
-function cleanWhatsApp(value) {
-  return String(value || "").replace(/\D/g, "");
-}
+import SocialBrandIcon from "./contact/SocialBrandIcon";
 
 export default function BusinessStickyCTA({
   biz,
-  phoneWithCode,
+  contactModel,
   isVisible,
   isLoggedIn,
 }) {
@@ -19,19 +15,11 @@ export default function BusinessStickyCTA({
     return null;
   }
 
-  const phoneDisplay = phoneWithCode || biz.phone || null;
-
-  const phoneHref = phoneDisplay
-    ? `tel:${String(phoneDisplay).replace(/\s+/g, "")}`
-    : null;
-
-  const whatsappNumber = cleanWhatsApp(
-    biz.whatsapp_number
-  );
-
-  const hasCTA =
-    Boolean(phoneHref) ||
-    Boolean(whatsappNumber);
+  const {
+    phone,
+    whatsapp,
+    hasPrimaryCTA,
+  } = contactModel;
 
   if (!isLoggedIn) {
     return (
@@ -60,7 +48,7 @@ export default function BusinessStickyCTA({
     );
   }
 
-  if (!hasCTA) {
+  if (!hasPrimaryCTA) {
     return null;
   }
 
@@ -78,9 +66,9 @@ export default function BusinessStickyCTA({
       `}
     >
       <div className="flex gap-3 px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] shadow-lg">
-        {phoneHref && (
+        {phone.available && (
           <a
-            href={phoneHref}
+            href={phone.href}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-teal-500 py-3 font-medium text-white transition hover:bg-teal-600"
           >
             <Phone size={18} />
@@ -88,14 +76,17 @@ export default function BusinessStickyCTA({
           </a>
         )}
 
-        {whatsappNumber && (
+        {whatsapp.available && (
           <a
-            href={`https://wa.me/${whatsappNumber}`}
+            href={whatsapp.href}
             target="_blank"
             rel="noopener noreferrer"
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-teal-500 py-3 font-medium text-white transition hover:bg-teal-600"
           >
-            <MessageCircle size={18} />
+            <SocialBrandIcon
+              platform="whatsapp"
+              size={18}
+            />
             WhatsApp
           </a>
         )}

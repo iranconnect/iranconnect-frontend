@@ -1,7 +1,8 @@
 import { formatPublicRating } from "../../utils/formatPublicRating.js";
 //frontend/components/business/BusinessHero.jsx
 import { useEffect, useMemo, useState } from "react";
-import { Phone, Globe, MessageCircle } from "lucide-react";
+import { Phone, Globe } from "lucide-react";
+import SocialBrandIcon from "./contact/SocialBrandIcon";
 
 function toPlainText(value) {
   if (!value) return "";
@@ -14,7 +15,7 @@ function toPlainText(value) {
 
 export default function BusinessHero({
   biz,
-  phoneWithCode,
+  contactModel,
   isLoggedIn,
 }) {
   const [theme, setTheme] = useState("light");
@@ -76,10 +77,6 @@ export default function BusinessHero({
     reviewCount > 0 &&
     Number.isFinite(averageRating) &&
     averageRating > 0;
-
-  const callHref = phoneWithCode
-    ? `tel:${phoneWithCode.replace(/\s+/g, "")}`
-    : null;
 
   return (
     <section className="card mt-6">
@@ -154,11 +151,13 @@ export default function BusinessHero({
         </div>
 
         {isLoggedIn &&
-          (callHref || biz.whatsapp_number || biz.website) && (
+          (contactModel.phone.available ||
+            contactModel.whatsapp.available ||
+            contactModel.website.available) && (
           <div className="mt-6 flex flex-wrap gap-3">
-            {callHref && (
+            {contactModel.phone.available && (
               <a
-                href={callHref}
+                href={contactModel.phone.href}
                 className="btn-primary !w-auto flex items-center gap-2 text-sm px-4 py-2"
               >
                 <Phone size={16} />
@@ -166,21 +165,24 @@ export default function BusinessHero({
               </a>
             )}
 
-            {biz.whatsapp_number && (
+            {contactModel.whatsapp.available && (
               <a
-                href={`https://wa.me/${biz.whatsapp_number.replace(/\D/g, "")}`}
+                href={contactModel.whatsapp.href}
                 target="_blank"
                 rel="noreferrer"
                 className="btn-primary !w-auto flex items-center gap-2 text-sm px-4 py-2"
               >
-                <MessageCircle size={16} />
+                <SocialBrandIcon
+                  platform="whatsapp"
+                  size={16}
+                />
                 WhatsApp
               </a>
             )}
 
-            {biz.website && (
+            {contactModel.website.available && (
               <a
-                href={biz.website}
+                href={contactModel.website.href}
                 target="_blank"
                 rel="noreferrer"
                 className="btn-ghost !w-auto flex items-center gap-2 text-sm px-4 py-2"
