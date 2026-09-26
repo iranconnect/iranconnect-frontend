@@ -61,6 +61,8 @@ const WEEK_DAYS = [
   "sunday",
 ];
 
+const LARGE_SERVICE_RADIUS_THRESHOLD_KM = 50;
+
 const FIELD_RULES = {
   /* ========================================
      REQUIRED FOR ALL SERVICE MODES
@@ -303,6 +305,10 @@ export default function StepLocationContact({
      Validation state
   ───────────────────────────── */
   const [errors, setErrors] = useState({});
+  const [
+    showLargeRadiusConfirmation,
+    setShowLargeRadiusConfirmation,
+  ] = useState(false);
 
   const [initialSnapshot] = useState(() => ({
 
@@ -1897,6 +1903,60 @@ export default function StepLocationContact({
         </p>
       )}
 
+      {showLargeRadiusConfirmation && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="large-radius-confirmation-title"
+        >
+          <div className="card w-full max-w-md p-6 text-[var(--text)]">
+            <h3
+              id="large-radius-confirmation-title"
+              className="text-lg font-semibold"
+            >
+              Review service radius
+            </h3>
+
+            <p className="mt-3 text-sm">
+              You entered a service radius of{" "}
+              <strong>
+                {data.service_radius_km} km
+              </strong>
+              . Service radii above{" "}
+              {LARGE_SERVICE_RADIUS_THRESHOLD_KM} km
+              can cover a very large area. Please confirm
+              that this value is intentional before
+              continuing.
+            </p>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                className="admin-btn admin-btn-secondary"
+                onClick={() =>
+                  setShowLargeRadiusConfirmation(false)
+                }
+              >
+                Review radius
+              </button>
+
+              <button
+                type="button"
+                className="admin-btn admin-btn-primary"
+                onClick={() => {
+                  setShowLargeRadiusConfirmation(false);
+                  onNext();
+                }}
+              >
+                Continue with{" "}
+                {data.service_radius_km} km
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between">
         <button
           type="button"
@@ -1911,11 +1971,25 @@ export default function StepLocationContact({
           className="admin-btn admin-btn-primary"
           onClick={() => {
             const ok = validateStep();
-        
+
             if (!ok) {
               return;
             }
-        
+
+            const radius =
+              Number(data.service_radius_km);
+
+            const requiresRadiusConfirmation =
+              needsServiceRadius &&
+              Number.isInteger(radius) &&
+              radius >
+                LARGE_SERVICE_RADIUS_THRESHOLD_KM;
+
+            if (requiresRadiusConfirmation) {
+              setShowLargeRadiusConfirmation(true);
+              return;
+            }
+
             onNext();
           }}
         >
