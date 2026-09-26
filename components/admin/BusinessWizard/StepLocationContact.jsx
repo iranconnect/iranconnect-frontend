@@ -1,5 +1,10 @@
 //components/admin/BusinessWizard/StepLocationContact.jsx
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Select from "react-select";
 import { Country, City } from "country-state-city";
 
@@ -309,6 +314,215 @@ export default function StepLocationContact({
     showLargeRadiusConfirmation,
     setShowLargeRadiusConfirmation,
   ] = useState(false);
+
+  const [
+    isEditingLargeRadius,
+    setIsEditingLargeRadius,
+  ] = useState(false);
+
+  const [
+    largeRadiusDraft,
+    setLargeRadiusDraft,
+  ] = useState("");
+
+  const [
+    largeRadiusDraftError,
+    setLargeRadiusDraftError,
+  ] = useState("");
+
+  const largeRadiusModalRef = useRef(null);
+  const largeRadiusDraftInputRef = useRef(null);
+  const serviceRadiusInputRef = useRef(null);
+
+  function openLargeRadiusConfirmation() {
+    const radius = Number(data.service_radius_km);
+
+    if (
+      !needsServiceRadius ||
+      !Number.isInteger(radius) ||
+      radius <= LARGE_SERVICE_RADIUS_THRESHOLD_KM
+    ) {
+      return;
+    }
+
+    setLargeRadiusDraft(
+      String(data.service_radius_km ?? "")
+    );
+    setLargeRadiusDraftError("");
+    setIsEditingLargeRadius(false);
+    setShowLargeRadiusConfirmation(true);
+  }
+
+  function closeLargeRadiusConfirmation() {
+    setShowLargeRadiusConfirmation(false);
+    setIsEditingLargeRadius(false);
+    setLargeRadiusDraftError("");
+
+    requestAnimationFrame(() => {
+      serviceRadiusInputRef.current?.focus();
+    });
+  }
+
+  function handleLargeRadiusSave() {
+    const radius = Number(largeRadiusDraft);
+
+    if (!Number.isInteger(radius) || radius < 1) {
+      setLargeRadiusDraftError(
+        "Service radius must be a whole number of at least 1 km."
+      );
+      return;
+    }
+
+    setField(
+      "service_radius_km",
+      String(radius)
+    );
+
+    setError("service_radius_km", "");
+    setLargeRadiusDraft(String(radius));
+    setLargeRadiusDraftError("");
+
+    if (
+      radius <= LARGE_SERVICE_RADIUS_THRESHOLD_KM
+    ) {
+      setShowLargeRadiusConfirmation(false);
+      setIsEditingLargeRadius(false);
+
+      requestAnimationFrame(() => {
+        serviceRadiusInputRef.current?.focus();
+      });
+
+      return;
+    }
+
+    setIsEditingLargeRadius(false);
+  }
+
+  function handleLargeRadiusContinue() {
+    const ok = validateStep();
+
+    if (!ok) {
+      closeLargeRadiusConfirmation();
+      return;
+    }
+
+    setShowLargeRadiusConfirmation(false);
+    setIsEditingLargeRadius(false);
+    setLargeRadiusDraftError("");
+    onNext();
+  }
+
+  useEffect(() => {
+    if (!showLargeRadiusConfirmation) {
+      return undefined;
+    }
+
+    const modal = largeRadiusModalRef.current;
+
+    if (!modal) {
+      return undefined;
+    }
+
+    const previousOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    const getFocusableElements = () =>
+      Array.from(
+        modal.querySelectorAll(
+          [
+            'button:not([disabled])',
+            'input:not([disabled])',
+            'select:not([disabled])',
+            'textarea:not([disabled])',
+            '[href]',
+            '[tabindex]:not([tabindex="-1"])',
+          ].join(",")
+        )
+      ).filter(
+        (element) =>
+          element.getAttribute("aria-hidden") !== "true"
+      );
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeLargeRadiusConfirmation();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusable = getFocusableElements();
+
+      if (focusable.length === 0) {
+        event.preventDefault();
+        modal.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (
+        event.shiftKey &&
+        document.activeElement === first
+      ) {
+        event.preventDefault();
+        last.focus();
+        return;
+      }
+
+      if (
+        !event.shiftKey &&
+        document.activeElement === last
+      ) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
+
+    requestAnimationFrame(() => {
+      const initialTarget =
+        modal.querySelector(
+          '[data-large-radius-initial-focus="true"]'
+        ) || getFocusableElements()[0];
+
+      initialTarget?.focus();
+    });
+
+    return () => {
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+
+      document.body.style.overflow =
+        previousOverflow;
+    };
+  }, [showLargeRadiusConfirmation]);
+
+  useEffect(() => {
+    if (
+      showLargeRadiusConfirmation &&
+      isEditingLargeRadius
+    ) {
+      requestAnimationFrame(() => {
+        largeRadiusDraftInputRef.current?.focus();
+      });
+    }
+  }, [
+    showLargeRadiusConfirmation,
+    isEditingLargeRadius,
+  ]);
 
   const [initialSnapshot] = useState(() => ({
 
@@ -1527,6 +1741,7 @@ export default function StepLocationContact({
             Service radius (km) *
           </label>
           <input
+            ref={serviceRadiusInputRef}
             type="number"
             className="admin-input"
             min={1}
@@ -1535,6 +1750,18 @@ export default function StepLocationContact({
             onChange={(e) =>
               setField("service_radius_km", e.target.value)
             }
+            onBlur={() => {
+              const radius =
+                Number(data.service_radius_km);
+
+              if (
+                Number.isInteger(radius) &&
+                radius >
+                  LARGE_SERVICE_RADIUS_THRESHOLD_KM
+              ) {
+                openLargeRadiusConfirmation();
+              }
+            }}
             placeholder="e.g. 10"
           />
           <p className="admin-hint">
@@ -1906,19 +2133,41 @@ export default function StepLocationContact({
       {showLargeRadiusConfirmation && (
         <div
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="large-radius-confirmation-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeLargeRadiusConfirmation();
+            }
+          }}
         >
-          <div className="card w-full max-w-md p-6 text-[var(--text)]">
+          <div
+            ref={largeRadiusModalRef}
+            className="card relative w-full max-w-md p-6 text-[var(--text)]"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="large-radius-confirmation-title"
+            aria-describedby="large-radius-confirmation-description"
+            tabIndex={-1}
+          >
+            <button
+              type="button"
+              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-xl leading-none transition hover:bg-[var(--primary-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              aria-label="Close service radius dialog"
+              onClick={closeLargeRadiusConfirmation}
+            >
+              ×
+            </button>
+
             <h3
               id="large-radius-confirmation-title"
-              className="text-lg font-semibold"
+              className="pr-10 text-lg font-semibold"
             >
               Review service radius
             </h3>
 
-            <p className="mt-3 text-sm">
+            <p
+              id="large-radius-confirmation-description"
+              className="mt-3 text-sm"
+            >
               You entered a service radius of{" "}
               <strong>
                 {data.service_radius_km} km
@@ -1930,13 +2179,72 @@ export default function StepLocationContact({
               continuing.
             </p>
 
+            {isEditingLargeRadius && (
+              <div className="mt-5">
+                <label
+                  className="admin-label"
+                  htmlFor="large-radius-draft"
+                >
+                  Service radius (km)
+                </label>
+
+                <input
+                  ref={largeRadiusDraftInputRef}
+                  id="large-radius-draft"
+                  type="number"
+                  className="admin-input"
+                  min={1}
+                  step={1}
+                  value={largeRadiusDraft}
+                  onChange={(event) => {
+                    setLargeRadiusDraft(
+                      event.target.value
+                    );
+                    setLargeRadiusDraftError("");
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleLargeRadiusSave();
+                    }
+                  }}
+                />
+
+                {largeRadiusDraftError && (
+                  <p
+                    className="admin-error"
+                    role="alert"
+                  >
+                    {largeRadiusDraftError}
+                  </p>
+                )}
+
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-primary w-full sm:w-auto"
+                    onClick={handleLargeRadiusSave}
+                  >
+                    Save radius
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 className="admin-btn admin-btn-secondary"
-                onClick={() =>
-                  setShowLargeRadiusConfirmation(false)
-                }
+                data-large-radius-initial-focus="true"
+                onClick={() => {
+                  setLargeRadiusDraft(
+                    String(
+                      data.service_radius_km ?? ""
+                    )
+                  );
+                  setLargeRadiusDraftError("");
+                  setIsEditingLargeRadius(true);
+                }}
               >
                 Review radius
               </button>
@@ -1944,10 +2252,7 @@ export default function StepLocationContact({
               <button
                 type="button"
                 className="admin-btn admin-btn-primary"
-                onClick={() => {
-                  setShowLargeRadiusConfirmation(false);
-                  onNext();
-                }}
+                onClick={handleLargeRadiusContinue}
               >
                 Continue with{" "}
                 {data.service_radius_km} km
@@ -1986,7 +2291,7 @@ export default function StepLocationContact({
                 LARGE_SERVICE_RADIUS_THRESHOLD_KM;
 
             if (requiresRadiusConfirmation) {
-              setShowLargeRadiusConfirmation(true);
+              openLargeRadiusConfirmation();
               return;
             }
 
