@@ -330,6 +330,11 @@ export default function StepLocationContact({
     setLargeRadiusDraftError,
   ] = useState("");
 
+  const [
+    confirmedLargeRadius,
+    setConfirmedLargeRadius,
+  ] = useState(null);
+
   const largeRadiusModalRef = useRef(null);
   const largeRadiusDraftInputRef = useRef(null);
   const serviceRadiusInputRef = useRef(null);
@@ -340,14 +345,13 @@ export default function StepLocationContact({
     if (
       !needsServiceRadius ||
       !Number.isInteger(radius) ||
-      radius <= LARGE_SERVICE_RADIUS_THRESHOLD_KM
+      radius <= LARGE_SERVICE_RADIUS_THRESHOLD_KM ||
+      radius === confirmedLargeRadius
     ) {
       return;
     }
 
-    setLargeRadiusDraft(
-      String(data.service_radius_km ?? "")
-    );
+    setLargeRadiusDraft(String(radius));
     setLargeRadiusDraftError("");
     setIsEditingLargeRadius(false);
     setShowLargeRadiusConfirmation(true);
@@ -363,7 +367,7 @@ export default function StepLocationContact({
     });
   }
 
-  function handleLargeRadiusSave() {
+  function handleLargeRadiusContinue() {
     const radius = Number(largeRadiusDraft);
 
     if (!Number.isInteger(radius) || radius < 1) {
@@ -383,33 +387,19 @@ export default function StepLocationContact({
     setLargeRadiusDraftError("");
 
     if (
-      radius <= LARGE_SERVICE_RADIUS_THRESHOLD_KM
+      radius > LARGE_SERVICE_RADIUS_THRESHOLD_KM
     ) {
-      setShowLargeRadiusConfirmation(false);
-      setIsEditingLargeRadius(false);
-
-      requestAnimationFrame(() => {
-        serviceRadiusInputRef.current?.focus();
-      });
-
-      return;
-    }
-
-    setIsEditingLargeRadius(false);
-  }
-
-  function handleLargeRadiusContinue() {
-    const ok = validateStep();
-
-    if (!ok) {
-      closeLargeRadiusConfirmation();
-      return;
+      setConfirmedLargeRadius(radius);
+    } else {
+      setConfirmedLargeRadius(null);
     }
 
     setShowLargeRadiusConfirmation(false);
     setIsEditingLargeRadius(false);
-    setLargeRadiusDraftError("");
-    onNext();
+
+    requestAnimationFrame(() => {
+      serviceRadiusInputRef.current?.focus();
+    });
   }
 
   useEffect(() => {
@@ -1757,7 +1747,8 @@ export default function StepLocationContact({
               if (
                 Number.isInteger(radius) &&
                 radius >
-                  LARGE_SERVICE_RADIUS_THRESHOLD_KM
+                  LARGE_SERVICE_RADIUS_THRESHOLD_KM &&
+                radius !== confirmedLargeRadius
               ) {
                 openLargeRadiusConfirmation();
               }
@@ -2133,11 +2124,6 @@ export default function StepLocationContact({
       {showLargeRadiusConfirmation && (
         <div
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              closeLargeRadiusConfirmation();
-            }
-          }}
         >
           <div
             ref={largeRadiusModalRef}
@@ -2205,7 +2191,7 @@ export default function StepLocationContact({
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
                       event.preventDefault();
-                      handleLargeRadiusSave();
+                      handleLargeRadiusContinue();
                     }
                   }}
                 />
@@ -2218,16 +2204,6 @@ export default function StepLocationContact({
                     {largeRadiusDraftError}
                   </p>
                 )}
-
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    className="admin-btn admin-btn-primary w-full sm:w-auto"
-                    onClick={handleLargeRadiusSave}
-                  >
-                    Save radius
-                  </button>
-                </div>
               </div>
             )}
 
@@ -2237,11 +2213,6 @@ export default function StepLocationContact({
                 className="admin-btn admin-btn-secondary"
                 data-large-radius-initial-focus="true"
                 onClick={() => {
-                  setLargeRadiusDraft(
-                    String(
-                      data.service_radius_km ?? ""
-                    )
-                  );
                   setLargeRadiusDraftError("");
                   setIsEditingLargeRadius(true);
                 }}
@@ -2254,8 +2225,9 @@ export default function StepLocationContact({
                 className="admin-btn admin-btn-primary"
                 onClick={handleLargeRadiusContinue}
               >
-                Continue with{" "}
-                {data.service_radius_km} km
+                {largeRadiusDraft
+                  ? `Continue with ${largeRadiusDraft} km`
+                  : "Continue"}
               </button>
             </div>
           </div>
@@ -2288,7 +2260,8 @@ export default function StepLocationContact({
               needsServiceRadius &&
               Number.isInteger(radius) &&
               radius >
-                LARGE_SERVICE_RADIUS_THRESHOLD_KM;
+                LARGE_SERVICE_RADIUS_THRESHOLD_KM &&
+              radius !== confirmedLargeRadius;
 
             if (requiresRadiusConfirmation) {
               openLargeRadiusConfirmation();
