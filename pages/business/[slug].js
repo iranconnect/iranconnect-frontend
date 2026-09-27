@@ -105,6 +105,40 @@ function toPlainText(value) {
   return String(value).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function buildPublicSeoBusinessProjection(biz) {
+  if (!biz) return null;
+
+  /*
+   * Explicit allowlist for public SEO / structured-data surfaces.
+   *
+   * Contact and exact-location fields are intentionally excluded.
+   * Rating fields remain temporary compatibility pass-throughs until
+   * the Monetization entitlement model defines their final policy.
+   */
+  return {
+    name: biz.name,
+    slug: biz.slug,
+    category: biz.category,
+    sub_category: biz.sub_category,
+    short_description: biz.short_description,
+    full_description: biz.full_description,
+    city: biz.city,
+    country: biz.country,
+    logo_url: biz.logo_url,
+    cover_image_url: biz.cover_image_url,
+    availability_type: biz.availability_type,
+    availability_hours: biz.availability_hours,
+    availability_note: biz.availability_note,
+
+    // Internal SEO control; never rendered as business data.
+    admin_preview: biz.admin_preview === true,
+
+    // Deferred to Monetization architecture; preserve current behavior.
+    avg_rating: biz.avg_rating,
+    review_count: biz.review_count,
+  };
+}
+
 function buildMetaDescription(biz) {
   const shortText = toPlainText(biz?.short_description);
   const fullText = toPlainText(biz?.full_description);
@@ -283,7 +317,8 @@ export default function BusinessBySlug({
    * SEO / structured-data source must remain Guest-safe.
    * Runtime authenticated reconciliation is UI-only.
    */
-  const seoBiz = initialBiz;
+  const seoBiz =
+    buildPublicSeoBusinessProjection(initialBiz);
 
   const coverImage =
     seoBiz?.cover_image_url ||
