@@ -41,6 +41,16 @@ export async function getServerSideProps(context) {
 
   const cookie = context.req.headers.cookie || "";
 
+  /*
+   * Explicit bootstrap signal used only for Admin/SuperAdmin
+   * private-profile preview.
+   *
+   * This query parameter is NOT authorization.
+   * Authorization remains enforced by the authenticated API.
+   */
+  const isAdminPreviewRequest =
+    context.query?.adminPreview === "1";
+
   // 🔥 STEP 1: اگر ID بود → redirect
   if (/^\d+$/.test(slug)) {
     try {
@@ -80,6 +90,36 @@ export async function getServerSideProps(context) {
     );
 
     if (!res.ok) {
+      /*
+       * A private business is intentionally invisible to the
+       * unauthenticated SSR request.
+       *
+       * For an explicit Admin Preview request only, preserve a
+       * data-free bootstrap shell so the browser can complete
+       * authorization through the authenticated API session.
+       *
+       * No private business DTO is introduced here.
+       */
+      if (
+        res.status === 404 &&
+        isAdminPreviewRequest
+      ) {
+        return {
+          props: {
+            biz: {
+              slug,
+              name: "Business Preview",
+              category: "Private Business",
+              city: "",
+              country: "",
+              admin_preview: true,
+              __admin_preview_bootstrap: true,
+            },
+            isStaging,
+          },
+        };
+      }
+
       return { notFound: true };
     }
 
@@ -313,6 +353,9 @@ export default function BusinessBySlug({
   const isLoggedIn = status === "authenticated";
   const isAdminView = role === "admin" || role === "superadmin";
 
+  const isAdminPreviewBootstrap =
+    initialBiz?.__admin_preview_bootstrap === true;
+
   /*
    * SEO / structured-data source must remain Guest-safe.
    * Runtime authenticated reconciliation is UI-only.
@@ -525,6 +568,63 @@ export default function BusinessBySlug({
           profileAudience === "authenticated" ||
           profileAudience === "guest-fallback"
         );
+
+  /*
+   * Private Admin Preview bootstrap is deliberately fail-closed.
+   *
+   * The SSR bootstrap itself contains no private business data.
+   * Only an authenticated Admin/SuperAdmin session that receives
+   * the real DTO from the API may proceed to the profile renderer.
+   */
+  if (isAdminPreviewBootstrap) {
+    if (!isAuthReady) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <p>Loading...</p>
+        </div>
+      );
+    }
+
+    if (!isLoggedIn || !isAdminView) {
+      return (
+        <div className="min-h-screen flex items-center justify-center px-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-semibold">Not Found</h1>
+            <p className="mt-2 text-sm opacity-70">
+              The requested business profile is not available.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    if (
+      profileAudience === "guest" ||
+      profileAudience === "reconciling"
+    ) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <p>Loading...</p>
+        </div>
+      );
+    }
+
+    if (
+      profileAudience !== "authenticated" ||
+      biz?.admin_preview !== true
+    ) {
+      return (
+        <div className="min-h-screen flex items-center justify-center px-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-semibold">Not Found</h1>
+            <p className="mt-2 text-sm opacity-70">
+              The requested business profile is not available.
+            </p>
+          </div>
+        </div>
+      );
+    }
+  }
 
   if (
     !biz ||

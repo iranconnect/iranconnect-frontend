@@ -485,7 +485,20 @@ export default function BusinessesPage() {
   
                       <td className="p-3">
                         <div className="font-medium">
-                          {truncate(business.name, 28)}
+                          {business.slug && !business.is_deleted ? (
+                            <Link
+                              href={
+                                business.is_public
+                                  ? `/business/${business.slug}`
+                                  : `/business/${business.slug}?adminPreview=1`
+                              }
+                              className="hover:underline"
+                            >
+                              {truncate(business.name, 28)}
+                            </Link>
+                          ) : (
+                            truncate(business.name, 28)
+                          )}
                         </div>
   
                         <div className="mt-1 text-xs opacity-60">
