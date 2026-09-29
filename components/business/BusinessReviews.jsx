@@ -92,6 +92,7 @@ export default function BusinessReviews({
   businessId,
   isLoggedIn = false,
   allowReviews = true,
+  canSubmitReview = true,
 }) {
   const [reviews, setReviews] = useState([]);
   const [userReview, setUserReview] = useState(null);
@@ -719,7 +720,9 @@ export default function BusinessReviews({
         </div>
       )}
 
-      {allowReviews && isLoggedIn && (
+      {allowReviews &&
+        isLoggedIn &&
+        canSubmitReview && (
         <div className="mb-8 rounded-xl border border-[var(--border)] p-4">
           <h3 className="mb-3 font-semibold">
             {userReview

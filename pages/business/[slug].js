@@ -832,6 +832,7 @@ export default function BusinessBySlug({
                 businessId={biz.id}
                 isLoggedIn={isLoggedIn}
                 allowReviews={biz.allow_reviews === true}
+                canSubmitReview={!isAdminView}
               />
             </RevealOnScroll>
 
