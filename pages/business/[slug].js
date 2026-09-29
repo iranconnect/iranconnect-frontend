@@ -771,8 +771,40 @@ export default function BusinessBySlug({
          >
           <div className="w-full max-w-5xl space-y-8">
             {biz?.admin_preview === true && (
-              <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
-                Admin preview: this business is currently private or unpublished and is visible here because you are logged in as an admin.
+              <div
+                role="status"
+                className="mb-6 overflow-hidden rounded-2xl border border-turquoise/40 bg-white shadow-sm"
+              >
+                <div className="flex items-start gap-3 border-l-4 border-turquoise px-4 py-4 sm:px-5">
+                  <div
+                    className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-turquoise/15 text-navy"
+                    aria-hidden="true"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-5 w-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z"
+                      />
+                      <circle cx="12" cy="12" r="2.75" />
+                    </svg>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="font-semibold text-navy">
+                      Admin Preview
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                      This business is currently private or unpublished. You can view this profile because you have administrative preview access.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
