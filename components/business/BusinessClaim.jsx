@@ -10,7 +10,7 @@ export default function BusinessClaim({
     return null;
   }
 
-  if (isAdminView && biz.is_public === false) {
+  if (isAdminView) {
     return null;
   }
 

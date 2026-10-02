@@ -93,9 +93,51 @@ export default function BusinessReviews({
   isLoggedIn = false,
   allowReviews = true,
   canSubmitReview = true,
+  canUseOwnerReply = false,
 }) {
   const [reviews, setReviews] = useState([]);
   const [userReview, setUserReview] = useState(null);
+
+  const [
+    viewerIsVerifiedOwner,
+    setViewerIsVerifiedOwner,
+  ] = useState(false);
+
+  const [
+    activeOwnerReplyReviewId,
+    setActiveOwnerReplyReviewId,
+  ] = useState(null);
+
+  const [ownerReplyText, setOwnerReplyText] =
+    useState("");
+
+  const [
+    submittingOwnerReplyId,
+    setSubmittingOwnerReplyId,
+  ] = useState(null);
+
+  const [
+    ownerReplyMessage,
+    setOwnerReplyMessage,
+  ] = useState("");
+
+  const [
+    editingOwnerReplyReviewId,
+    setEditingOwnerReplyReviewId,
+  ] = useState(null);
+
+  const [ownerReplyEditText, setOwnerReplyEditText] =
+    useState("");
+
+  const [
+    updatingOwnerReplyId,
+    setUpdatingOwnerReplyId,
+  ] = useState(null);
+
+  const [
+    ownerReplyEditMessage,
+    setOwnerReplyEditMessage,
+  ] = useState("");
 
   const [summary, setSummary] = useState(
     EMPTY_SUMMARY
@@ -200,6 +242,10 @@ export default function BusinessReviews({
         const ownReview =
           response.data?.user_review || null;
 
+        const nextViewerIsVerifiedOwner =
+          response.data
+            ?.viewer_is_verified_owner === true;
+
         const nextRestriction =
           response.data
             ?.review_submission_restriction;
@@ -261,6 +307,10 @@ export default function BusinessReviews({
 
         setUserReview(ownReview);
 
+        setViewerIsVerifiedOwner(
+          nextViewerIsVerifiedOwner
+        );
+
         setRating(Number(ownReview?.rating) || 0);
         setComment(ownReview?.comment || "");
 
@@ -284,6 +334,7 @@ export default function BusinessReviews({
         if (!append) {
           setReviews([]);
           setUserReview(null);
+          setViewerIsVerifiedOwner(false);
           setSummary(EMPTY_SUMMARY);
           setCurrentPage(1);
           setHasMore(false);
@@ -302,6 +353,13 @@ export default function BusinessReviews({
   useEffect(() => {
     setSelectedRatingFilter(null);
     setReviews([]);
+    setViewerIsVerifiedOwner(false);
+    setActiveOwnerReplyReviewId(null);
+    setOwnerReplyText("");
+    setOwnerReplyMessage("");
+    setEditingOwnerReplyReviewId(null);
+    setOwnerReplyEditText("");
+    setOwnerReplyEditMessage("");
     setSummary(EMPTY_SUMMARY);
     setCurrentPage(1);
     setHasMore(false);
@@ -361,6 +419,110 @@ export default function BusinessReviews({
     reviewSubmissionRestriction
       ?.restricted_until,
   ]);
+
+  async function submitOwnerReply(reviewId) {
+    const normalizedReply =
+      ownerReplyText.trim();
+
+    if (
+      !canUseOwnerReply ||
+      !viewerIsVerifiedOwner ||
+      !normalizedReply ||
+      submittingOwnerReplyId !== null
+    ) {
+      return;
+    }
+
+    if (normalizedReply.length > 3000) {
+      setOwnerReplyMessage(
+        "Business reply must not exceed 3000 characters."
+      );
+      return;
+    }
+
+    try {
+      setSubmittingOwnerReplyId(reviewId);
+      setOwnerReplyMessage("");
+
+      await apiClient.post(
+        `/businesses/reviews/${reviewId}/reply`,
+        {
+          reply_text: normalizedReply,
+        },
+        {
+          requireAuth: true,
+        }
+      );
+
+      setActiveOwnerReplyReviewId(null);
+      setOwnerReplyText("");
+
+      await fetchReviewPage({
+        append: false,
+        requestedPage: currentPage,
+        ratingFilter: selectedRatingFilter,
+      });
+    } catch (error) {
+      setOwnerReplyMessage(
+        error.response?.data?.error ||
+          "Unable to publish the business reply. Please try again."
+      );
+    } finally {
+      setSubmittingOwnerReplyId(null);
+    }
+  }
+
+  async function updateOwnerReply(reviewId) {
+    const normalizedReply =
+      ownerReplyEditText.trim();
+
+    if (
+      !canUseOwnerReply ||
+      !viewerIsVerifiedOwner ||
+      !normalizedReply ||
+      updatingOwnerReplyId !== null
+    ) {
+      return;
+    }
+
+    if (normalizedReply.length > 3000) {
+      setOwnerReplyEditMessage(
+        "Business reply must not exceed 3000 characters."
+      );
+      return;
+    }
+
+    try {
+      setUpdatingOwnerReplyId(reviewId);
+      setOwnerReplyEditMessage("");
+
+      await apiClient.put(
+        `/businesses/reviews/${reviewId}/reply`,
+        {
+          reply_text: normalizedReply,
+        },
+        {
+          requireAuth: true,
+        }
+      );
+
+      setEditingOwnerReplyReviewId(null);
+      setOwnerReplyEditText("");
+
+      await fetchReviewPage({
+        append: false,
+        requestedPage: currentPage,
+        ratingFilter: selectedRatingFilter,
+      });
+    } catch (error) {
+      setOwnerReplyEditMessage(
+        error.response?.data?.error ||
+          "Unable to update the business reply. Please try again."
+      );
+    } finally {
+      setUpdatingOwnerReplyId(null);
+    }
+  }
 
   async function handleRatingFilterChange(nextRating) {
     if (loading || loadingMore) {
@@ -1051,19 +1213,207 @@ export default function BusinessReviews({
                         Response from the business
                       </p>
 
-                      <time className="text-xs opacity-60">
-                        {formatReviewDate(
-                          review.reply.updated_at ||
-                            review.reply.created_at
-                        )}
-                      </time>
+                      <div className="flex items-center gap-3">
+                        <time className="text-xs opacity-60">
+                          {formatReviewDate(
+                            review.reply.updated_at ||
+                              review.reply.created_at
+                          )}
+                        </time>
+
+                        {canUseOwnerReply &&
+                          viewerIsVerifiedOwner &&
+                          review
+                            .viewer_can_edit_owner_reply ===
+                            true &&
+                          editingOwnerReplyReviewId !==
+                            review.id && (
+                            <button
+                              type="button"
+                              className="text-xs font-medium text-turquoise hover:underline"
+                              onClick={() => {
+                                setEditingOwnerReplyReviewId(
+                                  review.id
+                                );
+                                setOwnerReplyEditText(
+                                  review.reply.reply_text
+                                );
+                                setOwnerReplyEditMessage("");
+                              }}
+                            >
+                              Edit reply
+                            </button>
+                          )}
+                      </div>
                     </div>
 
-                    <p className="whitespace-pre-line text-sm leading-6 text-justify-pro">
-                      {review.reply.reply_text}
-                    </p>
+                    {editingOwnerReplyReviewId !==
+                    review.id ? (
+                      <p className="whitespace-pre-line text-sm leading-6 text-justify-pro">
+                        {review.reply.reply_text}
+                      </p>
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        <label
+                          htmlFor={`owner-reply-edit-${review.id}`}
+                          className="block text-sm font-semibold"
+                        >
+                          Edit business response
+                        </label>
+
+                        <textarea
+                          id={`owner-reply-edit-${review.id}`}
+                          value={ownerReplyEditText}
+                          maxLength={3000}
+                          rows={4}
+                          onChange={(event) =>
+                            setOwnerReplyEditText(
+                              event.target.value
+                            )
+                          }
+                          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm"
+                        />
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            className="btn-primary px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled={
+                              !ownerReplyEditText.trim() ||
+                              updatingOwnerReplyId ===
+                                review.id
+                            }
+                            onClick={() =>
+                              updateOwnerReply(review.id)
+                            }
+                          >
+                            {updatingOwnerReplyId ===
+                            review.id
+                              ? "Saving..."
+                              : "Save changes"}
+                          </button>
+
+                          <button
+                            type="button"
+                            className="px-4 py-2 text-sm opacity-80 hover:opacity-100"
+                            disabled={
+                              updatingOwnerReplyId ===
+                              review.id
+                            }
+                            onClick={() => {
+                              setEditingOwnerReplyReviewId(
+                                null
+                              );
+                              setOwnerReplyEditText("");
+                              setOwnerReplyEditMessage("");
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+
+                        {ownerReplyEditMessage && (
+                          <p className="text-sm text-red-600">
+                            {ownerReplyEditMessage}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
+
+                {canUseOwnerReply &&
+                  viewerIsVerifiedOwner &&
+                  !review.viewer_has_owner_reply &&
+                  !review.reply && (
+                    <div className="mt-4">
+                      {activeOwnerReplyReviewId !==
+                      review.id ? (
+                        <button
+                          type="button"
+                          className="btn-secondary px-4 py-2 text-sm"
+                          onClick={() => {
+                            setActiveOwnerReplyReviewId(
+                              review.id
+                            );
+                            setOwnerReplyText("");
+                            setOwnerReplyMessage("");
+                          }}
+                        >
+                          Reply as business
+                        </button>
+                      ) : (
+                        <div className="space-y-3 rounded-xl border border-[var(--border)] p-4">
+                          <label
+                            htmlFor={`owner-reply-${review.id}`}
+                            className="block text-sm font-semibold"
+                          >
+                            Response from the business
+                          </label>
+
+                          <textarea
+                            id={`owner-reply-${review.id}`}
+                            value={ownerReplyText}
+                            maxLength={3000}
+                            rows={4}
+                            onChange={(event) =>
+                              setOwnerReplyText(
+                                event.target.value
+                              )
+                            }
+                            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm"
+                            placeholder="Write your official business response..."
+                          />
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              className="btn-primary px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                              disabled={
+                                !ownerReplyText.trim() ||
+                                submittingOwnerReplyId ===
+                                  review.id
+                              }
+                              onClick={() =>
+                                submitOwnerReply(
+                                  review.id
+                                )
+                              }
+                            >
+                              {submittingOwnerReplyId ===
+                              review.id
+                                ? "Publishing..."
+                                : "Publish reply"}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="px-4 py-2 text-sm opacity-80 hover:opacity-100"
+                              disabled={
+                                submittingOwnerReplyId ===
+                                review.id
+                              }
+                              onClick={() => {
+                                setActiveOwnerReplyReviewId(
+                                  null
+                                );
+                                setOwnerReplyText("");
+                                setOwnerReplyMessage("");
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+
+                          {ownerReplyMessage && (
+                            <p className="text-sm text-red-600">
+                              {ownerReplyMessage}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
               </article>
             ))}
 

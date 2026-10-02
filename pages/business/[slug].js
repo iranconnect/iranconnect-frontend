@@ -833,6 +833,7 @@ export default function BusinessBySlug({
                 isLoggedIn={isLoggedIn}
                 allowReviews={biz.allow_reviews === true}
                 canSubmitReview={!isAdminView}
+                canUseOwnerReply={role === "user"}
               />
             </RevealOnScroll>
 
