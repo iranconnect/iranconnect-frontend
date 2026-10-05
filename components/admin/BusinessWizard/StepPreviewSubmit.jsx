@@ -94,8 +94,173 @@ export default function StepPreviewSubmit({
   const isAdminTicketCreate =
     mode === "admin-create-ticket";
   const isAdminEdit = mode === "admin-edit";
+
+  const isAdminRequestEdit =
+    mode === "admin-edit-request";
+
   const isUserUpdate = mode === "user-update";
   const isUserNew = mode === "user-new";
+
+  /*
+   * PLR-SUP-REQ-01
+   * Manual requester picker is available only for Direct
+   * Admin Create. Request-bound NEW derives requester from
+   * business_requests.user_id and must never use this picker.
+   */
+  const [requesterQuery, setRequesterQuery] =
+    useState("");
+
+  const [requesterResults, setRequesterResults] =
+    useState([]);
+
+  const [requesterLoading, setRequesterLoading] =
+    useState(false);
+
+  const [requesterError, setRequesterError] =
+    useState("");
+
+  const [selectedRequester, setSelectedRequester] =
+    useState(() => {
+      const requesterUserId =
+        Number(data.requester_user_id);
+
+      if (
+        !Number.isInteger(requesterUserId) ||
+        requesterUserId < 1
+      ) {
+        return null;
+      }
+
+      return {
+        id: requesterUserId,
+        display_email:
+          String(
+            data.requester_display_email || ""
+          ).trim(),
+      };
+    });
+
+  async function searchRequesterUsers() {
+    if (!isAdminCreate) {
+      return;
+    }
+
+    const q =
+      String(requesterQuery || "").trim();
+
+    if (!q) {
+      setRequesterResults([]);
+      setRequesterError(
+        "Enter an email address or part of an email address."
+      );
+      return;
+    }
+
+    setRequesterLoading(true);
+    setRequesterError("");
+
+    try {
+      const res = await apiClient.get(
+        "/admin/users",
+        {
+          params: {
+            q,
+            role: "user",
+            status: "active",
+            page: 1,
+            limit: 10,
+          },
+          withCredentials: true,
+        }
+      );
+
+      const rows = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.rows)
+          ? res.data.rows
+          : [];
+
+      const eligibleRows =
+        rows.filter(
+          (user) =>
+            user?.role === "user" &&
+            user?.is_blocked !== true &&
+            user?.is_deleted !== true
+        );
+
+      setRequesterResults(
+        eligibleRows
+      );
+
+      if (eligibleRows.length === 0) {
+        setRequesterError(
+          "No eligible active user matched this email search."
+        );
+      }
+    } catch (err) {
+      setRequesterResults([]);
+
+      setRequesterError(
+        err?.response?.data?.error ||
+        "Unable to search users."
+      );
+    } finally {
+      setRequesterLoading(false);
+    }
+  }
+
+  function selectRequester(user) {
+    const userId =
+      Number(user?.id);
+
+    if (
+      !Number.isInteger(userId) ||
+      userId < 1
+    ) {
+      return;
+    }
+
+    const displayEmail =
+      String(
+        user?.display_email ||
+        user?.email ||
+        ""
+      ).trim();
+
+    setSelectedRequester({
+      ...user,
+      id: userId,
+      display_email: displayEmail,
+    });
+
+    setRequesterQuery(
+      displayEmail
+    );
+
+    setRequesterResults([]);
+    setRequesterError("");
+
+    setData((prev) => ({
+      ...prev,
+      requester_user_id: userId,
+      requester_display_email:
+        displayEmail,
+    }));
+  }
+
+  function clearRequester() {
+    setSelectedRequester(null);
+    setRequesterResults([]);
+    setRequesterError("");
+
+    setRequesterQuery("");
+
+    setData((prev) => ({
+      ...prev,
+      requester_user_id: null,
+      requester_display_email: "",
+    }));
+  }
 
   const normalizedChangeSource =
     String(data.change_source_type || "").trim();
@@ -117,19 +282,23 @@ export default function StepPreviewSubmit({
     Number(data.business_request_id) > 0 &&
     normalizedTicketCode.length > 0;
 
+  const hasValidUpdateRequestContext =
+    isAdminRequestEdit &&
+    Number.isInteger(
+      Number(data.business_request_id)
+    ) &&
+    Number(data.business_request_id) > 0;
+
   const isValidAdminAuthorization =
     isAdminTicketCreate
       ? hasValidTicketContext
-      : !requiresAdminAuthorization ||
+      : isAdminRequestEdit
+        ? hasValidUpdateRequestContext
+        : !requiresAdminAuthorization ||
         (
           isAdminCreate &&
           normalizedChangeSource === "admin_note" &&
           normalizedAdminNote.length > 0
-        ) ||
-        (
-          isAdminEdit &&
-          normalizedChangeSource === "ticket" &&
-          normalizedTicketCode.length > 0
         ) ||
         (
           isAdminEdit &&
@@ -1037,6 +1206,61 @@ export default function StepPreviewSubmit({
             <strong>Request ID:</strong>{" "}
             {data.business_request_id || "—"}
           </div>
+
+          <div style={{ marginTop: 14 }}>
+            <strong>Requester:</strong>{" "}
+            {data.requester_display_email || "—"}
+          </div>
+
+          <div style={{ marginTop: 6 }}>
+            <strong>Requester User ID:</strong>{" "}
+            {data.requester_user_id || "—"}
+          </div>
+
+          <p className="admin-hint mt-3">
+            Requester identity is derived from the originating
+            business request and cannot be changed in this wizard.
+          </p>
+
+          <p className="admin-hint mt-1">
+            This requester association is provenance only and does
+            not grant ownership, business-management access, or
+            verified-owner status.
+          </p>
+        </Section>
+      )}
+
+      {isAdminRequestEdit && (
+        <Section title="Request Authorization">
+          <p
+            style={{
+              marginBottom: 12,
+              color: "var(--text)",
+              opacity: 0.8,
+              lineHeight: 1.7,
+            }}
+          >
+            This update is bound to the originating business
+            request. Request authority cannot be changed in
+            this wizard.
+          </p>
+
+          <div>
+            <strong>Ticket:</strong>{" "}
+            <span className="font-mono">
+              {normalizedTicketCode || "—"}
+            </span>
+          </div>
+
+          <div style={{ marginTop: 6 }}>
+            <strong>Request ID:</strong>{" "}
+            {data.business_request_id || "—"}
+          </div>
+
+          <p className="admin-hint mt-3">
+            The Backend resolves the linked Business and
+            validates this request again before mutation.
+          </p>
         </Section>
       )}
 
@@ -1049,19 +1273,6 @@ export default function StepPreviewSubmit({
           }
         >
           {isAdminCreate ? (
-            <p
-              style={{
-                marginBottom: 16,
-                color: "var(--text)",
-                opacity: 0.8,
-                lineHeight: 1.7,
-              }}
-            >
-              Generic business creation is an
-              admin-initiated action and requires a
-              permanent administrative justification.
-            </p>
-          ) : (
             <>
               <p
                 style={{
@@ -1071,74 +1282,219 @@ export default function StepPreviewSubmit({
                   lineHeight: 1.7,
                 }}
               >
-                Was this business update requested
-                through an existing ticket?
+                Generic business creation is an
+                admin-initiated action and requires a
+                permanent administrative justification.
               </p>
 
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="radio"
                   name="change_source_type"
-                  value="ticket"
-                  checked={normalizedChangeSource === "ticket"}
+                  value="admin_note"
+                  checked={normalizedChangeSource === "admin_note"}
                   onChange={() =>
-                    setChangeSourceType("ticket")
+                    setChangeSourceType("admin_note")
                   }
                 />
 
                 <span>
-                  Yes, I have a pending update ticket.
+                  Admin-initiated creation
                 </span>
               </label>
             </>
+          ) : (
+            <p
+              style={{
+                marginBottom: 16,
+                color: "var(--text)",
+                opacity: 0.8,
+                lineHeight: 1.7,
+              }}
+            >
+              Direct administrative updates require a
+              permanent admin note. Ticket-authorized
+              updates must be opened from the originating
+              business request.
+            </p>
           )}
-
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="radio"
-              name="change_source_type"
-              value="admin_note"
-              checked={normalizedChangeSource === "admin_note"}
-              onChange={() =>
-                setChangeSourceType("admin_note")
-              }
-            />
-
-            <span>
-              {isAdminCreate
-                ? "Admin-initiated creation"
-                : "No, this is an admin-initiated update."}
-            </span>
-          </label>
       
-          {isAdminEdit &&
-          normalizedChangeSource === "ticket" && (
-            <div style={{ marginTop: 18 }}>
+          {isAdminCreate && (
+            <div
+              style={{
+                marginTop: 18,
+                paddingTop: 18,
+                borderTop:
+                  "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
               <label className="admin-label">
-                Ticket code *
+                Requesting user (optional)
               </label>
 
-              <input
-                type="text"
-                className="admin-input"
-                value={data.ticket_code || ""}
-                onChange={(event) =>
-                  setData((prev) => ({
-                    ...prev,
-                    ticket_code: event.target.value,
-                  }))
-                }
-                placeholder="e.g. IC-BU0000123"
-                autoComplete="off"
-              />
-
               <p className="admin-hint mt-2">
-                Only a pending update ticket for this
-                business can be used.
+                If this business is being created on behalf
+                of a specific IranConnect user, search for
+                that user by email and select the account.
+              </p>
+
+              <div
+                className="flex gap-2 mt-3"
+                style={{
+                  alignItems: "center",
+                }}
+              >
+                <input
+                  type="email"
+                  className="admin-input"
+                  value={requesterQuery}
+                  onChange={(event) => {
+                    setRequesterQuery(
+                      event.target.value
+                    );
+
+                    setRequesterError("");
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+
+                      if (!requesterLoading) {
+                        searchRequesterUsers();
+                      }
+                    }
+                  }}
+                  placeholder="Search user by email"
+                  autoComplete="off"
+                />
+
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-secondary"
+                  disabled={
+                    requesterLoading ||
+                    !String(
+                      requesterQuery || ""
+                    ).trim()
+                  }
+                  onClick={
+                    searchRequesterUsers
+                  }
+                >
+                  {requesterLoading
+                    ? "Searching..."
+                    : "Search"}
+                </button>
+              </div>
+
+              {requesterError && (
+                <p className="text-red-500 text-sm mt-2">
+                  {requesterError}
+                </p>
+              )}
+
+              {requesterResults.length > 0 && (
+                <div
+                  className="mt-3"
+                  style={{
+                    display: "grid",
+                    gap: 8,
+                  }}
+                >
+                  {requesterResults.map(
+                    (user) => {
+                      const email =
+                        user.display_email ||
+                        user.email ||
+                        "Unknown email";
+
+                      return (
+                        <button
+                          key={user.id}
+                          type="button"
+                          className="admin-btn admin-btn-secondary"
+                          style={{
+                            justifyContent:
+                              "space-between",
+                            textAlign: "left",
+                          }}
+                          onClick={() =>
+                            selectRequester(
+                              user
+                            )
+                          }
+                        >
+                          <span>{email}</span>
+
+                          <span
+                            style={{
+                              opacity: 0.65,
+                              fontSize: 12,
+                            }}
+                          >
+                            User #{user.id}
+                          </span>
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+              )}
+
+              {selectedRequester && (
+                <div
+                  className="mt-3"
+                  style={{
+                    padding: 12,
+                    borderRadius: 10,
+                    border:
+                      "1px solid rgba(64,224,208,0.35)",
+                  }}
+                >
+                  <div>
+                    <strong>
+                      Selected requester:
+                    </strong>{" "}
+                    {selectedRequester.display_email ||
+                      selectedRequester.email ||
+                      `User #${selectedRequester.id}`}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 4,
+                      opacity: 0.7,
+                      fontSize: 12,
+                    }}
+                  >
+                    User ID:{" "}
+                    {selectedRequester.id}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-secondary mt-3"
+                    onClick={clearRequester}
+                  >
+                    Remove requester
+                  </button>
+                </div>
+              )}
+
+              <p className="admin-hint mt-3">
+                Requester association is provenance only.
+                It does not grant business ownership,
+                management access, verified-owner status,
+                or claim approval.
+              </p>
+
+              <p className="admin-hint mt-1">
+                Requester eligibility is validated again by
+                the backend before the business is created.
               </p>
             </div>
           )}
-      
+
           {normalizedChangeSource === "admin_note" && (
             <div style={{ marginTop: 18 }}>
               <label className="admin-label">

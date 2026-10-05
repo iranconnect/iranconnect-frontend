@@ -74,7 +74,19 @@ function buildAdminEditFormData(data) {
 
 export default function EditBusinessPage() {
   const router = useRouter();
-  const { id } = router.query;
+
+  const {
+    id,
+    requestId: rawRequestId,
+  } = router.query;
+
+  const hasRequestContext =
+    rawRequestId !== undefined;
+
+  const requestId =
+    hasRequestContext
+      ? Number(rawRequestId)
+      : null;
 
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -87,6 +99,18 @@ export default function EditBusinessPage() {
 
     if (!Number.isInteger(businessId) || businessId < 1) {
       setError("Invalid business ID.");
+      setLoading(false);
+      return;
+    }
+
+    if (
+      hasRequestContext &&
+      (
+        !Number.isInteger(requestId) ||
+        requestId < 1
+      )
+    ) {
+      setError("Invalid business request context.");
       setLoading(false);
       return;
     }
@@ -107,7 +131,96 @@ export default function EditBusinessPage() {
 
         if (!mounted) return;
 
-        setInitialData(res.data);
+        if (!hasRequestContext) {
+          /*
+           * PLR-SUP-REQ-01
+           * Direct Admin Edit is admin-note authorized only.
+           *
+           * Ticket-based UPDATE authority exists exclusively
+           * through the request-bound route.
+           */
+          setInitialData({
+            ...res.data,
+            change_source_type:
+              "admin_note",
+            ticket_code:
+              "",
+            admin_note:
+              "",
+          });
+
+          return;
+        }
+
+        /*
+         * PLR-SUP-REQ-01
+         * Request-bound UPDATE context is loaded separately
+         * from the business prefill and remains immutable.
+         */
+        const requestRes = await apiClient.get(
+          `/admin/requests/${requestId}`,
+          {
+            withCredentials: true,
+            headers: {
+              "x-iranconnect-admin": "1",
+            },
+          }
+        );
+
+        const request =
+          requestRes.data;
+
+        const requestStatus =
+          String(
+            request?.status || ""
+          ).trim();
+
+        const requestBusinessId =
+          Number(
+            request?.business_id
+          );
+
+        if (
+          request?.request_type !== "update" ||
+          !(
+            requestStatus === "pending" ||
+            requestStatus === "pending_review"
+          ) ||
+          !Number.isInteger(requestBusinessId) ||
+          requestBusinessId !== businessId
+        ) {
+          throw new Error(
+            "This business request is not eligible for request-bound update fulfillment."
+          );
+        }
+
+        if (
+          request?.update_fulfilled === true
+        ) {
+          throw new Error(
+            "This update request has already been fulfilled and is ready for approval."
+          );
+        }
+
+        setInitialData({
+          ...res.data,
+
+          /*
+           * Display-only request context.
+           * Request authority comes from requestId in the route.
+           */
+          change_source_type:
+            "ticket",
+
+          business_request_id:
+            requestId,
+
+          ticket_code:
+            request.ticket_code || "",
+
+          admin_note:
+            "",
+        });
       } catch (err) {
         console.error("❌ Failed to load admin edit prefill:", err);
 
@@ -129,12 +242,47 @@ export default function EditBusinessPage() {
     return () => {
       mounted = false;
     };
-  }, [router.isReady, id]);
+  }, [
+    router.isReady,
+    id,
+    rawRequestId,
+    hasRequestContext,
+    requestId,
+  ]);
 
   async function submitAdminEdit(data) {
     const businessId = Number(id);
 
     const form = buildAdminEditFormData(data);
+
+    if (hasRequestContext) {
+      /*
+       * PLR-SUP-REQ-01
+       * Request-bound UPDATE authority is the route requestId.
+       * Client-controlled ticket/request/provenance context must
+       * never be sent to the Backend.
+       */
+      form.delete("ticket_code");
+      form.delete("business_request_id");
+      form.delete("change_source_type");
+      form.delete("admin_note");
+
+      form.delete("created_by_user_id");
+      form.delete("requested_by_user_id");
+      form.delete("creation_origin");
+
+      form.delete("requester_user_id");
+      form.delete("requester_display_email");
+
+      return apiClient.put(
+        `/admin/businesses/requests/${requestId}/update-v2`,
+        form,
+        {
+          withCredentials: true,
+          timeout: 120000,
+        }
+      );
+    }
 
     return apiClient.put(
       `/admin/businesses/${businessId}/update-v2`,
@@ -148,7 +296,11 @@ export default function EditBusinessPage() {
 
   function handleSubmissionSuccess() {
     window.setTimeout(() => {
-      router.push("/admin/businesses");
+      router.push(
+        hasRequestContext
+          ? "/admin/requests"
+          : "/admin/businesses"
+      );
     }, 1500);
   }
 
@@ -184,7 +336,11 @@ export default function EditBusinessPage() {
           </section>
         ) : (
           <BusinessWizard
-            mode="admin-edit"
+            mode={
+              hasRequestContext
+                ? "admin-edit-request"
+                : "admin-edit"
+            }
             initialData={initialData}
             onSubmit={submitAdminEdit}
             onSubmissionSuccess={handleSubmissionSuccess}

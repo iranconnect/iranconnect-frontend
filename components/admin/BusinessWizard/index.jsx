@@ -113,6 +113,21 @@ export default function BusinessWizard({
     change_source_type: "",
     ticket_code: "",
     admin_note: "",
+
+    /*
+     * PLR-SUP-REQ-01
+     * Optional manual requester intent for Direct Admin Create.
+     *
+     * Backend validates this users.id again before persisting
+     * canonical requested_by_user_id provenance.
+     */
+    requester_user_id: null,
+
+    /*
+     * Frontend-only display metadata for the selected requester.
+     * Never submitted to the Backend.
+     */
+    requester_display_email: "",
   };
   
   const [data, setData] = useState(() => ({
@@ -251,11 +266,19 @@ export default function BusinessWizard({
           }
         }
         
-        if (mode === "admin-edit") {
+        if (
+          mode === "admin-edit" ||
+          mode === "admin-edit-request"
+        ) {
+          const isRequestBoundUpdate =
+            mode === "admin-edit-request";
+
           setSubmitError(false);
         
           setSubmitMessage(
-            "Business updated successfully. Redirecting to businesses..."
+            isRequestBoundUpdate
+              ? "Request-linked business update applied successfully. Returning to requests for approval..."
+              : "Business updated successfully. Redirecting to businesses..."
           );
         
           setTicketCode("");
@@ -369,6 +392,14 @@ export default function BusinessWizard({
       };
 
       /*
+       * PLR-SUP-REQ-01
+       * requester_display_email exists only to preserve visible
+       * requester selection while navigating between wizard steps.
+       * Backend receives only requester_user_id.
+       */
+      delete cleanedData.requester_display_email;
+
+      /*
        * F15-20A — Ticket media displayed in the wizard is
        * presentation-only context.
        *
@@ -378,6 +409,16 @@ export default function BusinessWizard({
        * business media input.
        */
       if (mode === "admin-create-ticket") {
+        /*
+         * PLR-SUP-REQ-01
+         * Request-bound requester identity is server-authoritative.
+         *
+         * Even though request-derived requester context is visible
+         * in the wizard, it must never be sent back as an override.
+         */
+        delete cleanedData.requester_user_id;
+        delete cleanedData.requester_display_email;
+
         delete cleanedData.logo_url;
         delete cleanedData.cover_image_url;
         delete cleanedData.gallery;

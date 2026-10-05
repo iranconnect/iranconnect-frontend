@@ -138,6 +138,32 @@ export default function RequestDetailsModal({
     isPendingNewRequest &&
     Boolean(details?.business_id);
 
+  const isPendingUpdateRequest =
+    isActionable &&
+    details?.request_type === "update";
+
+  /*
+   * PLR-SUP-REQ-01
+   * Derived server-side from authoritative ticket-linked
+   * business_change_audits evidence.
+   */
+  const isUpdateRequestFulfilled =
+    isPendingUpdateRequest &&
+    details?.update_fulfilled === true;
+
+  /*
+   * PLR-SUP-REQ-01
+   *
+   * Once a NEW or UPDATE request has been fulfilled, rejection
+   * is no longer a valid lifecycle action.
+   *
+   * Backend verifyRejectionAllowed() remains authoritative.
+   * This flag only keeps the Admin UI aligned with that rule.
+   */
+  const isFulfilledBusinessRequest =
+    isNewRequestFulfilled ||
+    isUpdateRequestFulfilled;
+
   const isSuperAdmin =
     role === "superadmin";
 
@@ -287,16 +313,18 @@ export default function RequestDetailsModal({
                   />
                 ) : (
                   <div className="flex justify-end gap-3 mt-6">
-                    <button
-                      className="admin-btn admin-btn-secondary"
-                      onClick={() => {
-                        setShowRejectBox(true);
-                        setShowApproveBox(false);
-                        setNote("");
-                      }}
-                    >
-                      Reject
-                    </button>
+                    {!isFulfilledBusinessRequest && (
+                      <button
+                        className="admin-btn admin-btn-secondary"
+                        onClick={() => {
+                          setShowRejectBox(true);
+                          setShowApproveBox(false);
+                          setNote("");
+                        }}
+                      >
+                        Reject
+                      </button>
+                    )}
 
                     {isPendingNewRequest &&
                     !isNewRequestFulfilled ? (
@@ -308,6 +336,17 @@ export default function RequestDetailsModal({
                         }}
                       >
                         Add Business
+                      </button>
+                    ) : isPendingUpdateRequest &&
+                      !isUpdateRequestFulfilled ? (
+                      <button
+                        className="admin-btn admin-btn-primary"
+                        onClick={() => {
+                          window.location.href =
+                            `/admin/edit/${details.business_id}?requestId=${details.id}`;
+                        }}
+                      >
+                        Edit Business
                       </button>
                     ) : (
                       <button

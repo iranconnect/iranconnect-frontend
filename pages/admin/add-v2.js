@@ -104,6 +104,20 @@ function buildTicketInitialData(request) {
     business_request_id: request.id,
 
     /*
+     * PLR-SUP-REQ-01
+     * Request-bound requester context.
+     *
+     * These values are display context only in the frontend.
+     * Backend requester authority remains business_requests.user_id
+     * resolved server-side from business_request_id.
+     */
+    requester_user_id:
+      request.user_id || null,
+
+    requester_display_email:
+      request.user_email || "",
+
+    /*
      * ticket_code is display-only context.
      * Backend does not trust or consume this value for correlation.
      */
