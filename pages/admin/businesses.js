@@ -469,6 +469,7 @@ export default function BusinessesPage() {
                     <th className="p-3 text-left">Location</th>
                     <th className="p-3 text-left">Visibility</th>
                     <th className="p-3 text-left">Lifecycle</th>
+                    <th className="p-3 text-left">Provenance</th>
                     <th className="p-3 text-left">Actions</th>
                   </tr>
                 </thead>
@@ -577,6 +578,41 @@ export default function BusinessesPage() {
                       </td>
   
                       <td className="p-3">
+                        <div className="min-w-[220px] space-y-1 text-xs">
+                          <div>
+                            <span className="font-medium">
+                              Origin:
+                            </span>{" "}
+                            {business.creation_origin || "—"}
+                          </div>
+
+                          <div>
+                            <span className="font-medium">
+                              Requested:
+                            </span>{" "}
+                            {business.requested_by_email || "—"}
+                          </div>
+
+                          <div className="opacity-70">
+                            User ID:{" "}
+                            {business.requested_by_user_id ?? "—"}
+                          </div>
+
+                          <div>
+                            <span className="font-medium">
+                              Created:
+                            </span>{" "}
+                            {business.created_by_email || "—"}
+                          </div>
+
+                          <div className="opacity-70">
+                            User ID:{" "}
+                            {business.created_by_user_id ?? "—"}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="p-3">
                         <div className="flex flex-wrap gap-2">
                           {!business.is_deleted && (
                             <>
@@ -627,7 +663,7 @@ export default function BusinessesPage() {
                   {!list.length && (
                     <tr>
                       <td
-                        colSpan="7"
+                        colSpan="8"
                         className="p-5 text-center opacity-70"
                       >
                         No businesses found.

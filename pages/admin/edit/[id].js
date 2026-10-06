@@ -25,7 +25,8 @@ function buildAdminEditFormData(data) {
       key === "logo_url" ||
       key === "cover_image_url" ||
       key === "gallery" ||
-      key === "id"
+      key === "id" ||
+      key === "provenance"
     ) {
       return;
     }
@@ -70,6 +71,19 @@ function buildAdminEditFormData(data) {
   });
 
   return form;
+}
+
+function formatCreationOrigin(value) {
+  switch (value) {
+    case "user_request":
+      return "User Request";
+    case "platform_curated":
+      return "Platform Curated";
+    case "historical_unknown":
+      return "Historical / Unknown";
+    default:
+      return value || "—";
+  }
 }
 
 export default function EditBusinessPage() {
@@ -335,8 +349,109 @@ export default function EditBusinessPage() {
             </button>
           </section>
         ) : (
-          <BusinessWizard
-            mode={
+          <>
+            <section className="admin-card mb-5">
+              <div className="mb-4">
+                <h3 className="font-semibold">
+                  Business Provenance
+                </h3>
+
+                <p className="admin-hint mt-1">
+                  Read-only creation and requester metadata.
+                  These values are controlled by the server and
+                  cannot be edited here.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+                <div>
+                  <div className="font-medium">
+                    Creation Origin
+                  </div>
+                  <div className="mt-1 opacity-75">
+                    {formatCreationOrigin(
+                      initialData?.provenance
+                        ?.creation_origin
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="font-medium">
+                    Created By
+                  </div>
+                  <div className="mt-1 opacity-75">
+                    {initialData?.provenance
+                      ?.created_by?.email || "—"}
+                  </div>
+                  <div className="text-xs opacity-60">
+                    User ID:{" "}
+                    {initialData?.provenance
+                      ?.created_by?.user_id ?? "—"}
+                    {" · "}
+                    Role:{" "}
+                    {initialData?.provenance
+                      ?.created_by?.role || "—"}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="font-medium">
+                    Requested By
+                  </div>
+                  <div className="mt-1 opacity-75">
+                    {initialData?.provenance
+                      ?.requested_by?.email || "—"}
+                  </div>
+                  <div className="text-xs opacity-60">
+                    User ID:{" "}
+                    {initialData?.provenance
+                      ?.requested_by?.user_id ?? "—"}
+                    {" · "}
+                    Role:{" "}
+                    {initialData?.provenance
+                      ?.requested_by?.role || "—"}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="font-medium">
+                    Originating Request
+                  </div>
+
+                  {initialData?.provenance
+                    ?.originating_request ? (
+                    <>
+                      <div className="mt-1 opacity-75">
+                        Ticket:{" "}
+                        {initialData.provenance
+                          .originating_request
+                          .ticket_code || "—"}
+                      </div>
+
+                      <div className="text-xs opacity-60">
+                        Request ID:{" "}
+                        {initialData.provenance
+                          .originating_request
+                          .request_id ?? "—"}
+                        {" · "}
+                        Type:{" "}
+                        {initialData.provenance
+                          .originating_request
+                          .request_type || "—"}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mt-1 opacity-75">
+                      —
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            <BusinessWizard
+              mode={
               hasRequestContext
                 ? "admin-edit-request"
                 : "admin-edit"
@@ -345,6 +460,7 @@ export default function EditBusinessPage() {
             onSubmit={submitAdminEdit}
             onSubmissionSuccess={handleSubmissionSuccess}
           />
+          </>
         )}
       </main>
     </AdminLayout>

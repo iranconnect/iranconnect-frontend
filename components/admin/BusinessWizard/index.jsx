@@ -161,8 +161,12 @@ export default function BusinessWizard({
     setStep((s) => Math.max(s - 1, 0));
   }
 
+  const isAdminRequestWorkflow =
+    mode === "admin-create-ticket" ||
+    mode === "admin-edit-request";
+
   async function rejectTicketRequest() {
-    if (mode !== "admin-create-ticket") {
+    if (!isAdminRequestWorkflow) {
       return;
     }
 
@@ -277,7 +281,7 @@ export default function BusinessWizard({
         
           setSubmitMessage(
             isRequestBoundUpdate
-              ? "Request-linked business update applied successfully. Returning to requests for approval..."
+              ? "Business update completed successfully. The request was automatically approved and closed."
               : "Business updated successfully. Redirecting to businesses..."
           );
         
@@ -501,7 +505,7 @@ export default function BusinessWizard({
         setSubmitError(false);
 
         setSubmitMessage(
-          "Business created and linked to the request successfully. The request still requires a separate approval decision."
+          "Business created successfully. The request was automatically approved and closed."
         );
 
         setSubmitSuccess(true);
@@ -622,7 +626,7 @@ export default function BusinessWizard({
 
   return (
     <>
-      {mode === "admin-create-ticket" && (
+      {isAdminRequestWorkflow && (
         <div className="admin-card mb-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
