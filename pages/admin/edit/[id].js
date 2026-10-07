@@ -26,7 +26,13 @@ function buildAdminEditFormData(data) {
       key === "cover_image_url" ||
       key === "gallery" ||
       key === "id" ||
-      key === "provenance"
+      key === "provenance" ||
+      key === "update_scope" ||
+      key === "is_deleted" ||
+      key === "deleted_at" ||
+      key === "deleted_by_user_id" ||
+      key === "deleted_reason" ||
+      key === "deleted_source"
     ) {
       return;
     }
