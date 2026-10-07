@@ -63,7 +63,14 @@ const BUSINESS_TYPES = [
   { value: "online", label: "Online Business" },
 ];
 
-export default function StepBasicInfo({ data, setData, onNext, mode, initialData,}) {
+export default function StepBasicInfo({
+  data,
+  setData,
+  onNext,
+  mode,
+  initialData,
+  canEditField = () => true,
+}) {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
@@ -71,8 +78,27 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
   const categoryId = Number(data?.category_id) || "";
   const selectedSubcategories = data?.subcategory_ids || [];
 
-  const isAdminEdit = mode === "admin-edit";
+  const isAdminEdit =
+    mode === "admin-edit" ||
+    mode === "admin-edit-request";
+
   const isUserUpdate = mode === "user-update";
+
+  /*
+   * Category/subcategory handlers mutate dependent fields.
+   * Keep these controls fail-closed unless the full mutation
+   * footprint is authorized by the Backend scope.
+   */
+  const canEditCategory =
+    canEditField("category_id") &&
+    canEditField("subcategory_ids") &&
+    canEditField("services") &&
+    canEditField("tags");
+
+  const canEditSubcategories =
+    canEditField("subcategory_ids") &&
+    canEditField("services") &&
+    canEditField("tags");
   const isUserNew = mode === "user-new";
   
   const stepCopy = isAdminEdit
@@ -334,6 +360,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
           className="admin-input"
           value={data?.name || ""}
           onChange={(e) => setField("name", e.target.value)}
+          disabled={!canEditField("name")}
           placeholder="e.g. Tehran Legal Services"
           required
         />
@@ -352,6 +379,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
         <select
           className="admin-input"
           value={categoryId}
+          disabled={!canEditCategory}
           onChange={(e) => {
             const newCategoryId = Number(e.target.value);
           
@@ -406,6 +434,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
                     <input
                       type="checkbox"
                       checked={selectedSubcategories.includes(sub.id)}
+                      disabled={!canEditSubcategories}
                       onChange={() => toggleSubcategory(sub.id)}
                     />
                     {sub.name}
@@ -432,6 +461,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
           type="text"
           className="admin-input"
           value={data?.legal_name || ""}
+          disabled={!canEditField("legal_name")}
           onChange={(e) =>
             setField("legal_name", e.target.value)
           }
@@ -455,6 +485,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
         <select
           className="admin-input"
           value={data?.business_type || ""}
+          disabled={!canEditField("business_type")}
           onChange={(e) =>
             setField("business_type", e.target.value)
           }
@@ -488,6 +519,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
           max={new Date().getFullYear()}
           className="admin-input"
           value={data?.year_established || ""}
+          disabled={!canEditField("year_established")}
           onChange={(e) => {
             const value = e.target.value;
           
@@ -515,6 +547,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
           maxLength={160}
           rows={2}
           value={data?.short_description || ""}
+          disabled={!canEditField("short_description")}
           onChange={(e) =>
             setField("short_description", e.target.value)
           }
@@ -549,6 +582,7 @@ export default function StepBasicInfo({ data, setData, onNext, mode, initialData
           className="admin-input"
           rows={4}
           value={data?.full_description || ""}
+          disabled={!canEditField("full_description")}
           onChange={(e) =>
             setField("full_description", e.target.value)
           }

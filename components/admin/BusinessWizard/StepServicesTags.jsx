@@ -19,7 +19,15 @@ const FIELD_RULES = {
 
 };
 
-export default function StepServicesTags({ data, setData, onNext, onBack, mode, initialData, }) {
+export default function StepServicesTags({
+  data,
+  setData,
+  onNext,
+  onBack,
+  mode,
+  initialData,
+  canEditField = () => true,
+}) {
   const [services, setServices] = useState([]);
   const [tags, setTags] = useState([]);
   const [loadingServices, setLoadingServices] = useState(false);
@@ -55,8 +63,17 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
     hadInitialTags &&
     removedAllTags;
 
-  const isAdminEdit = mode === "admin-edit";
+  const isAdminEdit =
+    mode === "admin-edit" ||
+    mode === "admin-edit-request";
+
   const isUserUpdate = mode === "user-update";
+
+  const canEditServices =
+    canEditField("services");
+
+  const canEditTags =
+    canEditField("tags");
   const isUserNew = mode === "user-new";
 
   const stepCopy = isAdminEdit
@@ -97,13 +114,12 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
       // Reset invalid selected services
       // =====================================
     
-      setData((prev) => ({
-    
-        ...prev,
-    
-        services: [],
-    
-      }));
+      if (canEditServices) {
+        setData((prev) => ({
+          ...prev,
+          services: [],
+        }));
+      }
     
       return;
     }
@@ -125,6 +141,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
       .finally(() => setLoadingServices(false));
   }, [
     JSON.stringify(subcategoryIds),
+    canEditServices,
   ]);
 
   /* ─────────────────────────────
@@ -166,18 +183,18 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
         // Remove invalid selected tags
         // =====================================
       
-        setData((prev) => ({
-      
-          ...prev,
-      
-          tags: (prev.tags || []).filter(
-            (tagId) =>
-              fetchedTags.some(
-                (t) => t.id === tagId
-              )
-          ),
-      
-        }));
+        if (canEditTags) {
+          setData((prev) => ({
+            ...prev,
+
+            tags: (prev.tags || []).filter(
+              (tagId) =>
+                fetchedTags.some(
+                  (t) => t.id === tagId
+                )
+            ),
+          }));
+        }
       
       })
       .catch(() => setTags([]))
@@ -188,11 +205,14 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   }, [
     data.category_id,
     JSON.stringify(data.services || []),
+    canEditTags,
   ]);
   /* ─────────────────────────────
      Handlers
   ───────────────────────────── */
   function toggleService(id) {
+    if (!canEditServices) return;
+
     setData((prev) => {
   
       const current = prev.services || [];
@@ -208,6 +228,8 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
   }
   
   function toggleTag(id) {
+    if (!canEditTags) return;
+
     setData((prev) => {
   
       const current = prev.tags || [];
@@ -350,6 +372,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
                     <input
                       type="checkbox"
                       checked={selectedServices.includes(s.id)}
+                      disabled={!canEditServices}
                       onChange={() => toggleService(s.id)}
                     />
         
@@ -393,6 +416,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
           tags={generalTags}
           selectedTags={selectedTags}
           onToggle={toggleTag}
+          disabled={!canEditTags}
         />
     
         <TagGroup
@@ -401,6 +425,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
           tags={categoryTags}
           selectedTags={selectedTags}
           onToggle={toggleTag}
+          disabled={!canEditTags}
         />
     
         <TagGroup
@@ -409,6 +434,7 @@ export default function StepServicesTags({ data, setData, onNext, onBack, mode, 
           tags={serviceTags}
           selectedTags={selectedTags}
           onToggle={toggleTag}
+          disabled={!canEditTags}
         />
     
       </div>
@@ -468,6 +494,7 @@ function TagGroup({
   tags,
   selectedTags,
   onToggle,
+  disabled = false,
 }) {
   if (!tags.length) {
     return null;
@@ -494,6 +521,7 @@ function TagGroup({
             <input
               type="checkbox"
               checked={selectedTags.includes(tag.id)}
+              disabled={disabled}
               onChange={() => onToggle(tag.id)}
             />
 

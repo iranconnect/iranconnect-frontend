@@ -216,8 +216,65 @@ export default function EditBusinessPage() {
           );
         }
 
+        /*
+         * PLR-SUP-REQ-01 / F04
+         *
+         * Backend update_scope is the sole authority for which
+         * request payload fields may replace current Business values.
+         *
+         * Do NOT derive semantic differences in the Frontend.
+         */
+        const updateScope =
+          request?.update_scope &&
+          typeof request.update_scope === "object"
+            ? request.update_scope
+            : {
+                allowed_update_fields: [],
+                allowed_media_operations: {
+                  logo: false,
+                  cover: false,
+                  gallery: false,
+                },
+              };
+
+        const requestPayload =
+          request?.payload &&
+          typeof request.payload === "object" &&
+          !Array.isArray(request.payload)
+            ? request.payload
+            : {};
+
+        const allowedUpdateFields =
+          Array.isArray(
+            updateScope.allowed_update_fields
+          )
+            ? updateScope.allowed_update_fields
+            : [];
+
+        const requestedFieldValues = {};
+
+        for (const field of allowedUpdateFields) {
+          if (
+            Object.prototype.hasOwnProperty.call(
+              requestPayload,
+              field
+            )
+          ) {
+            requestedFieldValues[field] =
+              requestPayload[field];
+          }
+        }
+
         setInitialData({
           ...res.data,
+          ...requestedFieldValues,
+
+          /*
+           * Authoritative Backend-provided request scope.
+           * Used only for request-bound Admin UX enforcement.
+           */
+          update_scope:
+            updateScope,
 
           /*
            * Display-only request context.

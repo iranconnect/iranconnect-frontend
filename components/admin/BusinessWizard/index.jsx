@@ -165,6 +165,48 @@ export default function BusinessWizard({
     mode === "admin-create-ticket" ||
     mode === "admin-edit-request";
 
+  /*
+   * PLR-SUP-REQ-01 / F04
+   *
+   * Backend-provided update_scope is the sole authority for
+   * request-bound Admin field editability.
+   *
+   * Other wizard modes retain their existing edit behavior.
+   */
+  const isRequestBoundEdit =
+    mode === "admin-edit-request";
+
+  const allowedUpdateFields =
+    new Set(
+      Array.isArray(
+        data?.update_scope?.allowed_update_fields
+      )
+        ? data.update_scope.allowed_update_fields
+        : []
+    );
+
+  const canEditField = (field) =>
+    !isRequestBoundEdit ||
+    allowedUpdateFields.has(field);
+
+  /*
+   * PLR-SUP-REQ-01 / F04
+   *
+   * Request-bound media mutation authority is derived only
+   * from Backend-provided update_scope.
+   *
+   * Non-request-bound modes retain their existing behavior.
+   */
+  const allowedMediaOperations =
+    data?.update_scope?.allowed_media_operations &&
+    typeof data.update_scope.allowed_media_operations === "object"
+      ? data.update_scope.allowed_media_operations
+      : {};
+
+  const canEditMedia = (type) =>
+    !isRequestBoundEdit ||
+    allowedMediaOperations?.[type] === true;
+
   async function rejectTicketRequest() {
     if (!isAdminRequestWorkflow) {
       return;
@@ -389,19 +431,35 @@ export default function BusinessWizard({
     try {
       const cleanedData = {
         ...data,
+
+        /*
+         * PLR-SUP-REQ-01 / F04
+         *
+         * A request-bound UPDATE must not mutate locked
+         * availability_hours merely because availability_type
+         * changes the normal wizard normalization behavior.
+         */
         availability_hours:
-          data.availability_type === "business_hours"
+          mode === "admin-edit-request" &&
+          !canEditField("availability_hours")
             ? data.availability_hours
-            : null,
+            : data.availability_type === "business_hours"
+              ? data.availability_hours
+              : null,
       };
 
       /*
        * PLR-SUP-REQ-01
-       * requester_display_email exists only to preserve visible
-       * requester selection while navigating between wizard steps.
-       * Backend receives only requester_user_id.
+       * Frontend-only / read-only Admin metadata must never
+       * cross the business mutation submission boundary.
+       *
+       * - requester_display_email: presentation only
+       * - provenance: Admin read-only traceability metadata
+       * - update_scope: Backend-derived authorization metadata
        */
       delete cleanedData.requester_display_email;
+      delete cleanedData.provenance;
+      delete cleanedData.update_scope;
 
       /*
        * F15-20A — Ticket media displayed in the wizard is
@@ -660,7 +718,14 @@ export default function BusinessWizard({
       )}
 
       {step === 0 && (
-        <StepBasicInfo data={data} setData={setData} onNext={next} mode={mode} initialData={initialData} />
+        <StepBasicInfo
+          data={data}
+          setData={setData}
+          onNext={next}
+          mode={mode}
+          initialData={initialData}
+          canEditField={canEditField}
+        />
       )}
 
       {step === 1 && (
@@ -670,6 +735,7 @@ export default function BusinessWizard({
           onNext={next}
           onBack={back}
           mode={mode}
+          canEditField={canEditField}
         />
       )}
 
@@ -680,6 +746,7 @@ export default function BusinessWizard({
           onNext={next}
           onBack={back}
           mode={mode}
+          canEditField={canEditField}
         />
       )}
 
@@ -690,6 +757,8 @@ export default function BusinessWizard({
           onBack={back}
           onNext={next}
           mode={mode}
+          canEditMedia={canEditMedia}
+          canEditField={canEditField}
         />
       )}
 

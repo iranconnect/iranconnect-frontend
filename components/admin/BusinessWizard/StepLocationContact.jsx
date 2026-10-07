@@ -220,14 +220,43 @@ export default function StepLocationContact({
   onBack,
   mode,
   initialData,
+  canEditField = () => true,
 }) {
   function setField(key, value) {
-    setData((prev) => ({ ...prev, [key]: value }));
+    if (!canEditField(key)) return;
+
+    setData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   }
 
   const serviceMode = data.service_mode;
 
-  const isAdminEdit = mode === "admin-edit";
+  const isAdminEdit =
+    mode === "admin-edit" ||
+    mode === "admin-edit-request";
+
+  /*
+   * Country is a compound control:
+   * changing it mutates country, country_code and city.
+   */
+  const canEditCountry =
+    canEditField("country") &&
+    canEditField("country_code") &&
+    canEditField("city");
+
+  const canEditCity =
+    canEditField("city");
+
+  const canEditAvailabilityHours =
+    canEditField("availability_hours");
+
+  const canEditPhone =
+    canEditField("phone");
+
+  const canEditWhatsApp =
+    canEditField("whatsapp_number");
   const isUserUpdate = mode === "user-update";
 
   const stepCopy = isAdminEdit
@@ -284,6 +313,8 @@ export default function StepLocationContact({
     ) || null;
   
   function handleBusinessCountryChange(option) {
+    if (!canEditCountry) return;
+
     setData((prev) => ({
       ...prev,
       country: option?.label || "",
@@ -819,6 +850,10 @@ export default function StepLocationContact({
   
 
   useEffect(() => {
+    if (!canEditAvailabilityHours) {
+      return;
+    }
+
     if (data.availability_type !== "business_hours") {
       if (data.availability_hours) {
         setField("availability_hours", null);
@@ -867,6 +902,7 @@ export default function StepLocationContact({
   }, [
     data.availability_type,
     data.availability_hours,
+    canEditAvailabilityHours,
   ]);
 
 
@@ -902,6 +938,8 @@ export default function StepLocationContact({
   }, []);
 
   function updatePhone(country, raw) {
+    if (!canEditPhone) return;
+
     const digits = raw.replace(/\D+/g, "").replace(/^0+/, "");
     setPhoneNational(digits);
     if (!digits) {
@@ -926,6 +964,7 @@ export default function StepLocationContact({
   }
 
   function updateWhatsApp(country, raw) {
+    if (!canEditWhatsApp) return;
 
     const digits =
       raw
@@ -1328,6 +1367,7 @@ export default function StepLocationContact({
         <select
           className="admin-input"
           value={serviceMode || ""}
+          disabled={!canEditField("service_mode")}
           onChange={(e) =>
             setField("service_mode", e.target.value)
           }
@@ -1368,6 +1408,7 @@ export default function StepLocationContact({
             options={businessCountryOptions}
             value={selectedBusinessCountry}
             onChange={handleBusinessCountryChange}
+            isDisabled={!canEditCountry}
             isSearchable
             isClearable
             placeholder="Select country"
@@ -1392,7 +1433,10 @@ export default function StepLocationContact({
             onChange={handleBusinessCityChange}
             isSearchable
             isClearable
-            isDisabled={!data.country_code}
+            isDisabled={
+              !data.country_code ||
+              !canEditCity
+            }
             placeholder={
               data.country_code
                 ? "Select city"
@@ -1418,6 +1462,7 @@ export default function StepLocationContact({
         <select
           className="admin-input"
           value={data.availability_type || ""}
+          disabled={!canEditField("availability_type")}
           onChange={(e) =>
             setField("availability_type", e.target.value)
           }
@@ -1453,6 +1498,7 @@ export default function StepLocationContact({
           className="admin-input"
           rows={2}
           value={data.availability_note || ""}
+          disabled={!canEditField("availability_note")}
           onChange={(e) =>
             setField("availability_note", e.target.value)
           }
@@ -1506,6 +1552,7 @@ export default function StepLocationContact({
                     <input
                       type="checkbox"
                       checked={!!dayData.closed}
+                      disabled={!canEditAvailabilityHours}
                       onChange={(e) => {
                         const updated = {
                           ...data.availability_hours,
@@ -1527,6 +1574,7 @@ export default function StepLocationContact({
                         className="admin-input"
                         style={{ width: 130 }}
                         value={dayData.open || ""}
+                        disabled={!canEditAvailabilityHours}
                         onChange={(e) => {
                           const updated = {
                             ...data.availability_hours,
@@ -1546,6 +1594,7 @@ export default function StepLocationContact({
                         className="admin-input"
                         style={{ width: 130 }}
                         value={dayData.close || ""}
+                        disabled={!canEditAvailabilityHours}
                         onChange={(e) => {
                           const updated = {
                             ...data.availability_hours,
@@ -1586,6 +1635,7 @@ export default function StepLocationContact({
             type="url"
             className="admin-input"
             value={data.location_map_url || ""}
+            disabled={!canEditField("location_map_url")}
             onChange={(e) => {
               const v = e.target.value;
               setField("location_map_url", v);
@@ -1627,6 +1677,7 @@ export default function StepLocationContact({
             type="url"
             className="admin-input"
             value={data.base_location_map_url || ""}
+            disabled={!canEditField("base_location_map_url")}
             onChange={(e) => {
               const v = e.target.value;
               setField("base_location_map_url", v);
@@ -1672,6 +1723,7 @@ export default function StepLocationContact({
               className="admin-input"
               rows={2}
               value={data.address || ""}
+              disabled={!canEditField("address")}
               onChange={(e) => {
                 setField("address", e.target.value);
               }}
@@ -1702,6 +1754,7 @@ export default function StepLocationContact({
             <input
               className="admin-input"
               value={data.postal_code || ""}
+              disabled={!canEditField("postal_code")}
               onChange={(e) =>
                 setField("postal_code", e.target.value)
               }
@@ -1737,6 +1790,7 @@ export default function StepLocationContact({
             min={1}
             step={1}
             value={data.service_radius_km ?? ""}
+            disabled={!canEditField("service_radius_km")}
             onChange={(e) =>
               setField("service_radius_km", e.target.value)
             }
@@ -1796,10 +1850,13 @@ export default function StepLocationContact({
                     (o) => o.value === phoneCountry
                   )}
                   onChange={(opt) => {
+                    if (!canEditPhone) return;
+
                     const nextCountry = opt?.value || "FR";
                     setPhoneCountry(nextCountry);
                     updatePhone(nextCountry, phoneNational);
                   }}
+                  isDisabled={!canEditPhone}
                   isSearchable
                   placeholder="Country code"
                 />
@@ -1808,6 +1865,7 @@ export default function StepLocationContact({
               <input
                 className="admin-input"
                 value={phoneNational}
+                disabled={!canEditPhone}
                 onChange={(e) =>
                   updatePhone(phoneCountry, e.target.value)
                 }
@@ -1833,6 +1891,7 @@ export default function StepLocationContact({
               type="email"
               className="admin-input"
               value={data.email || ""}
+              disabled={!canEditField("email")}
               onChange={(e) => {
                 setField("email", e.target.value);
                 validateEmail(e.target.value);
@@ -1860,6 +1919,7 @@ export default function StepLocationContact({
               type="url"
               className="admin-input"
               value={data.website || ""}
+              disabled={!canEditField("website")}
               onChange={(e) => {
                 setField("website", e.target.value);
                 validateUrl("website", e.target.value);
@@ -1891,6 +1951,7 @@ export default function StepLocationContact({
               <input
                 type="checkbox"
                 checked={data.show_phone ?? true}
+                disabled={!canEditField("show_phone")}
                 onChange={(e) =>
                   setField("show_phone", e.target.checked)
                 }
@@ -1911,6 +1972,7 @@ export default function StepLocationContact({
               <input
                 type="checkbox"
                 checked={data.show_email ?? true}
+                disabled={!canEditField("show_email")}
                 onChange={(e) =>
                   setField("show_email", e.target.checked)
                 }
@@ -1939,6 +2001,7 @@ export default function StepLocationContact({
               className="admin-input"
               placeholder="Instagram URL (https://instagram.com/username)"
               value={data.instagram_url || ""}
+              disabled={!canEditField("instagram_url")}
               onChange={(e) => {
                 setField("instagram_url", e.target.value);
                 validateUrl("instagram_url", e.target.value);
@@ -1960,6 +2023,7 @@ export default function StepLocationContact({
               className="admin-input"
               placeholder="Facebook URL (https://facebook.com/page)"
               value={data.facebook_url || ""}
+              disabled={!canEditField("facebook_url")}
               onChange={(e) => {
                 setField("facebook_url", e.target.value);
                 validateUrl("facebook_url", e.target.value);
@@ -1982,6 +2046,7 @@ export default function StepLocationContact({
               className="admin-input"
               placeholder="LinkedIn URL (https://linkedin.com/in/username)"
               value={data.linkedin_url || ""}
+              disabled={!canEditField("linkedin_url")}
               onChange={(e) => {
                 setField("linkedin_url", e.target.value);
                 validateUrl("linkedin_url", e.target.value);
@@ -2005,6 +2070,7 @@ export default function StepLocationContact({
               className="admin-input"
               placeholder="Twitter / X URL (https://x.com/username)"
               value={data.twitter_url || ""}
+              disabled={!canEditField("twitter_url")}
               onChange={(e) => {
                 setField("twitter_url", e.target.value);
                 validateUrl("twitter_url", e.target.value);
@@ -2028,6 +2094,7 @@ export default function StepLocationContact({
               className="admin-input"
               placeholder="Telegram URL (https://t.me/username)"
               value={data.telegram_url || ""}
+              disabled={!canEditField("telegram_url")}
               onChange={(e) => {
                 setField("telegram_url", e.target.value);
                 validateUrl("telegram_url", e.target.value);
@@ -2063,6 +2130,7 @@ export default function StepLocationContact({
                       o.value === whatsAppCountry
                   )}
                   onChange={(opt) => {
+                    if (!canEditWhatsApp) return;
           
                     const nextCountry =
                       opt?.value || "FR";
@@ -2076,6 +2144,7 @@ export default function StepLocationContact({
                       whatsAppNational
                     );
                   }}
+                  isDisabled={!canEditWhatsApp}
                   isSearchable
                   placeholder="Country code"
                 />
@@ -2084,6 +2153,7 @@ export default function StepLocationContact({
               <input
                 className="admin-input"
                 value={whatsAppNational}
+                disabled={!canEditWhatsApp}
                 onChange={(e) =>
                   updateWhatsApp(
                     whatsAppCountry,

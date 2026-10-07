@@ -74,14 +74,27 @@ export default function StepMediaReview({
   onNext,
   onBack,
   mode,
+  canEditMedia = () => true,
+  canEditField = () => true,
 }) {
 
   const isExistingBusinessMode =
     mode === "user-update" ||
-    mode === "admin-edit";
+    mode === "admin-edit" ||
+    mode === "admin-edit-request";
 
   const isAdminEditMode =
-    mode === "admin-edit";  
+    mode === "admin-edit" ||
+    mode === "admin-edit-request";
+
+  const canEditLogo =
+    canEditMedia("logo");
+
+  const canEditCover =
+    canEditMedia("cover");
+
+  const canEditGallery =
+    canEditMedia("gallery");
 
   const isUserUpdateMode =
     mode === "user-update";
@@ -307,6 +320,7 @@ export default function StepMediaReview({
   ) {
 
     if (!media) return;
+    if (!canEditMedia(type)) return;
 
     safeSetData((prev) => {
 
@@ -432,6 +446,8 @@ export default function StepMediaReview({
     useCallback(
       async (files) => {
 
+        if (!canEditGallery) return;
+
         if (
           !Array.isArray(files) ||
           files.length === 0
@@ -510,6 +526,7 @@ export default function StepMediaReview({
         safeSetData,
         isRemoved,
         isTicketCreateMode,
+        canEditGallery,
       ]
     );
 
@@ -517,6 +534,7 @@ export default function StepMediaReview({
     useCallback(
       (index, file) => {
 
+        if (!canEditGallery) return;
         if (!file) return;
 
         const newPreviewUrl =
@@ -555,12 +573,14 @@ export default function StepMediaReview({
         });
 
       },
-      [safeSetData]
+      [safeSetData, canEditGallery]
     );
 
   const removeGalleryItem =
     useCallback(
       (index) => {
+
+        if (!canEditGallery) return;
 
         // remove preview
         setGalleryPreview((prev) => {
@@ -598,7 +618,7 @@ export default function StepMediaReview({
         });
 
       },
-      [safeSetData]
+      [safeSetData, canEditGallery]
     );
 
   /* ======================================================
@@ -650,7 +670,10 @@ export default function StepMediaReview({
     // =========================
     // ADMIN EDIT MODE
     // =========================
-    if (mode === "admin-edit") {
+    if (
+      mode === "admin-edit" ||
+      mode === "admin-edit-request"
+    ) {
       return busy === false;
     }
 
@@ -870,12 +893,15 @@ export default function StepMediaReview({
                 boxShadow: "0 4px 10px rgba(0,0,0,.22)",
                 fontWeight: 600,
               }}
-              onClick={() =>
+              disabled={!canEditLogo}
+              onClick={() => {
+                if (!canEditLogo) return;
+
                 toggleRemovedMedia(
                   "logo",
                   { url: data.logo_url }
-                )
-              }
+                );
+              }}
             >
               {isRemoved(
                 "logo",
@@ -937,12 +963,15 @@ export default function StepMediaReview({
             hidden
             type="file"
             accept={ACCEPT_ATTR}
-            onChange={(e) =>
+            disabled={!canEditLogo}
+            onChange={(e) => {
+              if (!canEditLogo) return;
+
               handleSingleMediaUpload(
                 e.target.files?.[0],
                 "logo"
-              )
-            }
+              );
+            }}
           />
         </label>
 
@@ -1021,7 +1050,10 @@ export default function StepMediaReview({
                 fontWeight: 600,
                 borderRadius: 8,
               }}
+              disabled={!canEditLogo}
               onClick={() => {
+                if (!canEditLogo) return;
+
                 revokeIfBlob(logoPreview);
       
                 setLogoPreview(null);
@@ -1056,12 +1088,15 @@ export default function StepMediaReview({
                 type="file"
                 accept={ACCEPT_ATTR}
                 hidden
-                onChange={(e) =>
+                disabled={!canEditLogo}
+                onChange={(e) => {
+                  if (!canEditLogo) return;
+
                   handleSingleMediaUpload(
                     e.target.files?.[0],
                     "logo"
-                  )
-                }
+                  );
+                }}
               />
             </label>
           </div>
@@ -1212,14 +1247,17 @@ export default function StepMediaReview({
                 boxShadow: "0 4px 10px rgba(0,0,0,.22)",
                 fontWeight: 600,
               }}
-              onClick={() =>
+              disabled={!canEditCover}
+              onClick={() => {
+                if (!canEditCover) return;
+
                 toggleRemovedMedia(
                   "cover",
                   {
                     url: data.cover_image_url,
                   }
-                )
-              }
+                );
+              }}
             >
               {isRemoved(
                 "cover",
@@ -1282,12 +1320,15 @@ export default function StepMediaReview({
             hidden
             type="file"
             accept={ACCEPT_ATTR}
-            onChange={(e) =>
+            disabled={!canEditCover}
+            onChange={(e) => {
+              if (!canEditCover) return;
+
               handleSingleMediaUpload(
                 e.target.files?.[0],
                 "cover"
-              )
-            }
+              );
+            }}
           />
         </label>
 
@@ -1364,7 +1405,9 @@ export default function StepMediaReview({
                 fontWeight: 600,
                 borderRadius: 8,
               }}
+              disabled={!canEditCover}
               onClick={() => {
+                if (!canEditCover) return;
   
                 revokeIfBlob(
                   coverPreview
@@ -1407,12 +1450,15 @@ export default function StepMediaReview({
                 type="file"
                 accept={ACCEPT_ATTR}
                 hidden
-                onChange={(e) =>
+                disabled={!canEditCover}
+                onChange={(e) => {
+                  if (!canEditCover) return;
+
                   handleSingleMediaUpload(
                     e.target.files?.[0],
                     "cover"
-                  )
-                }
+                  );
+                }}
               />
             </label>
           </div>
@@ -1557,12 +1603,15 @@ export default function StepMediaReview({
                   boxShadow: "0 4px 10px rgba(0,0,0,.22)",
                   fontWeight: 600,
                 }}
-                onClick={() =>
+                disabled={!canEditGallery}
+                onClick={() => {
+                  if (!canEditGallery) return;
+
                   toggleRemovedMedia(
                     "gallery",
                     img
-                  )
-                }
+                  );
+                }}
               > 
                 {isRemoved(
                   "gallery",
@@ -1634,13 +1683,16 @@ export default function StepMediaReview({
           multiple
           type="file"
           accept={ACCEPT_ATTR}
-          onChange={(e) =>
+          disabled={!canEditGallery}
+          onChange={(e) => {
+            if (!canEditGallery) return;
+
             handleGalleryUpload(
               Array.from(
                 e.target.files || []
               )
-            )
-          }
+            );
+          }}
         />
       </label>
     )}
@@ -1682,8 +1734,11 @@ export default function StepMediaReview({
                   fontWeight: 600,
                   borderRadius: 8,
                 }}
-                onClick={() => removeGalleryItem(index)}
-                disabled={busy}
+                onClick={() => {
+                  if (!canEditGallery) return;
+                  removeGalleryItem(index);
+                }}
+                disabled={busy || !canEditGallery}
               >
                 Remove
               </button>
@@ -1709,9 +1764,15 @@ export default function StepMediaReview({
                   type="file"
                   accept={ACCEPT_ATTR}
                   hidden
-                  onChange={(e) =>
-                    replaceGalleryItem(index, e.target.files?.[0])
-                  }
+                  disabled={!canEditGallery}
+                  onChange={(e) => {
+                    if (!canEditGallery) return;
+
+                    replaceGalleryItem(
+                      index,
+                      e.target.files?.[0]
+                    );
+                  }}
                 />
               </label>
             </div>
@@ -1742,9 +1803,15 @@ export default function StepMediaReview({
       <input
         type="checkbox"
         checked={normalized.is_public}
-        onChange={(e) =>
-          setField("is_public", e.target.checked)
-        }
+        disabled={!canEditField("is_public")}
+        onChange={(e) => {
+          if (!canEditField("is_public")) return;
+
+          setField(
+            "is_public",
+            e.target.checked
+          );
+        }}
       />
       Public profile
     </label>
@@ -1752,9 +1819,15 @@ export default function StepMediaReview({
       <input
         type="checkbox"
         checked={normalized.allow_reviews}
-        onChange={(e) =>
-          setField("allow_reviews", e.target.checked)
-        }
+        disabled={!canEditField("allow_reviews")}
+        onChange={(e) => {
+          if (!canEditField("allow_reviews")) return;
+
+          setField(
+            "allow_reviews",
+            e.target.checked
+          );
+        }}
       />
       Allow reviews
     </label>
