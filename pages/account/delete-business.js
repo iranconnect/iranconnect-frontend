@@ -119,7 +119,13 @@ export default function DeleteBusinessRequest() {
       setMsg("✅ Your delete request has been submitted successfully!");
       setTicket(res.data.ticket_code);
 
-      setTimeout(() => window.location.reload(), 10000);
+      window.setTimeout(() => {
+        router.push(
+          res.data.ticket_code
+            ? `/account/requests?ticket=${encodeURIComponent(res.data.ticket_code)}`
+            : "/account/requests"
+        );
+      }, 500);
 
       setReason("");
       setCustomReason("");

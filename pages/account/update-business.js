@@ -285,9 +285,17 @@ return ( <AccountLayout>
             mode="user-update"
             initialData={prefillData}
             onSubmit={submitUpdateRequest}
-            onSubmissionSuccess={() => {
+            onSubmissionSuccess={({ ticketCode }) => {
               setSelectedBusiness("");
               setPrefillData(null);
+
+              window.setTimeout(() => {
+                router.push(
+                  ticketCode
+                    ? `/account/requests?ticket=${encodeURIComponent(ticketCode)}`
+                    : "/account/requests"
+                );
+              }, 500);
             }}
           />
         
