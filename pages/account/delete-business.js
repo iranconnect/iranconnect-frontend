@@ -93,7 +93,11 @@ export default function DeleteBusinessRequest() {
 
     const hasErrors = Object.values(errors).some((e) => e);
     if (hasErrors) return setMsg("⚠️ Please fix validation errors before submitting.");
-    if (!confirm) return setMsg("Please confirm that your information is accurate.");
+    if (!confirm) {
+      return setMsg(
+        "Please confirm that you are authorized to request deletion of this business."
+      );
+    }
     if (!selectedBusiness) return setMsg("Please select a verified business.");
 
     setLoading(true);
@@ -105,6 +109,7 @@ export default function DeleteBusinessRequest() {
       fd.append("payload", JSON.stringify({
         reason: reason === "other" ? customReason : reason,
         description,
+        owner_confirmed: true,
       }));
 
       const res = await apiClient.post("/requests", fd, {
@@ -119,6 +124,7 @@ export default function DeleteBusinessRequest() {
       setReason("");
       setCustomReason("");
       setDescription("");
+      setConfirm(false);
       setErrors({});
     } catch (err) {
       if (process.env.NODE_ENV !== "production") {
@@ -272,7 +278,7 @@ export default function DeleteBusinessRequest() {
                 className="mt-1"
               />
               <span>
-                I confirm that the information above is accurate. I understand that, if approved, this business listing will no longer be publicly available on IranConnect.
+                I confirm that I am authorized to request deletion of this business and that the information above is accurate. I understand that, if approved, this business listing will no longer be publicly available on IranConnect.
               </span>
             </label>
 
