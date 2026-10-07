@@ -334,7 +334,8 @@ export default function StepPreviewSubmit({
     onSubmit();
   }
 
-  const previewCopy = isAdminEdit
+  const previewCopy =
+    isAdminEdit || isAdminRequestEdit
     ? {
         title: "Review & Update Business",
         subtitle:
