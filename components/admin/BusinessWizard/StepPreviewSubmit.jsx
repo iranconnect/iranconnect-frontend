@@ -1165,14 +1165,16 @@ export default function StepPreviewSubmit({
         {!isAdminEdit && (
           <div>
             <strong>
-              {isUserUpdate
+              {isUserUpdate || isAdminRequestEdit
                 ? "Update request confirmation:"
                 : "Business ownership confirmation:"}
             </strong>
         
             <div style={{ marginTop: 8 }}>
               <div>
-                {data.owner_confirmed
+                {(isAdminRequestEdit
+                  ? data.request_authorization_confirmed
+                  : data.owner_confirmed)
                   ? "✓ Confirmation completed"
                   : "✗ Confirmation not completed"}
               </div>

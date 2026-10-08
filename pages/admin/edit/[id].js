@@ -295,6 +295,17 @@ export default function EditBusinessPage() {
           ticket_code:
             request.ticket_code || "",
 
+          /*
+           * Display-only authorization evidence from the
+           * originating user UPDATE request.
+           *
+           * This is not Business ownership authority and must
+           * never be submitted back as mutable Business data.
+           */
+          request_authorization_confirmed:
+            requestPayload.owner_confirmed === true ||
+            requestPayload.owner_confirmed === "true",
+
           admin_note:
             "",
         });
@@ -343,6 +354,9 @@ export default function EditBusinessPage() {
       form.delete("business_request_id");
       form.delete("change_source_type");
       form.delete("admin_note");
+
+      // Frontend-only request confirmation evidence.
+      form.delete("request_authorization_confirmed");
 
       form.delete("created_by_user_id");
       form.delete("requested_by_user_id");
