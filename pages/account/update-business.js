@@ -85,6 +85,8 @@ useEffect(() => {
   );
 
   if (!requestedBusinessId) {
+    setSelectedBusiness("");
+    setPrefillData(null);
     return;
   }
 
@@ -93,9 +95,13 @@ useEffect(() => {
       String(business.id) === requestedBusinessId
   );
 
-  if (isOwnedActiveBusiness) {
-    setSelectedBusiness(requestedBusinessId);
+  if (!isOwnedActiveBusiness) {
+    setSelectedBusiness("");
+    setPrefillData(null);
+    return;
   }
+
+  setSelectedBusiness(requestedBusinessId);
 }, [
   router.isReady,
   router.query.businessId,
@@ -109,29 +115,41 @@ LOAD BUSINESS PREFILL
 
 useEffect(() => {
 
-if (!selectedBusiness) return;
+if (!selectedBusiness) {
+  setPrefillData(null);
+  return;
+}
+
+let cancelled = false;
 
 async function loadBusiness() {
 
+  setPrefillData(null);
 
-try {
+  try {
 
-  const res = await apiClient.get(
-    `/requests/business-prefill/${selectedBusiness}`
-  );
+    const res = await apiClient.get(
+      `/requests/business-prefill/${selectedBusiness}`
+    );
 
-  const data = res.data;
+    if (!cancelled) {
+      setPrefillData(res.data);
+    }
 
-  setPrefillData(data);
-  
-} catch (err) {
-  console.error(err);
-}
-
+  } catch (err) {
+    if (!cancelled) {
+      setPrefillData(null);
+      console.error(err);
+    }
+  }
 
 }
 
 loadBusiness();
+
+return () => {
+  cancelled = true;
+};
 
 }, [selectedBusiness]);
 
@@ -257,9 +275,28 @@ return ( <AccountLayout>
           <select
             className={inputClass}
             value={selectedBusiness}
-            onChange={(e) =>
-              setSelectedBusiness(e.target.value)
-            }
+            onChange={(e) => {
+              const nextBusinessId = e.target.value;
+              const nextQuery = { ...router.query };
+
+              setPrefillData(null);
+              setSelectedBusiness(nextBusinessId);
+
+              if (nextBusinessId) {
+                nextQuery.businessId = nextBusinessId;
+              } else {
+                delete nextQuery.businessId;
+              }
+
+              router.replace(
+                {
+                  pathname: router.pathname,
+                  query: nextQuery,
+                },
+                undefined,
+                { shallow: true }
+              );
+            }}
           >
             <option value="">
               Select business
