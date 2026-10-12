@@ -1,6 +1,7 @@
 import { formatPublicRating } from "../utils/formatPublicRating.js";
 // frontend/components/BusinessCard.jsx
 import Link from "next/link";
+import LogoFrame from "./business/LogoFrame";
 import {
   useCallback,
   useEffect,
@@ -104,7 +105,6 @@ export default function BusinessCard({
   variant = "default",
   onProfileNavigate,
 }) {
-  const imgErrored = useRef(false);
 
   const isSearchVariant =
     variant === "search";
@@ -323,34 +323,13 @@ export default function BusinessCard({
               md:shrink-0
             "
           >
-            <img
+            <LogoFrame
               src={imageSrc}
+              fallbackSrc="/logo-light.png"
               alt={`${safeText(b?.name)} logo`}
               loading="lazy"
               decoding="async"
-              onError={(event) => {
-                if (imgErrored.current) {
-                  return;
-                }
-
-                imgErrored.current = true;
-                event.currentTarget.src =
-                  "/logo-light.png";
-              }}
-              className="
-                w-20
-                h-20
-                md:w-28
-                md:h-28
-                rounded-2xl
-                object-cover
-                border
-                border-slate-200
-                dark:border-cyan-800/40
-                bg-white
-                p-1
-                shrink-0
-              "
+              className="w-20 h-20 md:w-28 md:h-28 shrink-0"
             />
 
             <div
@@ -757,32 +736,13 @@ export default function BusinessCard({
         "
       >
         <div className="flex items-start justify-between gap-4">
-          <img
+          <LogoFrame
             src={imageSrc}
+            fallbackSrc="/logo-light.png"
             alt={`${safeText(b?.name)} logo`}
             loading="lazy"
             decoding="async"
-            onError={(event) => {
-              if (imgErrored.current) {
-                return;
-              }
-
-              imgErrored.current = true;
-              event.currentTarget.src =
-                "/logo-light.png";
-            }}
-            className="
-              w-20
-              h-20
-              rounded-2xl
-              object-cover
-              border
-              border-slate-200
-              dark:border-cyan-800/40
-              bg-white
-              p-1
-              shrink-0
-            "
+            className="w-20 h-20 shrink-0"
           />
         </div>
 

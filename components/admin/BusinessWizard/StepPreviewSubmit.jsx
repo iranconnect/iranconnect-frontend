@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import apiClient from "../../../utils/apiClient";
+import LogoFrame from "../../business/LogoFrame";
 
 const BUSINESS_TYPE_LABELS = {
   freelancer: "Freelancer / Self-employed",
@@ -844,14 +845,13 @@ export default function StepPreviewSubmit({
                         : "Current image"}
                   </div>
               
-                  <img
-                    src={data.logo_url}
-                    alt="Current logo"
+                  <div
                     style={{
                       width: 90,
                       height: 90,
-                      objectFit: "cover",
+                      boxSizing: "border-box",
                       borderRadius: 10,
+                      overflow: "hidden",
                       border: isRemoved(
                         "logo",
                         data.logo_url,
@@ -867,7 +867,13 @@ export default function StepPreviewSubmit({
                         ? 0.5
                         : 1,
                     }}
-                  />
+                  >
+                    <LogoFrame
+                      src={data.logo_url}
+                      alt="Current logo"
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  </div>
                 </div>
               )}
       
@@ -887,17 +893,22 @@ export default function StepPreviewSubmit({
                       : "New logo"}
                   </div>
       
-                  <img
-                    src={URL.createObjectURL(data.logo_file)}
-                    alt="New logo"
+                  <div
                     style={{
                       width: 90,
                       height: 90,
-                      objectFit: "cover",
+                      boxSizing: "border-box",
                       borderRadius: 10,
+                      overflow: "hidden",
                       border: "2px solid #16a34a",
                     }}
-                  />
+                  >
+                    <LogoFrame
+                      src={URL.createObjectURL(data.logo_file)}
+                      alt="New logo"
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  </div>
                 </div>
               )}
       

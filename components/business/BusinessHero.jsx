@@ -3,6 +3,7 @@ import { formatPublicRating } from "../../utils/formatPublicRating.js";
 import { useEffect, useMemo, useState } from "react";
 import { Phone, Globe } from "lucide-react";
 import SocialBrandIcon from "./contact/SocialBrandIcon";
+import LogoFrame from "./LogoFrame";
 
 function toPlainText(value) {
   if (!value) return "";
@@ -95,14 +96,11 @@ export default function BusinessHero({
 
       <div className="pb-6 md:pb-8 pt-20 md:pt-24 relative space-y-4">
         <div className="absolute -top-14 left-6 md:left-8">
-          <img
+          <LogoFrame
             src={biz.logo_url || fallbackLogo}
+            fallbackSrc={fallbackLogo}
             alt={`${biz.name} logo`}
-            className="w-28 h-28 rounded-xl border-[var(--bg)] object-cover shadow"
-            onError={(event) => {
-              event.currentTarget.onerror = null;
-              event.currentTarget.src = fallbackLogo;
-            }}
+            className="w-28 h-28 shadow"
           />
         </div>
 
