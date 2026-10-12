@@ -70,6 +70,41 @@ function isRemoved(type, url, removedMedia) {
 
 }
 
+/*
+ * PLR03-I03-R01 — Component-owned preview Object URLs.
+ * No URL creation during render. Each owner releases its own URL.
+ */
+function useObjectUrl(file) {
+  const [preview, setPreview] = useState(null);
+
+  useEffect(() => {
+    if (!file) {
+      setPreview(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    setPreview({ file, url });
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [file]);
+
+  return preview?.file === file ? preview.url : null;
+}
+
+function PreviewFileLogoFrame({ file, ...props }) {
+  const src = useObjectUrl(file);
+  return <LogoFrame {...props} src={src || ""} />;
+}
+
+function PreviewFileImage({ file, ...props }) {
+  const src = useObjectUrl(file);
+  if (!src) return null;
+  return <img {...props} src={src} />;
+}
+
 export default function StepPreviewSubmit({
   data,
   setData,
@@ -903,8 +938,8 @@ export default function StepPreviewSubmit({
                       border: "2px solid #16a34a",
                     }}
                   >
-                    <LogoFrame
-                      src={URL.createObjectURL(data.logo_file)}
+                    <PreviewFileLogoFrame
+                      file={data.logo_file}
                       alt="New logo"
                       style={{ width: "100%", height: "100%" }}
                     />
@@ -1018,8 +1053,8 @@ export default function StepPreviewSubmit({
                       : "New cover"}
                   </div>
       
-                  <img
-                    src={URL.createObjectURL(data.cover_file)}
+                  <PreviewFileImage
+                    file={data.cover_file}
                     alt="New cover"
                     style={{
                       width: 180,
@@ -1130,8 +1165,8 @@ export default function StepPreviewSubmit({
                           : "New image"}
                       </div>
       
-                      <img
-                        src={URL.createObjectURL(file)}
+                      <PreviewFileImage
+                        file={file}
                         alt=""
                         style={{
                           width: 90,

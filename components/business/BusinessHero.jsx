@@ -1,6 +1,6 @@
 import { formatPublicRating } from "../../utils/formatPublicRating.js";
 //frontend/components/business/BusinessHero.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Phone, Globe } from "lucide-react";
 import SocialBrandIcon from "./contact/SocialBrandIcon";
 import LogoFrame from "./LogoFrame";
@@ -20,32 +20,7 @@ export default function BusinessHero({
   isLoggedIn,
   primaryCTARef,
 }) {
-  const [theme, setTheme] = useState("light");
-
-  useEffect(() => {
-    const syncTheme = () => {
-      const currentTheme =
-        document.documentElement.getAttribute("data-theme") || "light";
-
-      setTheme(currentTheme);
-    };
-
-    syncTheme();
-
-    const observer = new MutationObserver(syncTheme);
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
-  const fallbackLogo =
-    theme === "dark"
-      ? "/logo-dark.png"
-      : "/logo-light.png";
+  const fallbackLogo = "/logo-light.png";
 
   const fallbackCover =
     "/images/iranconnect-default-business-cover.webp";

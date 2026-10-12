@@ -53,6 +53,7 @@ function LogoImage({
         maxHeight: "100%",
         objectFit: "contain",
         objectPosition: "center",
+        borderRadius: "8px",
       }}
     />
   );
