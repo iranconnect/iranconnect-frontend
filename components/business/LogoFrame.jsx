@@ -92,7 +92,7 @@ export default function LogoFrame({
         justifyContent: "center",
         flexShrink: 0,
         overflow: "hidden",
-        padding: "6%",
+        padding: "2%",
         backgroundColor: "#FFFFFF",
         border: "1px solid #E2E8F0",
         borderRadius: "12px",

@@ -57,7 +57,7 @@ export default function BusinessHero({
 
   return (
     <section className="card mt-6">
-      <div className="w-full aspect-[3/1] relative overflow-hidden rounded">
+      <div className="w-full aspect-[2/1] md:aspect-[3/1] relative overflow-hidden rounded">
         <img
           src={coverImage}
           alt={`Cover image for ${biz.name}`}
@@ -69,13 +69,13 @@ export default function BusinessHero({
         />
       </div>
 
-      <div className="pb-6 md:pb-8 pt-20 md:pt-24 relative space-y-4">
-        <div className="absolute -top-14 left-6 md:left-8">
+      <div className="pb-6 md:pb-8 pt-14 md:pt-24 relative space-y-4">
+        <div className="absolute -top-8 left-6 md:-top-14 md:left-8">
           <LogoFrame
             src={biz.logo_url || fallbackLogo}
             fallbackSrc={fallbackLogo}
             alt={`${biz.name} logo`}
-            className="w-28 h-28 shadow"
+            className="w-20 h-20 md:w-28 md:h-28 shadow"
           />
         </div>
 
