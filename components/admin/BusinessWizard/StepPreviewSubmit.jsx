@@ -1017,6 +1017,9 @@ export default function StepPreviewSubmit({
                     alt="Current cover"
                     style={{
                       width: 180,
+                      height: 60,
+                      objectFit: "cover",
+                      objectPosition: "center",
                       borderRadius: 10,
                       border: isRemoved(
                         "cover",
@@ -1058,6 +1061,9 @@ export default function StepPreviewSubmit({
                     alt="New cover"
                     style={{
                       width: 180,
+                      height: 60,
+                      objectFit: "cover",
+                      objectPosition: "center",
                       borderRadius: 10,
                       border: "2px solid #16a34a",
                     }}
