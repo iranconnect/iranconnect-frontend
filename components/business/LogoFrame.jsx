@@ -92,22 +92,34 @@ export default function LogoFrame({
         justifyContent: "center",
         flexShrink: 0,
         overflow: "hidden",
-        padding: "2%",
+        padding: 0,
         backgroundColor: "#FFFFFF",
         border: "1px solid #E2E8F0",
         borderRadius: "12px",
         boxShadow: "0 1px 2px rgba(0, 0, 0, 0.06)",
       }}
     >
-      <LogoImage
-        key={sourceKey}
-        src={src}
-        fallbackSrc={fallbackSrc}
-        alt={alt}
-        loading={loading}
-        decoding={decoding}
-        imageClassName={imageClassName}
-      />
+      <div
+        style={{
+          position: "absolute",
+          inset: "6%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          borderRadius: "8px",
+        }}
+      >
+        <LogoImage
+          key={sourceKey}
+          src={src}
+          fallbackSrc={fallbackSrc}
+          alt={alt}
+          loading={loading}
+          decoding={decoding}
+          imageClassName={imageClassName}
+        />
+      </div>
     </div>
   );
 }
