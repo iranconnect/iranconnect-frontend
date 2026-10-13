@@ -5,6 +5,7 @@ import {
   useMemo,
   useState,
   useEffect,
+  useRef,
 } from "react";
 import LogoFrame from "../../business/LogoFrame";
 
@@ -242,7 +243,7 @@ export default function StepMediaReview({
             crypto.randomUUID?.() ||
             `${Date.now()}-${Math.random()}`,
 
-          url: URL.createObjectURL(file),
+          url: createTrackedPreviewUrl(file),
 
           name: file.name,
         }))
@@ -362,42 +363,52 @@ export default function StepMediaReview({
 
   }
 
+  const ownedPreviewUrlsRef = useRef(new Set());
+
+  function createTrackedPreviewUrl(file) {
+    const url = URL.createObjectURL(file);
+    ownedPreviewUrlsRef.current.add(url);
+    return url;
+  }
+
   function revokeIfBlob(url) {
+    if (
+      typeof url !== "string" ||
+      !ownedPreviewUrlsRef.current.has(url)
+    ) {
+      return;
+    }
 
-    try {
-
-      if (
-        typeof url === "string" &&
-        url.startsWith("blob:")
-      ) {
-
-        URL.revokeObjectURL(url);
-
-      }
-
-    } catch {}
-
+    ownedPreviewUrlsRef.current.delete(url);
+    URL.revokeObjectURL(url);
   }
 
   useEffect(() => {
+    const ownedUrls = ownedPreviewUrlsRef.current;
 
     return () => {
-
-      revokeIfBlob(logoPreview);
-
-      revokeIfBlob(coverPreview);
-
-      galleryPreview.forEach((item) =>
-        revokeIfBlob(item.url)
-      );
-
+      for (const url of ownedUrls) {
+        URL.revokeObjectURL(url);
+      }
+      ownedUrls.clear();
     };
+  }, []);
 
-  }, [
-    logoPreview,
-    coverPreview,
-    galleryPreview,
-  ]);
+  const previousGalleryUrlsRef = useRef(new Set());
+
+  useEffect(() => {
+    const activeUrls = new Set(
+      galleryPreview.map((item) => item.url)
+    );
+
+    for (const url of previousGalleryUrlsRef.current) {
+      if (!activeUrls.has(url)) {
+        revokeIfBlob(url);
+      }
+    }
+
+    previousGalleryUrlsRef.current = activeUrls;
+  }, [galleryPreview]);
 
   /* ======================================================
   🖼 SINGLE MEDIA — LOGO / COVER (NO UPLOAD)
@@ -415,7 +426,7 @@ export default function StepMediaReview({
     setError("");
 
     const localPreviewUrl =
-      URL.createObjectURL(file);
+      createTrackedPreviewUrl(file);
 
     if (type === "logo") {
 
@@ -500,7 +511,7 @@ export default function StepMediaReview({
               `${Date.now()}-${Math.random()}`,
 
             url:
-              URL.createObjectURL(file),
+              createTrackedPreviewUrl(file),
 
             name: file.name,
           }));
@@ -539,9 +550,9 @@ export default function StepMediaReview({
         if (!file) return;
 
         const newPreviewUrl =
-          URL.createObjectURL(file);
+          createTrackedPreviewUrl(file);
 
-        // replace preview
+        // Replace the selected preview; cleanup runs after commit.
         setGalleryPreview((prev) =>
           prev.map((item, i) =>
             i === index
@@ -583,19 +594,10 @@ export default function StepMediaReview({
 
         if (!canEditGallery) return;
 
-        // remove preview
-        setGalleryPreview((prev) => {
-
-          const item = prev[index];
-
-          if (item?.url)
-            revokeIfBlob(item.url);
-
-          return prev.filter(
-            (_, i) => i !== index
-          );
-
-        });
+        // Remove the selected preview; cleanup runs after commit.
+        setGalleryPreview((prev) =>
+          prev.filter((_, i) => i !== index)
+        );
 
         // remove file
         safeSetData((prev) => {
