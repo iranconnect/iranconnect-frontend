@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
 } from "react";
+import LogoFrame from "../../business/LogoFrame";
 
 /* ======================================================
 🧱 CONSTANTS — Business Rules (DO NOT INLINE)
@@ -799,31 +800,30 @@ export default function StepMediaReview({
               Requested logo
             </p>
 
-            <div
+            <button
+              type="button"
+              aria-label="View requested logo"
+              onClick={() => setZoomImage(data.logo_url)}
               style={{
+                display: "block",
                 width: MEDIA_BOX_SIZE,
                 height: MEDIA_BOX_SIZE,
+                padding: 0,
+                border: 0,
+                borderRadius: 12,
+                background: "transparent",
+                cursor: "zoom-in",
               }}
             >
-              <img
+              <LogoFrame
                 src={data.logo_url}
                 alt="Requested logo"
-                onClick={() =>
-                  setZoomImage(
-                    data.logo_url
-                  )
-                }
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "cover",
-                  borderRadius: 12,
-                  cursor: "zoom-in",
-                  border:
-                    "2px solid var(--border)",
                 }}
               />
-            </div>
+            </button>
           </div>
         )}
 
@@ -848,26 +848,25 @@ export default function StepMediaReview({
               height: MEDIA_BOX_SIZE,
             }}
           >
-            <img
-              src={data.logo_url}
-              alt=""
-              onClick={() =>
-                setZoomImage(data.logo_url)
-              }
+            <button
+              type="button"
+              aria-label="View current logo"
+              onClick={() => setZoomImage(data.logo_url)}
               style={{
+                display: "block",
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
-                borderRadius: 12,
-                cursor: "zoom-in",
-      
+                boxSizing: "border-box",
+                padding: 0,
                 border: isRemoved(
                   "logo",
                   { url: data.logo_url }
                 )
                   ? "4px solid #ef4444"
                   : "2px solid var(--border)",
-      
+                borderRadius: 12,
+                background: "transparent",
+                cursor: "zoom-in",
                 opacity: isRemoved(
                   "logo",
                   { url: data.logo_url }
@@ -875,7 +874,16 @@ export default function StepMediaReview({
                   ? 0.55
                   : 1,
               }}
-            />
+            >
+              <LogoFrame
+                src={data.logo_url}
+                alt="Current logo"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                }}
+              />
+            </button>
       
             <button
               type="button"
@@ -1021,22 +1029,31 @@ export default function StepMediaReview({
               height: MEDIA_BOX_SIZE,
             }}
           >
-            <img
-              src={logoPreview}
-              alt=""
-              onClick={() =>
-                setZoomImage(logoPreview)
-              }
+            <button
+              type="button"
+              aria-label="View new logo"
+              onClick={() => setZoomImage(logoPreview)}
               style={{
+                display: "block",
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
+                boxSizing: "border-box",
+                padding: 0,
+                border: "2px solid var(--border)",
                 borderRadius: 12,
+                background: "transparent",
                 cursor: "zoom-in",
-                border:
-                  "2px solid var(--border)",
               }}
-            />
+            >
+              <LogoFrame
+                src={logoPreview}
+                alt="New logo"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                }}
+              />
+            </button>
       
             <button
               type="button"
