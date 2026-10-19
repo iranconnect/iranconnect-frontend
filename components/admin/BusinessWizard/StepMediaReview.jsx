@@ -8,6 +8,7 @@ import {
   useRef,
 } from "react";
 import LogoFrame from "../../business/LogoFrame";
+import { Pencil } from "lucide-react";
 import BusinessMediaCropEditor from "../../business/BusinessMediaCropEditor";
 import { getMediaCropStyle } from "../../../utils/businessMediaCropStyle";
 
@@ -1138,8 +1139,9 @@ export default function StepMediaReview({
               logoPreview && (
               <button
                 type="button"
-                className="admin-btn admin-btn-secondary"
                 aria-label="Edit logo crop"
+                title="Adjust logo image"
+                className="absolute top-2 right-2 z-20 rounded-full bg-white/95 p-2 text-navy shadow-md hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500"
                 disabled={!canEditLogo}
                 onClick={() => {
                   setWizardCropTarget({
@@ -1148,18 +1150,8 @@ export default function StepMediaReview({
                     reedit: true,
                   });
                 }}
-                style={{
-                  position: "absolute",
-                  bottom: 6,
-                  left: 6,
-                  padding: "5px 9px",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  borderRadius: 8,
-                  zIndex: 2,
-                }}
               >
-                Edit crop
+                <Pencil size={15} />
               </button>
             )}
             <button
@@ -1252,7 +1244,7 @@ export default function StepMediaReview({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "repeat(auto-fit, minmax(220px, 220px))",
+          "repeat(auto-fit, minmax(min(100%, 330px), 330px))",
         gap: 24,
         alignItems: "start",
         marginBottom: 12,
@@ -1497,9 +1489,9 @@ export default function StepMediaReview({
           <div
             style={{
               position: "relative",
-              width: MEDIA_BOX_SIZE,
-              height: MEDIA_BOX_SIZE / 3,
-               overflow: "hidden",
+              width: "min(330px, 100%)",
+              aspectRatio: "3 / 1",
+              overflow: "hidden",
             }}
           >
             <img
@@ -1530,8 +1522,9 @@ export default function StepMediaReview({
               coverPreview && (
               <button
                 type="button"
-                className="admin-btn admin-btn-secondary"
                 aria-label="Edit cover crop"
+                title="Adjust cover image"
+                className="absolute top-2 right-2 z-20 rounded-full bg-white/95 p-2 text-navy shadow-md hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500"
                 disabled={!canEditCover}
                 onClick={() => {
                   setWizardCropTarget({
@@ -1540,18 +1533,8 @@ export default function StepMediaReview({
                     reedit: true,
                   });
                 }}
-                style={{
-                  position: "absolute",
-                  bottom: 6,
-                  left: 6,
-                  padding: "5px 9px",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  borderRadius: 8,
-                  zIndex: 2,
-                }}
               >
-                Edit crop
+                <Pencil size={17} />
               </button>
             )}
             <button
