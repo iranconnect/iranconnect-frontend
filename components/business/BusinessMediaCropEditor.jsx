@@ -1,11 +1,11 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  getMediaCropStyle,
+  getMediaCropV2Geometry,
   normalizeMediaCrop,
 } from "../../utils/businessMediaCropStyle";
 
 const DEFAULT_CROP = {
-  version: 1,
+  version: 2,
   zoom: 1,
   positionX: 0.5,
   positionY: 0.5,
@@ -13,6 +13,11 @@ const DEFAULT_CROP = {
 
 const clamp = (value, min, max) =>
   Math.min(max, Math.max(min, value));
+
+const initialV2 = (value) => {
+  const crop = normalizeMediaCrop(value);
+  return crop?.version === 2 ? crop : { ...DEFAULT_CROP };
+};
 
 export default function BusinessMediaCropEditor({
   src,
@@ -23,63 +28,118 @@ export default function BusinessMediaCropEditor({
   saving = false,
 }) {
   const [config, setConfig] = useState(
-    () => normalizeMediaCrop(initialConfig) || DEFAULT_CROP
+    () => initialV2(initialConfig)
   );
-  const drag = useRef(null);
+  const [imageSize, setImageSize] = useState(null);
+  const [frameSize, setFrameSize] = useState(null);
+  const [frameOffset, setFrameOffset] = useState(null);
+
+  const workspaceRef = useRef(null);
+  const frameRef = useRef(null);
+  const dragRef = useRef(null);
 
   const isLogo = mediaRole === "logo";
   const validRole = isLogo || mediaRole === "cover";
 
-  function update(patch) {
-    setConfig((previous) => ({
-      ...previous,
-      ...patch,
-    }));
-  }
+  const previousCrop = normalizeMediaCrop(initialConfig);
+  const legacy = previousCrop?.version === 1;
+
+  useEffect(() => {
+    setConfig(initialV2(initialConfig));
+    setImageSize(null);
+    dragRef.current = null;
+  }, [src, mediaRole, initialConfig]);
+
+  useEffect(() => {
+    const workspace = workspaceRef.current;
+    const frame = frameRef.current;
+
+    if (!workspace || !frame) return;
+
+    const measure = () => {
+      const outer = workspace.getBoundingClientRect();
+      const inner = frame.getBoundingClientRect();
+
+      if (!inner.width || !inner.height) return;
+
+      setFrameSize({
+        width: inner.width,
+        height: inner.height,
+      });
+      setFrameOffset({
+        left: inner.left - outer.left,
+        top: inner.top - outer.top,
+      });
+    };
+
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(workspace);
+    observer.observe(frame);
+
+    return () => observer.disconnect();
+  }, [validRole, src, mediaRole]);
+
+  const geometry =
+    imageSize && frameSize
+      ? getMediaCropV2Geometry(
+          config,
+          imageSize.width,
+          imageSize.height,
+          frameSize.width,
+          frameSize.height
+        )
+      : null;
 
   function startDrag(event) {
-    if (saving || event.button > 0) return;
+    if (saving || !geometry || event.button > 0) return;
 
-    drag.current = {
+    dragRef.current = {
+      pointerId: event.pointerId,
       x: event.clientX,
       y: event.clientY,
       positionX: config.positionX,
       positionY: config.positionY,
+      overflowX: geometry.overflowX,
+      overflowY: geometry.overflowY,
     };
 
     event.currentTarget.setPointerCapture?.(event.pointerId);
   }
 
   function moveDrag(event) {
-    if (!drag.current || saving) return;
+    const start = dragRef.current;
+    if (!start || saving || start.pointerId !== event.pointerId) {
+      return;
+    }
 
-    const rect = event.currentTarget.getBoundingClientRect();
-
-    if (!rect.width || !rect.height) return;
-
-    const extra = config.zoom - 1;
-    if (extra <= 0) return;
-
-    update({
-      positionX: clamp(
-        drag.current.positionX -
-          (event.clientX - drag.current.x) /
-            (rect.width * extra),
-        0,
-        1
-      ),
-      positionY: clamp(
-        drag.current.positionY -
-          (event.clientY - drag.current.y) /
-            (rect.height * extra),
-        0,
-        1
-      ),
-    });
+    setConfig((previous) => ({
+      ...previous,
+      positionX: start.overflowX > 0.001
+        ? clamp(
+            start.positionX -
+              (event.clientX - start.x) / start.overflowX,
+            0, 1
+          )
+        : 0.5,
+      positionY: start.overflowY > 0.001
+        ? clamp(
+            start.positionY -
+              (event.clientY - start.y) / start.overflowY,
+            0, 1
+          )
+        : 0.5,
+    }));
   }
 
-  function stopDrag() {
-    drag.current = null;
+  function stopDrag(event) {
+    if (
+      dragRef.current &&
+      dragRef.current.pointerId === event.pointerId
+    ) {
+      dragRef.current = null;
+    }
   }
 
   if (!validRole || !src) return null;
@@ -91,17 +151,21 @@ export default function BusinessMediaCropEditor({
           Adjust {isLogo ? "Logo" : "Cover"}
         </h2>
         <p className="mt-1 text-sm text-slate-600">
-          Adjust how your existing image appears.
-          The original file will not be changed.
+          Move and zoom the original image within the crop frame.
+          The source file will not be changed.
         </p>
+        {legacy && (
+          <p className="mt-2 text-xs text-amber-800">
+            This image has a previous crop setting. The new
+            editor starts with a centered V2 crop. Your saved
+            setting remains unchanged unless you save.
+          </p>
+        )}
       </div>
 
       <div
-        className={`relative mx-auto w-full overflow-hidden rounded-xl border border-slate-300 bg-white ${
-          isLogo
-            ? "max-w-xs aspect-square"
-            : "aspect-[3/1]"
-        }`}
+        ref={workspaceRef}
+        className="relative mx-auto h-[310px] w-full overflow-hidden rounded-xl border border-slate-300 bg-slate-200 sm:h-[390px]"
         style={{
           touchAction: "none",
           cursor: saving ? "default" : "grab",
@@ -111,15 +175,64 @@ export default function BusinessMediaCropEditor({
         onPointerUp={stopDrag}
         onPointerCancel={stopDrag}
         onLostPointerCapture={stopDrag}
-        aria-label="Drag image to adjust its position"
+        aria-label="Drag image within the crop workspace"
       >
         <img
           src={src}
-          alt="Crop preview"
-          draggable={false}
-          className="pointer-events-none h-full w-full select-none"
-          style={getMediaCropStyle(config)}
+          alt=""
+          aria-hidden="true"
+          className="hidden"
+          onLoad={(event) => {
+            const image = event.currentTarget;
+            setImageSize({
+              width: image.naturalWidth,
+              height: image.naturalHeight,
+            });
+          }}
+          onError={() => setImageSize(null)}
         />
+
+        {geometry && frameOffset && (
+          <img
+            src={src}
+            alt="Image being cropped"
+            draggable={false}
+            className="pointer-events-none absolute max-w-none select-none"
+            style={{
+              width: geometry.width,
+              height: geometry.height,
+              left: frameOffset.left + geometry.left,
+              top: frameOffset.top + geometry.top,
+              maxWidth: "none",
+            }}
+          />
+        )}
+
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+          <div
+            ref={frameRef}
+            className={
+              "relative shrink-0 overflow-visible rounded-sm border-2 border-white " +
+              (isLogo
+                ? "aspect-square w-[min(68%,280px)]"
+                : "aspect-[3/1] w-[92%]")
+            }
+            style={{
+              boxShadow:
+                "0 0 0 2000px rgba(15,23,42,0.58)",
+            }}
+          >
+            <span className="sr-only">
+              Visible crop area
+            </span>
+          </div>
+        </div>
+
+        {!geometry && (
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center text-sm text-slate-700">
+            Loading crop preview...
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -137,14 +250,18 @@ export default function BusinessMediaCropEditor({
           max="3"
           step="0.05"
           value={config.zoom}
-          disabled={saving}
+          disabled={saving || !geometry}
           onChange={(event) =>
-            update({ zoom: Number(event.target.value) })
+            setConfig((previous) => ({
+              ...previous,
+              zoom: Number(event.target.value),
+            }))
           }
           className="w-full accent-teal-600"
         />
         <p className="text-xs text-slate-500">
-          Drag the image to adjust its position.
+          Drag to position the image. The crop frame
+          always remains covered.
         </p>
       </div>
 
@@ -152,7 +269,7 @@ export default function BusinessMediaCropEditor({
         <button
           type="button"
           disabled={saving}
-          onClick={() => setConfig(DEFAULT_CROP)}
+          onClick={() => setConfig({ ...DEFAULT_CROP })}
           className="rounded-lg border px-4 py-2 text-sm"
         >
           Reset
@@ -167,7 +284,11 @@ export default function BusinessMediaCropEditor({
         </button>
         <button
           type="button"
-          disabled={saving || typeof onSave !== "function"}
+          disabled={
+            saving ||
+            !geometry ||
+            typeof onSave !== "function"
+          }
           onClick={() => onSave({ ...config })}
           className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
