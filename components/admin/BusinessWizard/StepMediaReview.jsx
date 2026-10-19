@@ -1133,6 +1133,35 @@ export default function StepMediaReview({
               />
             </button>
       
+            {mode === "admin-edit" &&
+              data.logo_crop_config &&
+              logoPreview && (
+              <button
+                type="button"
+                className="admin-btn admin-btn-secondary"
+                aria-label="Edit logo crop"
+                disabled={!canEditLogo}
+                onClick={() => {
+                  setWizardCropTarget({
+                    role: "logo",
+                    src: logoPreview,
+                    reedit: true,
+                  });
+                }}
+                style={{
+                  position: "absolute",
+                  bottom: 6,
+                  left: 6,
+                  padding: "5px 9px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  zIndex: 2,
+                }}
+              >
+                Edit crop
+              </button>
+            )}
             <button
               type="button"
               className="admin-btn admin-btn-secondary"
@@ -1469,7 +1498,8 @@ export default function StepMediaReview({
             style={{
               position: "relative",
               width: MEDIA_BOX_SIZE,
-              height: MEDIA_BOX_SIZE,
+              height: MEDIA_BOX_SIZE / 3,
+               overflow: "hidden",
             }}
           >
             <img
@@ -1495,6 +1525,35 @@ export default function StepMediaReview({
               }}
             />
   
+            {mode === "admin-edit" &&
+              data.cover_crop_config &&
+              coverPreview && (
+              <button
+                type="button"
+                className="admin-btn admin-btn-secondary"
+                aria-label="Edit cover crop"
+                disabled={!canEditCover}
+                onClick={() => {
+                  setWizardCropTarget({
+                    role: "cover",
+                    src: coverPreview,
+                    reedit: true,
+                  });
+                }}
+                style={{
+                  position: "absolute",
+                  bottom: 6,
+                  left: 6,
+                  padding: "5px 9px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  zIndex: 2,
+                }}
+              >
+                Edit crop
+              </button>
+            )}
             <button
               type="button"
               className="admin-btn admin-btn-secondary"
@@ -2034,7 +2093,11 @@ export default function StepMediaReview({
               key={wizardCropTarget.src}
               src={wizardCropTarget.src}
               mediaRole={wizardCropTarget.role}
-              initialConfig={null}
+              initialConfig={
+                 wizardCropTarget.reedit
+                   ? data[`${wizardCropTarget.role}_crop_config`] ?? null
+                   : null
+               }
               onSave={(config) => {
                 setField(
                   `${wizardCropTarget.role}_crop_config`,
@@ -2042,7 +2105,13 @@ export default function StepMediaReview({
                 );
                 setWizardCropTarget(null);
               }}
-              onCancel={cancelWizardCrop}
+              onCancel={() => {
+                 if (wizardCropTarget.reedit) {
+                   setWizardCropTarget(null);
+                 } else {
+                   cancelWizardCrop();
+                 }
+               }}
             />
           </div>
         </div>

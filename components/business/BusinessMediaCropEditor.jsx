@@ -93,53 +93,94 @@ export default function BusinessMediaCropEditor({
       : null;
 
   function startDrag(event) {
-    if (saving || !geometry || event.button > 0) return;
+    if (
+      saving ||
+      !geometry ||
+      event.button > 0 ||
+      !event.isPrimary
+    ) return;
 
     dragRef.current = {
       pointerId: event.pointerId,
       x: event.clientX,
       y: event.clientY,
-      positionX: config.positionX,
-      positionY: config.positionY,
       overflowX: geometry.overflowX,
       overflowY: geometry.overflowY,
     };
 
+    event.currentTarget.focus({ preventScroll: true });
     event.currentTarget.setPointerCapture?.(event.pointerId);
   }
 
   function moveDrag(event) {
-    const start = dragRef.current;
-    if (!start || saving || start.pointerId !== event.pointerId) {
-      return;
-    }
+    const drag = dragRef.current;
+    if (
+      !drag ||
+      saving ||
+      drag.pointerId !== event.pointerId
+    ) return;
+
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+
+    drag.x = event.clientX;
+    drag.y = event.clientY;
+
+    if (dx === 0 && dy === 0) return;
 
     setConfig((previous) => ({
       ...previous,
-      positionX: start.overflowX > 0.001
-        ? clamp(
-            start.positionX -
-              (event.clientX - start.x) / start.overflowX,
-            0, 1
-          )
+      positionX: drag.overflowX > 0.001
+        ? clamp(previous.positionX - dx / drag.overflowX, 0, 1)
         : 0.5,
-      positionY: start.overflowY > 0.001
-        ? clamp(
-            start.positionY -
-              (event.clientY - start.y) / start.overflowY,
-            0, 1
-          )
+      positionY: drag.overflowY > 0.001
+        ? clamp(previous.positionY - dy / drag.overflowY, 0, 1)
         : 0.5,
     }));
   }
 
   function stopDrag(event) {
     if (
-      dragRef.current &&
-      dragRef.current.pointerId === event.pointerId
+      dragRef.current?.pointerId === event.pointerId
     ) {
       dragRef.current = null;
     }
+  }
+
+  function handleWorkspaceKeyDown(event) {
+    if (saving || !geometry) return;
+
+    const step = event.shiftKey ? 20 : 5;
+
+    const directions = {
+      ArrowLeft: [-step, 0],
+      ArrowRight: [step, 0],
+      ArrowUp: [0, -step],
+      ArrowDown: [0, step],
+    };
+
+    const movement = directions[event.key];
+    if (!movement) return;
+
+    event.preventDefault();
+
+    const [dx, dy] = movement;
+
+    setConfig((previous) => ({
+      ...previous,
+      positionX: geometry.overflowX > 0.001
+        ? clamp(
+            previous.positionX - dx / geometry.overflowX,
+            0, 1
+          )
+        : 0.5,
+      positionY: geometry.overflowY > 0.001
+        ? clamp(
+            previous.positionY - dy / geometry.overflowY,
+            0, 1
+          )
+        : 0.5,
+    }));
   }
 
   if (!validRole || !src) return null;
@@ -175,6 +216,9 @@ export default function BusinessMediaCropEditor({
         onPointerUp={stopDrag}
         onPointerCancel={stopDrag}
         onLostPointerCapture={stopDrag}
+        tabIndex={saving ? -1 : 0}
+        onKeyDown={handleWorkspaceKeyDown}
+        aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown"
         aria-label="Drag image within the crop workspace"
       >
         <img
