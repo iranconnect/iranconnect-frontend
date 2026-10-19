@@ -25,7 +25,6 @@ export default function BusinessMediaCropEditor({
   const [config, setConfig] = useState(
     () => normalizeMediaCrop(initialConfig) || DEFAULT_CROP
   );
-  const [preview, setPreview] = useState("desktop");
   const drag = useRef(null);
 
   const isLogo = mediaRole === "logo";
@@ -97,33 +96,11 @@ export default function BusinessMediaCropEditor({
         </p>
       </div>
 
-      {!isLogo && (
-        <div className="flex gap-2" role="group" aria-label="Preview size">
-          {["desktop", "mobile"].map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => setPreview(mode)}
-              aria-pressed={preview === mode}
-              className={`rounded-lg border px-3 py-2 text-sm ${
-                preview === mode
-                  ? "border-teal-600 bg-teal-50 font-semibold"
-                  : "border-slate-300"
-              }`}
-            >
-              {mode === "desktop" ? "Desktop" : "Mobile"}
-            </button>
-          ))}
-        </div>
-      )}
-
       <div
         className={`relative mx-auto w-full overflow-hidden rounded-xl border border-slate-300 bg-white ${
           isLogo
             ? "max-w-xs aspect-square"
-            : preview === "desktop"
-            ? "aspect-[3/1]"
-            : "aspect-[2/1]"
+            : "aspect-[3/1]"
         }`}
         style={{
           touchAction: "none",

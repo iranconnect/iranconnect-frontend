@@ -236,7 +236,7 @@ export default function BusinessHero({
 
   return (
     <section className="card mt-6">
-      <div className="w-full aspect-[2/1] md:aspect-[3/1] relative overflow-hidden rounded">
+      <div className="w-full aspect-[3/1] relative overflow-hidden rounded">
         <img
           src={coverImage}
           alt={`Cover image for ${biz.name}`}
