@@ -1,3 +1,4 @@
+import { useRouter } from "next/router";
 //pages/business/[slug].js 
 import Head from "next/head";
 import { useState, useEffect, useRef } from "react";
@@ -317,6 +318,7 @@ export default function BusinessBySlug({
   biz: initialBiz,
   isStaging,
 }) {
+  const router = useRouter();
 
   const footerRef = useRef(null);
   const heroPrimaryCTARef = useRef(null);
@@ -352,6 +354,49 @@ export default function BusinessBySlug({
   const isAuthReady = status !== "checking";
   const isLoggedIn = status === "authenticated";
   const isAdminView = role === "admin" || role === "superadmin";
+
+  // UI entry context only, never backend authorization.
+  const [adminMediaEntryValidated, setAdminMediaEntryValidated] = useState(false);
+
+  const isAdminMediaEntry =
+    router.isReady &&
+    router.query.adminMediaEdit === "1" &&
+    isLoggedIn &&
+    isAdminView &&
+    adminMediaEntryValidated;
+
+  useEffect(() => {
+    if (!router.isReady || !isAuthReady) return;
+
+    let accepted = false;
+
+    try {
+      const key = "iranconnect:admin-media-entry";
+      const raw = sessionStorage.getItem(key);
+      sessionStorage.removeItem(key);
+
+      const entry = raw ? JSON.parse(raw) : null;
+      accepted =
+        isLoggedIn &&
+        isAdminView &&
+        router.query.adminMediaEdit === "1" &&
+        entry?.slug === router.query.slug &&
+        Number.isFinite(entry?.createdAt) &&
+        Date.now() - entry.createdAt >= 0 &&
+        Date.now() - entry.createdAt <= 60000;
+    } catch {
+      accepted = false;
+    }
+
+    setAdminMediaEntryValidated(accepted);
+  }, [
+    router.isReady,
+    router.query.slug,
+    router.query.adminMediaEdit,
+    isAuthReady,
+    isLoggedIn,
+    isAdminView,
+  ]);
 
   const isAdminPreviewBootstrap =
     initialBiz?.__admin_preview_bootstrap === true;
@@ -813,6 +858,8 @@ export default function BusinessBySlug({
               contactModel={contactModel}
               isLoggedIn={isLoggedIn}
               primaryCTARef={heroPrimaryCTARef}
+              canCheckOwner={isLoggedIn && role === "user"}
+              adminMediaEntry={isAdminMediaEntry}
             />
 
             <RevealOnScroll className="empty:hidden">

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../../utils/apiClient";
 import LogoFrame from "../../business/LogoFrame";
+import { getMediaCropStyle } from "../../../utils/businessMediaCropStyle";
 
 const BUSINESS_TYPE_LABELS = {
   freelancer: "Freelancer / Self-employed",
@@ -940,6 +941,11 @@ export default function StepPreviewSubmit({
                   >
                     <PreviewFileLogoFrame
                       file={data.logo_file}
+                      cropConfig={
+                        isAdminEdit
+                          ? data.logo_crop_config ?? null
+                          : null
+                      }
                       alt="New logo"
                       style={{ width: "100%", height: "100%" }}
                     />
@@ -1056,18 +1062,30 @@ export default function StepPreviewSubmit({
                       : "New cover"}
                   </div>
       
-                  <PreviewFileImage
-                    file={data.cover_file}
-                    alt="New cover"
+                  <div
                     style={{
                       width: 180,
                       height: 60,
-                      objectFit: "cover",
-                      objectPosition: "center",
+                      overflow: "hidden",
                       borderRadius: 10,
                       border: "2px solid #16a34a",
+                      boxSizing: "border-box",
                     }}
-                  />
+                  >
+                    <PreviewFileImage
+                      file={data.cover_file}
+                      alt="New cover"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        ...getMediaCropStyle(
+                          isAdminEdit
+                            ? data.cover_crop_config ?? null
+                            : null
+                        ),
+                      }}
+                    />
+                  </div>
                 </div>
               )}
       

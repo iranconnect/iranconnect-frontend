@@ -343,6 +343,14 @@ export default function EditBusinessPage() {
 
     const form = buildAdminEditFormData(data);
 
+    // Only a genuinely selected new File may carry new crop metadata.
+    // Existing-image crop uses the separate authenticated crop API.
+    for (const role of ["logo", "cover"]) {
+      if (!(data[`${role}_file`] instanceof File)) {
+        form.delete(`${role}_crop_config`);
+      }
+    }
+
     if (hasRequestContext) {
       /*
        * PLR-SUP-REQ-01
@@ -364,6 +372,10 @@ export default function EditBusinessPage() {
 
       form.delete("requester_user_id");
       form.delete("requester_display_email");
+
+      // Ticket fulfillment must not transmit Admin crop overrides.
+      form.delete("logo_crop_config");
+      form.delete("cover_crop_config");
 
       return apiClient.put(
         `/admin/businesses/requests/${requestId}/update-v2`,

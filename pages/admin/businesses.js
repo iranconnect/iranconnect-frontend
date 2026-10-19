@@ -490,10 +490,19 @@ export default function BusinessesPage() {
                             <Link
                               href={
                                 business.is_public
-                                  ? `/business/${business.slug}`
-                                  : `/business/${business.slug}?adminPreview=1`
+                                  ? `/business/${business.slug}?adminMediaEdit=1`
+                                  : `/business/${business.slug}?adminPreview=1&adminMediaEdit=1`
                               }
                               className="hover:underline"
+                              onClick={() => {
+                                sessionStorage.setItem(
+                                  "iranconnect:admin-media-entry",
+                                  JSON.stringify({
+                                    slug: business.slug,
+                                    createdAt: Date.now(),
+                                  })
+                                );
+                              }}
                             >
                               {truncate(business.name, 28)}
                             </Link>

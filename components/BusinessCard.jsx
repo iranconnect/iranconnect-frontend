@@ -325,6 +325,7 @@ export default function BusinessCard({
           >
             <LogoFrame
               src={imageSrc}
+              cropConfig={b?.logo_crop_config ?? null}
               fallbackSrc="/logo-light.png"
               alt={`${safeText(b?.name)} logo`}
               loading="lazy"
@@ -738,6 +739,7 @@ export default function BusinessCard({
         <div className="flex items-start justify-between gap-4">
           <LogoFrame
             src={imageSrc}
+            cropConfig={b?.logo_crop_config ?? null}
             fallbackSrc="/logo-light.png"
             alt={`${safeText(b?.name)} logo`}
             loading="lazy"

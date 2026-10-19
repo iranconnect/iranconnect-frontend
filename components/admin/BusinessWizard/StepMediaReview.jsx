@@ -8,6 +8,8 @@ import {
   useRef,
 } from "react";
 import LogoFrame from "../../business/LogoFrame";
+import BusinessMediaCropEditor from "../../business/BusinessMediaCropEditor";
+import { getMediaCropStyle } from "../../../utils/businessMediaCropStyle";
 
 /* ======================================================
 🧱 CONSTANTS — Business Rules (DO NOT INLINE)
@@ -100,6 +102,10 @@ export default function StepMediaReview({
 
   const isUserUpdateMode =
     mode === "user-update";
+
+  // Only Direct Admin Edit; never request-bound ticket fulfillment.
+  const [wizardCropTarget, setWizardCropTarget] = useState(null);
+
 
   const isTicketCreateMode =
     mode === "admin-create-ticket";
@@ -394,6 +400,35 @@ export default function StepMediaReview({
     };
   }, []);
 
+  /*
+   * FE-03C-03F — Restore media previews after Wizard navigation.
+   *
+   * The parent Wizard retains original Files and crop metadata.
+   * StepMediaReview is remounted whenever step === 3.
+   * Recreate local Blob URLs; never upload or reset crop metadata.
+   */
+  useEffect(() => {
+    if (
+      data.logo_file instanceof File
+    ) {
+      setLogoPreview(
+        createTrackedPreviewUrl(data.logo_file)
+      );
+    }
+
+    if (
+      data.cover_file instanceof File
+    ) {
+      setCoverPreview(
+        createTrackedPreviewUrl(data.cover_file)
+      );
+    }
+
+    // Intentionally mount-only:
+    // subsequent replacements use handleSingleMediaUpload.
+    // Existing ownership cleanup revokes URLs on unmount.
+  }, []);
+
   const previousGalleryUrlsRef = useRef(new Set());
 
   useEffect(() => {
@@ -413,6 +448,26 @@ export default function StepMediaReview({
   /* ======================================================
   🖼 SINGLE MEDIA — LOGO / COVER (NO UPLOAD)
   ====================================================== */
+
+  function cancelWizardCrop() {
+    if (!wizardCropTarget) return;
+
+    const role = wizardCropTarget.role;
+
+    if (role === "logo") {
+      revokeIfBlob(logoPreview);
+      setLogoPreview(null);
+      setField("logo_file", null);
+    } else if (role === "cover") {
+      revokeIfBlob(coverPreview);
+      setCoverPreview(null);
+      setField("cover_file", null);
+    }
+
+    setField(`${role}_crop_config`, null);
+    bumpInputKey(role);
+    setWizardCropTarget(null);
+  }
 
   async function handleSingleMediaUpload(
     file,
@@ -436,6 +491,10 @@ export default function StepMediaReview({
 
       setField("logo_file", file);
 
+      if (mode === "admin-edit") {
+        setField("logo_crop_config", null);
+      }
+
     }
 
     if (type === "cover") {
@@ -446,6 +505,17 @@ export default function StepMediaReview({
 
       setField("cover_file", file);
 
+      if (mode === "admin-edit") {
+        setField("cover_crop_config", null);
+      }
+
+    }
+
+    if (mode === "admin-edit" && (type === "logo" || type === "cover")) {
+      setWizardCropTarget({
+        role: type,
+        src: localPreviewUrl,
+      });
     }
 
   }
@@ -752,7 +822,8 @@ export default function StepMediaReview({
   ====================================================== */
 
   return (
-    <div className="admin-section">
+    <>
+      <div className="admin-section">
    
       <div className="mb-8">
         <h2 className="admin-title">
@@ -1049,6 +1120,11 @@ export default function StepMediaReview({
             >
               <LogoFrame
                 src={logoPreview}
+                cropConfig={
+                  mode === "admin-edit"
+                    ? data.logo_crop_config
+                    : null
+                }
                 alt="New logo"
                 style={{
                   width: "100%",
@@ -1078,7 +1154,10 @@ export default function StepMediaReview({
                 setLogoPreview(null);
       
                 setField("logo_file", null);
-      
+                if (mode === "admin-edit") {
+                  setField("logo_crop_config", null);
+                }
+
                 bumpInputKey("logo");
               }}
             >
@@ -1404,7 +1483,11 @@ export default function StepMediaReview({
               style={{
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
+                ...getMediaCropStyle(
+                  mode === "admin-edit"
+                    ? data.cover_crop_config
+                    : null
+                ),
                 borderRadius: 12,
                 cursor: "zoom-in",
                 border:
@@ -1438,7 +1521,10 @@ export default function StepMediaReview({
                   "cover_file",
                   null
                 );
-  
+                if (mode === "admin-edit") {
+                  setField("cover_crop_config", null);
+                }
+
                 bumpInputKey("cover");
   
               }}
@@ -1935,5 +2021,32 @@ export default function StepMediaReview({
     </button>
   </div>
   </div>
+
+      {wizardCropTarget && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Adjust new business image"
+            className="mx-auto my-6 w-full max-w-2xl"
+          >
+            <BusinessMediaCropEditor
+              key={wizardCropTarget.src}
+              src={wizardCropTarget.src}
+              mediaRole={wizardCropTarget.role}
+              initialConfig={null}
+              onSave={(config) => {
+                setField(
+                  `${wizardCropTarget.role}_crop_config`,
+                  config
+                );
+                setWizardCropTarget(null);
+              }}
+              onCancel={cancelWizardCrop}
+            />
+          </div>
+        </div>
+      )}
+    </>
 );
 }

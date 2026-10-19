@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getMediaCropStyle } from "../../utils/businessMediaCropStyle";
 
 /**
  * Presentation-only image renderer.
@@ -13,6 +14,7 @@ function LogoImage({
   loading,
   decoding,
   imageClassName,
+  cropConfig,
 }) {
   const [primaryFailed, setPrimaryFailed] = useState(false);
 
@@ -51,8 +53,7 @@ function LogoImage({
         height: "100%",
         maxWidth: "100%",
         maxHeight: "100%",
-        objectFit: "cover",
-        objectPosition: "center",
+        ...getMediaCropStyle(primaryFailed ? null : cropConfig),
         borderRadius: "8px",
       }}
     />
@@ -76,6 +77,7 @@ export default function LogoFrame({
   loading,
   decoding,
   style,
+  cropConfig,
 }) {
   const sourceKey = JSON.stringify([src, fallbackSrc]);
 
@@ -118,6 +120,7 @@ export default function LogoFrame({
           loading={loading}
           decoding={decoding}
           imageClassName={imageClassName}
+          cropConfig={cropConfig}
         />
       </div>
     </div>

@@ -1,9 +1,12 @@
 import { formatPublicRating } from "../../utils/formatPublicRating.js";
 //frontend/components/business/BusinessHero.jsx
-import { useMemo } from "react";
-import { Phone, Globe } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Phone, Globe, Pencil } from "lucide-react";
 import SocialBrandIcon from "./contact/SocialBrandIcon";
 import LogoFrame from "./LogoFrame";
+import BusinessMediaCropEditor from "./BusinessMediaCropEditor";
+import apiClient from "../../utils/apiClient";
+import { getMediaCropStyle } from "../../utils/businessMediaCropStyle";
 
 function toPlainText(value) {
   if (!value) return "";
@@ -19,7 +22,183 @@ export default function BusinessHero({
   contactModel,
   isLoggedIn,
   primaryCTARef,
+  canCheckOwner = false,
+  adminMediaEntry = false,
 }) {
+  const [ownedBusiness, setOwnedBusiness] = useState(null);
+  const [adminCropBusiness, setAdminCropBusiness] = useState(null);
+  const [cropTarget, setCropTarget] = useState(null);
+  const [cropSaving, setCropSaving] = useState(false);
+  const [cropError, setCropError] = useState("");
+  const [cropNotice, setCropNotice] = useState("");
+  const [coverFailed, setCoverFailed] = useState(false);
+
+  const [displayCrop, setDisplayCrop] = useState({
+    logo: biz.logo_crop_config ?? null,
+    cover: biz.cover_crop_config ?? null,
+  });
+
+  // Stable signatures track crop values, not object references.
+  const logoCropSignature = JSON.stringify(
+    biz.logo_crop_config ?? null
+  );
+  const coverCropSignature = JSON.stringify(
+    biz.cover_crop_config ?? null
+  );
+
+  useEffect(() => {
+    setDisplayCrop({
+      logo: biz.logo_crop_config ?? null,
+      cover: biz.cover_crop_config ?? null,
+    });
+  }, [
+    biz.id,
+    biz.logo_url,
+    biz.cover_image_url,
+    logoCropSignature,
+    coverCropSignature,
+  ]);
+
+  useEffect(() => {
+    setCoverFailed(false);
+    setCropTarget(null);
+  }, [biz.id, biz.logo_url, biz.cover_image_url]);
+
+  useEffect(() => {
+    let active = true;
+    setOwnedBusiness(null);
+
+    if (!canCheckOwner || !biz.id) return undefined;
+
+    apiClient.get("/owner/me/businesses", {
+      withCredentials: true,
+    }).then((response) => {
+      if (!active) return;
+      const owned = (response.data?.rows || []).find(
+        (item) =>
+          Number(item.id) === Number(biz.id) &&
+          item.is_deleted !== true
+      );
+      setOwnedBusiness(owned || null);
+    }).catch(() => {
+      if (active) setOwnedBusiness(null);
+    });
+
+    return () => { active = false; };
+  }, [canCheckOwner, biz.id]);
+
+  useEffect(() => {
+    let active = true;
+    setAdminCropBusiness(null);
+
+    if (!adminMediaEntry || !biz.id) return undefined;
+
+    apiClient.get(
+      `/admin/businesses/${biz.id}/prefill-v2`,
+      { withCredentials: true }
+    ).then((response) => {
+      if (!active) return;
+      const item = response.data;
+      setAdminCropBusiness(
+        Number(item?.id) === Number(biz.id) &&
+        item?.is_deleted !== true
+          ? item
+          : null
+      );
+    }).catch(() => {
+      if (active) setAdminCropBusiness(null);
+    });
+
+    return () => { active = false; };
+  }, [adminMediaEntry, biz.id]);
+
+  function openCrop(role) {
+    const owned = adminMediaEntry
+      ? adminCropBusiness
+      : ownedBusiness;
+    const sourcePublicId =
+      role === "logo"
+        ? owned?.logo_public_id
+        : owned?.cover_public_id;
+    const src =
+      role === "logo" ? biz.logo_url : biz.cover_image_url;
+
+    // Public profile and owner listing must refer to
+    // the same approved source before editing.
+    const ownedUrl =
+      role === "logo" ? owned?.logo_url : owned?.cover_image_url;
+
+    if (!sourcePublicId || !src || ownedUrl !== src) {
+      setCropError("Image details have changed. Reload the profile.");
+      return;
+    }
+
+    setCropError("");
+    setCropNotice("");
+    setCropTarget({ role, src, sourcePublicId });
+  }
+
+  async function saveCrop(config) {
+    if (
+      !cropTarget ||
+      !(adminMediaEntry ? adminCropBusiness : ownedBusiness) ||
+      cropSaving
+    ) return;
+
+    const { role, sourcePublicId } = cropTarget;
+    setCropSaving(true);
+    setCropError("");
+
+    try {
+      const response = await apiClient.put(
+        adminMediaEntry
+          ? `/admin/businesses/${biz.id}/media-crop/${role}`
+          : `/owner/businesses/${biz.id}/media-crop/${role}`,
+        {
+          source_public_id: sourcePublicId,
+          crop_config: config,
+        },
+        { withCredentials: true }
+      );
+
+      const saved = response.data?.crop_config || config;
+      setDisplayCrop((previous) => ({
+        ...previous,
+        [role]: saved,
+      }));
+      setCropTarget(null);
+      setCropNotice("Image display settings saved.");
+    } catch (error) {
+      const data = error.response?.data;
+      if (data?.code === "MEDIA_CROP_RATE_LIMITED") {
+        setCropError(
+          "You have reached the limit of five saved image " +
+          "adjustments for this business in the last 24 hours."
+        );
+      } else {
+        setCropError(
+          data?.error || "Unable to save image display settings."
+        );
+      }
+    } finally {
+      setCropSaving(false);
+    }
+  }
+
+  const editableBusiness = adminMediaEntry
+    ? adminCropBusiness
+    : ownedBusiness;
+
+  const canEditLogo =
+    Boolean(editableBusiness?.logo_public_id) &&
+    editableBusiness?.logo_url === biz.logo_url &&
+    Boolean(biz.logo_url);
+
+  const canEditCover =
+    Boolean(editableBusiness?.cover_public_id) &&
+    editableBusiness?.cover_image_url === biz.cover_image_url &&
+    Boolean(biz.cover_image_url);
+
   const fallbackLogo = "/logo-light.png";
 
   const fallbackCover =
@@ -62,18 +241,85 @@ export default function BusinessHero({
           src={coverImage}
           alt={`Cover image for ${biz.name}`}
           className="w-full h-full object-cover"
+          style={getMediaCropStyle(
+            biz.cover_image_url && !coverFailed
+              ? displayCrop.cover
+              : null
+          )}
           onError={(event) => {
             event.currentTarget.onerror = null;
+            setCoverFailed(true);
             event.currentTarget.src = fallbackCover;
           }}
         />
+        {canEditCover && (
+          <button
+            type="button"
+            onClick={() => openCrop("cover")}
+            aria-label="Adjust cover image"
+            title="Adjust cover image"
+            className="absolute right-3 top-3 z-10 rounded-full bg-white/95 p-2 text-navy shadow-md hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500"
+          >
+            <Pencil size={17} />
+          </button>
+        )}
       </div>
+
+      {cropNotice && (
+        <p role="status" className="px-4 pt-3 text-sm text-green-700">
+          {cropNotice}
+        </p>
+      )}
+      {cropError && (
+        <p role="alert" className="px-4 pt-3 text-sm text-red-600">
+          {cropError}
+        </p>
+      )}
+      {cropTarget && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Adjust business image"
+            className="mx-auto my-6 w-full max-w-2xl"
+          >
+            <BusinessMediaCropEditor
+              key={`${biz.id}-${cropTarget.role}`}
+              src={cropTarget.src}
+              mediaRole={cropTarget.role}
+              initialConfig={displayCrop[cropTarget.role]}
+              saving={cropSaving}
+              onSave={saveCrop}
+              onCancel={() => {
+                if (!cropSaving) setCropTarget(null);
+              }}
+            />
+            {cropError && (
+              <p role="alert" className="mt-2 rounded bg-white p-3 text-sm text-red-600">
+                {cropError}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="pb-6 md:pb-8 pt-14 md:pt-24 relative space-y-4">
         <div className="absolute -top-8 left-6 md:-top-14 md:left-8">
+          {canEditLogo && (
+            <button
+              type="button"
+              onClick={() => openCrop("logo")}
+              aria-label="Adjust logo"
+              title="Adjust logo"
+              className="absolute -right-2 -top-2 z-20 rounded-full bg-white p-2 text-navy shadow-md hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500"
+            >
+              <Pencil size={15} />
+            </button>
+          )}
           <LogoFrame
             src={biz.logo_url || fallbackLogo}
             fallbackSrc={fallbackLogo}
+            cropConfig={displayCrop.logo}
             alt={`${biz.name} logo`}
             className="w-20 h-20 md:w-28 md:h-28 shadow"
           />
