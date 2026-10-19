@@ -854,7 +854,7 @@ export default function StepMediaReview({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "repeat(auto-fit, minmax(220px, 220px))",
+          "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
         gap: 24,
         alignItems: "start",
         marginBottom: 12,
@@ -1141,7 +1141,7 @@ export default function StepMediaReview({
                 type="button"
                 aria-label="Edit logo crop"
                 title="Adjust logo image"
-                className="absolute top-2 right-2 z-20 rounded-full bg-white/95 p-2 text-navy shadow-md hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500"
+                className="absolute bottom-2 left-2 z-20 rounded-full bg-white/95 p-2 text-navy shadow-md hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500"
                 disabled={!canEditLogo}
                 onClick={() => {
                   setWizardCropTarget({
@@ -1244,7 +1244,7 @@ export default function StepMediaReview({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "repeat(auto-fit, minmax(min(100%, 330px), 330px))",
+          "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
         gap: 24,
         alignItems: "start",
         marginBottom: 12,
@@ -1524,7 +1524,7 @@ export default function StepMediaReview({
                 type="button"
                 aria-label="Edit cover crop"
                 title="Adjust cover image"
-                className="absolute top-2 right-2 z-20 rounded-full bg-white/95 p-2 text-navy shadow-md hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500"
+                className="absolute bottom-2 left-2 z-20 rounded-full bg-white/95 p-2 text-navy shadow-md hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-500"
                 disabled={!canEditCover}
                 onClick={() => {
                   setWizardCropTarget({
