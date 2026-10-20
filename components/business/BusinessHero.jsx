@@ -31,6 +31,11 @@ export default function BusinessHero({
   const [cropSaving, setCropSaving] = useState(false);
   const [cropError, setCropError] = useState("");
   const [cropNotice, setCropNotice] = useState("");
+  const [cropQuota, setCropQuota] = useState(null);
+  const [cropQuotaLoading, setCropQuotaLoading] = useState(false);
+  const [cropQuotaRetry, setCropQuotaRetry] = useState(0);
+  const [cropSuccess, setCropSuccess] = useState(false);
+  const [cropLimitDialog, setCropLimitDialog] = useState(false);
   const [coverFailed, setCoverFailed] = useState(false);
 
   const [displayCrop, setDisplayCrop] = useState({
@@ -112,6 +117,49 @@ export default function BusinessHero({
     return () => { active = false; };
   }, [adminMediaEntry, biz.id]);
 
+  useEffect(() => {
+    if (!cropTarget || !cropSuccess) return undefined;
+
+    const timer = setTimeout(() => {
+      setCropTarget(null);
+      setCropSuccess(false);
+      setCropNotice("");
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [cropTarget, cropSuccess]);
+
+  useEffect(() => {
+    if (!cropTarget) return undefined;
+
+    let active = true;
+    setCropQuotaLoading(true);
+    setCropQuota(null);
+    setCropError("");
+
+    const url = adminMediaEntry
+      ? `/admin/businesses/${biz.id}/media-crop/quota`
+      : `/owner/businesses/${biz.id}/media-crop/quota`;
+
+    apiClient.get(url, { withCredentials: true })
+      .then((response) => {
+        if (active) setCropQuota(response.data);
+      })
+      .catch((error) => {
+        if (active) {
+          setCropError(
+            error.response?.data?.error ||
+            "Unable to check image adjustment quota."
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setCropQuotaLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [cropTarget, adminMediaEntry, biz.id, cropQuotaRetry]);
+
   function openCrop(role) {
     const owned = adminMediaEntry
       ? adminCropBusiness
@@ -135,6 +183,9 @@ export default function BusinessHero({
 
     setCropError("");
     setCropNotice("");
+    setCropSuccess(false);
+    setCropLimitDialog(false);
+    setCropQuota(null);
     setCropTarget({ role, src, sourcePublicId });
   }
 
@@ -142,7 +193,11 @@ export default function BusinessHero({
     if (
       !cropTarget ||
       !(adminMediaEntry ? adminCropBusiness : ownedBusiness) ||
-      cropSaving
+      cropSaving ||
+      cropSuccess ||
+      cropQuotaLoading ||
+      !cropQuota ||
+      cropQuota.remaining_saves <= 0
     ) return;
 
     const { role, sourcePublicId } = cropTarget;
@@ -166,15 +221,22 @@ export default function BusinessHero({
         ...previous,
         [role]: saved,
       }));
-      setCropTarget(null);
-      setCropNotice("Image display settings saved.");
+      setCropQuota((previous) => ({
+        ...(previous || {}),
+        remaining_saves: response.data?.remaining_saves ?? 0,
+      }));
+      setCropSuccess(true);
+      setCropNotice("Image display settings saved successfully.");
     } catch (error) {
       const data = error.response?.data;
       if (data?.code === "MEDIA_CROP_RATE_LIMITED") {
-        setCropError(
-          "You have reached the limit of five saved image " +
-          "adjustments for this business in the last 24 hours."
-        );
+        setCropQuota((previous) => ({
+          ...(previous || {}),
+          remaining_saves: 0,
+          retry_after_seconds: data.retry_after_seconds ?? null,
+        }));
+        setCropLimitDialog(true);
+        setCropError("");
       } else {
         setCropError(
           data?.error || "Unable to save image display settings."
@@ -265,12 +327,7 @@ export default function BusinessHero({
         )}
       </div>
 
-      {cropNotice && (
-        <p role="status" className="px-4 pt-3 text-sm text-green-700">
-          {cropNotice}
-        </p>
-      )}
-      {cropError && (
+      {!cropTarget && cropError && (
         <p role="alert" className="px-4 pt-3 text-sm text-red-600">
           {cropError}
         </p>
@@ -289,15 +346,69 @@ export default function BusinessHero({
               mediaRole={cropTarget.role}
               initialConfig={displayCrop[cropTarget.role]}
               saving={cropSaving}
+              saveDisabled={
+                cropQuotaLoading ||
+                !cropQuota ||
+                cropQuota.remaining_saves <= 0 ||
+                cropSuccess
+              }
+              statusNotice={cropSuccess ? cropNotice : ""}
+              errorNotice={cropQuota ? cropError : ""}
+              onRetryQuota={() => setCropQuotaRetry((value) => value + 1)}
+              quotaNotice={
+                cropQuotaLoading
+                  ? "Checking your available image adjustments..."
+                  : cropQuota?.remaining_saves === 0
+                    ? "Your five image adjustments for this business have been used in the last 24 hours."
+                    : !cropQuota
+                      ? cropError || "Unable to confirm the remaining quota."
+                      : ""
+              }
               onSave={saveCrop}
               onCancel={() => {
-                if (!cropSaving) setCropTarget(null);
+                if (!cropSaving) {
+                  setCropTarget(null);
+                  setCropSuccess(false);
+                }
               }}
             />
-            {cropError && (
-              <p role="alert" className="mt-2 rounded bg-white p-3 text-sm text-red-600">
-                {cropError}
-              </p>
+            {cropLimitDialog && (
+              <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4">
+                <div
+                  role="alertdialog"
+                  aria-modal="true"
+                  aria-labelledby="crop-limit-title"
+                  aria-describedby="crop-limit-description"
+                  className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
+                  onKeyDown={(event) => {
+                    if (event.key === "Tab") {
+                      event.preventDefault();
+                      event.currentTarget.querySelector("button")?.focus();
+                    }
+                  }}
+                >
+                  <h2 id="crop-limit-title" className="text-lg font-semibold text-red-700">
+                    Crop adjustment limit reached
+                  </h2>
+                  <p id="crop-limit-description" className="mt-3 text-sm text-slate-700">
+                    You have used all five image adjustments for this business
+                    in the last 24 hours. Please try again later.
+                  </p>
+                  <button
+                    type="button"
+                    autoFocus
+                    className="mt-5 rounded-lg bg-teal-600 px-5 py-2 text-sm font-semibold text-white"
+                    onClick={() => {
+                      setCropLimitDialog(false);
+                      setCropTarget(null);
+                      setCropError("");
+                      setCropSuccess(false);
+                    }}
+                  >
+                    OK
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>

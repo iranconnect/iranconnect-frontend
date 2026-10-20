@@ -26,6 +26,11 @@ export default function BusinessMediaCropEditor({
   onSave,
   onCancel,
   saving = false,
+  saveDisabled = false,
+  statusNotice = "",
+  errorNotice = "",
+  quotaNotice = "",
+  onRetryQuota,
 }) {
   const [config, setConfig] = useState(
     () => initialV2(initialConfig)
@@ -309,6 +314,32 @@ export default function BusinessMediaCropEditor({
         </p>
       </div>
 
+      {statusNotice && (
+        <p role="status" className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm font-medium text-green-800">
+          {statusNotice}
+        </p>
+      )}
+      {errorNotice && !statusNotice && (
+        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          {errorNotice}
+        </p>
+      )}
+      {quotaNotice && !statusNotice && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <p role="status">{quotaNotice}</p>
+          {!errorNotice &&
+            quotaNotice.startsWith("Unable to") &&
+            typeof onRetryQuota === "function" && (
+              <button
+                type="button"
+                onClick={onRetryQuota}
+                className="mt-2 rounded border border-amber-400 px-3 py-1 font-medium"
+              >
+                Retry quota check
+              </button>
+            )}
+        </div>
+      )}
       <div className="flex flex-wrap justify-end gap-3">
         <button
           type="button"
@@ -330,6 +361,7 @@ export default function BusinessMediaCropEditor({
           type="button"
           disabled={
             saving ||
+            saveDisabled ||
             !geometry ||
             typeof onSave !== "function"
           }
