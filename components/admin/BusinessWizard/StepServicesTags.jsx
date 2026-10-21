@@ -349,6 +349,7 @@ export default function StepServicesTags({
       <div className="mb-8">
         <h4 className="font-semibold mb-2">
           {stepCopy.servicesTitle}
+          {mode === "admin-edit-request" && canEditField("services") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
         </h4>
 
         {loadingServices ? (
@@ -397,6 +398,7 @@ export default function StepServicesTags({
       <div className="mb-8">
         <h4 className="font-semibold mb-2">
           {stepCopy.tagsTitle}
+          {mode === "admin-edit-request" && canEditField("tags") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
         </h4>
 
         {loadingTags ? (

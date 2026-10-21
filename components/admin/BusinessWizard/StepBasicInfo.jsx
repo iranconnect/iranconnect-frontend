@@ -354,6 +354,9 @@ export default function StepBasicInfo({
       <div className="mb-5">
         <label className="admin-label">
           Business name *
+          {mode === "admin-edit-request" && canEditField("name") && (
+            <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
+          )}
         </label>
         <input
           type="text"
@@ -375,6 +378,9 @@ export default function StepBasicInfo({
       <div className="mb-5">
         <label className="admin-label">
           Business category *
+          {mode === "admin-edit-request" && canEditField("category_id") && (
+            <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
+          )}
         </label>
         <select
           className="admin-input"
@@ -415,6 +421,9 @@ export default function StepBasicInfo({
         <div className="mb-6">
           <label className="admin-label">
             Subcategories *
+          {mode === "admin-edit-request" && canEditField("subcategory_ids") && (
+            <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
+          )}
           </label>
 
           {loadingSubs ? (
@@ -456,6 +465,9 @@ export default function StepBasicInfo({
       <div className="mb-5">
         <label className="admin-label">
           Legal name
+          {mode === "admin-edit-request" && canEditField("legal_name") && (
+            <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
+          )}
         </label>
         <input
           type="text"
@@ -481,6 +493,9 @@ export default function StepBasicInfo({
       <div className="mb-5">
         <label className="admin-label">
           Business type *
+          {mode === "admin-edit-request" && canEditField("business_type") && (
+            <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
+          )}
         </label>
         <select
           className="admin-input"
@@ -510,6 +525,9 @@ export default function StepBasicInfo({
       <div className="mb-5">
         <label className="admin-label">
           Year established
+          {mode === "admin-edit-request" && canEditField("year_established") && (
+            <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
+          )}
         </label>
         <input
           type="number"
@@ -541,6 +559,9 @@ export default function StepBasicInfo({
       <div className="mb-5">
         <label className="admin-label">
           Short description *
+          {mode === "admin-edit-request" && canEditField("short_description") && (
+            <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
+          )}
         </label>
         <textarea
           className="admin-input"
@@ -576,6 +597,9 @@ export default function StepBasicInfo({
       <div className="mb-6">
         <label className="admin-label">
           Full description *
+          {mode === "admin-edit-request" && canEditField("full_description") && (
+            <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
+          )}
         </label>
         
         <textarea

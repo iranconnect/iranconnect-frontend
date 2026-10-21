@@ -109,6 +109,7 @@ export default function EditBusinessPage() {
       : null;
 
   const [initialData, setInitialData] = useState(null);
+  const [ticketMediaReview, setTicketMediaReview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -152,6 +153,7 @@ export default function EditBusinessPage() {
         if (!mounted) return;
 
         if (!hasRequestContext) {
+          setTicketMediaReview(null);
           /*
            * PLR-SUP-REQ-01
            * Direct Admin Edit is admin-note authorized only.
@@ -270,6 +272,20 @@ export default function EditBusinessPage() {
               requestPayload[field];
           }
         }
+
+        setTicketMediaReview({
+          ticketId: requestId,
+          crop: {
+            logo: requestPayload.logo_crop_config ?? null,
+            cover: requestPayload.cover_crop_config ?? null,
+          },
+          media: Array.isArray(request?.review_display?.media)
+            ? request.review_display.media
+            : [],
+          galleryRemovalRequested:
+            Array.isArray(requestPayload?.removed_media?.gallery) &&
+            requestPayload.removed_media.gallery.length > 0,
+        });
 
         setInitialData({
           ...res.data,
@@ -546,6 +562,7 @@ export default function EditBusinessPage() {
                 : "admin-edit"
             }
             initialData={initialData}
+            ticketMediaReview={hasRequestContext ? ticketMediaReview : null}
             onSubmit={submitAdminEdit}
             onSubmissionSuccess={handleSubmissionSuccess}
           />

@@ -370,6 +370,9 @@ export default function RequestDetailsModal({
               </div>
             )}
 
+            {/* Keep legacy detail rendering for other request types. */}
+            {!["new", "update"].includes(details.request_type) && (
+              <>
             <div className="mt-4">
               <h3 className="font-semibold mb-1">Form Data:</h3>
               {renderPayload(details.review_display, details.payload)}
@@ -426,6 +429,23 @@ export default function RequestDetailsModal({
                     ))}
                   </div>
                 </div>
+              )}
+
+              </>
+            )}
+
+            {details.request_type === "update" &&
+              Array.isArray(details.review_display?.media) &&
+              details.review_display.media.some(
+                (asset) =>
+                  asset.role === "gallery" &&
+                  asset.snapshot_group === "removed"
+              ) && (
+                <p className="mt-4 text-sm font-semibold text-red-600">
+                  Gallery Image Removal Requested — The business owner
+                  has requested the removal of one or more gallery images.
+                  Refer to the ticket attachments for details.
+                </p>
               )}
 
             {files.length > 0 && (
@@ -576,14 +596,19 @@ export default function RequestDetailsModal({
                   )}
 
                 {details.status === "approved" && <p>✅ This request has been approved.</p>}
+                {["approved", "rejected"].includes(details.status) &&
+                  ["new", "update"].includes(details.request_type) &&
+                  details.admin_note && (
+                    <div className="mt-3 rounded-lg border p-3 text-left">
+                      <p className="text-sm font-semibold">Admin Note</p>
+                      <p className="mt-1 whitespace-pre-wrap text-sm">
+                        {details.admin_note}
+                      </p>
+                    </div>
+                  )}
                 {details.status === "rejected" && (
                   <div>
                     <p>❌ This request was rejected.</p>
-                    {details.admin_note && (
-                      <p className="italic text-xs text-gray-400 mt-2">
-                        Note from admin: {details.admin_note}
-                      </p>
-                    )}
                   </div>
                 )}
               </div>

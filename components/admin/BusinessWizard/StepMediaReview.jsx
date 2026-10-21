@@ -8,6 +8,7 @@ import {
   useRef,
 } from "react";
 import LogoFrame from "../../business/LogoFrame";
+import apiClient from "../../../utils/apiClient";
 import { Pencil } from "lucide-react";
 import BusinessMediaCropEditor from "../../business/BusinessMediaCropEditor";
 import { getMediaCropStyle } from "../../../utils/businessMediaCropStyle";
@@ -81,6 +82,7 @@ export default function StepMediaReview({
   mode,
   canEditMedia = () => true,
   canEditField = () => true,
+  ticketMediaReview = null,
 }) {
 
   const isExistingBusinessMode =
@@ -119,6 +121,219 @@ export default function StepMediaReview({
 
   const isTicketCreateMode =
     mode === "admin-create-ticket";
+
+  /*
+   * Ticket previews are display-only.
+   * They never enter Business Wizard form state.
+   */
+  const [ticketPreviewState, setTicketPreviewState] = useState({
+    images: [],
+    loading: false,
+    error: "",
+  });
+
+  const ticketPreviewAssets =
+    mode === "admin-edit-request" &&
+    Array.isArray(ticketMediaReview?.media)
+      ? ticketMediaReview.media.filter(
+          (asset) =>
+            asset?.snapshot_group === "requested" &&
+            ["logo", "cover", "gallery"].includes(asset.role) &&
+            asset.preview_available === true
+        )
+      : [];
+
+
+  const requestedTicketMedia =
+    mode === "admin-edit-request" &&
+    Array.isArray(ticketMediaReview?.media)
+      ? ticketMediaReview.media.filter(
+          (asset) =>
+            asset?.snapshot_group === "requested" &&
+            ["logo", "cover", "gallery"].includes(asset.role)
+        )
+      : [];
+
+  const ticketHasLogo =
+    requestedTicketMedia.some((asset) => asset.role === "logo");
+
+  const ticketHasCover =
+    requestedTicketMedia.some((asset) => asset.role === "cover");
+
+  const ticketHasGalleryAdds =
+    requestedTicketMedia.some((asset) => asset.role === "gallery");
+
+  const currentTicketPreviewIdentity = JSON.stringify({
+    ticketId: ticketMediaReview?.ticketId ?? null,
+    assets: ticketPreviewAssets.map(
+      (asset) => [
+        asset.asset_id,
+        asset.role,
+        asset.display_order,
+        asset.preview_available,
+      ]
+    ),
+  });
+
+  const safeTicketImages =
+    ticketPreviewState.ticketId === ticketMediaReview?.ticketId &&
+    ticketPreviewState.identity === currentTicketPreviewIdentity
+      ? ticketPreviewState.images
+      : [];
+
+  const requestedLogoImage =
+    safeTicketImages.find((image) => image.role === "logo");
+
+  const requestedCoverImage =
+    safeTicketImages.find((image) => image.role === "cover");
+
+  const requestedGalleryImages =
+    safeTicketImages
+      .filter((image) => image.role === "gallery")
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+
+  const galleryRemovalRequested =
+    mode === "admin-edit-request" &&
+    ticketMediaReview?.galleryRemovalRequested === true;
+
+  const ticketPreviewIdentity = JSON.stringify({
+    ticketId: ticketMediaReview?.ticketId ?? null,
+    assets: ticketPreviewAssets.map(
+      (asset) => [
+        asset.asset_id,
+        asset.role,
+        asset.display_order,
+        asset.preview_available,
+      ]
+    ),
+  });
+
+  useEffect(() => {
+    const ticketId = ticketMediaReview?.ticketId;
+
+    if (
+      mode !== "admin-edit-request" ||
+      !Number.isSafeInteger(ticketId) ||
+      ticketId <= 0
+    ) {
+      setTicketPreviewState({
+        ticketId: null,
+        identity: null,
+        images: [],
+        loading: false,
+        error: "",
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    let cancelled = false;
+    const urls = [];
+
+    const metadata = Array.isArray(ticketMediaReview.media)
+      ? ticketMediaReview.media
+      : [];
+
+    const assets = metadata.filter(
+      (asset) =>
+        asset?.snapshot_group === "requested" &&
+        ["logo", "cover", "gallery"].includes(asset.role)
+    );
+
+    setTicketPreviewState({
+      ticketId,
+      identity: ticketPreviewIdentity,
+      images: [],
+      loading: assets.length > 0,
+      error: "",
+    });
+
+    async function loadPreviews() {
+      try {
+        if (assets.some(
+          (asset) => asset.preview_available !== true
+        )) {
+          throw new Error("Ticket media preview unavailable.");
+        }
+
+        const images = await Promise.all(
+          assets.map(async (asset) => {
+            const assetId = Number(asset.asset_id);
+
+            if (!Number.isSafeInteger(assetId) || assetId <= 0) {
+              throw new Error("Invalid ticket media identifier.");
+            }
+
+            const response = await apiClient.get(
+              `/admin/requests/${ticketId}/media/${assetId}/preview`,
+              {
+                responseType: "blob",
+                withCredentials: true,
+                signal: controller.signal,
+              }
+            );
+
+            if (cancelled || controller.signal.aborted) {
+              return null;
+            }
+
+            const blob = response.data;
+
+            if (
+              !(blob instanceof Blob) ||
+              !["image/jpeg", "image/png", "image/webp"]
+                .includes(blob.type)
+            ) {
+              throw new Error("Invalid ticket image response.");
+            }
+
+            const url = URL.createObjectURL(blob);
+            urls.push(url);
+
+            return {
+              assetId,
+              role: asset.role,
+              displayOrder: asset.display_order,
+              url,
+            };
+          })
+        );
+
+        if (!cancelled && !controller.signal.aborted) {
+          if (images.some((image) => !image)) {
+            throw new Error("Incomplete ticket media preview.");
+          }
+
+          setTicketPreviewState({
+            ticketId,
+            identity: ticketPreviewIdentity,
+            images,
+            loading: false,
+            error: "",
+          });
+        }
+      } catch {
+        if (!cancelled && !controller.signal.aborted) {
+          setTicketPreviewState({
+            ticketId,
+            identity: ticketPreviewIdentity,
+            images: [],
+            loading: false,
+            error:
+              "Ticket media verification failed. Do not approve without reviewing the requested images.",
+          });
+        }
+      }
+    }
+
+    loadPreviews();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [mode, ticketPreviewIdentity]);
 
   const stepCopy = isAdminEditMode
     ? {
@@ -813,7 +1028,29 @@ export default function StepMediaReview({
     }
 
     if (mode === "admin-edit-request") {
-      return busy === false;
+      const expectedTicketAssets =
+        Array.isArray(ticketMediaReview?.media)
+          ? ticketMediaReview.media.filter(
+              (asset) =>
+                asset?.snapshot_group === "requested" &&
+                ["logo", "cover", "gallery"].includes(asset.role)
+            )
+          : [];
+
+      const previewMatchesTicket =
+        ticketPreviewState.ticketId === ticketMediaReview?.ticketId &&
+        ticketPreviewState.identity === currentTicketPreviewIdentity;
+
+      const allImagesVerified =
+        expectedTicketAssets.length === 0 ||
+        (
+          previewMatchesTicket &&
+          ticketPreviewState.loading === false &&
+          !ticketPreviewState.error &&
+          safeTicketImages.length === expectedTicketAssets.length
+        );
+
+      return busy === false && allImagesVerified;
     }
 
     // =========================
@@ -875,6 +1112,10 @@ export default function StepMediaReview({
     data.removed_media,
     normalized.owner_confirmed,
     busy,
+    ticketMediaReview,
+    ticketPreviewState,
+    currentTicketPreviewIdentity,
+    safeTicketImages,
   ]);
 
   const activeGalleryCount =
@@ -946,6 +1187,43 @@ export default function StepMediaReview({
     <label className="admin-label">
       {stepCopy.logoLabel}
     </label>
+     {ticketHasLogo && (
+       <div className="mb-4">
+         <p className="mb-2 text-xs font-semibold text-red-600">
+           Changed — Requested Logo
+         </p>
+         {requestedLogoImage ? (
+           <button
+             type="button"
+             aria-label="View original requested logo"
+             onClick={() => setZoomImage(requestedLogoImage.url)}
+             style={{
+               display: "block",
+               width: MEDIA_BOX_SIZE,
+               height: MEDIA_BOX_SIZE,
+               padding: 0,
+               border: 0,
+               background: "transparent",
+               cursor: "zoom-in",
+             }}
+           >
+             <LogoFrame
+               src={requestedLogoImage.url}
+               alt="Requested logo"
+               cropConfig={ticketMediaReview?.crop?.logo ?? null}
+               style={{ width: "100%", height: "100%" }}
+             />
+           </button>
+         ) : (
+           <p className="admin-error text-red-600">
+             {ticketPreviewState.loading
+               ? "Loading requested logo..."
+               : "Requested logo unavailable."}
+           </p>
+         )}
+       </div>
+     )}
+
 
     <div
       style={{
@@ -999,6 +1277,7 @@ export default function StepMediaReview({
         )}
 
       {isExistingBusinessMode &&
+        !ticketHasLogo &&
         data.logo_url && (
         <div>
           <p
@@ -1336,6 +1615,49 @@ export default function StepMediaReview({
     <label className="admin-label">
       Cover image
     </label>
+     {ticketHasCover && (
+       <div className="mb-4">
+         <p className="mb-2 text-xs font-semibold text-red-600">
+           Changed — Requested Cover
+         </p>
+         {requestedCoverImage ? (
+           <button
+             type="button"
+             aria-label="View original requested cover"
+             onClick={() => setZoomImage(requestedCoverImage.url)}
+             style={{
+               display: "block",
+               width: "min(330px, 100%)",
+               aspectRatio: "3 / 1",
+               padding: 0,
+               border: "2px solid var(--border)",
+               borderRadius: 12,
+               overflow: "hidden",
+               background: "transparent",
+               cursor: "zoom-in",
+             }}
+           >
+             <img
+               src={requestedCoverImage.url}
+               alt="Requested cover"
+               style={{
+                 display: "block",
+                 width: "100%",
+                 height: "100%",
+                 ...getMediaCropStyle(ticketMediaReview?.crop?.cover ?? null),
+               }}
+             />
+           </button>
+         ) : (
+           <p className="admin-error text-red-600">
+             {ticketPreviewState.loading
+               ? "Loading requested cover..."
+               : "Requested cover unavailable."}
+           </p>
+         )}
+       </div>
+     )}
+
   
     <div
       style={{
@@ -1392,6 +1714,7 @@ export default function StepMediaReview({
         )}
 
       {isExistingBusinessMode &&
+        !ticketHasCover &&
         data.cover_image_url && (
         <div>
           <p
@@ -1728,6 +2051,66 @@ export default function StepMediaReview({
     <label className="admin-label">
       Gallery images (max {MAX_GALLERY_IMAGES})
     </label>
+     {galleryRemovalRequested && (
+       <p className="mb-4 text-sm font-semibold text-red-600">
+         Gallery Image Removal Requested — The business owner
+         requested the removal of one or more images.
+         Refer to the ticket attachments for details.
+       </p>
+     )}
+
+     {ticketHasGalleryAdds && (
+       <div className="mb-5">
+         <p className="mb-3 text-sm font-semibold text-red-600">
+           Added — Review Required
+         </p>
+         {requestedGalleryImages.length > 0 ? (
+           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+             {requestedGalleryImages.map((image) => (
+               <button
+                 key={image.assetId}
+                 type="button"
+                 aria-label="View original requested gallery image"
+                 onClick={() => setZoomImage(image.url)}
+                 style={{
+                   display: "block",
+                   padding: 0,
+                   border: "2px solid var(--border)",
+                   borderRadius: 10,
+                   overflow: "hidden",
+                   background: "transparent",
+                   cursor: "zoom-in",
+                 }}
+               >
+                 <img
+                   src={image.url}
+                   alt="New gallery image"
+                   style={{
+                     display: "block",
+                     width: "100%",
+                     height: 140,
+                     objectFit: "cover",
+                   }}
+                 />
+               </button>
+             ))}
+           </div>
+         ) : (
+           <p className="admin-error text-red-600">
+             {ticketPreviewState.loading
+               ? "Loading requested gallery images..."
+               : "Requested gallery images unavailable."}
+           </p>
+         )}
+       </div>
+     )}
+
+     {mode === "admin-edit-request" && ticketPreviewState.error && (
+       <p className="admin-error mb-4 text-red-600">
+         {ticketPreviewState.error}
+       </p>
+     )}
+
 
     {isTicketCreateMode &&
       Array.isArray(data.gallery) &&
@@ -1782,7 +2165,8 @@ export default function StepMediaReview({
     )}
 
     {isExistingBusinessMode &&
-      Array.isArray(data.gallery) &&
+      !ticketHasGalleryAdds &&
+        Array.isArray(data.gallery) &&
       data.gallery.length > 0 && (
   
       <div className="mb-5">
@@ -2058,6 +2442,7 @@ export default function StepMediaReview({
         }}
       />
       Public profile
+    {mode === "admin-edit-request" && canEditField("is_public") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
     </label>
     <label className="flex items-center gap-2 cursor-pointer">
       <input
@@ -2074,6 +2459,7 @@ export default function StepMediaReview({
         }}
       />
       Allow reviews
+    {mode === "admin-edit-request" && canEditField("allow_reviews") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
     </label>
 
   </div>

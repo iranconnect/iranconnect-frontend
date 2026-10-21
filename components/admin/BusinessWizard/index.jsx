@@ -19,6 +19,7 @@ const STEPS = [
 export default function BusinessWizard({
   mode = "admin-create",
   initialData = null,
+  ticketMediaReview = null,
   onSubmit: externalSubmit = null,
   onSubmissionSuccess = null,
 }) {
@@ -759,6 +760,7 @@ export default function BusinessWizard({
           mode={mode}
           canEditMedia={canEditMedia}
           canEditField={canEditField}
+          ticketMediaReview={ticketMediaReview}
         />
       )}
 
