@@ -1,6 +1,6 @@
 //frontend/components/admin/RequestDetailsModal.jsx
 'use client';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import apiClient from "../../utils/apiClient.js";
 
 export default function RequestDetailsModal({
@@ -17,6 +17,80 @@ export default function RequestDetailsModal({
   const [showApproveBox, setShowApproveBox] = useState(false);
   const [showRejectBox, setShowRejectBox] = useState(false);
 
+  // B-04-IMP-03C-02 / VERIFIED MEDIA PREVIEW
+  const [mediaPreviews, setMediaPreviews] = useState({});
+  const mediaUrlsRef = useRef([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const createdUrls = [];
+    mediaUrlsRef.current = createdUrls;
+
+    const media = Array.isArray(details?.review_display?.media)
+      ? details.review_display.media
+      : [];
+
+    const requested = media.filter(
+      (asset) =>
+        asset.snapshot_group === "requested" &&
+        asset.preview_available === true
+    );
+
+    setMediaPreviews({});
+
+    async function loadPreviews() {
+      const results = await Promise.all(
+        requested.map(async (asset) => {
+          try {
+            const response = await apiClient.get(
+              `/admin/requests/${details.id}/media/${asset.asset_id}/preview`,
+              {
+                responseType: "blob",
+                withCredentials: true,
+                signal: controller.signal,
+              }
+            );
+
+            if (
+              cancelled ||
+              !["image/jpeg", "image/png", "image/webp"].includes(
+                response.data?.type
+              )
+            ) {
+              return [asset.asset_id, null];
+            }
+
+            const url = URL.createObjectURL(response.data);
+            createdUrls.push(url);
+            return [asset.asset_id, url];
+          } catch {
+            return [asset.asset_id, null];
+          }
+        })
+      );
+
+      if (!cancelled) {
+        setMediaPreviews(Object.fromEntries(results));
+      }
+    }
+
+    if (details?.id && requested.length > 0) {
+      loadPreviews();
+    }
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      createdUrls.forEach((url) => URL.revokeObjectURL(url));
+      if (mediaUrlsRef.current === createdUrls) {
+        mediaUrlsRef.current = [];
+      }
+    };
+  }, [details]);
+
+
+
   /* ---------------------------------------------------------
      ⌨️ Close modal with ESC
   --------------------------------------------------------- */
@@ -29,28 +103,48 @@ export default function RequestDetailsModal({
   /* ---------------------------------------------------------
      📦 Load request details
   --------------------------------------------------------- */
+  // B-04-IMP-11 / TICKET REQUEST LIFECYCLE
   useEffect(() => {
-    if (request?.id) fetchDetails();
-  }, [request]);
+    const controller = new AbortController();
+    let active = true;
 
-  async function fetchDetails() {
+    setDetails(null);
     setLoading(true);
-    try {
-      const res = await apiClient.get(
-        `/admin/requests/${request.id}`,
-        {
-          withCredentials: true,
-          headers: { "x-iranconnect-admin": "true" },
+
+    async function loadDetails() {
+      if (!request?.id) {
+        if (active) setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await apiClient.get(
+          `/admin/requests/${request.id}`,
+          {
+            signal: controller.signal,
+            withCredentials: true,
+            headers: { "x-iranconnect-admin": "true" },
+          }
+        );
+
+        if (active) setDetails(res.data);
+      } catch (err) {
+        if (active && !controller.signal.aborted) {
+          console.error("Error fetching request details:", err);
+          setDetails(null);
         }
-      );
-      setDetails(res.data);
-    } catch (err) {
-      console.error("❌ Error fetching request details:", err);
-      setDetails(null);
-    } finally {
-      setLoading(false);
+      } finally {
+        if (active) setLoading(false);
+      }
     }
-  }
+
+    loadDetails();
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [request?.id]);
 
   /* ---------------------------------------------------------
      ✅ Approve / Reject
@@ -108,23 +202,78 @@ export default function RequestDetailsModal({
     console.warn("⚠️ No details received from API");
   }
 
-  const renderPayload = (payload) => {
-    if (!payload || typeof payload !== "object") return <p>—</p>;
+  // B-04-IMP-03B / REVIEW DISPLAY FIELDS
+  const renderPayload = (reviewDisplay, fallbackPayload) => {
+    const fields =
+      reviewDisplay?.fields &&
+      typeof reviewDisplay.fields === "object" &&
+      !Array.isArray(reviewDisplay.fields)
+        ? reviewDisplay.fields
+        : fallbackPayload || {};
+
+    const changedFields = new Set(
+      Array.isArray(reviewDisplay?.changed_fields)
+        ? reviewDisplay.changed_fields
+        : []
+    );
+
+    const excludedFields = new Set([
+      "business_snapshot",
+      "audit_meta",
+      "audit_schema_version",
+      "audit_reference_labels",
+      "removed_media",
+      "logo_crop_config",
+      "cover_crop_config",
+    ]);
+
+    const displayValue = (value) => {
+      if (value === null || value === undefined || value === "") {
+        return "—";
+      }
+
+      if (typeof value === "boolean") {
+        return value ? "Yes" : "No";
+      }
+
+      if (typeof value === "object") {
+        return JSON.stringify(value, null, 2);
+      }
+
+      return String(value);
+    };
+
+    const entries = Object.entries(fields).filter(
+      ([key]) => !excludedFields.has(key)
+    );
+
+    if (entries.length === 0) {
+      return <p>—</p>;
+    }
+
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm mt-2">
-        {Object.entries(payload).map(([key, value]) => (
-          <div key={key} className="flex flex-col">
-            <span className="font-medium text-turquoise capitalize">
-              {key.replace(/_/g, " ")}:
-            </span>
-            <span className="opacity-80">
-              {value === "" || value === null ? "—" : String(value)}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm mt-2">
+        {entries.map(([key, value]) => (
+          <div key={key} className="flex flex-col min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-turquoise capitalize">
+                {key.replace(/_/g, " ")}:
+              </span>
+              {changedFields.has(key) && (
+                <span className="rounded bg-red-100 text-red-700 border border-red-300 px-2 py-0.5 text-xs font-semibold">
+                  Changed
+                </span>
+              )}
+            </div>
+            <span className="opacity-80 whitespace-pre-wrap break-words">
+              {displayValue(value)}
             </span>
           </div>
         ))}
       </div>
     );
   };
+
 
   const isActionable =
     details?.status === "pending" ||
@@ -223,8 +372,61 @@ export default function RequestDetailsModal({
 
             <div className="mt-4">
               <h3 className="font-semibold mb-1">Form Data:</h3>
-              {renderPayload(details.payload)}
+              {renderPayload(details.review_display, details.payload)}
             </div>
+
+            {/* Verified Ticket Media — read-only */}
+            {Array.isArray(details.review_display?.media) &&
+              details.review_display.media.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="font-semibold mb-2">
+                    Ticket Media
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {details.review_display.media.map((asset) => (
+                      <div
+                        key={asset.asset_id}
+                        className="border rounded-lg p-3"
+                      >
+                        <div className="flex justify-between gap-2 mb-2">
+                          <span className="font-medium capitalize">
+                            {asset.role}
+                          </span>
+
+                          <span className="text-xs font-semibold">
+                            {asset.snapshot_group === "removed"
+                              ? "Removal Requested"
+                              : ["New", "Replaced"].includes(
+                                  asset.operation_label
+                                )
+                                ? asset.operation_label
+                                : "Requested Media"}
+                          </span>
+                        </div>
+
+                        {asset.snapshot_group === "requested" ? (
+                          mediaPreviews[asset.asset_id] ? (
+                            <img
+                              src={mediaPreviews[asset.asset_id]}
+                              alt={`${asset.role} requested media`}
+                              className="w-full h-40 object-contain rounded"
+                            />
+                          ) : (
+                            <p className="text-xs opacity-70">
+                              Preview unavailable or loading.
+                            </p>
+                          )
+                        ) : (
+                          <p className="text-xs opacity-70">
+                            Media removal requested.
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             {files.length > 0 && (
               <div className="mt-4">

@@ -200,6 +200,13 @@ export default function BusinessMediaCropEditor({
           Move and zoom the original image within the crop frame.
           The source file will not be changed.
         </p>
+        {/* PLR03-T26-UX / RECOMMENDED IMAGE DIMENSIONS */}
+        <p className="mt-2 text-xs text-slate-600">
+          <span className="font-semibold">Recommended image:</span>{" "}
+          {isLogo
+            ? "1000 × 1000 px (1:1 square)"
+            : "1800 × 600 px (3:1 landscape)"}
+        </p>
         {legacy && (
           <p className="mt-2 text-xs text-amber-800">
             This image has a previous crop setting. The new

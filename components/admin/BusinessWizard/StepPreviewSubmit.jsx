@@ -343,10 +343,52 @@ export default function StepPreviewSubmit({
           normalizedAdminNote.length > 0
         );
 
+  // B-03-I01-T25 / FINAL SUBMIT CROP GUARD
+  // Direct Admin NEW only; other modes retain existing contracts.
+  const validDirectAdminCropV2 = (crop) =>
+    crop !== null &&
+    typeof crop === "object" &&
+    !Array.isArray(crop) &&
+    Object.keys(crop).sort().join(",") ===
+      "positionX,positionY,version,zoom" &&
+    crop.version === 2 &&
+    typeof crop.zoom === "number" &&
+    Number.isFinite(crop.zoom) &&
+    crop.zoom >= 1 &&
+    crop.zoom <= 3 &&
+    typeof crop.positionX === "number" &&
+    Number.isFinite(crop.positionX) &&
+    crop.positionX >= 0 &&
+    crop.positionX <= 1 &&
+    typeof crop.positionY === "number" &&
+    Number.isFinite(crop.positionY) &&
+    crop.positionY >= 0 &&
+    crop.positionY <= 1;
+
+  // B-03-I02-IMP-03 / OWNER SUBMIT CROP GUARD
+  // All new uploads require approved Crop V2.
+  // Existing media without a new file remain unchanged.
+  // B-03-I03-IMP-02 / DIRECT ADMIN EDIT SUBMIT GUARD
+  const requiresNewMediaCrop =
+    isAdminCreate ||
+    mode === "admin-edit" ||
+    mode === "user-new" ||
+    mode === "user-update";
+
+  const hasApprovedDirectAdminCrops =
+    !requiresNewMediaCrop ||
+    (
+      (!data.logo_file ||
+        validDirectAdminCropV2(data.logo_crop_config)) &&
+      (!data.cover_file ||
+        validDirectAdminCropV2(data.cover_crop_config))
+    );
+
   const isSubmitDisabled =
     loading ||
     submitSuccess ||
-    !isValidAdminAuthorization;
+    !isValidAdminAuthorization ||
+    !hasApprovedDirectAdminCrops;
 
   function setChangeSourceType(nextSourceType) {
     setData((prev) => ({
@@ -364,7 +406,12 @@ export default function StepPreviewSubmit({
   }
 
   function handleFinalSubmit() {
-    if (!isValidAdminAuthorization) {
+    if (
+      loading ||
+      submitSuccess ||
+      !isValidAdminAuthorization ||
+      !hasApprovedDirectAdminCrops
+    ) {
       return;
     }
 
@@ -942,7 +989,7 @@ export default function StepPreviewSubmit({
                     <PreviewFileLogoFrame
                       file={data.logo_file}
                       cropConfig={
-                        isAdminEdit
+                        (isAdminEdit || mode === "admin-create")
                           ? data.logo_crop_config ?? null
                           : null
                       }
@@ -1079,7 +1126,7 @@ export default function StepPreviewSubmit({
                         width: "100%",
                         height: "100%",
                         ...getMediaCropStyle(
-                          isAdminEdit
+                          (isAdminEdit || mode === "admin-create")
                             ? data.cover_crop_config ?? null
                             : null
                         ),

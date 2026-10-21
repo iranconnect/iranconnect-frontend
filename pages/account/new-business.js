@@ -20,6 +20,16 @@ function buildNewBusinessRequestFormData(wizardData) {
   };
 
   Object.entries(cleanedData).forEach(([key, value]) => {
+    // B-03-I02-IMP-04 / CROP-FILE PAYLOAD BINDING
+    if (
+      (key === "logo_crop_config" &&
+        !(wizardData.logo_file instanceof File)) ||
+      (key === "cover_crop_config" &&
+        !(wizardData.cover_file instanceof File))
+    ) {
+      return;
+    }
+
     // Files uploaded through the Wizard
     if (key === "gallery_files") {
       if (Array.isArray(value)) {

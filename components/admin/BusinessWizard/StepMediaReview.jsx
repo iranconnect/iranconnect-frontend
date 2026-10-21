@@ -92,6 +92,15 @@ export default function StepMediaReview({
     mode === "admin-edit" ||
     mode === "admin-edit-request";
 
+  // B-03-I02 / Owner NEW and UPDATE crop integration.
+  // Direct Admin and Owner use the shared Crop V2 editor.
+  // Admin ticket fulfillment modes remain excluded.
+  const supportsWizardCrop =
+    mode === "admin-create" ||
+    mode === "admin-edit" ||
+    mode === "user-new" ||
+    mode === "user-update";
+
   const canEditLogo =
     canEditMedia("logo");
 
@@ -492,7 +501,7 @@ export default function StepMediaReview({
 
       setField("logo_file", file);
 
-      if (mode === "admin-edit") {
+      if (supportsWizardCrop) {
         setField("logo_crop_config", null);
       }
 
@@ -506,13 +515,13 @@ export default function StepMediaReview({
 
       setField("cover_file", file);
 
-      if (mode === "admin-edit") {
+      if (supportsWizardCrop) {
         setField("cover_crop_config", null);
       }
 
     }
 
-    if (mode === "admin-edit" && (type === "logo" || type === "cover")) {
+    if (supportsWizardCrop && (type === "logo" || type === "cover")) {
       setWizardCropTarget({
         role: type,
         src: localPreviewUrl,
@@ -735,7 +744,35 @@ export default function StepMediaReview({
         return false;
       }
 
+      // B-03-I02-IMP-02 / OWNER CROP GUARD
+      const validOwnerCropV2 = (crop) =>
+        crop !== null &&
+        typeof crop === "object" &&
+        !Array.isArray(crop) &&
+        Object.keys(crop).sort().join(",") ===
+          "positionX,positionY,version,zoom" &&
+        crop.version === 2 &&
+        typeof crop.zoom === "number" &&
+        Number.isFinite(crop.zoom) &&
+        crop.zoom >= 1 &&
+        crop.zoom <= 3 &&
+        typeof crop.positionX === "number" &&
+        Number.isFinite(crop.positionX) &&
+        crop.positionX >= 0 &&
+        crop.positionX <= 1 &&
+        typeof crop.positionY === "number" &&
+        Number.isFinite(crop.positionY) &&
+        crop.positionY >= 0 &&
+        crop.positionY <= 1;
+
+      const approvedOwnerCrops =
+        (!data.logo_file ||
+          validOwnerCropV2(data.logo_crop_config)) &&
+        (!data.cover_file ||
+          validOwnerCropV2(data.cover_crop_config));
+
       return (
+        approvedOwnerCrops &&
         normalized.owner_confirmed === true &&
         busy === false
       );
@@ -744,10 +781,38 @@ export default function StepMediaReview({
     // =========================
     // ADMIN EDIT MODE
     // =========================
-    if (
-      mode === "admin-edit" ||
-      mode === "admin-edit-request"
-    ) {
+    if (mode === "admin-edit") {
+      // B-03-I03-IMP-02 / DIRECT ADMIN EDIT CROP GUARD
+      const validAdminEditCropV2 = (crop) =>
+        crop !== null &&
+        typeof crop === "object" &&
+        !Array.isArray(crop) &&
+        Object.keys(crop).sort().join(",") ===
+          "positionX,positionY,version,zoom" &&
+        crop.version === 2 &&
+        typeof crop.zoom === "number" &&
+        Number.isFinite(crop.zoom) &&
+        crop.zoom >= 1 &&
+        crop.zoom <= 3 &&
+        typeof crop.positionX === "number" &&
+        Number.isFinite(crop.positionX) &&
+        crop.positionX >= 0 &&
+        crop.positionX <= 1 &&
+        typeof crop.positionY === "number" &&
+        Number.isFinite(crop.positionY) &&
+        crop.positionY >= 0 &&
+        crop.positionY <= 1;
+
+      return (
+        busy === false &&
+        (!data.logo_file ||
+          validAdminEditCropV2(data.logo_crop_config)) &&
+        (!data.cover_file ||
+          validAdminEditCropV2(data.cover_crop_config))
+      );
+    }
+
+    if (mode === "admin-edit-request") {
       return busy === false;
     }
 
@@ -762,8 +827,38 @@ export default function StepMediaReview({
         !!data.logo_url
       );
 
+    // B-03-I01-T25 / MANDATORY DIRECT ADMIN CROP
+    // Ticket-bound and owner flows retain their own contracts.
+    const validCropV2 = (crop) =>
+      crop !== null &&
+      typeof crop === "object" &&
+      !Array.isArray(crop) &&
+      Object.keys(crop).sort().join(",") ===
+        "positionX,positionY,version,zoom" &&
+      crop.version === 2 &&
+      typeof crop.zoom === "number" &&
+      Number.isFinite(crop.zoom) &&
+      crop.zoom >= 1 &&
+      crop.zoom <= 3 &&
+      typeof crop.positionX === "number" &&
+      Number.isFinite(crop.positionX) &&
+      crop.positionX >= 0 &&
+      crop.positionX <= 1 &&
+      typeof crop.positionY === "number" &&
+      Number.isFinite(crop.positionY) &&
+      crop.positionY >= 0 &&
+      crop.positionY <= 1;
+
+    const hasApprovedDirectAdminCrops =
+      !["admin-create", "user-new"].includes(mode) ||
+      (
+        (!data.logo_file || validCropV2(data.logo_crop_config)) &&
+        (!data.cover_file || validCropV2(data.cover_crop_config))
+      );
+
     return (
       hasRequiredLogo &&
+      hasApprovedDirectAdminCrops &&
       normalized.owner_confirmed ===
         true &&
       busy === false
@@ -773,6 +868,8 @@ export default function StepMediaReview({
     mode,
     data.logo_file,
     data.cover_file,
+    data.logo_crop_config,
+    data.cover_crop_config,
     data.logo_url,
     data.cover_image_url,
     data.removed_media,
@@ -1122,7 +1219,7 @@ export default function StepMediaReview({
               <LogoFrame
                 src={logoPreview}
                 cropConfig={
-                  mode === "admin-edit"
+                  supportsWizardCrop
                     ? data.logo_crop_config
                     : null
                 }
@@ -1134,7 +1231,7 @@ export default function StepMediaReview({
               />
             </button>
       
-            {mode === "admin-edit" &&
+            {supportsWizardCrop &&
               data.logo_crop_config &&
               logoPreview && (
               <button
@@ -1175,7 +1272,7 @@ export default function StepMediaReview({
                 setLogoPreview(null);
       
                 setField("logo_file", null);
-                if (mode === "admin-edit") {
+                if (supportsWizardCrop) {
                   setField("logo_crop_config", null);
                 }
 
@@ -1506,7 +1603,7 @@ export default function StepMediaReview({
                 width: "100%",
                 height: "100%",
                 ...getMediaCropStyle(
-                  mode === "admin-edit"
+                  supportsWizardCrop
                     ? data.cover_crop_config
                     : null
                 ),
@@ -1517,7 +1614,7 @@ export default function StepMediaReview({
               }}
             />
   
-            {mode === "admin-edit" &&
+            {supportsWizardCrop &&
               data.cover_crop_config &&
               coverPreview && (
               <button
@@ -1563,7 +1660,7 @@ export default function StepMediaReview({
                   "cover_file",
                   null
                 );
-                if (mode === "admin-edit") {
+                if (supportsWizardCrop) {
                   setField("cover_crop_config", null);
                 }
 

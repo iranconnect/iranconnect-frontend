@@ -160,6 +160,16 @@ async function submitUpdateRequest(wizardData) {
   fd.append("business_id", selectedBusiness);
 
   Object.entries(wizardData).forEach(([key, value]) => {
+    // B-03-I02-IMP-04 / CROP-FILE PAYLOAD BINDING
+    if (
+      (key === "logo_crop_config" &&
+        !(wizardData.logo_file instanceof File)) ||
+      (key === "cover_crop_config" &&
+        !(wizardData.cover_file instanceof File))
+    ) {
+      return;
+    }
+
     if (
       key === "gallery_files" &&
       Array.isArray(value)
