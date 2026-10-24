@@ -124,6 +124,10 @@ export default function StepMediaReview({
   const isTicketCreateMode =
     mode === "admin-create-ticket";
 
+  const isTicketReview =
+    mode === "admin-create-ticket" ||
+    mode === "admin-edit-request";
+
   /*
    * Ticket previews are display-only.
    * They never enter Business Wizard form state.
@@ -1071,8 +1075,16 @@ export default function StepMediaReview({
     </label>
      {ticketHasLogo && (
        <div className="mb-4">
-         <p className="mb-2 text-xs font-semibold text-red-600">
-           Changed — Requested Logo
+         <p
+           className={
+             isTicketCreateMode
+               ? "mb-2 text-xs font-semibold text-gray-900"
+               : "mb-2 text-xs font-semibold text-red-600"
+           }
+         >
+           {isTicketCreateMode
+             ? "Requested"
+             : "Changed — Requested Logo"}
          </p>
          {requestedLogoImage ? (
            <button
@@ -1109,7 +1121,7 @@ export default function StepMediaReview({
 
     <div
       style={{
-        display: "grid",
+        display: isTicketReview ? "none" : "grid",
         gridTemplateColumns:
           "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
         gap: 24,
@@ -1500,8 +1512,16 @@ export default function StepMediaReview({
     </label>
      {ticketHasCover && (
        <div className="mb-4">
-         <p className="mb-2 text-xs font-semibold text-red-600">
-           Changed — Requested Cover
+         <p
+           className={
+             isTicketCreateMode
+               ? "mb-2 text-xs font-semibold text-gray-900"
+               : "mb-2 text-xs font-semibold text-red-600"
+           }
+         >
+           {isTicketCreateMode
+             ? "Requested"
+             : "Changed — Requested Cover"}
          </p>
          {requestedCoverImage ? (
            <button
@@ -1544,7 +1564,7 @@ export default function StepMediaReview({
   
     <div
       style={{
-        display: "grid",
+        display: isTicketReview ? "none" : "grid",
         gridTemplateColumns:
           "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
         gap: 24,
@@ -1946,8 +1966,15 @@ export default function StepMediaReview({
 
      {ticketHasGalleryAdds && (
        <div className="mb-5">
-         <p className="mb-3 text-sm font-semibold text-red-600">
-           Added — Review Required
+         <p
+           className={
+  isTicketCreateMode ? "mb-3 text-sm font-semibold text-gray-900"
+               : "mb-3 text-sm font-semibold text-red-600"
+           }
+         >
+           {isTicketCreateMode
+             ? "Requested"
+             : "Added — Review Required"}
          </p>
          {requestedGalleryImages.length > 0 ? (
            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -1998,6 +2025,7 @@ export default function StepMediaReview({
 
 
     {isTicketCreateMode &&
+      !isTicketReview &&
       Array.isArray(data.gallery) &&
       data.gallery.length > 0 && (
 
@@ -2143,11 +2171,13 @@ export default function StepMediaReview({
       </div>
     )}         
 
+    {!isTicketReview && (
     <p className="admin-hint mb-3">
       {stepCopy.galleryUploadLabel} (
       {remainingGallerySlots}{" "}
       slots remaining)
     </p>
+    )}
 
     {hasGalleryOverflow && (
       <p
@@ -2161,7 +2191,7 @@ export default function StepMediaReview({
       </p>
     )}
     
-    {remainingGallerySlots > 0 && (
+    {!isTicketReview && remainingGallerySlots > 0 && (
       <label
         style={{
           width: MEDIA_BOX_SIZE,

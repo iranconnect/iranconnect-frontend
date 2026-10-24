@@ -961,6 +961,7 @@ export default function StepPreviewSubmit({
       <Section title={previewCopy.mediaTitle}>
         {isTicketReview && (
           <TicketMediaReview
+            mode={mode}
             ticketMediaReview={ticketMediaReview}
             preview={sharedTicketPreview}
             currentGallery={

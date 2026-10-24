@@ -3,11 +3,13 @@ import LogoFrame from "../../business/LogoFrame";
 import { getMediaCropStyle } from "../../../utils/businessMediaCropStyle";
 
 export default function TicketMediaReview({
+  mode,
   ticketMediaReview,
   preview,
   currentGallery = [],
 }) {
   const [originalUrl, setOriginalUrl] = useState(null);
+  const isNewTicket = mode === "admin-create-ticket";
 
   const assets = Array.isArray(ticketMediaReview?.media)
     ? ticketMediaReview.media.filter(
@@ -46,8 +48,16 @@ export default function TicketMediaReview({
     <div>
       {logo && (
         <div className="mb-5">
-          <p className="mb-2 text-sm font-semibold text-red-600">
-            Changed — Requested Logo
+          <p
+            className={
+              isNewTicket
+                ? "mb-2 text-sm font-semibold text-gray-900"
+                : "mb-2 text-sm font-semibold text-red-600"
+            }
+          >
+            {isNewTicket
+              ? "Requested"
+              : "Changed — Requested Logo"}
           </p>
           <button
             type="button"
@@ -66,14 +76,34 @@ export default function TicketMediaReview({
 
       {cover && (
         <div className="mb-5">
-          <p className="mb-2 text-sm font-semibold text-red-600">
-            Changed — Requested Cover
+          <p
+            className={
+              isNewTicket
+                ? "mb-2 text-sm font-semibold text-gray-900"
+                : "mb-2 text-sm font-semibold text-red-600"
+            }
+          >
+            {isNewTicket
+              ? "Requested"
+              : "Changed — Requested Cover"}
           </p>
           <button
             type="button"
             onClick={() => openOriginal(cover.url)}
             aria-label="View original requested cover"
-            style={{ width: 300, maxWidth: "100%", aspectRatio: "3 / 1" }}
+            style={{
+              display: "block",
+              width: 300,
+              maxWidth: "100%",
+              aspectRatio: "3 / 1",
+              overflow: "hidden",
+              position: "relative",
+              borderRadius: 8,
+              padding: 0,
+              border: 0,
+              background: "transparent",
+              cursor: "zoom-in",
+            }}
           >
             <img
               src={cover.url}
@@ -96,8 +126,15 @@ export default function TicketMediaReview({
 
       {gallery.length > 0 && (
         <div className="mb-5">
-          <p className="mb-2 text-sm font-semibold text-red-600">
-            Added — Review Required
+          <p
+            className={
+  isNewTicket ? "mb-2 text-sm font-semibold text-gray-900"
+                : "mb-2 text-sm font-semibold text-red-600"
+            }
+          >
+            {isNewTicket
+              ? "Requested"
+              : "Added — Review Required"}
           </p>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {gallery.map((image) => (
