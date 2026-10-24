@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import apiClient from "../../../utils/apiClient";
 import LogoFrame from "../../business/LogoFrame";
+import TicketMediaReview from "./TicketMediaReview";
 import { getMediaCropStyle } from "../../../utils/businessMediaCropStyle";
 
 const BUSINESS_TYPE_LABELS = {
@@ -113,6 +114,9 @@ export default function StepPreviewSubmit({
   onSubmit,
   loading,
   mode,
+  ticketMediaReview = null,
+  sharedTicketPreview = null,
+  ticketMediaReady = true,
   submitMessage,
   submitError,
   ticketCode,
@@ -137,6 +141,41 @@ export default function StepPreviewSubmit({
 
   const isUserUpdate = mode === "user-update";
   const isUserNew = mode === "user-new";
+  const isTicketReview =
+    isAdminTicketCreate || isAdminRequestEdit;
+
+  const ticketAssets = Array.isArray(
+    ticketMediaReview?.media
+  )
+    ? ticketMediaReview.media.filter(
+        (asset) =>
+          asset?.snapshot_group === "requested" &&
+          ["logo", "cover", "gallery"].includes(asset.role)
+      )
+    : [];
+
+  const previewVerified =
+    sharedTicketPreview?.verified === true &&
+    sharedTicketPreview?.ticketId ===
+      ticketMediaReview?.ticketId &&
+    ticketAssets.length > 0;
+
+  const ticketImages = previewVerified
+    ? sharedTicketPreview.images
+    : [];
+
+  const ticketLogo = ticketImages.find(
+    (image) => image.role === "logo"
+  );
+
+  const ticketCover = ticketImages.find(
+    (image) => image.role === "cover"
+  );
+
+  const ticketGallery = ticketImages
+    .filter((image) => image.role === "gallery")
+    .sort((a, b) => a.displayOrder - b.displayOrder);
+
 
   /*
    * PLR-SUP-REQ-01
@@ -387,6 +426,7 @@ export default function StepPreviewSubmit({
   const isSubmitDisabled =
     loading ||
     submitSuccess ||
+    (isTicketReview && !ticketMediaReady) ||
     !isValidAdminAuthorization ||
     !hasApprovedDirectAdminCrops;
 
@@ -609,6 +649,59 @@ export default function StepPreviewSubmit({
     data.tags,
   ]);
   
+  const changedFieldByLabel = {
+    "Business name": "name",
+    "Business category": "category_id",
+    "Subcategories": "subcategory_ids",
+    "Legal name": "legal_name",
+    "Business type": "business_type",
+    "Year established": "year_established",
+    "Short description": "short_description",
+    "Full description": "full_description",
+    "Services offered": "services",
+    "Tags": "tags",
+    "Service mode": "service_mode",
+    "Availability type": "availability_type",
+    "Availability note": "availability_note",
+    "Business hours": "availability_hours",
+    "Business location (Google Maps link)": "location_map_url",
+    "Service base location (Google Maps link)": "base_location_map_url",
+    "Address": "address",
+    "Country": "country",
+    "City": "city",
+    "Postal code": "postal_code",
+    "Service radius (km)": "service_radius_km",
+    "Phone": "phone",
+    "Email": "email",
+    "Website": "website",
+    "Show phone number": "show_phone",
+    "Show email": "show_email",
+    "Instagram": "instagram_url",
+    "Facebook": "facebook_url",
+    "LinkedIn": "linkedin_url",
+    "Twitter / X": "twitter_url",
+    "Telegram": "telegram_url",
+    "WhatsApp": "whatsapp_number",
+  };
+
+  const requestedFields = new Set(
+    isAdminRequestEdit &&
+    Array.isArray(data.update_scope?.allowed_update_fields)
+      ? data.update_scope.allowed_update_fields
+      : []
+  );
+
+  const ReviewItem = ({ label, ...props }) => (
+    <Item
+      label={label}
+      changed={
+        isAdminRequestEdit &&
+        requestedFields.has(changedFieldByLabel[label])
+      }
+      {...props}
+    />
+  );
+
   return (
     <div className="admin-section">
       <h2 className="admin-title mb-1">
@@ -624,17 +717,17 @@ export default function StepPreviewSubmit({
       ───────────────────────── */}
       <Section title="Basic Business Information">
       
-        <Item
+        <ReviewItem
           label="Business name"
           value={data.name}
         />
       
-        <Item
+        <ReviewItem
           label="Business category"
           value={categoryName}
         />
       
-        <Item
+        <ReviewItem
           label="Subcategories"
           value={
             subcategoryNames.length > 0
@@ -644,12 +737,12 @@ export default function StepPreviewSubmit({
           multiline
         />
       
-        <Item
+        <ReviewItem
           label="Legal name"
           value={data.legal_name}
         />
       
-        <Item
+        <ReviewItem
           label="Business type"
           value={
             BUSINESS_TYPE_LABELS[data.business_type] ||
@@ -657,18 +750,18 @@ export default function StepPreviewSubmit({
           }
         />
       
-        <Item
+        <ReviewItem
           label="Year established"
           value={data.year_established}
         />
       
-        <Item
+        <ReviewItem
           label="Short description"
           value={data.short_description}
           multiline
         />
       
-        <Item
+        <ReviewItem
           label="Full description"
           value={data.full_description}
           multiline
@@ -682,7 +775,7 @@ export default function StepPreviewSubmit({
       ───────────────────────── */}
       <Section title="Services & Tags">
       
-        <Item
+        <ReviewItem
           label="Services offered"
           value={
             serviceNames.length > 0
@@ -692,7 +785,7 @@ export default function StepPreviewSubmit({
           multiline
         />
       
-        <Item
+        <ReviewItem
           label="Tags"
           value={
             tagNames.length > 0
@@ -709,7 +802,7 @@ export default function StepPreviewSubmit({
       <Section title="Location, Availability & Contact">
       
         {/* Service mode */}
-        <Item
+        <ReviewItem
           label="Service mode"
           value={
             SERVICE_MODE_LABELS[data.service_mode] ||
@@ -718,7 +811,7 @@ export default function StepPreviewSubmit({
         />
       
         {/* Availability type */}
-        <Item
+        <ReviewItem
           label="Availability type"
           value={
             AVAILABILITY_LABELS[data.availability_type] ||
@@ -727,82 +820,82 @@ export default function StepPreviewSubmit({
         />
       
         {/* Availability note */}
-        <Item
+        <ReviewItem
           label="Availability note"
           value={data.availability_note}
           multiline
         />
       
         {/* Business hours */}
-        <Item
+        <ReviewItem
           label="Business hours"
           value={formatBusinessHours(data.availability_hours)}
           multiline
         />
       
         {/* Business location */}
-        <Item
+        <ReviewItem
           label="Business location (Google Maps link)"
           value={data.location_map_url}
         />
       
         {/* Base location */}
-        <Item
+        <ReviewItem
           label="Service base location (Google Maps link)"
           value={data.base_location_map_url}
         />
       
         {/* Address */}
-        <Item
+        <ReviewItem
           label="Address"
           value={data.address}
           multiline
         />
       
         {/* Country */}
-        <Item
+        <ReviewItem
           label="Country"
           value={data.country}
         />
       
         {/* City */}
-        <Item
+        <ReviewItem
           label="City"
           value={data.city}
         />
       
         {/* Postal code */}
-        <Item
+        <ReviewItem
           label="Postal code"
           value={data.postal_code}
         />
       
         {/* Service radius */}
-        <Item
+        <ReviewItem
           label="Service radius (km)"
           value={data.service_radius_km}
         />
       
         {/* Phone */}
-        <Item
+        <ReviewItem
           label="Phone"
           value={data.phone}
         />
       
         {/* Email */}
-        <Item
+        <ReviewItem
           label="Email"
           value={data.email}
         />
       
         {/* Website */}
-        <Item
+        <ReviewItem
           label="Website"
           value={data.website}
         />
       
         {/* Show phone */}
-        <Item
+        <ReviewItem
           label="Show phone number"
           value={
             data.show_phone === true
@@ -814,7 +907,7 @@ export default function StepPreviewSubmit({
         />
       
         {/* Show email */}
-        <Item
+        <ReviewItem
           label="Show email"
           value={
             data.show_email === true
@@ -826,37 +919,37 @@ export default function StepPreviewSubmit({
         />
       
         {/* Instagram */}
-        <Item
+        <ReviewItem
           label="Instagram"
           value={data.instagram_url}
         />
       
         {/* Facebook */}
-        <Item
+        <ReviewItem
           label="Facebook"
           value={data.facebook_url}
         />
       
         {/* LinkedIn */}
-        <Item
+        <ReviewItem
           label="LinkedIn"
           value={data.linkedin_url}
         />
       
         {/* Twitter / X */}
-        <Item
+        <ReviewItem
           label="Twitter / X"
           value={data.twitter_url}
         />
       
         {/* Telegram */}
-        <Item
+        <ReviewItem
           label="Telegram"
           value={data.telegram_url}
         />
       
         {/* WhatsApp */}
-        <Item
+        <ReviewItem
           label="WhatsApp"
           value={data.whatsapp_number}
         />
@@ -866,6 +959,18 @@ export default function StepPreviewSubmit({
          MEDIA, VISIBILITY & COMPLIANCE
       ───────────────────────── */}
       <Section title={previewCopy.mediaTitle}>
+        {isTicketReview && (
+          <TicketMediaReview
+            ticketMediaReview={ticketMediaReview}
+            preview={sharedTicketPreview}
+            currentGallery={
+              isAdminRequestEdit ? data.gallery : []
+            }
+          />
+        )}
+
+        {!isTicketReview && (
+          <>
       
         {/* LOGO */}
         {(data.logo_url || data.logo_file) && (
@@ -1299,6 +1404,8 @@ export default function StepPreviewSubmit({
           </div>
         )}
       
+              </>
+        )}
       </Section>
 
       {isAdminTicketCreate && (
@@ -1793,19 +1900,38 @@ function Section({ title, children }) {
   );
 }
 
-function Item({ label, value, multiline }) {
+function Item({ label, value, multiline, changed = false }) {
 
   if (
-    value === undefined ||
-    value === null ||
-    value === ""
+    !changed &&
+    (
+      value === undefined ||
+      value === null ||
+      value === ""
+    )
   ) {
     return null;
   }
 
+  const displayValue =
+    value === undefined ||
+    value === null ||
+    value === ""
+      ? "—"
+      : value;
+
   return (
     <div>
       <strong>{label}:</strong>{" "}
+      {changed && (
+        <span
+          className="ml-2 font-semibold text-red-600"
+          aria-label="Changed field"
+        >
+          Changed
+        </span>
+      )}
+      {" "}
 
       {multiline ? (
         <div
@@ -1814,10 +1940,10 @@ function Item({ label, value, multiline }) {
             marginTop: 4,
           }}
         >
-          {value}
+          {displayValue}
         </div>
       ) : (
-        <span>{value}</span>
+        <span>{displayValue}</span>
       )}
     </div>
   );

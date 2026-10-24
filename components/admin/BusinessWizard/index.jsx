@@ -7,6 +7,7 @@ import StepMediaReview from "./StepMediaReview";
 import StepPreviewSubmit from "./StepPreviewSubmit";
 import DuplicateModal from "../DuplicateModal";
 import apiClient from "../../../utils/apiClient";
+import useTicketMediaPreview from "./useTicketMediaPreview";
 
 const STEPS = [
   "basic",
@@ -167,6 +168,22 @@ export default function BusinessWizard({
     mode === "admin-edit-request";
 
   /*
+   * B-05 — Shared, request-bound, display-only media.
+   * The hook remains mounted across Wizard steps.
+   */
+  const ticketPreview = useTicketMediaPreview(
+    mode,
+    ticketMediaReview
+  );
+
+  const ticketMediaReady =
+    !isAdminRequestWorkflow ||
+    (
+      ticketPreview.verified === true &&
+      ticketPreview.ticketId === ticketMediaReview?.ticketId
+    );
+
+  /*
    * PLR-SUP-REQ-01 / F04
    *
    * Backend-provided update_scope is the sole authority for
@@ -186,9 +203,10 @@ export default function BusinessWizard({
         : []
     );
 
-  const canEditField = (field) =>
-    !isRequestBoundEdit ||
-    allowedUpdateFields.has(field);
+  const isRequestedField = (field) =>
+    isRequestBoundEdit && allowedUpdateFields.has(field);
+
+  const canEditField = () => !isAdminRequestWorkflow;
 
   /*
    * PLR-SUP-REQ-01 / F04
@@ -204,9 +222,13 @@ export default function BusinessWizard({
       ? data.update_scope.allowed_media_operations
       : {};
 
-  const canEditMedia = (type) =>
-    !isRequestBoundEdit ||
-    allowedMediaOperations?.[type] === true;
+  const canEditMedia = () => !isAdminRequestWorkflow;
+
+  // Prevent child components from changing reviewed ticket data.
+  // Parent-owned initial hydration remains unchanged.
+  const reviewSetData = isAdminRequestWorkflow
+    ? () => {}
+    : setData;
 
   async function rejectTicketRequest() {
     if (!isAdminRequestWorkflow) {
@@ -273,6 +295,13 @@ export default function BusinessWizard({
   }
 
   async function submit(submitData = data) {
+    if (!ticketMediaReady) {
+      setSubmitError(true);
+      setSubmitMessage(
+        "Ticket media verification is required before fulfillment."
+      );
+      return;
+    }
     if (externalSubmit) {
       setSubmitMessage("");
       setSubmitError(false);
@@ -721,57 +750,65 @@ export default function BusinessWizard({
       {step === 0 && (
         <StepBasicInfo
           data={data}
-          setData={setData}
+          setData={reviewSetData}
           onNext={next}
           mode={mode}
           initialData={initialData}
           canEditField={canEditField}
+          isRequestedField={isRequestedField}
         />
       )}
 
       {step === 1 && (
         <StepServicesTags
           data={data}
-          setData={setData}
+          setData={reviewSetData}
           onNext={next}
           onBack={back}
           mode={mode}
           canEditField={canEditField}
+          isRequestedField={isRequestedField}
         />
       )}
 
       {step === 2 && (
         <StepLocationContact
           data={data}
-          setData={setData}
+          setData={reviewSetData}
           onNext={next}
           onBack={back}
           mode={mode}
           canEditField={canEditField}
+          isRequestedField={isRequestedField}
         />
       )}
 
       {step === 3 && (
         <StepMediaReview
           data={data}
-          setData={setData}
+          setData={reviewSetData}
           onBack={back}
           onNext={next}
           mode={mode}
           canEditMedia={canEditMedia}
           canEditField={canEditField}
+          isRequestedField={isRequestedField}
           ticketMediaReview={ticketMediaReview}
+          sharedTicketPreview={ticketPreview}
         />
       )}
 
       {step === 4 && (
         <StepPreviewSubmit
           data={data}
-          setData={setData}
+          setData={reviewSetData}
           onBack={back}
           onSubmit={submit}
           loading={loading}
           mode={mode}
+          ticketMediaReview={ticketMediaReview}
+          sharedTicketPreview={ticketPreview}
+          ticketMediaReady={ticketMediaReady}
           submitMessage={submitMessage}
           submitError={submitError}
           ticketCode={ticketCode}

@@ -27,6 +27,7 @@ export default function StepServicesTags({
   mode,
   initialData,
   canEditField = () => true,
+  isRequestedField = () => false,
 }) {
   const [services, setServices] = useState([]);
   const [tags, setTags] = useState([]);
@@ -325,10 +326,14 @@ export default function StepServicesTags({
   );
   
   const canProceed =
-    validationErrors.size === 0 &&
+    mode === "admin-create-ticket" ||
+    mode === "admin-edit-request" ||
     (
-      !shouldConfirmTagRemoval ||
-      confirmNoTags
+      validationErrors.size === 0 &&
+      (
+        !shouldConfirmTagRemoval ||
+        confirmNoTags
+      )
     );
 
   
@@ -349,7 +354,7 @@ export default function StepServicesTags({
       <div className="mb-8">
         <h4 className="font-semibold mb-2">
           {stepCopy.servicesTitle}
-          {mode === "admin-edit-request" && canEditField("services") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
+          {mode === "admin-edit-request" && isRequestedField("services") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
         </h4>
 
         {loadingServices ? (
@@ -398,7 +403,7 @@ export default function StepServicesTags({
       <div className="mb-8">
         <h4 className="font-semibold mb-2">
           {stepCopy.tagsTitle}
-          {mode === "admin-edit-request" && canEditField("tags") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
+          {mode === "admin-edit-request" && isRequestedField("tags") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
         </h4>
 
         {loadingTags ? (

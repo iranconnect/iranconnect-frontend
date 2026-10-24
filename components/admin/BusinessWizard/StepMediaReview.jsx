@@ -82,7 +82,9 @@ export default function StepMediaReview({
   mode,
   canEditMedia = () => true,
   canEditField = () => true,
+  isRequestedField = () => false,
   ticketMediaReview = null,
+  sharedTicketPreview = null,
 }) {
 
   const isExistingBusinessMode =
@@ -126,14 +128,18 @@ export default function StepMediaReview({
    * Ticket previews are display-only.
    * They never enter Business Wizard form state.
    */
-  const [ticketPreviewState, setTicketPreviewState] = useState({
+  const ticketPreviewState = sharedTicketPreview ?? {
+    ticketId: null,
+    identity: null,
     images: [],
     loading: false,
     error: "",
-  });
+    verified: false,
+  };
 
   const ticketPreviewAssets =
-    mode === "admin-edit-request" &&
+    (mode === "admin-edit-request" ||
+      mode === "admin-create-ticket") &&
     Array.isArray(ticketMediaReview?.media)
       ? ticketMediaReview.media.filter(
           (asset) =>
@@ -145,7 +151,8 @@ export default function StepMediaReview({
 
 
   const requestedTicketMedia =
-    mode === "admin-edit-request" &&
+    (mode === "admin-edit-request" ||
+      mode === "admin-create-ticket") &&
     Array.isArray(ticketMediaReview?.media)
       ? ticketMediaReview.media.filter(
           (asset) =>
@@ -176,8 +183,8 @@ export default function StepMediaReview({
   });
 
   const safeTicketImages =
-    ticketPreviewState.ticketId === ticketMediaReview?.ticketId &&
-    ticketPreviewState.identity === currentTicketPreviewIdentity
+    ticketPreviewState.verified === true &&
+    ticketPreviewState.ticketId === ticketMediaReview?.ticketId
       ? ticketPreviewState.images
       : [];
 
@@ -207,133 +214,6 @@ export default function StepMediaReview({
       ]
     ),
   });
-
-  useEffect(() => {
-    const ticketId = ticketMediaReview?.ticketId;
-
-    if (
-      mode !== "admin-edit-request" ||
-      !Number.isSafeInteger(ticketId) ||
-      ticketId <= 0
-    ) {
-      setTicketPreviewState({
-        ticketId: null,
-        identity: null,
-        images: [],
-        loading: false,
-        error: "",
-      });
-      return;
-    }
-
-    const controller = new AbortController();
-    let cancelled = false;
-    const urls = [];
-
-    const metadata = Array.isArray(ticketMediaReview.media)
-      ? ticketMediaReview.media
-      : [];
-
-    const assets = metadata.filter(
-      (asset) =>
-        asset?.snapshot_group === "requested" &&
-        ["logo", "cover", "gallery"].includes(asset.role)
-    );
-
-    setTicketPreviewState({
-      ticketId,
-      identity: ticketPreviewIdentity,
-      images: [],
-      loading: assets.length > 0,
-      error: "",
-    });
-
-    async function loadPreviews() {
-      try {
-        if (assets.some(
-          (asset) => asset.preview_available !== true
-        )) {
-          throw new Error("Ticket media preview unavailable.");
-        }
-
-        const images = await Promise.all(
-          assets.map(async (asset) => {
-            const assetId = Number(asset.asset_id);
-
-            if (!Number.isSafeInteger(assetId) || assetId <= 0) {
-              throw new Error("Invalid ticket media identifier.");
-            }
-
-            const response = await apiClient.get(
-              `/admin/requests/${ticketId}/media/${assetId}/preview`,
-              {
-                responseType: "blob",
-                withCredentials: true,
-                signal: controller.signal,
-              }
-            );
-
-            if (cancelled || controller.signal.aborted) {
-              return null;
-            }
-
-            const blob = response.data;
-
-            if (
-              !(blob instanceof Blob) ||
-              !["image/jpeg", "image/png", "image/webp"]
-                .includes(blob.type)
-            ) {
-              throw new Error("Invalid ticket image response.");
-            }
-
-            const url = URL.createObjectURL(blob);
-            urls.push(url);
-
-            return {
-              assetId,
-              role: asset.role,
-              displayOrder: asset.display_order,
-              url,
-            };
-          })
-        );
-
-        if (!cancelled && !controller.signal.aborted) {
-          if (images.some((image) => !image)) {
-            throw new Error("Incomplete ticket media preview.");
-          }
-
-          setTicketPreviewState({
-            ticketId,
-            identity: ticketPreviewIdentity,
-            images,
-            loading: false,
-            error: "",
-          });
-        }
-      } catch {
-        if (!cancelled && !controller.signal.aborted) {
-          setTicketPreviewState({
-            ticketId,
-            identity: ticketPreviewIdentity,
-            images: [],
-            loading: false,
-            error:
-              "Ticket media verification failed. Do not approve without reviewing the requested images.",
-          });
-        }
-      }
-    }
-
-    loadPreviews();
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-      urls.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [mode, ticketPreviewIdentity]);
 
   const stepCopy = isAdminEditMode
     ? {
@@ -1027,7 +907,10 @@ export default function StepMediaReview({
       );
     }
 
-    if (mode === "admin-edit-request") {
+    if (
+      mode === "admin-edit-request" ||
+      mode === "admin-create-ticket"
+    ) {
       const expectedTicketAssets =
         Array.isArray(ticketMediaReview?.media)
           ? ticketMediaReview.media.filter(
@@ -1038,17 +921,16 @@ export default function StepMediaReview({
           : [];
 
       const previewMatchesTicket =
-        ticketPreviewState.ticketId === ticketMediaReview?.ticketId &&
-        ticketPreviewState.identity === currentTicketPreviewIdentity;
+        ticketPreviewState.verified === true &&
+        ticketPreviewState.ticketId === ticketMediaReview?.ticketId;
 
       const allImagesVerified =
-        expectedTicketAssets.length === 0 ||
-        (
-          previewMatchesTicket &&
-          ticketPreviewState.loading === false &&
-          !ticketPreviewState.error &&
-          safeTicketImages.length === expectedTicketAssets.length
-        );
+        Array.isArray(ticketMediaReview?.media) &&
+        expectedTicketAssets.length > 0 &&
+        previewMatchesTicket &&
+        ticketPreviewState.loading === false &&
+        !ticketPreviewState.error &&
+        safeTicketImages.length === expectedTicketAssets.length;
 
       return busy === false && allImagesVerified;
     }
@@ -1267,6 +1149,7 @@ export default function StepMediaReview({
               <LogoFrame
                 src={data.logo_url}
                 alt="Requested logo"
+                cropConfig={data.logo_crop_config ?? null}
                 style={{
                   width: "100%",
                   height: "100%",
@@ -1702,7 +1585,9 @@ export default function StepMediaReview({
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "cover",
+                  ...getMediaCropStyle(
+                    data.cover_crop_config ?? null
+                  ),
                   borderRadius: 12,
                   cursor: "zoom-in",
                   border:
@@ -2442,7 +2327,7 @@ export default function StepMediaReview({
         }}
       />
       Public profile
-    {mode === "admin-edit-request" && canEditField("is_public") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
+    {mode === "admin-edit-request" && isRequestedField("is_public") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
     </label>
     <label className="flex items-center gap-2 cursor-pointer">
       <input
@@ -2459,7 +2344,7 @@ export default function StepMediaReview({
         }}
       />
       Allow reviews
-    {mode === "admin-edit-request" && canEditField("allow_reviews") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
+    {mode === "admin-edit-request" && isRequestedField("allow_reviews") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
     </label>
 
   </div>

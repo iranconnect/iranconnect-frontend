@@ -221,6 +221,7 @@ export default function StepLocationContact({
   mode,
   initialData,
   canEditField = () => true,
+  isRequestedField = () => false,
 }) {
   function setField(key, value) {
     if (!canEditField(key)) return;
@@ -1284,7 +1285,10 @@ export default function StepLocationContact({
 
 
   
-  const canProceed = !hasBlockingErrors;
+  const canProceed =
+    mode === "admin-create-ticket" ||
+    mode === "admin-edit-request" ||
+    !hasBlockingErrors;
 
   function getFieldWarning(field) {
 
@@ -1363,7 +1367,7 @@ export default function StepLocationContact({
       <div className="mb-6">
         <label className="admin-label">
           Service mode *
-          {mode === "admin-edit-request" && canEditField("service_mode") && (
+          {mode === "admin-edit-request" && isRequestedField("service_mode") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
         </label>
@@ -1404,7 +1408,7 @@ export default function StepLocationContact({
         <div>
           <label className="admin-label">
             Country *
-          {mode === "admin-edit-request" && canEditField("country") && (
+          {mode === "admin-edit-request" && isRequestedField("country") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
           </label>
@@ -1430,7 +1434,7 @@ export default function StepLocationContact({
         <div>
           <label className="admin-label">
             City *
-          {mode === "admin-edit-request" && canEditField("city") && (
+          {mode === "admin-edit-request" && isRequestedField("city") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
           </label>
@@ -1467,7 +1471,7 @@ export default function StepLocationContact({
       <div className="mb-6">
         <label className="admin-label">
           Availability type *
-          {mode === "admin-edit-request" && canEditField("availability_type") && (
+          {mode === "admin-edit-request" && isRequestedField("availability_type") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
         </label>
@@ -1505,7 +1509,7 @@ export default function StepLocationContact({
       <div className="mb-6">
         <label className="admin-label">
           Availability note
-          {mode === "admin-edit-request" && canEditField("availability_note") && (
+          {mode === "admin-edit-request" && isRequestedField("availability_note") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
         </label>
@@ -1535,7 +1539,7 @@ export default function StepLocationContact({
         <div className="mb-8">
           <label className="admin-label mb-3 block">
             Business hours *
-          {mode === "admin-edit-request" && canEditField("availability_hours") && (
+          {mode === "admin-edit-request" && isRequestedField("availability_hours") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
           </label>
@@ -1648,7 +1652,7 @@ export default function StepLocationContact({
         <div className="mb-6">
           <label className="admin-label">
             Business location (Google Maps link) *
-            {mode === "admin-edit-request" && canEditField("location_map_url") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
+            {mode === "admin-edit-request" && isRequestedField("location_map_url") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
           </label>
           <input
             type="url"
@@ -1690,7 +1694,7 @@ export default function StepLocationContact({
         <div className="mb-6">
           <label className="admin-label">
             Service base location (Google Maps link) *
-            {mode === "admin-edit-request" && canEditField("base_location_map_url") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
+            {mode === "admin-edit-request" && isRequestedField("base_location_map_url") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
           </label>
       
           <input
@@ -1738,7 +1742,7 @@ export default function StepLocationContact({
           <div className="mb-5">
             <label className="admin-label">
               Address *
-          {mode === "admin-edit-request" && canEditField("address") && (
+          {mode === "admin-edit-request" && isRequestedField("address") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
             </label>
@@ -1772,7 +1776,7 @@ export default function StepLocationContact({
           <div className="mb-6">
             <label className="admin-label">
               Postal code *
-          {mode === "admin-edit-request" && canEditField("postal_code") && (
+          {mode === "admin-edit-request" && isRequestedField("postal_code") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
             </label>
@@ -1808,7 +1812,7 @@ export default function StepLocationContact({
         <div className="mb-6">
           <label className="admin-label">
             Service radius (km) *
-          {mode === "admin-edit-request" && canEditField("service_radius_km") && (
+          {mode === "admin-edit-request" && isRequestedField("service_radius_km") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
           </label>
@@ -1868,7 +1872,7 @@ export default function StepLocationContact({
           <div className="mb-6">
             <label className="admin-label">
               Phone
-          {mode === "admin-edit-request" && canEditField("phone") && (
+          {mode === "admin-edit-request" && isRequestedField("phone") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
             </label>
@@ -1918,7 +1922,7 @@ export default function StepLocationContact({
           <div className="mb-6">
             <label className="admin-label">
               Email
-          {mode === "admin-edit-request" && canEditField("email") && (
+          {mode === "admin-edit-request" && isRequestedField("email") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
             </label>
@@ -1949,7 +1953,7 @@ export default function StepLocationContact({
           <div className="mb-6">
             <label className="admin-label">
               Website
-          {mode === "admin-edit-request" && canEditField("website") && (
+          {mode === "admin-edit-request" && isRequestedField("website") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
             </label>
@@ -1995,7 +1999,7 @@ export default function StepLocationContact({
                 }
               />
               Show phone number
-              {mode === "admin-edit-request" && canEditField("show_phone") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
+              {mode === "admin-edit-request" && isRequestedField("show_phone") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
             </label>
         
             {validationErrors.has("show_phone") && (
@@ -2017,7 +2021,7 @@ export default function StepLocationContact({
                 }
               />
               Show email
-              {mode === "admin-edit-request" && canEditField("show_email") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
+              {mode === "admin-edit-request" && isRequestedField("show_email") && (<span className="ml-2 text-xs font-semibold text-red-600">Changed</span>)}
             </label>
         
             {validationErrors.has("show_email") && (
@@ -2037,7 +2041,7 @@ export default function StepLocationContact({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {/* Instagram */}
           <div>
-            {mode === "admin-edit-request" && canEditField("instagram_url") && (<span className="mb-1 block text-xs font-semibold text-red-600">Changed — Instagram</span>)}
+            {mode === "admin-edit-request" && isRequestedField("instagram_url") && (<span className="mb-1 block text-xs font-semibold text-red-600">Changed — Instagram</span>)}
             <input
               className="admin-input"
               placeholder="Instagram URL (https://instagram.com/username)"
@@ -2060,7 +2064,7 @@ export default function StepLocationContact({
           
           {/* Facebook (NEW) */}
           <div>
-            {mode === "admin-edit-request" && canEditField("facebook_url") && (<span className="mb-1 block text-xs font-semibold text-red-600">Changed — Facebook</span>)}
+            {mode === "admin-edit-request" && isRequestedField("facebook_url") && (<span className="mb-1 block text-xs font-semibold text-red-600">Changed — Facebook</span>)}
             <input
               className="admin-input"
               placeholder="Facebook URL (https://facebook.com/page)"
@@ -2084,7 +2088,7 @@ export default function StepLocationContact({
 
           {/* LinkedIn */}
           <div>
-            {mode === "admin-edit-request" && canEditField("linkedin_url") && (<span className="mb-1 block text-xs font-semibold text-red-600">Changed — LinkedIn</span>)}
+            {mode === "admin-edit-request" && isRequestedField("linkedin_url") && (<span className="mb-1 block text-xs font-semibold text-red-600">Changed — LinkedIn</span>)}
             <input
               className="admin-input"
               placeholder="LinkedIn URL (https://linkedin.com/in/username)"
@@ -2109,7 +2113,7 @@ export default function StepLocationContact({
 
           {/* Twitter / X */}
           <div>
-            {mode === "admin-edit-request" && canEditField("twitter_url") && (<span className="mb-1 block text-xs font-semibold text-red-600">Changed — Twitter / X</span>)}
+            {mode === "admin-edit-request" && isRequestedField("twitter_url") && (<span className="mb-1 block text-xs font-semibold text-red-600">Changed — Twitter / X</span>)}
             <input
               className="admin-input"
               placeholder="Twitter / X URL (https://x.com/username)"
@@ -2134,7 +2138,7 @@ export default function StepLocationContact({
 
           {/* Telegram */}
           <div>
-            {mode === "admin-edit-request" && canEditField("telegram_url") && (<span className="mb-1 block text-xs font-semibold text-red-600">Changed — Telegram</span>)}
+            {mode === "admin-edit-request" && isRequestedField("telegram_url") && (<span className="mb-1 block text-xs font-semibold text-red-600">Changed — Telegram</span>)}
             <input
               className="admin-input"
               placeholder="Telegram URL (https://t.me/username)"

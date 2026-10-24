@@ -70,6 +70,7 @@ export default function StepBasicInfo({
   mode,
   initialData,
   canEditField = () => true,
+  isRequestedField = () => false,
 }) {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
@@ -308,6 +309,12 @@ export default function StepBasicInfo({
   );
 
     const canProceed = (() => {
+      if (
+        mode === "admin-create-ticket" ||
+        mode === "admin-edit-request"
+      ) {
+        return true;
+      }
     
       // =========================
       // USER UPDATE MODE
@@ -354,7 +361,7 @@ export default function StepBasicInfo({
       <div className="mb-5">
         <label className="admin-label">
           Business name *
-          {mode === "admin-edit-request" && canEditField("name") && (
+          {mode === "admin-edit-request" && isRequestedField("name") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
         </label>
@@ -378,7 +385,7 @@ export default function StepBasicInfo({
       <div className="mb-5">
         <label className="admin-label">
           Business category *
-          {mode === "admin-edit-request" && canEditField("category_id") && (
+          {mode === "admin-edit-request" && isRequestedField("category_id") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
         </label>
@@ -421,7 +428,7 @@ export default function StepBasicInfo({
         <div className="mb-6">
           <label className="admin-label">
             Subcategories *
-          {mode === "admin-edit-request" && canEditField("subcategory_ids") && (
+          {mode === "admin-edit-request" && isRequestedField("subcategory_ids") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
           </label>
@@ -465,7 +472,7 @@ export default function StepBasicInfo({
       <div className="mb-5">
         <label className="admin-label">
           Legal name
-          {mode === "admin-edit-request" && canEditField("legal_name") && (
+          {mode === "admin-edit-request" && isRequestedField("legal_name") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
         </label>
@@ -493,7 +500,7 @@ export default function StepBasicInfo({
       <div className="mb-5">
         <label className="admin-label">
           Business type *
-          {mode === "admin-edit-request" && canEditField("business_type") && (
+          {mode === "admin-edit-request" && isRequestedField("business_type") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
         </label>
@@ -525,7 +532,7 @@ export default function StepBasicInfo({
       <div className="mb-5">
         <label className="admin-label">
           Year established
-          {mode === "admin-edit-request" && canEditField("year_established") && (
+          {mode === "admin-edit-request" && isRequestedField("year_established") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
         </label>
@@ -559,7 +566,7 @@ export default function StepBasicInfo({
       <div className="mb-5">
         <label className="admin-label">
           Short description *
-          {mode === "admin-edit-request" && canEditField("short_description") && (
+          {mode === "admin-edit-request" && isRequestedField("short_description") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
         </label>
@@ -597,7 +604,7 @@ export default function StepBasicInfo({
       <div className="mb-6">
         <label className="admin-label">
           Full description *
-          {mode === "admin-edit-request" && canEditField("full_description") && (
+          {mode === "admin-edit-request" && isRequestedField("full_description") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
         </label>

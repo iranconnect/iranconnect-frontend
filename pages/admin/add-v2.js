@@ -343,6 +343,21 @@ export default function AddBusinessV2() {
               initialData={buildTicketInitialData(
                 requestDetails
               )}
+              ticketMediaReview={{
+                ticketId: requestDetails.id,
+                crop: {
+                  logo:
+                    requestDetails.payload?.logo_crop_config ?? null,
+                  cover:
+                    requestDetails.payload?.cover_crop_config ?? null,
+                },
+                media: Array.isArray(
+                  requestDetails.review_display?.media
+                )
+                  ? requestDetails.review_display.media
+                  : [],
+                galleryRemovalRequested: false,
+              }}
             />
           </>
         ) : (
