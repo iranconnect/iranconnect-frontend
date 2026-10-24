@@ -353,7 +353,7 @@ export default function StepBasicInfo({
       </h2>
       
       <p className="admin-muted mb-6">
-        {stepCopy.subtitle}
+        {mode === "admin-create-ticket" || mode === "admin-edit-request" ? "Step 1 of 5 — Review submitted details and media" : stepCopy.subtitle}
       </p>
 
 

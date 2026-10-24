@@ -1056,7 +1056,7 @@ export default function StepMediaReview({
         </h2>
       
         <p className="admin-hint">
-          {stepCopy.subtitle}
+          {mode === "admin-create-ticket" || mode === "admin-edit-request" ? "Step 4 of 5 — Review submitted details and media" : stepCopy.subtitle}
         </p>
       </div>
   <div

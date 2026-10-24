@@ -1358,7 +1358,7 @@ export default function StepLocationContact({
       </h2>
       
       <p className="admin-muted mb-6">
-        {stepCopy.subtitle}
+        {mode === "admin-create-ticket" || mode === "admin-edit-request" ? "Step 3 of 5 — Review submitted details and media" : stepCopy.subtitle}
       </p>
 
       {/* ─────────────────────────────

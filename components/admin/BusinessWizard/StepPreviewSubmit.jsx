@@ -709,7 +709,7 @@ export default function StepPreviewSubmit({
       </h2>
       
       <p className="admin-muted mb-6">
-        {previewCopy.subtitle}
+        {mode === "admin-create-ticket" ? "Step 5 of 5 — Review all business details before creation" : mode === "admin-edit-request" ? "Step 5 of 5 — Review all business details before updating" : previewCopy.subtitle}
       </p>
 
       {/* ─────────────────────────
