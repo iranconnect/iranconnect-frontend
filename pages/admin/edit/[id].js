@@ -430,8 +430,18 @@ export default function EditBusinessPage() {
           <h2 className="admin-title">Edit Business</h2>
 
           <p className="admin-hint mt-2">
-            Update the business profile, services, location, contact
-            information, visibility, and media.
+            {hasRequestContext ? (
+              <>
+                This request is read-only. Review the submitted
+                information and media before making a decision.
+                The original request details cannot be modified here.
+              </>
+            ) : (
+              <>
+                Update the business profile, services, location, contact
+                information, visibility, and media.
+              </>
+            )}
           </p>
         </div>
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import LogoFrame from "../../business/LogoFrame";
 import { getMediaCropStyle } from "../../../utils/businessMediaCropStyle";
 
@@ -9,6 +9,31 @@ export default function TicketMediaReview({
   currentGallery = [],
 }) {
   const [originalUrl, setOriginalUrl] = useState(null);
+  const viewerCloseRef = useRef(null);
+
+  useEffect(() => {
+    if (!originalUrl) return;
+
+    const previousFocus = document.activeElement;
+
+    const onEscape = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOriginalUrl(null);
+      }
+    };
+
+    document.addEventListener("keydown", onEscape);
+    viewerCloseRef.current?.focus();
+
+    return () => {
+      document.removeEventListener("keydown", onEscape);
+      if (previousFocus?.isConnected) {
+        previousFocus.focus();
+      }
+    };
+  }, [originalUrl]);
+
   const isNewTicket = mode === "admin-create-ticket";
 
   const assets = Array.isArray(ticketMediaReview?.media)
@@ -184,8 +209,14 @@ export default function TicketMediaReview({
           role="dialog"
           aria-modal="true"
           aria-label="Original ticket image"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setOriginalUrl(null);
+            }
+          }}
         >
           <button
+            ref={viewerCloseRef}
             type="button"
             className="absolute right-6 top-6 rounded bg-white px-4 py-2 text-black"
             onClick={() => setOriginalUrl(null)}

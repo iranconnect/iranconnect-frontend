@@ -331,10 +331,9 @@ export default function AddBusinessV2() {
               </div>
 
               <p className="admin-hint mt-3">
-                This request context is fixed. You may review
-                and edit the business details before creation,
-                but the business will remain linked to this
-                request.
+                This request is read-only. Review the submitted
+                information and media before making a decision.
+                The original request details cannot be modified here.
               </p>
             </div>
 

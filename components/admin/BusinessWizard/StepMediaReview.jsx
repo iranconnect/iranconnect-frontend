@@ -344,6 +344,31 @@ export default function StepMediaReview({
   const [zoomImage, setZoomImage] =
     useState(null);
 
+  const ticketViewerCloseRef = useRef(null);
+
+  useEffect(() => {
+    if (!isTicketReview || !zoomImage) return;
+
+    const previousFocus = document.activeElement;
+
+    const onEscape = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setZoomImage(null);
+      }
+    };
+
+    document.addEventListener("keydown", onEscape);
+    ticketViewerCloseRef.current?.focus();
+
+    return () => {
+      document.removeEventListener("keydown", onEscape);
+      if (previousFocus?.isConnected) {
+        previousFocus.focus();
+      }
+    };
+  }, [isTicketReview, zoomImage]);
+
   useEffect(() => {
 
     if (
@@ -2405,9 +2430,14 @@ export default function StepMediaReview({
   {zoomImage && (
   
     <div
-      onClick={() =>
-        setZoomImage(null)
-      }
+      role={isTicketReview ? "dialog" : undefined}
+      aria-modal={isTicketReview ? "true" : undefined}
+      aria-label={isTicketReview ? "Original ticket image" : undefined}
+      onClick={(event) => {
+        if (!isTicketReview || event.target === event.currentTarget) {
+          setZoomImage(null);
+        }
+      }}
       style={{
         position: "fixed",
         inset: 0,
@@ -2423,6 +2453,19 @@ export default function StepMediaReview({
       }}
     >
   
+      {isTicketReview && (
+        <button
+          ref={ticketViewerCloseRef}
+          type="button"
+          className="absolute right-6 top-6 rounded bg-white px-4 py-2 text-black"
+          onClick={() => setZoomImage(null)}
+          aria-label="Close original image viewer"
+          style={{ zIndex: 1 }}
+        >
+          Close
+        </button>
+      )}
+
       <img
         src={zoomImage}
         alt=""
