@@ -400,7 +400,6 @@ export default function StepPreviewSubmit({
         ) ||
         (
           isAdminEdit &&
-          normalizedChangeSource === "admin_note" &&
           normalizedAdminNote.length > 0
         );
 
@@ -1519,7 +1518,7 @@ export default function StepPreviewSubmit({
           title={
             isAdminCreate
               ? "Create Authorization"
-              : "Update Authorization"
+              : "Direct Business Update"
           }
         >
           {isAdminCreate ? (
@@ -1562,10 +1561,9 @@ export default function StepPreviewSubmit({
                 lineHeight: 1.7,
               }}
             >
-              Direct administrative updates require a
-              permanent admin note. Ticket-authorized
-              updates must be opened from the originating
-              business request.
+              To update this business directly, provide
+              an admin note explaining the reason for the
+              changes. No ticket is required.
             </p>
           )}
       
@@ -1745,7 +1743,7 @@ export default function StepPreviewSubmit({
             </div>
           )}
 
-          {normalizedChangeSource === "admin_note" && (
+          {(isAdminEdit || normalizedChangeSource === "admin_note") && (
             <div style={{ marginTop: 18 }}>
               <label className="admin-label">
                 {isAdminCreate
@@ -1778,8 +1776,9 @@ export default function StepPreviewSubmit({
       
           {!isValidAdminAuthorization && (
             <p className="text-red-500 text-sm mt-4">
-              Select an authorization method and complete the required field before
-              submitting this {isAdminCreate ? "creation" : "update"}.
+              {isAdminEdit
+                ? "An admin note is required to update this business."
+                : "Select admin-initiated creation and provide a reason before submitting."}
             </p>
           )}
         </Section>

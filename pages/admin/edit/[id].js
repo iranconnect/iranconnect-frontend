@@ -403,6 +403,12 @@ export default function EditBusinessPage() {
       );
     }
 
+    // Direct Admin Update is authorized by admin_note only.
+    // Ticket context belongs exclusively to request-bound routes.
+    form.delete("ticket_code");
+    form.delete("business_request_id");
+    form.set("change_source_type", "admin_note");
+
     return apiClient.put(
       `/admin/businesses/${businessId}/update-v2`,
       form,
