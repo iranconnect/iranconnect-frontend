@@ -519,14 +519,21 @@ export default function StepBasicInfo({
 
       {/* Business type */}
       <div className="mb-5">
-        <label className="admin-label">
+        <label htmlFor="business-type" className="admin-label">
           Business type *
           {mode === "admin-edit-request" && isRequestedField("business_type") && (
             <span className="ml-2 text-xs font-semibold text-red-600">Changed</span>
           )}
         </label>
         <select
+          id="business-type"
           className="admin-input"
+          aria-invalid={validationErrors.has("business_type")}
+          aria-describedby={
+            validationErrors.has("business_type")
+              ? "business-type-error"
+              : undefined
+          }
           value={data?.business_type || ""}
           disabled={!canEditField("business_type")}
           onChange={(e) =>
@@ -542,7 +549,7 @@ export default function StepBasicInfo({
         </select>
 
         {validationErrors.has("business_type") && (
-          <p className="text-red-500 text-sm mt-1">
+          <p id="business-type-error" className="text-red-500 text-sm mt-1">
             Please complete this field.
           </p>
         )}
