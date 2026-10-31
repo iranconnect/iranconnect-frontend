@@ -56,11 +56,32 @@ const FIELD_RULES = {
 };
 
 const BUSINESS_TYPES = [
-  { value: "freelancer", label: "Freelancer / Self-employed" },
-  { value: "company", label: "Registered Company" },
-  { value: "clinic", label: "Clinic / Office" },
-  { value: "shop", label: "Physical Shop" },
-  { value: "online", label: "Online Business" },
+  { value: "freelancer", label: "Freelancer / Self-Employed" },
+  { value: "company", label: "Company" },
+  { value: "partnership", label: "Partnership" },
+  { value: "association", label: "Association / Nonprofit" },
+  { value: "organization", label: "Organization / Institution" },
+  { value: "cooperative", label: "Cooperative" },
+  { value: "clinic", label: "Clinic" },
+  { value: "private_practice", label: "Private Practice" },
+  { value: "shop", label: "Shop / Retail Store" },
+  { value: "online_store", label: "Online Store" },
+  { value: "salon", label: "Salon / Beauty Center" },
+  { value: "studio", label: "Studio" },
+  { value: "workshop", label: "Workshop" },
+  { value: "restaurant_cafe", label: "Restaurant / Café" },
+  { value: "agency", label: "Agency" },
+  { value: "consultancy", label: "Consultancy" },
+  { value: "training_center", label: "Educational / Training Center" },
+  { value: "fitness_center", label: "Sports / Fitness Center" },
+  { value: "manufacturing", label: "Manufacturing Business" },
+  { value: "wholesale", label: "Wholesale Business" },
+  { value: "distribution", label: "Distribution Business" },
+  { value: "contracting", label: "Construction / Contracting Business" },
+  { value: "rental", label: "Rental Business" },
+  { value: "agriculture", label: "Agricultural / Farming Business" },
+  { value: "hospitality", label: "Hospitality / Accommodation Business" },
+  { value: "other", label: "Other Business" },
 ];
 
 export default function StepBasicInfo({
