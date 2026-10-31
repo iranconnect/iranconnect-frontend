@@ -190,9 +190,10 @@ export default function ContactPage() {
               className="input-default w-full"
             >
               <option value="">-- Select a subject --</option>
-              <option value="unblock_request">Request Unblock</option>
-              <option value="business_introduction">Business Introduction</option>
-              <option value="personal_business_registration">Personal Business Registration</option>
+              <option value="unblock_request">Request Account Unblock</option>
+              <option value="business_ownership_dispute">Business Ownership Dispute</option>
+              <option value="account_access_issue">Account Access Issue</option>
+              <option value="business_request_issue">Business Request Issue</option>
               <option value="other">Other</option>
             </select>
             {errors.subjectType && <p className="text-red-500 text-xs">{errors.subjectType}</p>}
