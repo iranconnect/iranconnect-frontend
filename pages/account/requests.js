@@ -268,7 +268,7 @@ export default function RequestHistory() {
         <div className="mx-auto w-full max-w-5xl">
           <h1
             className="text-2xl font-bold text-center mb-6"
-            style={{ color: "var(--text)" }}
+            style={{ color: "#0A1D37" }}
           >
             Requests / History
           </h1>
@@ -331,7 +331,7 @@ export default function RequestHistory() {
           <div className="w-full max-w-5xl mx-auto">
             <h1
               className="text-2xl font-bold text-center mb-8"
-              style={{ color: "var(--text)" }}
+              style={{ color: "#0A1D37" }}
             >
               📋 My Business Requests
             </h1>

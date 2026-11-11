@@ -109,14 +109,14 @@ export default function BusinessManagementPage() {
           <div className="mb-8 text-center">
             <h1
               className="text-2xl font-bold"
-              style={{ color: "var(--text)" }}
+              style={{ color: "#0A1D37" }}
             >
               🏢 Business Management
             </h1>
 
             <p
               className="mt-2 text-sm"
-              style={{ color: "var(--text)", opacity: 0.72 }}
+              style={{ color: "#596579" }}
             >
               Manage the business listings for which your ownership has been verified.
             </p>

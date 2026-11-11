@@ -124,16 +124,8 @@ export default function ContactRequestsTab({ theme = "light" }) {
   }, [page, reloadKey]);
 
   return (
-    <section
-      aria-label="Contact Requests"
-      className="rounded-2xl border p-4 sm:p-6"
-      style={cardStyle}
-    >
-      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <h2 className="text-xl font-semibold">
-          My Contact Requests
-        </h2>
-
+    <div className="w-full">
+      <div className="flex justify-end mb-6">
         <Link
           href="/account/contact-support"
           className="inline-flex items-center justify-center rounded-lg border border-turquoise px-4 py-2 text-sm font-semibold text-turquoise"
@@ -141,6 +133,19 @@ export default function ContactRequestsTab({ theme = "light" }) {
           Contact Support
         </Link>
       </div>
+
+      <h2
+        className="text-2xl font-bold text-center mb-8"
+        style={{ color: "#0A1D37" }}
+      >
+        📩 My Contact Requests
+      </h2>
+
+      <section
+        aria-label="Contact Requests"
+        className="rounded-2xl border p-4 sm:p-6"
+        style={cardStyle}
+      >
 
       <RequestHistoryTable
         rows={rows}
@@ -275,5 +280,6 @@ export default function ContactRequestsTab({ theme = "light" }) {
         </div>
       )}
     </section>
+    </div>
   );
 }
