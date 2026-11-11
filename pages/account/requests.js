@@ -265,7 +265,12 @@ export default function RequestHistory() {
     <AccountLayout>
       <main className="flex-1 px-4 py-6 md:py-8">
         <div className="mx-auto w-full max-w-5xl">
-          <h1 className="text-2xl font-bold text-center mb-6">
+          <h1
+            className="text-2xl font-bold text-center mb-6"
+            style={{
+              color: theme === "dark" ? "#ffffff" : "#0a1b2a",
+            }}
+          >
             Requests / History
           </h1>
 
@@ -327,7 +332,9 @@ export default function RequestHistory() {
           <div className="w-full max-w-5xl mx-auto">
             <h1
               className="text-2xl font-bold text-center mb-8"
-              style={{ color: "#000000" }}
+              style={{
+                color: theme === "dark" ? "#ffffff" : "#0a1b2a",
+              }}
             >
               📋 My Business Requests
             </h1>
@@ -679,7 +686,7 @@ export default function RequestHistory() {
               role="tabpanel"
               aria-labelledby="contact-requests-tab"
             >
-              <ContactRequestsTab />
+              <ContactRequestsTab theme={theme} />
             </div>
           )}
         </div>

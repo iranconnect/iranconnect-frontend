@@ -27,12 +27,50 @@ export default function AccountContactSupport() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [theme, setTheme] = useState("light");
 
   const [cooldownStatus, setCooldownStatus] = useState("checking");
   const [cooldownUntil, setCooldownUntil] = useState(null);
   const [now, setNow] = useState(() => Date.now());
 
   const captchaRef = useRef(null);
+
+  useEffect(() => {
+    const syncTheme = () => {
+      setTheme(
+        document.documentElement.getAttribute("data-theme") ||
+          "light"
+      );
+    };
+
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const dark = theme === "dark";
+
+  const cardStyle = {
+    backgroundColor: dark ? "#0b2149" : "#ffffff",
+    color: dark ? "#ffffff" : "#0a1b2a",
+    borderColor: dark
+      ? "rgba(255,255,255,0.15)"
+      : "rgba(0,0,0,0.10)",
+  };
+
+  const fieldStyle = {
+    backgroundColor: dark ? "#102b5b" : "#e8edf5",
+    color: dark ? "#ffffff" : "#0a1b2a",
+    borderColor: dark
+      ? "rgba(255,255,255,0.20)"
+      : "#d4dce8",
+  };
 
   const refreshCooldown = useCallback(async () => {
     setCooldownStatus("checking");
@@ -210,7 +248,10 @@ export default function AccountContactSupport() {
           </Link>
         </div>
 
-        <section className="rounded-2xl border border-gray-200 p-6">
+        <section
+          className="rounded-2xl border p-6"
+          style={cardStyle}
+        >
           <h1 className="text-2xl font-semibold mb-3">
             Contact Support
           </h1>
@@ -219,8 +260,10 @@ export default function AccountContactSupport() {
             Submit a support request associated with your account.
           </p>
 
-          {error && (
-            <p role="alert" className="text-red-500 mb-4">
+          {error &&
+            !(cooldownActive &&
+              error === "Contact submissions are temporarily limited.") && (
+              <p role="alert" className="text-red-500 mb-4">
               {error}
             </p>
           )}
@@ -257,7 +300,7 @@ export default function AccountContactSupport() {
           )}
 
           {cooldownActive && (
-            <p role="status" className="mb-4">
+            <p role="status" className="mb-4 font-medium" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
               Contact submissions are temporarily limited.
               Try again in {formatRemaining(remainingSeconds)}.
             </p>
@@ -273,6 +316,7 @@ export default function AccountContactSupport() {
                 value={subjectType}
                 onChange={(event) => setSubjectType(event.target.value)}
                 className="input-default w-full"
+                style={fieldStyle}
                 required
               >
                 <option value="">Select a subject</option>
@@ -295,6 +339,7 @@ export default function AccountContactSupport() {
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 className="input-default w-full"
+                style={fieldStyle}
                 required
               />
             </div>

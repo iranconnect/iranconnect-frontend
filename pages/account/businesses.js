@@ -97,10 +97,19 @@ export default function BusinessManagementPage() {
     <AccountLayout>
       <main className="flex-1 px-4 py-6 md:py-8">
         <div className="mx-auto w-full max-w-5xl">
+          <div className="flex justify-end mb-6">
+            <Link
+              href="/account/new-business"
+              className="inline-flex items-center justify-center rounded-lg bg-turquoise px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            >
+              New Business
+            </Link>
+          </div>
+
           <div className="mb-8 text-center">
             <h1
               className="text-2xl font-bold"
-              style={{ color: theme === "dark" ? "#0A1D37" : "#0A1D37" }}
+              style={{ color: theme === "dark" ? "#ffffff" : "#0A1D37" }}
             >
               🏢 Business Management
             </h1>
