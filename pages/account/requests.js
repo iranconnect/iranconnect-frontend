@@ -1,3 +1,4 @@
+import RequestHistoryTable, { RequestStatusBadge } from "../../components/account/RequestHistoryTable";
 // frontend/pages/account/requests.js
 
 import { useEffect, useMemo, useState } from "react";
@@ -267,9 +268,7 @@ export default function RequestHistory() {
         <div className="mx-auto w-full max-w-5xl">
           <h1
             className="text-2xl font-bold text-center mb-6"
-            style={{
-              color: theme === "dark" ? "#ffffff" : "#0a1b2a",
-            }}
+            style={{ color: "var(--text)" }}
           >
             Requests / History
           </h1>
@@ -332,9 +331,7 @@ export default function RequestHistory() {
           <div className="w-full max-w-5xl mx-auto">
             <h1
               className="text-2xl font-bold text-center mb-8"
-              style={{
-                color: theme === "dark" ? "#ffffff" : "#0a1b2a",
-              }}
+              style={{ color: "var(--text)" }}
             >
               📋 My Business Requests
             </h1>
@@ -436,237 +433,128 @@ export default function RequestHistory() {
                 </div>
               </form>
 
-              <div className="grid gap-4 md:hidden">
-                {loading ? (
-                  <p className="text-center">
-                    Loading...
-                  </p>
-                ) : error ? (
-                  <p className="text-center text-red-500">
-                    {error}
-                  </p>
-                ) : resultSummary ? (
-                  <p className="text-center text-gray-500">
-                    {resultSummary}
-                  </p>
-                ) : (
-                  requests.map((req) => (
-                    <div
-                      key={req.id}
-                      className="border rounded-xl p-4 text-center shadow-sm"
-                      style={{
-                        background:
-                          theme === "dark"
-                            ? "#102b5b"
-                            : "#f5f7fa",
-                      }}
-                    >
-                      <h2 className="text-lg font-semibold text-turquoise mb-1">
-                        {req.business_name || "—"}
-                      </h2>
-
-                      <p className="text-sm mb-1 capitalize">
-                        Type: {req.request_type}
-                      </p>
-
-                      <p className="text-sm mb-1 font-mono">
-                        Ticket: {req.ticket_code}
-                      </p>
-
-                      <p className="text-sm mb-1">
-                        Created:{" "}
-                        {formatDate(req.created_at)}
-                      </p>
-
-                      <p
-                        className={
-                          "inline-block px-3 py-1 rounded-full text-xs font-semibold mb-1 " +
-                          getStatusClass(req.status)
-                        }
-                      >
-                        {req.status}
-                      </p>
-
-                      <p className="text-sm mb-1">
-                        Processed:{" "}
-                        {formatDate(req.processed_at)}
-                      </p>
-
+              <RequestHistoryTable
+                rows={requests}
+                theme={theme}
+                loading={loading}
+                error={error}
+                emptyMessage={resultSummary || "No matching requests found."}
+                getRowKey={(req) => req.id}
+                columns={[
+                  {
+                    key: "business",
+                    label: "Business",
+                    className: "px-4 py-3 font-semibold text-turquoise",
+                    render: (req) => {
+                      const name = req.business_name || "—";
+                      return (
+                        <span title={name}>
+                          {name.length > 25
+                            ? name.slice(0, 25) + "..."
+                            : name}
+                        </span>
+                      );
+                    },
+                  },
+                  {
+                    key: "type",
+                    label: "Type",
+                    className: "px-4 py-3 capitalize",
+                    render: (req) => req.request_type,
+                  },
+                  {
+                    key: "ticket",
+                    label: "Ticket",
+                    className: "px-4 py-3 font-mono",
+                    render: (req) => req.ticket_code,
+                  },
+                  {
+                    key: "created",
+                    label: "Created",
+                    render: (req) => formatDate(req.created_at),
+                  },
+                  {
+                    key: "status",
+                    label: "Status",
+                    render: (req) => (
+                      <RequestStatusBadge
+                        status={req.status}
+                        getStatusClass={getStatusClass}
+                      />
+                    ),
+                  },
+                  {
+                    key: "processed",
+                    label: "Processed",
+                    render: (req) => formatDate(req.processed_at),
+                  },
+                  {
+                    key: "adminNote",
+                    label: "Admin Note",
+                    className:
+                      "px-4 py-3 max-w-[180px] truncate " +
+                      (theme === "dark"
+                        ? "text-gray-200"
+                        : "text-gray-600"),
+                    render: (req) => (
+                      <span title={req.admin_note || "—"}>
+                        {req.admin_note || "—"}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "view",
+                    label: "View",
+                    render: (req) => (
                       <button
                         type="button"
-                        onClick={() =>
-                          setSelectedRequest(req)
-                        }
-                        className="text-turquoise font-medium mt-1 hover:underline"
+                        onClick={() => setSelectedRequest(req)}
+                        className="text-turquoise font-medium hover:underline"
                       >
                         View
                       </button>
+                    ),
+                  },
+                ]}
+                renderMobileCard={(req) => (
+                  <>
+                    <h2 className="text-lg font-semibold text-turquoise mb-1">
+                      {req.business_name || "—"}
+                    </h2>
+
+                    <p className="text-sm mb-1 capitalize">
+                      Type: {req.request_type}
+                    </p>
+
+                    <p className="text-sm mb-1 font-mono">
+                      Ticket: {req.ticket_code}
+                    </p>
+
+                    <p className="text-sm mb-1">
+                      Created: {formatDate(req.created_at)}
+                    </p>
+
+                    <div className="mb-1">
+                      <RequestStatusBadge
+                        status={req.status}
+                        getStatusClass={getStatusClass}
+                      />
                     </div>
-                  ))
+
+                    <p className="text-sm mb-1">
+                      Processed: {formatDate(req.processed_at)}
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRequest(req)}
+                      className="text-turquoise font-medium mt-1 hover:underline"
+                    >
+                      View
+                    </button>
+                  </>
                 )}
-              </div>
-
-              <div
-                className="hidden md:block overflow-x-auto rounded-xl shadow-md"
-                style={{
-                  background:
-                    theme === "dark"
-                      ? "#0b2149"
-                      : "#ffffff",
-
-                  color:
-                    theme === "dark"
-                      ? "#f0f4ff"
-                      : "#0a1b2a",
-                }}
-              >
-                <table className="min-w-full text-sm text-center">
-                  <thead
-                    style={{
-                      background:
-                        "var(--turquoise)",
-
-                      color: "#ffffff",
-                    }}
-                  >
-                    <tr>
-                      <th className="px-4 py-3">
-                        Business
-                      </th>
-                      <th className="px-4 py-3">
-                        Type
-                      </th>
-                      <th className="px-4 py-3">
-                        Ticket
-                      </th>
-                      <th className="px-4 py-3">
-                        Created
-                      </th>
-                      <th className="px-4 py-3">
-                        Status
-                      </th>
-                      <th className="px-4 py-3">
-                        Processed
-                      </th>
-                      <th className="px-4 py-3">
-                        Admin Note
-                      </th>
-                      <th className="px-4 py-3">
-                        View
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td
-                          colSpan={8}
-                          className="px-4 py-8 text-center"
-                        >
-                          Loading...
-                        </td>
-                      </tr>
-                    ) : error ? (
-                      <tr>
-                        <td
-                          colSpan={8}
-                          className="px-4 py-8 text-center text-red-500"
-                        >
-                          {error}
-                        </td>
-                      </tr>
-                    ) : resultSummary ? (
-                      <tr>
-                        <td
-                          colSpan={8}
-                          className="px-4 py-8 text-center text-gray-500"
-                        >
-                          {resultSummary}
-                        </td>
-                      </tr>
-                    ) : (
-                      requests.map((req) => (
-                        <tr
-                          key={req.id}
-                          className={
-                            "border-b transition-colors " +
-                            (theme === "dark"
-                              ? "hover:bg-[#102b5b]"
-                              : "hover:bg-gray-50")
-                          }
-                        >
-                          <td className="px-4 py-3 font-semibold text-turquoise">
-                            {req.business_name?.length >
-                            25
-                              ? req.business_name.slice(
-                                  0,
-                                  25
-                                ) + "..."
-                              : req.business_name ||
-                                "—"}
-                          </td>
-
-                          <td className="px-4 py-3 capitalize">
-                            {req.request_type}
-                          </td>
-
-                          <td className="px-4 py-3 font-mono">
-                            {req.ticket_code}
-                          </td>
-
-                          <td className="px-4 py-3">
-                            {formatDate(req.created_at)}
-                          </td>
-
-                          <td className="px-4 py-3">
-                            <span
-                              className={
-                                "inline-block px-3 py-1 rounded-full text-xs font-semibold " +
-                                getStatusClass(req.status)
-                              }
-                            >
-                              {req.status}
-                            </span>
-                          </td>
-
-                          <td className="px-4 py-3">
-                            {formatDate(
-                              req.processed_at
-                            )}
-                          </td>
-
-                          <td
-                            className={
-                              "px-4 py-3 max-w-[180px] truncate " +
-                              (theme === "dark"
-                                ? "text-gray-200"
-                                : "text-gray-600")
-                            }
-                            title={
-                              req.admin_note || "—"
-                            }
-                          >
-                            {req.admin_note || "—"}
-                          </td>
-
-                          <td className="px-4 py-3">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setSelectedRequest(req)
-                              }
-                              className="text-turquoise font-medium hover:underline"
-                            >
-                              View
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              />
 
               {!loading && !error && (
                 <Pagination

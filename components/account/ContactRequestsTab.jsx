@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Pagination from "../ui/Pagination";
+import RequestHistoryTable, {
+  RequestStatusBadge,
+} from "./RequestHistoryTable";
 import apiClient from "../../utils/apiClient";
 
 const PAGE_SIZE = 10;
@@ -139,125 +142,79 @@ export default function ContactRequestsTab({ theme = "light" }) {
         </Link>
       </div>
 
-      {loading && (
-        <p role="status">Loading contact requests...</p>
-      )}
-
-      {error && (
-        <div role="alert" className="mb-4">
-          <p>{error}</p>
-          <button
-            type="button"
-            onClick={() => setReloadKey((value) => value + 1)}
-            className="underline mt-2"
-          >
-            Try again
-          </button>
-        </div>
-      )}
-
-      {!loading && !error && rows.length === 0 && (
-        <p role="status">
-          No contact requests found.
-        </p>
-      )}
-
-      {!loading && !error && rows.length > 0 && (
-        <>
-          {/* Desktop: table layout matching Business Requests */}
-          <div className="hidden md:block overflow-x-auto rounded-xl border"
-               style={innerStyle}>
-            <table className="min-w-full text-sm text-center">
-              <thead>
-                <tr
-                  className="border-b"
-                  style={{ borderColor: cardStyle.borderColor }}
-                >
-                  <th scope="col" className="px-4 py-4 font-semibold">
-                    Subject
-                  </th>
-                  <th scope="col" className="px-4 py-4 font-semibold">
-                    Created
-                  </th>
-                  <th scope="col" className="px-4 py-4 font-semibold">
-                    Status
-                  </th>
-                  <th scope="col" className="px-4 py-4 font-semibold">
-                    Details
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((request) => (
-                  <tr
-                    key={request.id}
-                    className="border-b last:border-b-0"
-                    style={{
-                      borderColor: cardStyle.borderColor,
-                    }}
-                  >
-                    <td className="px-4 py-4">
-                      {SUBJECT_LABELS[request.subject_type] ||
-                        request.subject_type}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      {formatDate(request.created_at)}
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${statusStyle(request.status)}`}>
-                        {request.status || "pending"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <button
-                        type="button"
-                        className="rounded-lg border border-turquoise px-3 py-1.5 font-semibold text-turquoise hover:opacity-80"
-                        onClick={() => setSelected(request)}
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile: stacked cards like Business Requests */}
-          <div className="md:hidden space-y-3">
-            {rows.map((request) => (
-              <article
-                key={request.id}
-                className="rounded-xl border p-4"
-                style={innerStyle}
+      <RequestHistoryTable
+        rows={rows}
+        theme={theme}
+        loading={loading}
+        error={error}
+        emptyMessage="No contact requests found."
+        getRowKey={(request) => request.id}
+        columns={[
+          {
+            key: "subject",
+            label: "Subject",
+            className: "px-4 py-3 font-semibold text-turquoise",
+            render: (request) =>
+              SUBJECT_LABELS[request.subject_type] ||
+              request.subject_type,
+          },
+          {
+            key: "created",
+            label: "Created",
+            render: (request) => formatDate(request.created_at),
+          },
+          {
+            key: "status",
+            label: "Status",
+            render: (request) => (
+              <RequestStatusBadge
+                status={request.status}
+                getStatusClass={statusStyle}
+              />
+            ),
+          },
+          {
+            key: "view",
+            label: "View",
+            render: (request) => (
+              <button
+                type="button"
+                onClick={() => setSelected(request)}
+                className="text-turquoise font-medium hover:underline"
               >
-                <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-                  <h3 className="font-semibold text-turquoise break-words">
-                    {SUBJECT_LABELS[request.subject_type] ||
-                      request.subject_type}
-                  </h3>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyle(request.status)}`}>
-                    {request.status || "pending"}
-                  </span>
-                </div>
+                View
+              </button>
+            ),
+          },
+        ]}
+        renderMobileCard={(request) => (
+          <>
+            <h3 className="text-lg font-semibold text-turquoise mb-1">
+              {SUBJECT_LABELS[request.subject_type] ||
+                request.subject_type}
+            </h3>
 
-                <p className="text-sm mb-4">
-                  <span className="font-semibold">Created:</span>{" "}
-                  {formatDate(request.created_at)}
-                </p>
+            <p className="text-sm mb-2">
+              Created: {formatDate(request.created_at)}
+            </p>
 
-                <button
-                  type="button"
-                  className="rounded-lg border border-turquoise px-4 py-2 text-sm font-semibold text-turquoise"
-                  onClick={() => setSelected(request)}
-                >
-                  View
-                </button>
-              </article>
-            ))}
-          </div>
-        </>
-      )}
+            <div className="mb-2">
+              <RequestStatusBadge
+                status={request.status}
+                getStatusClass={statusStyle}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSelected(request)}
+              className="text-turquoise font-medium mt-1 hover:underline"
+            >
+              View
+            </button>
+          </>
+        )}
+      />
 
       {!loading && !error && (
         <div className="mt-5">
