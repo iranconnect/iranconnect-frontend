@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import Link from "next/link";
 import AccountLayout from "../../components/account/AccountLayout";
+import ContactRequestsTab from "../../components/account/ContactRequestsTab";
 import Pagination from "../../components/ui/Pagination";
 import usePaginationQuery from "../../hooks/usePaginationQuery";
 import apiClient from "../../utils/apiClient";
@@ -39,6 +41,7 @@ function getStatusClass(status) {
 }
 
 export default function RequestHistory() {
+  const [activeTab, setActiveTab] = useState("business");
   const [requests, setRequests] = useState([]);
   const [pagination, setPagination] = useState(
     DEFAULT_PAGINATION
@@ -262,6 +265,65 @@ export default function RequestHistory() {
     <AccountLayout>
       <main className="flex-1 px-4 py-6 md:py-8">
         <div className="mx-auto w-full max-w-5xl">
+          <h1 className="text-2xl font-bold text-center mb-6">
+            Requests / History
+          </h1>
+
+          <div
+            role="tablist"
+            aria-label="Request categories"
+            className="flex flex-wrap gap-2 mb-6 border-b border-gray-300"
+          >
+            <button
+              type="button"
+              role="tab"
+              id="business-requests-tab"
+              aria-selected={activeTab === "business"}
+              aria-controls="business-requests-panel"
+              onClick={() => setActiveTab("business")}
+              className={`px-4 py-3 font-semibold border-b-2 ${
+                activeTab === "business"
+                  ? "border-turquoise text-turquoise"
+                  : "border-transparent text-gray-500"
+              }`}
+            >
+              Business Requests
+            </button>
+
+            <button
+              type="button"
+              role="tab"
+              id="contact-requests-tab"
+              aria-selected={activeTab === "contact"}
+              aria-controls="contact-requests-panel"
+              onClick={() => {
+                setSelectedRequest(null);
+                setActiveTab("contact");
+              }}
+              className={`px-4 py-3 font-semibold border-b-2 ${
+                activeTab === "contact"
+                  ? "border-turquoise text-turquoise"
+                  : "border-transparent text-gray-500"
+              }`}
+            >
+              Contact Requests
+            </button>
+          </div>
+
+          {activeTab === "business" && (
+            <div
+              id="business-requests-panel"
+              role="tabpanel"
+              aria-labelledby="business-requests-tab"
+            >
+              <div className="flex justify-end mb-6">
+                <Link
+                  href="/account/new-business"
+                  className="inline-flex items-center justify-center rounded-lg bg-turquoise px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                >
+                  New Business
+                </Link>
+              </div>
           <div className="w-full max-w-5xl mx-auto">
             <h1
               className="text-2xl font-bold text-center mb-8"
@@ -608,9 +670,21 @@ export default function RequestHistory() {
               )}
             </div>
           </div>
+          </div>
+          )}
+
+          {activeTab === "contact" && (
+            <div
+              id="contact-requests-panel"
+              role="tabpanel"
+              aria-labelledby="contact-requests-tab"
+            >
+              <ContactRequestsTab />
+            </div>
+          )}
         </div>
 
-        {selectedRequest && (
+        {activeTab === "business" && selectedRequest && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
             <div
               className="rounded-2xl max-w-lg w-full p-6 relative"

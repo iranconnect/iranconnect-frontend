@@ -10,10 +10,7 @@ import ReCAPTCHA from 'react-google-recaptcha';
 export default function ContactPage() {
   // 🧱 حالت اولیه فرم
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
-    subjectType: '',
-    customSubject: '',
     message: '',
   });
 
@@ -132,68 +129,61 @@ export default function ContactPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submissionBlocked) return;
+
     setSuccess('');
     setErrors({});
-    setLoading(true);
 
-    const { name, email, subjectType, customSubject, message } = formData;
+    const email = formData.email.trim();
+    const message = formData.message.trim();
     const newErrors = {};
 
-    if (!name.trim()) newErrors.name = 'Required';
-    if (!email.trim() || !validateEmail(email)) newErrors.email = 'Invalid email';
-    if (!subjectType) newErrors.subjectType = 'Please select a subject';
-    if (subjectType === 'other' && !customSubject.trim()) newErrors.customSubject = 'Please enter subject';
-    if (!message.trim()) newErrors.message = 'Required';
-    if (!captchaToken) newErrors.captcha = 'Please verify reCAPTCHA';
+    if (!validateEmail(email)) {
+      newErrors.email = 'Enter a valid email address';
+    }
+    if (!message || message.length > 3000) {
+      newErrors.message = 'Enter a message of up to 3000 characters';
+    }
+    if (!captchaToken) {
+      newErrors.captcha = 'Please verify reCAPTCHA';
+    }
 
-    if (Object.keys(newErrors).length > 0) {
+    if (Object.keys(newErrors).length) {
       setErrors(newErrors);
-      setLoading(false);
       return;
     }
 
+    setLoading(true);
+
     try {
       const res = await apiClient.post(
-        '/contact',
+        '/contact/unblock/request',
         {
-          name,
           email,
-          subjectType,
-          customSubject,
           message,
           recaptchaToken: captchaToken,
-        },
-        {
-          headers: { "x-iranconnect-contact": "1" }
         }
       );
 
-
-      if (res.data?.success) {
-        setSuccess(res.data.message || '✅ Your message was sent successfully!');
-        await refreshCooldown();
-      } else {
-        setErrors({ global: res.data?.error || '⚠️ Something went wrong.' });
+      if (res.status !== 202 || res.data?.success !== true) {
+        throw new Error('Unexpected unblock response');
       }
 
-      // پاک کردن فرم و ریست کپچا
-      setFormData({
-        name: '',
-        email: '',
-        subjectType: '',
-        customSubject: '',
-        message: '',
-      });
+      setSuccess(
+        res.data.message ||
+        'If this account is eligible, a verification link may be sent to its registered email address.'
+      );
+
+      setFormData({ email: '', message: '' });
       setCaptchaToken(null);
-      if (recaptchaRef.current) recaptchaRef.current.reset();
+      recaptchaRef.current?.reset();
+      await refreshCooldown();
     } catch (err) {
-      if (process.env.NODE_ENV !== "production") {
-        console.error('❌ Contact submit error:', err);
-      }
       const data = err.response?.data;
 
-      if (err.response?.status === 429 &&
-          data?.code === 'CONTACT_COOLDOWN_ACTIVE') {
+      if (
+        err.response?.status === 429 &&
+        data?.code === 'CONTACT_COOLDOWN_ACTIVE'
+      ) {
         const until = Date.parse(data.cooldown_until);
         if (Number.isFinite(until)) {
           setCooldownUntil(until);
@@ -202,12 +192,22 @@ export default function ContactPage() {
         } else {
           await refreshCooldown();
         }
-        setErrors({});
       } else {
-        const msg = data?.error ||
-          'Server error. Please try again later.';
-        setErrors({ global: msg });
+        const status = err.response?.status;
+        const message =
+          status === 404
+            ? 'This service is currently unavailable.'
+            : status === 503
+              ? 'Verification is temporarily unavailable. Please try again later.'
+              : status === 400
+                ? 'Please check your information and verification.'
+                : 'Unable to submit your request. Please try again later.';
+
+        setErrors({ global: message });
       }
+
+      setCaptchaToken(null);
+      recaptchaRef.current?.reset();
     } finally {
       setLoading(false);
     }
@@ -249,7 +249,7 @@ export default function ContactPage() {
                 : "6px 6px 15px rgba(0,0,0,0.1), -6px -6px 15px rgba(255,255,255,0.4)",
           }}
         >
-          <h2 className="text-2xl font-semibold text-center mb-6">📩 Contact Us</h2>
+          <h2 className="text-2xl font-semibold text-center mb-6">Request Account Unblock</h2>
 
           {/* پیام‌های وضعیت */}
           {errors.global && <p className="text-red-500 text-sm mb-3">{errors.global}</p>}
@@ -282,59 +282,20 @@ export default function ContactPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <input
-              name="name"
-              placeholder="Your name"
-              value={formData.name}
-              onChange={handleChange}
-              className="input-default w-full"
-            />
-            {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
-
-            <input
               type="email"
               name="email"
-              placeholder="Your email"
+              placeholder="Registered email address"
               value={formData.email}
               onChange={handleChange}
               className={`input-default w-full ${errors.email ? 'border-red-500' : ''}`}
             />
             {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
 
-            {/* 🔽 Subject Dropdown */}
-            <select
-              name="subjectType"
-              value={formData.subjectType}
-              onChange={handleChange}
-              className="input-default w-full"
-            >
-              <option value="">-- Select a subject --</option>
-              <option value="unblock_request">Request Account Unblock</option>
-              <option value="business_ownership_dispute">Business Ownership Dispute</option>
-              <option value="account_access_issue">Account Access Issue</option>
-              <option value="business_request_issue">Business Request Issue</option>
-              <option value="other">Other</option>
-            </select>
-            {errors.subjectType && <p className="text-red-500 text-xs">{errors.subjectType}</p>}
-
-            {/* 📝 Custom Subject Field */}
-            {formData.subjectType === 'other' && (
-              <>
-                <input
-                  type="text"
-                  name="customSubject"
-                  placeholder="Enter subject"
-                  value={formData.customSubject}
-                  onChange={handleChange}
-                  className="input-default w-full"
-                />
-                {errors.customSubject && <p className="text-red-500 text-xs">{errors.customSubject}</p>}
-              </>
-            )}
-
             <textarea
               name="message"
-              placeholder="Your message"
+              placeholder="Explain your account unblock request"
               rows="4"
+              maxLength={3000}
               value={formData.message}
               onChange={handleChange}
               className="input-default w-full"
@@ -352,7 +313,7 @@ export default function ContactPage() {
             {errors.captcha && <p className="text-red-500 text-xs text-center">{errors.captcha}</p>}
 
             <button type="submit" disabled={submissionBlocked} className="btn-primary w-full">
-              {loading ? 'Sending...' : 'Send Message'}
+              {loading ? 'Sending...' : 'Send Verification Request'}
             </button>
           </form>
         </div>

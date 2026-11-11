@@ -127,12 +127,14 @@ export default function Header() {
             Search
           </Link>
 
-          <Link
-            href="/contact"
-            className="text-sm text-[var(--text)] hover:text-turquoise transition"
-          >
-            Contact
-          </Link>
+          {status === "unauthenticated" && (
+            <Link
+              href="/contact"
+              className="text-sm text-[var(--text)] hover:text-turquoise transition"
+            >
+              Contact
+            </Link>
+          )}
 
           <Link
             href="/about"
@@ -224,13 +226,15 @@ export default function Header() {
             Search
           </Link>
 
-          <Link
-            href="/contact"
-            onClick={() => setMenuOpen(false)}
-            className="text-[var(--text)] hover:text-turquoise"
-          >
-            Contact
-          </Link>
+          {status === "unauthenticated" && (
+            <Link
+              href="/contact"
+              onClick={() => setMenuOpen(false)}
+              className="text-[var(--text)] hover:text-turquoise"
+            >
+              Contact
+            </Link>
+          )}
 
           <Link
             href="/about"
@@ -253,15 +257,13 @@ export default function Header() {
           {isLoggedIn && (
             <>
               {/* Requests */}
-              {hasRequests && (
-                <Link
+              <Link
                   href="/account/requests"
                   onClick={() => setMenuOpen(false)}
                   className="text-[var(--text)] hover:text-turquoise"
                 >
                   Requests / History
                 </Link>
-              )}
               
               {/* Business Management */}
               {hasBusiness && (
