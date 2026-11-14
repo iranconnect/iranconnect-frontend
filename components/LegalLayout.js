@@ -31,7 +31,7 @@ export default function LegalLayout({ texts, editorial = false }) {
           - No runtime sanitizer in SSR (build-safe)
         */}
         <div
-          className={editorial ? `${styles.content} ${styles.card}` : "prose max-w-none leading-relaxed mb-10"}
+          className={editorial ? `${styles.content} ${styles.card} ${lang === "fa" ? styles.persian : ""}` : "prose max-w-none leading-relaxed mb-10"}
           dangerouslySetInnerHTML={{
             __html: texts?.[lang] || "",
           }}

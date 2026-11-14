@@ -97,7 +97,7 @@ export default function FAQSection() {
         />
       </Head>
 
-      <SectionWrapper>
+      <SectionWrapper id="faq">
         <RevealOnScroll>
           <SectionTitle
             title="Frequently Asked Questions"

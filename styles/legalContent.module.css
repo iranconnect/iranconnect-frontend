@@ -6,7 +6,7 @@
  */
 
 .page {
-  background: var(--bg);
+  background: #ffffff;
   color: var(--text);
   transition: background-color 180ms ease, color 180ms ease;
 }
@@ -160,4 +160,22 @@
   .page {
     transition: none;
   }
+}
+
+
+/* Persian editorial typography — scoped to opt-in content */
+.persian {
+  font-family: Tahoma, "Noto Sans Arabic", "Segoe UI", Arial, sans-serif;
+  font-size: 1.025rem;
+  line-height: 2;
+}
+
+.persian p {
+  line-height: 2;
+}
+
+.persian h1,
+.persian h2,
+.persian h3 {
+  letter-spacing: normal;
 }

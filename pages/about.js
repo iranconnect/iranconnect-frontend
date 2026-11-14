@@ -31,7 +31,7 @@ const texts = {
     <p>Users should independently verify professional qualifications, legal authorizations, service terms, and suitability before engaging a provider. IranConnect does not guarantee the accuracy of all listing information or the results of services provided.</p>
 
     <h2>Help &amp; More Information</h2>
-    <p>For common questions, visit the <a href="/">FAQ section on our homepage</a>. If you need assistance, please use our <a href="/contact">Contact page</a>.</p>
+    <p>For common questions, visit the <a href="/#faq">FAQ section on our homepage</a>. If you need assistance, please use our <a href="/contact">Contact page</a>.</p>
     <p>You can also review our <a href="/privacy-policy">Privacy Policy</a> and <a href="/terms-of-service">Terms of Service</a> for further information about the platform.</p>
   `,
 
@@ -62,7 +62,7 @@ const texts = {
     <p>Les utilisateurs doivent vérifier eux-mêmes les qualifications, les autorisations légales, les conditions des services et leur adéquation à leurs besoins avant de faire appel à un prestataire. IranConnect ne garantit pas l’exactitude de toutes les informations publiées ni les résultats des services fournis.</p>
 
     <h2>Aide et informations complémentaires</h2>
-    <p>Pour les questions fréquentes, consultez la <a href="/">FAQ sur notre page d’accueil</a>. Si vous avez besoin d’aide, utilisez notre <a href="/contact">page Contact</a>.</p>
+    <p>Pour les questions fréquentes, consultez la <a href="/#faq">FAQ sur notre page d’accueil</a>. Si vous avez besoin d’aide, utilisez notre <a href="/contact">page Contact</a>.</p>
     <p>Vous pouvez également consulter notre <a href="/privacy-policy">Politique de confidentialité</a> et nos <a href="/terms-of-service">Conditions d’utilisation</a> pour obtenir davantage d’informations sur la plateforme.</p>
   `,
 
@@ -93,7 +93,7 @@ const texts = {
     <p>کاربران باید پیش از استفاده از خدمات، صلاحیت حرفه‌ای، مجوزهای قانونی، شرایط ارائه خدمات و تناسب آن‌ها با نیاز خود را مستقلاً بررسی کنند. ایران‌کانکت صحت تمام اطلاعات ثبت‌شده یا نتایج خدمات ارائه‌دهندگان را تضمین نمی‌کند.</p>
 
     <h2>راهنمایی و اطلاعات بیشتر</h2>
-    <p>برای پاسخ به پرسش‌های متداول می‌توانید به <a href="/">بخش سؤالات رایج در صفحه اصلی</a> مراجعه کنید. در صورت نیاز به راهنمایی یا پشتیبانی، از <a href="/contact">صفحه تماس با ما</a> استفاده کنید.</p>
+    <p>برای پاسخ به پرسش‌های متداول می‌توانید به <a href="/#faq">بخش سؤالات رایج در صفحه اصلی</a> مراجعه کنید. در صورت نیاز به راهنمایی یا پشتیبانی، از <a href="/contact">صفحه تماس با ما</a> استفاده کنید.</p>
     <p>همچنین برای اطلاع از جزئیات بیشتر درباره پلتفرم، می‌توانید <a href="/privacy-policy">سیاست حفظ حریم خصوصی</a> و <a href="/terms-of-service">شرایط استفاده از خدمات</a> را مطالعه کنید.</p>
   `,
 }

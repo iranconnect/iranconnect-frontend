@@ -2,9 +2,11 @@
 export default function SectionWrapper({
   children,
   className = "",
+  id,
 }) {
   return (
     <section
+      id={id}
       className={`
         py-12 md:py-20
         px-4
