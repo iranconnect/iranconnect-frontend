@@ -1,0 +1,163 @@
+/*
+ * IranConnect Shared Editorial Styles
+ * Opt-in via LegalLayout editorial prop.
+ * Designed for About; reusable for future legal pages.
+ * Uses existing theme tokens from globals_v3.css.
+ */
+
+.page {
+  background: var(--bg);
+  color: var(--text);
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.main {
+  min-width: 0;
+}
+
+.languageBar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.cardStartMarker {
+  display: none;
+}
+
+.card {
+  box-sizing: border-box;
+  width: 100%;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow:
+    0 10px 30px var(--shadow-dark);
+}
+
+.content {
+  overflow-wrap: break-word;
+  font-size: 1rem;
+  line-height: 1.85;
+  text-align: start;
+}
+
+.content h1 {
+  color: var(--text);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  text-align: start;
+  margin: 0 0 1rem;
+}
+
+.content > p:first-of-type {
+  margin: 0 0 2rem;
+}
+
+.content > p:first-of-type strong {
+  display: block;
+  color: var(--text);
+  opacity: 0.8;
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.content h2 {
+  color: var(--text);
+  font-size: clamp(1.2rem, 2.5vw, 1.55rem);
+  font-weight: 750;
+  line-height: 1.4;
+  text-align: start;
+  border-inline-start: 4px solid #00bfa6;
+  padding-inline-start: 1rem;
+  margin: 2.5rem 0 1.25rem;
+}
+
+.content h3 {
+  color: var(--text);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.5;
+  margin: 1.75rem 0 0.75rem;
+}
+
+.content p {
+  color: var(--text);
+  margin: 0 0 1.15rem;
+  line-height: 1.85;
+}
+
+.content strong {
+  font-weight: 700;
+}
+
+.content a {
+  color: #007e75;
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+:global(html[data-theme="dark"]) .content a {
+  color: #56e5d2;
+}
+
+.content a:hover {
+  color: #005d56;
+  text-decoration-thickness: 2px;
+}
+
+:global(html[data-theme="dark"]) .content a:hover {
+  color: #9cf5e8;
+}
+
+.content a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.content ul,
+.content ol {
+  margin: 1rem 0 1.5rem;
+  padding-inline-start: 1.75rem;
+}
+
+.content li {
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .card {
+    border-radius: 0.875rem;
+    padding: 1.25rem;
+  }
+
+  .content {
+    font-size: 0.975rem;
+    line-height: 1.75;
+  }
+
+  .content h2 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    padding-inline-start: 0.75rem;
+  }
+
+  .content p {
+    line-height: 1.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    transition: none;
+  }
+}

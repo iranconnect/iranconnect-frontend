@@ -3,22 +3,26 @@ import { useState } from "react";
 import LanguageToggle from "./LanguageToggle";
 import Header from "./Header";
 import Footer from "./Footer";
+import styles from "../styles/legalContent.module.css";
 
-export default function LegalLayout({ texts }) {
+export default function LegalLayout({ texts, editorial = false }) {
   const [lang, setLang] = useState("en");
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-[#0a1a44]">
+    <div className={editorial ? `min-h-screen flex flex-col ${styles.page}` : "min-h-screen flex flex-col bg-white text-[#0a1a44]"}>
       <Header />
 
       <main
-        className="flex-grow w-full max-w-5xl mx-auto px-4 md:px-2 pt-10 pb-32"
+        className={editorial ? `flex-grow w-full max-w-5xl mx-auto px-4 md:px-2 pt-8 pb-20 ${styles.main}` : "flex-grow w-full max-w-5xl mx-auto px-4 md:px-2 pt-10 pb-32"}
         style={{
           direction: lang === "fa" ? "rtl" : "ltr",
-          textAlign: "justify",
+          textAlign: editorial ? "start" : "justify",
         }}
       >
-        <LanguageToggle onChange={setLang} />
+        <div className={editorial ? styles.languageBar : undefined}>
+          <LanguageToggle onChange={setLang} />
+        </div>
+        {editorial ? <div className={styles.cardStartMarker} aria-hidden="true" /> : null}
 
         {/* 
           🛡️ SECURITY NOTE:
@@ -27,7 +31,7 @@ export default function LegalLayout({ texts }) {
           - No runtime sanitizer in SSR (build-safe)
         */}
         <div
-          className="prose max-w-none leading-relaxed mb-10"
+          className={editorial ? `${styles.content} ${styles.card}` : "prose max-w-none leading-relaxed mb-10"}
           dangerouslySetInnerHTML={{
             __html: texts?.[lang] || "",
           }}

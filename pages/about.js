@@ -103,6 +103,6 @@ export default function AboutPage() {
     feature: "public-about",
   });
 
-  return <LegalLayout texts={texts} />;
+  return <LegalLayout texts={texts} editorial />;
 }
 
