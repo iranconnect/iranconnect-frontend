@@ -11,6 +11,25 @@ export default function UnblockConfirmationPage() {
 
   const [status, setStatus] = useState('checking');
   const [error, setError] = useState('');
+  const [theme, setTheme] = useState('light');
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const syncTheme = () => {
+      setTheme(root.getAttribute('data-theme') || 'light');
+    };
+
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -116,7 +135,21 @@ export default function UnblockConfirmationPage() {
         <Header />
 
         <main className="flex-1 flex items-center justify-center px-4 py-12">
-          <section className="w-full max-w-md rounded-xl border border-gray-200 p-6">
+          <section
+            className="rounded-2xl p-8 w-full max-w-md border transition-all duration-300"
+            style={{
+              background: theme === 'dark' ? '#0b2149' : '#ffffff',
+              color: theme === 'dark' ? '#ffffff' : '#0a1b2a',
+              borderColor:
+                theme === 'dark'
+                  ? 'rgba(255,255,255,0.1)'
+                  : 'rgba(0,0,0,0.05)',
+              boxShadow:
+                theme === 'dark'
+                  ? '10px 10px 25px rgba(0,0,0,0.4), -10px -10px 25px rgba(255,255,255,0.05)'
+                  : '6px 6px 15px rgba(0,0,0,0.1), -6px -6px 15px rgba(255,255,255,0.4)',
+            }}
+          >
             <h1 className="text-2xl font-semibold mb-4">
               Confirm Account Unblock Request
             </h1>
