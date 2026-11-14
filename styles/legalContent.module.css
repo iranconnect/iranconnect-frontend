@@ -179,3 +179,63 @@
 .persian h3 {
   letter-spacing: normal;
 }
+
+/*
+ * Policy content normalization.
+ * Scoped to legal pages; About remains unchanged.
+ */
+.policyContent {
+  color: var(--text);
+}
+
+.policyContent :is(h1, h2, h3, h4, h5, h6, p, li, span, strong, em, div) {
+  color: var(--text) !important;
+}
+
+.policyContent :is(h1, h2, h3, h4, h5, h6) {
+  color: var(--text) !important;
+  font-size: clamp(1.2rem, 2.5vw, 1.55rem) !important;
+  font-weight: 750 !important;
+  line-height: 1.4 !important;
+  text-align: start !important;
+  border: 0 !important;
+  border-inline-start: 4px solid #00bfa6 !important;
+  padding-inline-start: 1rem !important;
+  margin: 2.5rem 0 1.25rem !important;
+}
+
+.policyContent .policyTitle {
+  font-size: clamp(2rem, 4vw, 2.75rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0 0 1rem !important;
+}
+
+.policyContent .policySectionTitle {
+  border-inline-start: 4px solid #00bfa6 !important;
+}
+
+.policyContent a,
+.policyContent a * {
+  color: #007e75 !important;
+  text-decoration: underline;
+}
+
+:global(html[data-theme="dark"]) .policyContent a,
+:global(html[data-theme="dark"]) .policyContent a * {
+  color: #56e5d2 !important;
+}
+
+@media (max-width: 640px) {
+  .policyContent :is(h1, h2, h3, h4, h5, h6) {
+    padding-inline-start: 0.75rem !important;
+    margin-top: 2rem !important;
+  }
+
+  .policyContent .policyTitle {
+    padding: 0 !important;
+    margin-top: 0 !important;
+  }
+}

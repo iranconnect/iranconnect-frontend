@@ -59,5 +59,5 @@ export default function CookiesPolicy() {
     };
   }, []);
 
-  return <LegalLayout texts={texts} editorial />;
+  return <LegalLayout texts={texts} editorial normalizePolicy />;
 }

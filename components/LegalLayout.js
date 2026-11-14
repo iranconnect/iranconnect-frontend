@@ -1,12 +1,28 @@
 // components/LegalLayout.js
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import LanguageToggle from "./LanguageToggle";
 import Header from "./Header";
 import Footer from "./Footer";
 import styles from "../styles/legalContent.module.css";
 
-export default function LegalLayout({ texts, editorial = false }) {
+export default function LegalLayout({ texts, editorial = false, normalizePolicy = false }) {
   const [lang, setLang] = useState("en");
+
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    if (!normalizePolicy || !contentRef.current) return;
+    const headings = contentRef.current.querySelectorAll(
+      "h1, h2, h3, h4, h5, h6"
+    );
+    headings.forEach((heading, index) => {
+      heading.classList.toggle(styles.policyTitle, index === 0);
+      heading.classList.toggle(
+        styles.policySectionTitle, index !== 0
+      );
+    });
+  }, [lang, texts, normalizePolicy]);
+
 
   return (
     <div className={editorial ? `min-h-screen flex flex-col ${styles.page}` : "min-h-screen flex flex-col bg-white text-[#0a1a44]"}>
@@ -31,7 +47,8 @@ export default function LegalLayout({ texts, editorial = false }) {
           - No runtime sanitizer in SSR (build-safe)
         */}
         <div
-          className={editorial ? `${styles.content} ${styles.card} ${lang === "fa" ? styles.persian : ""}` : "prose max-w-none leading-relaxed mb-10"}
+          ref={contentRef}
+          className={editorial ? `${styles.content} ${styles.card} ${lang === "fa" ? styles.persian : ""} ${normalizePolicy ? styles.policyContent : ""}` : "prose max-w-none leading-relaxed mb-10"}
           dangerouslySetInnerHTML={{
             __html: texts?.[lang] || "",
           }}

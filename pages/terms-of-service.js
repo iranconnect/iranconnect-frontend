@@ -50,5 +50,5 @@ export default function TermsOfService() {
     };
   }, []);
 
-  return <LegalLayout texts={texts} editorial />;
+  return <LegalLayout texts={texts} editorial normalizePolicy />;
 }
