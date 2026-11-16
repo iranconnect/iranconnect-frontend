@@ -4,7 +4,7 @@ import SectionWrapper from "./SectionWrapper";
 import TrustStats from "./TrustStats";
 import HeroCTA from "./HeroCTA";
 
-export default function HeroSection() {
+export default function HeroSection({ stats }) {
   return (
     <SectionWrapper className="pt-10 md:pt-16">
       <div
@@ -111,7 +111,7 @@ export default function HeroSection() {
           </p>
 
           <div className="mt-14 flex justify-center">
-            <TrustStats />
+            <TrustStats stats={stats} />
           </div>
 
           <div className="mt-12 flex justify-center">

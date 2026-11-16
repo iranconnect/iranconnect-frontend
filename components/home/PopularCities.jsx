@@ -6,7 +6,7 @@ import RevealOnScroll from "../ui/RevealOnScroll";
 
 import popularCities from "../../data/popularCities";
 
-export default function PopularCities() {
+export default function PopularCities({ cityCounts = {} }) {
   return (
     <SectionWrapper>
       <RevealOnScroll>
@@ -33,7 +33,10 @@ export default function PopularCities() {
               135
             )}
           >
-            <CityCard {...item} />
+            <CityCard
+              {...item}
+              businesses={cityCounts[item.slug]}
+            />
           </RevealOnScroll>
         ))}
       </div>

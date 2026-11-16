@@ -83,7 +83,7 @@ export default function FeaturedBusinesses() {
         <RevealOnScroll>
           <SectionTitle
             title="Featured Businesses"
-            subtitle="Discover trusted Iranian-owned businesses and professionals recommended by the community."
+            subtitle="Explore featured Iranian-owned businesses and professionals on IranConnect."
             center
           />
         </RevealOnScroll>

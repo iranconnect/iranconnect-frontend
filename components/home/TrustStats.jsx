@@ -1,19 +1,29 @@
 //frontend/components/home/TrustStats.jsx
-export default function TrustStats() {
-  const stats = [
+export default function TrustStats({ stats }) {
+  const statItems = [
     {
-      value: "120+",
+      value: stats?.businesses,
       label: "Businesses",
     },
     {
-      value: "15+",
+      value: stats?.categories,
       label: "Categories",
     },
     {
-      value: "10+",
+      value: stats?.cities,
       label: "Cities",
     },
   ];
+
+  const visibleStats = statItems.filter(
+    (item) =>
+      Number.isInteger(item.value) &&
+      item.value >= 0
+  );
+
+  if (visibleStats.length === 0) {
+    return null;
+  }
 
   return (
     <div
@@ -31,7 +41,7 @@ export default function TrustStats() {
       mx-auto
     "
     >
-      {stats.map((item) => (
+      {visibleStats.map((item) => (
         <div
           key={item.label}
           className="

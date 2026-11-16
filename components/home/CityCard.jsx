@@ -66,7 +66,14 @@ export default function CityCard({
                 opacity-75
               "
             >
-              {businesses}
+              {Number.isInteger(businesses) &&
+              businesses >= 0
+                ? `${businesses} ${
+                    businesses === 1
+                      ? "business"
+                      : "businesses"
+                  }`
+                : null}
             </div>
           </div>
 

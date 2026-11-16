@@ -4,7 +4,7 @@ import Link from "next/link";
 import SectionWrapper from "./SectionWrapper";
 import RevealOnScroll from "../ui/RevealOnScroll";
 
-export default function CTASection() {
+export default function CTASection({ stats }) {
   return (
     <SectionWrapper>
       <RevealOnScroll>
@@ -117,8 +117,8 @@ export default function CTASection() {
                 mb-8
               "
             >
-              Join hundreds of Iranian-owned businesses already
-              connecting with users across Europe and North America.
+              Introduce your business to people looking for
+              Iranian-owned businesses and professional services.
             </p>
 
             <div
@@ -131,17 +131,24 @@ export default function CTASection() {
                 font-medium
               "
             >
-              <span className="admin-card px-4 py-2">
-                120+ Businesses
-              </span>
-
-              <span className="admin-card px-4 py-2">
-                15+ Categories
-              </span>
-
-              <span className="admin-card px-4 py-2">
-                10+ Cities
-              </span>
+              {[
+                { label: "Businesses", value: stats?.businesses },
+                { label: "Categories", value: stats?.categories },
+                { label: "Cities", value: stats?.cities },
+              ]
+                .filter(
+                  (item) =>
+                    Number.isInteger(item.value) &&
+                    item.value >= 0
+                )
+                .map((item) => (
+                  <span
+                    key={item.label}
+                    className="admin-card px-4 py-2"
+                  >
+                    {item.value} {item.label}
+                  </span>
+                ))}
             </div>
 
             <Link
