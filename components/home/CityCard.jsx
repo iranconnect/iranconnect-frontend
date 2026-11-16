@@ -14,11 +14,12 @@ export default function CityCard({
   return (
     <Link
       href={`/search?city=${slug}`}
-      className="block group"
+      className="block group h-[184px]"
     >
       <div
         className="
           card
+          h-full
           p-5
           transition-all
           duration-300
@@ -28,6 +29,7 @@ export default function CityCard({
         <div
           className="
             flex
+            h-full
             items-center
             justify-between
             gap-4
@@ -39,6 +41,9 @@ export default function CityCard({
               className="
                 text-xl
                 font-semibold
+                leading-7
+                min-h-[3.5rem]
+                line-clamp-2
                 text-[var(--text)]
                 group-hover:text-turquoise
                 transition-colors
@@ -81,8 +86,10 @@ export default function CityCard({
           <div
             className="
               relative
-              w-40
-              h-28
+              w-28
+              sm:w-40
+              h-24
+              sm:h-28
               shrink-0
             "
           >
