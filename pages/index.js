@@ -11,6 +11,7 @@ import PopularCities from "../components/home/PopularCities";
 import FeaturedBusinesses from "../components/home/FeaturedBusinesses";
 import FAQSection from "../components/home/FAQSection";
 import CTASection from "../components/home/CTASection";
+import ScrollToTopButton from "../components/ui/ScrollToTopButton";
 
 
 function useHomepageStats() {
@@ -126,6 +127,7 @@ export default function HomePage() {
       <FAQSection />
 
       <CTASection stats={stats} />
+      <ScrollToTopButton />
     </Layout>
   );
 }
