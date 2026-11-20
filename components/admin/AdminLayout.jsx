@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import * as Sentry from "@sentry/nextjs";
 
 import Sidebar from "./Sidebar";
@@ -16,6 +17,43 @@ import {
 } from "../../utils/navigationHistory";
 
 const DEFAULT_ALLOWED_ROLES = ["admin", "superadmin"];
+
+const ADMIN_PAGE_TITLES = {
+  "/admin/add-v2": "Add Business",
+  "/admin/analytics": "Admin Analytics",
+  "/admin/blocked-ips": "Blocked IPs",
+  "/admin/bulk-email": "Bulk Email",
+  "/admin/businesses": "Business Management",
+  "/admin/categories": "Categories",
+  "/admin/claims": "Business Claims",
+  "/admin/consents": "User Consents",
+  "/admin/contact-requests": "Contact Requests",
+  "/admin/dashboard": "Admin Dashboard",
+  "/admin/edit/[id]": "Edit Business",
+  "/admin/file-logs": "File Logs",
+  "/admin/login-attempts": "Login Attempts",
+  "/admin/policies": "Policy Management",
+  "/admin/requests": "Business Requests",
+  "/admin/reviews/[id]": "Review Details",
+  "/admin/reviews": "Review Moderation",
+  "/admin/security-logs": "Security Logs",
+  "/admin/services": "Services",
+  "/admin/settings": "Admin Settings",
+  "/admin/subcategories": "Subcategories",
+  "/admin/suspicious-ips": "Suspicious IPs",
+  "/admin/tags": "Tags",
+  "/admin/users": "User Management",
+};
+
+function AdminPageHead({ pathname }) {
+  const name = ADMIN_PAGE_TITLES[pathname] || "Admin";
+  return (
+    <Head>
+      <title>{`${name} — IranConnect`}</title>
+      <meta name="robots" content="noindex,nofollow" />
+    </Head>
+  );
+}
 
 export default function AdminLayout({
   children,
@@ -134,7 +172,9 @@ export default function AdminLayout({
   ---------------------------------------------------------*/
   if (status === "checking") {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[var(--bg)] text-[var(--text)]">
+      <>
+        <AdminPageHead pathname={router.pathname} />
+        <div className="flex items-center justify-center min-h-screen bg-[var(--bg)] text-[var(--text)]">
         <div className="text-center">
           <img
             src={
@@ -158,7 +198,8 @@ export default function AdminLayout({
             <div className="w-8 h-8 border-4 border-t-transparent border-turquoise rounded-full animate-spin" />
           </div>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -166,11 +207,13 @@ export default function AdminLayout({
    * Redirect is in progress. Render no protected UI.
    */
   if (!isRoleAllowed) {
-    return null;
+    return <AdminPageHead pathname={router.pathname} />;
   }
 
   return (
-    <SentryContextReady.Provider value={sentryReady}>
+    <>
+      <AdminPageHead pathname={router.pathname} />
+      <SentryContextReady.Provider value={sentryReady}>
       <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex transition-colors">
         <Sidebar role={role} />
 
@@ -185,6 +228,7 @@ export default function AdminLayout({
           </main>
         </div>
       </div>
-    </SentryContextReady.Provider>
+      </SentryContextReady.Provider>
+    </>
   );
 }
