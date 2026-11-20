@@ -1,6 +1,7 @@
 // pages/__debug/sentry.js
 
 import { useState } from "react";
+import Head from "next/head";
 
 export default function SentryTest() {
   const [triggered, setTriggered] = useState(false);
@@ -23,6 +24,10 @@ export default function SentryTest() {
 
   return (
     <main className="sentry-page">
+      <Head>
+        <title>Sentry Diagnostics — IranConnect</title>
+        <meta name="robots" content="noindex,nofollow" />
+      </Head>
       <section className="sentry-card">
         <div className="sentry-icon" aria-hidden="true">
           !

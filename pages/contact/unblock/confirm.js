@@ -126,7 +126,7 @@ export default function UnblockConfirmationPage() {
   return (
     <>
       <Head>
-        <title>Confirm Support Request | IranConnect</title>
+        <title>Confirm Support Request — IranConnect</title>
         <meta name="robots" content="noindex, nofollow" />
         <meta name="referrer" content="no-referrer" />
       </Head>
