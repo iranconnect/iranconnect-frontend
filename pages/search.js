@@ -1,6 +1,7 @@
 // frontend/pages/search.js
 import { useEffect, useState } from "react";
 import Header from '../components/Header';
+import SiteHead from "../components/SiteHead";
 import Footer from '../components/Footer';
 import BusinessCard from '../components/BusinessCard';
 import RevealOnScroll from '../components/ui/RevealOnScroll';
@@ -493,6 +494,7 @@ function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white transition-colors">
+      <SiteHead title="Search Iranian Businesses & Professionals — IranConnect" />
       <Header />
   
       <main className="flex-1 px-4 py-6 md:py-8">

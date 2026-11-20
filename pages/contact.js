@@ -1,6 +1,6 @@
 //pages/contact.js
 'use client';
-import Head from 'next/head';
+import SiteHead from "../components/SiteHead";
 import { useState, useEffect, useRef } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -132,6 +132,7 @@ export default function ContactPage() {
           color: "var(--text)",
         }}
       >
+        <SiteHead title="Contact IranConnect" />
         <Header />
   
         <main

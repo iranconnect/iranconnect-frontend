@@ -4,6 +4,7 @@ import apiClient from "../utils/apiClient";
 import popularCities from "../data/popularCities";
 
 import Layout from "../components/Layout";
+import SiteHead from "../components/SiteHead";
 
 import HeroSection from "../components/home/HeroSection";
 import FeaturedCategories from "../components/home/FeaturedCategories";
@@ -115,6 +116,10 @@ export default function HomePage() {
   const { stats, cityCounts } = useHomepageStats();
   return (
     <Layout>
+      <SiteHead
+        title="IranConnect — Find Iranian Businesses & Professionals"
+        socialTitle="IranConnect — Iranian Businesses & Professionals"
+      />
       <HeroSection stats={stats} />
 
       <FeaturedCategories />

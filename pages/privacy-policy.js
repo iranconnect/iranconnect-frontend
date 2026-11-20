@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import DOMPurify from "isomorphic-dompurify";
 import LegalLayout from "../components/LegalLayout";
+import SiteHead from "../components/SiteHead";
 import apiClient from "../utils/apiClient"; // ✅ axios حذف شد — apiClient اضافه شد
 
 const MAX_POLICY_LENGTH = 20000; // 🔐 hard safety cap
@@ -50,5 +51,10 @@ export default function PrivacyPolicy() {
     };
   }, []);
 
-  return <LegalLayout texts={texts} editorial normalizePolicy />;
+  return (
+    <>
+      <SiteHead title="Privacy Policy — IranConnect" />
+      <LegalLayout texts={texts} editorial normalizePolicy />
+    </>
+  );
 }

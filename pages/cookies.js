@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import DOMPurify from "isomorphic-dompurify";
 import LegalLayout from "../components/LegalLayout";
+import SiteHead from "../components/SiteHead";
 import apiClient from "../utils/apiClient";
 
 const MAX_POLICY_LENGTH = 20000; // hard safety cap
@@ -59,5 +60,10 @@ export default function CookiesPolicy() {
     };
   }, []);
 
-  return <LegalLayout texts={texts} editorial normalizePolicy />;
+  return (
+    <>
+      <SiteHead title="Cookie Policy — IranConnect" />
+      <LegalLayout texts={texts} editorial normalizePolicy />
+    </>
+  );
 }

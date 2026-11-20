@@ -1,5 +1,6 @@
 //pages/about.js
 import LegalLayout from "../components/LegalLayout";
+import SiteHead from "../components/SiteHead";
 import { useSentryPageTags } from "../hooks/useSentryPageTags";
 
 
@@ -103,6 +104,11 @@ export default function AboutPage() {
     feature: "public-about",
   });
 
-  return <LegalLayout texts={texts} editorial />;
+  return (
+    <>
+      <SiteHead title="About IranConnect" />
+      <LegalLayout texts={texts} editorial />
+    </>
+  );
 }
 
