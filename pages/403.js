@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 
 import { useAuthSession } from "../hooks/useAuthSession";
 import {
@@ -35,16 +36,18 @@ export default function ForbiddenPage() {
     router.replace(returnPath);
   }
 
-  if (status === "checking") {
-    return null;
-  }
-
-  if (status === "unauthenticated") {
-    return null;
-  }
+  const showForbiddenContent =
+    status !== "checking" &&
+    status !== "unauthenticated";
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-white px-6">
+    <>
+      <Head>
+        <title>Access Denied — IranConnect</title>
+        <meta name="robots" content="noindex,nofollow" />
+      </Head>
+      {showForbiddenContent && (
+        <main className="min-h-screen flex items-center justify-center bg-white px-6">
       <div className="max-w-xl w-full text-center">
         <div className="text-6xl mb-5">
           🚫
@@ -67,6 +70,8 @@ export default function ForbiddenPage() {
           Go Back
         </button>
       </div>
-    </main>
+        </main>
+      )}
+    </>
   );
 }

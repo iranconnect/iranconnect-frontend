@@ -1,6 +1,7 @@
 //frontend/pages/auth/change-password.js
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import ReCAPTCHA from "react-google-recaptcha";
@@ -208,6 +209,10 @@ useEffect(() => {
       className="min-h-screen flex flex-col"
       style={{ background: "#ffffff", color: "var(--text)" }}
     >
+      <Head>
+        <title>Change Password — IranConnect</title>
+        <meta name="robots" content="noindex,nofollow" />
+      </Head>
       <Header />
 
       <main className="flex flex-1 items-center justify-center p-6">

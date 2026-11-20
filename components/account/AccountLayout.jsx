@@ -1,6 +1,7 @@
 // frontend/components/account/AccountLayout.jsx
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 
 import Header from "../Header";
 import Footer from "../Footer";
@@ -37,6 +38,21 @@ function buildLoginRedirectUrl(returnTo) {
  */
 export default function AccountLayout({ children }) {
   const router = useRouter();
+
+  const accountTitles = {
+    "/account": "My Account — IranConnect",
+    "/account/businesses": "My Businesses — IranConnect",
+    "/account/requests": "My Requests — IranConnect",
+    "/account/new-business": "Add Business — IranConnect",
+    "/account/update-business": "Update Business — IranConnect",
+    "/account/delete-business": "Delete Business — IranConnect",
+    "/account/change-password": "Change Password — IranConnect",
+    "/account/contact-support": "Contact Support — IranConnect",
+  };
+
+  const pageTitle =
+    accountTitles[router.pathname] || "My Account — IranConnect";
+
 
   const { status, role } = useAuthSession();
   const hasRedirectedRef = useRef(false);
@@ -91,6 +107,10 @@ export default function AccountLayout({ children }) {
   if (checking || !isAllowed) {
     return (
       <div className="min-h-screen flex flex-col bg-pagebg text-text">
+        <Head>
+          <title>{pageTitle}</title>
+          <meta name="robots" content="noindex,nofollow" />
+        </Head>
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <p className="text-sm text-gray-500">
@@ -108,6 +128,10 @@ export default function AccountLayout({ children }) {
   return (
     <SentryContextReady.Provider value={!!sentryReady}>
       <div className="min-h-screen flex flex-col bg-pagebg text-text">
+        <Head>
+          <title>{pageTitle}</title>
+          <meta name="robots" content="noindex,nofollow" />
+        </Head>
         <Header />
         <main className="flex-1 section-gap">
           <div className="container-app">

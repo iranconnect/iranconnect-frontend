@@ -1,6 +1,7 @@
 //frontend/pages/auth/forgot.js
 import { useState, useEffect } from "react";
 import apiClient from "../../utils/apiClient"; // ← اضافه شد
+import Head from "next/head";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import ReCAPTCHA from "react-google-recaptcha";
@@ -80,6 +81,10 @@ export default function ForgotPassword() {
         color: "var(--text)",
       }}
     >
+      <Head>
+        <title>Forgot Password — IranConnect</title>
+        <meta name="robots" content="noindex,nofollow" />
+      </Head>
       <Header />
 
       <main

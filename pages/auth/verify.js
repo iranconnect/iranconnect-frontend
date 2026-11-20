@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import ReCAPTCHA from "react-google-recaptcha";
 
 import apiClient from "../../utils/apiClient";
+import Head from "next/head";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
@@ -307,6 +308,10 @@ export default function Verify() {
         color: "var(--text)",
       }}
     >
+      <Head>
+        <title>Verify Email — IranConnect</title>
+        <meta name="robots" content="noindex,nofollow" />
+      </Head>
       <Header />
 
       <main

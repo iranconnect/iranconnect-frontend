@@ -6,6 +6,7 @@ import ReCAPTCHA from "react-google-recaptcha";
 
 import apiClient from "../../utils/apiClient";
 
+import Head from "next/head";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import ConsentReviewModal from "../../components/ConsentReviewModal";
@@ -373,6 +374,10 @@ export default function Login() {
         color: "var(--text)",
       }}
     >
+      <Head>
+        <title>Login — IranConnect</title>
+        <meta name="robots" content="noindex,nofollow" />
+      </Head>
       <Header />
 
       <main

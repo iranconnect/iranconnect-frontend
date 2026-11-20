@@ -7,6 +7,7 @@ import {
 import apiClient from "../../utils/apiClient";
 import { Eye, EyeOff } from "lucide-react";
 
+import Head from "next/head";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import ConsentReviewModal from "../../components/ConsentReviewModal";
@@ -853,6 +854,10 @@ export default function BootstrapSetup() {
         background: "#ffffff",
       }}
     >
+      <Head>
+        <title>Account Setup — IranConnect</title>
+        <meta name="robots" content="noindex,nofollow" />
+      </Head>
       <Header />
 
       <main

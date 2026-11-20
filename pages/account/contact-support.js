@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import Head from "next/head";
 import Link from "next/link";
 import AccountLayout from "../../components/account/AccountLayout";
 import apiClient from "../../utils/apiClient";
@@ -234,9 +233,6 @@ export default function AccountContactSupport() {
 
   return (
     <AccountLayout>
-      <Head>
-        <title>Contact Support | IranConnect</title>
-      </Head>
 
       <main className="mx-auto w-full max-w-2xl px-4 py-8">
         <div className="mb-6">

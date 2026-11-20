@@ -1,6 +1,7 @@
 //frontend/pages/auth/register.js
 import { useState, useEffect } from "react";
 import apiClient from "../../utils/apiClient"; // ← axios حذف شد و apiClient جایگزین شد
+import Head from "next/head";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import ReCAPTCHA from "react-google-recaptcha"; // 🧩 اضافه شد
@@ -119,6 +120,10 @@ export default function Register() {
         color: "var(--text)",
       }}
     >
+      <Head>
+        <title>Create Account — IranConnect</title>
+        <meta name="robots" content="noindex,nofollow" />
+      </Head>
       <Header />
 
       <main
