@@ -120,12 +120,15 @@ export default function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex gap-5 items-center">
-          <Link
-            href="/search"
-            className="text-sm text-[var(--text)] hover:text-turquoise transition"
-          >
-            Search
-          </Link>
+          {isLoggedIn && (
+            <Link
+              href="/search"
+              prefetch={false}
+              className="text-sm text-[var(--text)] hover:text-turquoise transition"
+            >
+              Search
+            </Link>
+          )}
 
           {status === "unauthenticated" && (
             <Link
@@ -218,13 +221,16 @@ export default function Header() {
             </div>
           )}
 
-          <Link
-            href="/search"
-            onClick={() => setMenuOpen(false)}
-            className="text-[var(--text)] hover:text-turquoise"
-          >
-            Search
-          </Link>
+          {isLoggedIn && (
+            <Link
+              href="/search"
+              prefetch={false}
+              onClick={() => setMenuOpen(false)}
+              className="text-[var(--text)] hover:text-turquoise"
+            >
+              Search
+            </Link>
+          )}
 
           {status === "unauthenticated" && (
             <Link

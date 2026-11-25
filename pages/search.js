@@ -12,6 +12,9 @@ import { useRouter } from "next/router";
 
 import { Country } from "country-state-city";
 
+const SEARCH_QUERY_MAX_LENGTH = 100;
+const SEARCH_LIST_TIMEOUT_MS = 15000;
+
 const SEARCH_KEYS = [
   "country", "city", "category", "subcategory", "q", "page"
 ];
@@ -38,6 +41,7 @@ function Home() {
   const router = useRouter();
   const userInteractedRef = useRef(false);
   const searchRequestVersionRef = useRef(0);
+  const activeListRequestRef = useRef(null);
   const manualSearchIssuedRef = useRef(false);
 
   const cityRequestVersionRef = useRef(0);
@@ -62,12 +66,22 @@ function Home() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
   const [
     isBusinessNavigating,
     setIsBusinessNavigating,
   ] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [theme, setTheme] = useState('light');
+
+  useEffect(() => {
+    return () => {
+      searchRequestVersionRef.current += 1;
+      const active = activeListRequestRef.current;
+      activeListRequestRef.current = null;
+      active?.controller.abort();
+    };
+  }, []);
 
   useEffect(() => {
     function clearBusinessNavigation() {
@@ -210,6 +224,9 @@ function Home() {
 
       let cancelled = false;
       const version = ++searchRequestVersionRef.current;
+
+      cancelActiveListRequest();
+      setSearchError("");
 
       userInteractedRef.current = false;
       manualSearchIssuedRef.current = false;
@@ -520,6 +537,7 @@ function Home() {
 
         if (version === searchRequestVersionRef.current) {
           searchRequestVersionRef.current += 1;
+          cancelActiveListRequest();
         }
       };
     }, [router.isReady, routeKey]);
@@ -638,6 +656,39 @@ function Home() {
     }
   }
 
+  function getListRequestKey(filters, page = 1) {
+    return JSON.stringify([
+      filters.country || "",
+      filters.city || "",
+      filters.category || "",
+      filters.subcategory || "",
+      String(filters.q ?? "").trim(),
+      page,
+    ]);
+  }
+
+  function cancelActiveListRequest() {
+    const active = activeListRequestRef.current;
+    activeListRequestRef.current = null;
+    active?.controller.abort();
+  }
+
+  function reuseActiveListRequest(filters) {
+    const active = activeListRequestRef.current;
+
+    if (
+      !active ||
+      active.controller.signal.aborted ||
+      active.version !== searchRequestVersionRef.current ||
+      active.key !== getListRequestKey(filters, 1)
+    ) {
+      return false;
+    }
+
+    active.syncUrl = true;
+    return true;
+  }
+
   async function fetchList(
     forceCategory = null,
     filterOverrides = {},
@@ -651,72 +702,96 @@ function Home() {
 
     const requestVersion = searchRequestVersionRef.current;
 
+    const resolvedFilters = {
+      country: filterOverrides.country ?? country,
+      city: filterOverrides.city ?? city,
+      category: filterOverrides.category ?? forceCategory ?? category,
+      subcategory: filterOverrides.subcategory ?? subcategory,
+      q: filterOverrides.q ?? q,
+    };
+
+    const query = String(resolvedFilters.q ?? "").trim();
+    const key = getListRequestKey(resolvedFilters, requestedPage);
+    const previous = activeListRequestRef.current;
+
+    if (
+      previous &&
+      previous.version === requestVersion &&
+      previous.key === key &&
+      !previous.controller.signal.aborted
+    ) {
+      if (syncUrl) previous.syncUrl = true;
+      return null;
+    }
+
+    cancelActiveListRequest();
+
+    const controller = new AbortController();
+
+    const activeRequest = {
+      controller,
+      key,
+      version: requestVersion,
+      syncUrl,
+    };
+
+    activeListRequestRef.current = activeRequest;
+    setSearchError("");
+
     if (append) {
       setLoadingMore(true);
     } else {
       setLoading(true);
+      setLoadingMore(false);
     }
 
     try {
-      const resolvedCountry =
-        filterOverrides.country ?? country;
-
-      const resolvedCity =
-        filterOverrides.city ?? city;
-
-      const resolvedCategory =
-        filterOverrides.category ??
-        forceCategory ??
-        category;
-
-      const resolvedSubcategory =
-        filterOverrides.subcategory ??
-        subcategory;
-
-      const resolvedQuery =
-        filterOverrides.q ?? q;
-
-      const resolvedFilters = {
-        country: resolvedCountry,
-        city: resolvedCity,
-        category: resolvedCategory,
-        subcategory: resolvedSubcategory,
-        q: resolvedQuery,
-      };
+      if (
+        String(resolvedFilters.q ?? "").length >
+        SEARCH_QUERY_MAX_LENGTH
+      ) {
+        const error = new Error("Search query too long");
+        error.code = "SEARCH_QUERY_TOO_LONG";
+        throw error;
+      }
 
       const params = {
         page: requestedPage,
         limit: 10,
       };
 
-      if (resolvedCountry) {
-        params.country = resolvedCountry;
+      if (resolvedFilters.country) {
+        params.country = resolvedFilters.country;
       }
 
-      if (resolvedCity) {
-        params.city = resolvedCity;
+      if (resolvedFilters.city) {
+        params.city = resolvedFilters.city;
       }
 
-      if (resolvedCategory) {
-        params.category = resolvedCategory;
+      if (resolvedFilters.category) {
+        params.category = resolvedFilters.category;
       }
 
-      if (resolvedSubcategory) {
-        params.subcategory = resolvedSubcategory;
+      if (resolvedFilters.subcategory) {
+        params.subcategory = resolvedFilters.subcategory;
       }
 
-      if (String(resolvedQuery).trim()) {
-        params.q = String(
-          resolvedQuery
-        ).trim();
-      }
+      if (query) params.q = query;
 
       const res = await apiClient.get(
         "/businesses",
-        { params }
+        {
+          params,
+          signal: controller.signal,
+          timeout: SEARCH_LIST_TIMEOUT_MS,
+        }
       );
 
-      if (requestVersion !== searchRequestVersionRef.current) {
+      if (
+        requestVersion !== searchRequestVersionRef.current ||
+        activeListRequestRef.current !== activeRequest ||
+        controller.signal.aborted
+      ) {
         return null;
       }
 
@@ -769,7 +844,7 @@ function Home() {
 
       setHasMore(nextHasMore);
 
-      if (syncUrl) {
+      if (activeRequest.syncUrl) {
         await syncSearchUrl(
           resolvedFilters,
           receivedPage
@@ -782,11 +857,36 @@ function Home() {
         hasMore: nextHasMore,
       };
     } catch (err) {
-      if (requestVersion !== searchRequestVersionRef.current) {
+      if (
+        requestVersion !== searchRequestVersionRef.current ||
+        activeListRequestRef.current !== activeRequest ||
+        controller.signal.aborted ||
+        err?.code === "ERR_CANCELED"
+      ) {
         return null;
       }
-      console.error("Search list error:", err);
 
+      if (err?.code === "SEARCH_QUERY_TOO_LONG") {
+        setSearchError(
+          "Search text must not exceed 100 characters."
+        );
+      } else if (err?.response?.status === 429) {
+        setSearchError(
+          "Too many search requests. Please wait a moment and try again."
+        );
+      } else if (
+        err?.code === "ECONNABORTED" ||
+        err?.code === "ETIMEDOUT" ||
+        err?.response?.status === 504
+      ) {
+        setSearchError(
+          "The search timed out. Please try again."
+        );
+      } else {
+        setSearchError(
+          "Unable to load search results. Please try again."
+        );
+      }
 
       if (!append) {
         appliedFiltersRef.current = null;
@@ -797,13 +897,16 @@ function Home() {
 
       return null;
     } finally {
-      if (requestVersion === searchRequestVersionRef.current) {
-        setLoading(false);
-        setLoadingMore(false);
+      if (activeListRequestRef.current === activeRequest) {
+        activeListRequestRef.current = null;
+
+        if (requestVersion === searchRequestVersionRef.current) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     }
   }
-
 
   async function handleLoadMore() {
     if (
@@ -879,57 +982,69 @@ function Home() {
 
   const handleSearch = (event) => {
     event?.preventDefault?.();
-    userInteractedRef.current = true;
-    searchRequestVersionRef.current += 1;
-    manualSearchIssuedRef.current = true;
 
+    userInteractedRef.current = true;
+    manualSearchIssuedRef.current = true;
     initializingRef.current = false;
     setIsInitializing(false);
     loadMoreLockRef.current = null;
 
-    fetchList(
-      null,
-      {},
-      {
-        append: false,
-        requestedPage: 1,
-        syncUrl: true,
-      }
-    );
+    if (
+      String(q ?? "").length <= SEARCH_QUERY_MAX_LENGTH &&
+      reuseActiveListRequest({
+        country, city, category, subcategory, q,
+      })
+    ) {
+      return;
+    }
+
+    searchRequestVersionRef.current += 1;
+
+    fetchList(null, {}, {
+      append: false,
+      requestedPage: 1,
+      syncUrl: true,
+    });
   };
 
   const handleClear = (event) => {
     event?.preventDefault?.();
-    userInteractedRef.current = true;
-    searchRequestVersionRef.current += 1;
-    manualSearchIssuedRef.current = true;
 
+    userInteractedRef.current = true;
+    manualSearchIssuedRef.current = true;
     initializingRef.current = false;
     setIsInitializing(false);
     loadMoreLockRef.current = null;
-    fetchCities("");
+
+    const clearedFilters = {
+      q: "",
+      country: "",
+      city: "",
+      category: "",
+      subcategory: "",
+    };
+
+    const reused = reuseActiveListRequest(clearedFilters);
 
     setQ("");
     setCountry("");
     setCity("");
     setCategory("");
     setSubcategory("");
-  
-    fetchList(
-      null,
-      {
-        q: "",
-        country: "",
-        city: "",
-        category: "",
-        subcategory: "",
-      },
-      {
-        append: false,
-        requestedPage: 1,
-        syncUrl: true,
-      }
-    );
+
+    if (!reused || country) {
+      fetchCities("");
+    }
+
+    if (reused) return;
+
+    searchRequestVersionRef.current += 1;
+
+    fetchList(null, clearedFilters, {
+      append: false,
+      requestedPage: 1,
+      syncUrl: true,
+    });
   };
 
   const selectedCategory = categories.find(
@@ -1084,6 +1199,7 @@ function Home() {
                     sm:col-span-2 sm:row-start-2
                   "
                   placeholder="Search by name or address"
+                  maxLength={SEARCH_QUERY_MAX_LENGTH}
                   value={q}
                   onChange={(event) => {
                     userInteractedRef.current = true;
@@ -1123,9 +1239,18 @@ function Home() {
   
           {/* Results */}
           <section>
+            {searchError && (
+              <div
+                role="alert"
+                className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 text-sm text-[var(--text)]"
+              >
+                {searchError}
+              </div>
+            )}
             {loading ? (
               <p>Loading...</p>
-            ) : businesses.length === 0 ? (
+            ) : searchError && businesses.length === 0 ? null
+            : businesses.length === 0 ? (
               <div
                 role="status"
                 className={`
