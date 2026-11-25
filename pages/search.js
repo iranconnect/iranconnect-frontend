@@ -1126,9 +1126,55 @@ function Home() {
             {loading ? (
               <p>Loading...</p>
             ) : businesses.length === 0 ? (
-              <p className="text-muted">
-                No results found.
-              </p>
+              <div
+                role="status"
+                className={`
+                  flex flex-col items-center
+                  rounded-2xl border
+                  px-5 py-12 md:py-14
+                  text-center
+                  ${
+                    theme === "dark"
+                      ? "bg-[#13294b] border-[#243e5e] text-white"
+                      : "bg-slate-50 border-slate-200 text-[#13294b]"
+                  }
+                `}
+              >
+                <svg
+                  aria-hidden="true"
+                  width="44"
+                  height="44"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={
+                    theme === "dark"
+                      ? "mb-4 text-[#40e0d0]"
+                      : "mb-4 text-teal-700"
+                  }
+                >
+                  <circle cx="10.5" cy="10.5" r="6.5" />
+                  <path d="m16 16 5 5" />
+                  <path d="m8 8 5 5m0-5-5 5" />
+                </svg>
+
+                <p className="text-lg font-semibold">
+                  No results found.
+                </p>
+
+                <p
+                  className={
+                    theme === "dark"
+                      ? "mt-2 text-sm text-slate-300"
+                      : "mt-2 text-sm text-slate-600"
+                  }
+                >
+                  Try adjusting your search filters.
+                </p>
+              </div>
             ) : (
               <div className="space-y-5">
                 {businesses.map((b, index) => (
