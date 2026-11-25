@@ -10,6 +10,23 @@ import PageLoadingOverlay from '../components/ui/PageLoadingOverlay';
 import apiClient from '../utils/apiClient.js';
 import { useRouter } from "next/router";
 
+import { Country } from "country-state-city";
+
+const SEARCH_KEYS = [
+  "country", "city", "category", "subcategory", "q", "page"
+];
+
+function searchUrlKey(query) {
+  return JSON.stringify(
+    SEARCH_KEYS.map((key) => query[key] ?? null)
+  );
+}
+
+const FEATURED_CATEGORY_NAMES = {
+  "health-medical": "Health & Medical",
+  "legal-immigration": "Legal & Immigration Services",
+  "translation-language-services": "Translation & Language Services",
+};
 export default function SearchPage() {
   return <Home />;
 }
@@ -22,6 +39,14 @@ function Home() {
   const userInteractedRef = useRef(false);
   const searchRequestVersionRef = useRef(0);
   const manualSearchIssuedRef = useRef(false);
+
+  const cityRequestVersionRef = useRef(0);
+  const appliedFiltersRef = useRef(null);
+  const internalUrlRef = useRef(null);
+  const loadMoreLockRef = useRef(null);
+  const initializingRef = useRef(false);
+  const routeKey = searchUrlKey(router.query);
+  const [isInitializing, setIsInitializing] = useState(false);
 
   const [q, setQ] = useState('');
   const [country, setCountry] = useState('');
@@ -101,64 +126,106 @@ function Home() {
       }
     }
 
+
     function buildSearchUrlQuery(
       nextFilters,
-      loadedPage = 1
+      loadedPage = 1,
+      explicitLocation = true
     ) {
       const query = {
         page: String(Math.max(1, loadedPage)),
       };
-  
-      if (nextFilters.country) {
-        query.country = nextFilters.country;
+
+      if (nextFilters.country || explicitLocation) {
+        query.country = nextFilters.country || "";
       }
-  
+
       if (nextFilters.city) {
         query.city = nextFilters.city;
       }
-  
+
       if (nextFilters.category) {
         query.category = nextFilters.category;
       }
-  
+
       if (nextFilters.subcategory) {
         query.subcategory = nextFilters.subcategory;
       }
-  
+
       if (nextFilters.q) {
         query.q = nextFilters.q;
       }
-  
+
       return query;
     }
-  
+
     async function syncSearchUrl(
       nextFilters,
-      loadedPage = 1
+      loadedPage = 1,
+      explicitLocation = true
     ) {
-      await router.replace(
-        {
-          pathname: "/search",
-          query: buildSearchUrlQuery(
-            nextFilters,
-            loadedPage
-          ),
-        },
-        undefined,
-        {
-          shallow: true,
-          scroll: false,
-        }
+      const query = buildSearchUrlQuery(
+        nextFilters,
+        loadedPage,
+        explicitLocation
       );
+
+      const targetKey = searchUrlKey(query);
+
+      if (targetKey === routeKey) return;
+
+      internalUrlRef.current = targetKey;
+
+      try {
+        const changed = await router.replace(
+          { pathname: "/search", query },
+          undefined,
+          { shallow: true, scroll: false }
+        );
+
+        if (
+          changed === false &&
+          internalUrlRef.current === targetKey
+        ) {
+          internalUrlRef.current = null;
+        }
+      } catch (err) {
+        if (internalUrlRef.current === targetKey) {
+          internalUrlRef.current = null;
+        }
+        console.error("Search URL synchronization error:", err);
+      }
     }
   
+
     useEffect(() => {
-      if (!router.isReady) {
+      if (!router.isReady) return;
+
+      if (internalUrlRef.current === routeKey) {
+        internalUrlRef.current = null;
         return;
       }
-  
+
+      internalUrlRef.current = null;
+
       let cancelled = false;
-  
+      const version = ++searchRequestVersionRef.current;
+
+      userInteractedRef.current = false;
+      manualSearchIssuedRef.current = false;
+      loadMoreLockRef.current = null;
+      appliedFiltersRef.current = null;
+      initializingRef.current = true;
+
+      setIsInitializing(true);
+      setLoading(true);
+      setLoadingMore(false);
+      setHasMore(false);
+
+      const isCurrent = () =>
+        !cancelled &&
+        version === searchRequestVersionRef.current;
+
       async function initializeSearchPage() {
         const initialFilters = {
           country: getUrlValue("country"),
@@ -167,106 +234,137 @@ function Home() {
           subcategory: getUrlValue("subcategory"),
           q: getUrlValue("q"),
         };
-  
-        const rawPage = Number.parseInt(
-          getUrlValue("page"),
-          10
-        );
-  
+
+        const rawPageValue = getUrlValue("page");
+        const rawPage = Number(rawPageValue);
         const requestedPage =
-          Number.isInteger(rawPage) && rawPage > 0
+          Number.isSafeInteger(rawPage) && rawPage > 0
             ? rawPage
             : 1;
-  
+
+        const hasExplicitLocation =
+          Object.prototype.hasOwnProperty.call(router.query, "country") ||
+          Object.prototype.hasOwnProperty.call(router.query, "city");
+
         setCountry(initialFilters.country);
         setCity(initialFilters.city);
         setCategory(initialFilters.category);
         setSubcategory(initialFilters.subcategory);
         setQ(initialFilters.q);
 
-        const [countryRows, cityRows] = await Promise.all([
+        const [countryRows, initialCityRows] = await Promise.all([
           fetchCountries(),
-          fetchCities(),
+          fetchCities(initialFilters.country),
           fetchCategories(),
           fetchSubcategories(),
         ]);
 
-        if (cancelled) return;
-        if (userInteractedRef.current) {
-          if (!manualSearchIssuedRef.current) {
+        if (!isCurrent()) return;
+
+        const loadInitialIfInteracted = async () => {
+          if (!userInteractedRef.current) return false;
+
+          if (isCurrent() && !manualSearchIssuedRef.current) {
             await fetchList(null, initialFilters, {
-              append: false,
               requestedPage: 1,
               syncUrl: false,
             });
           }
-          return;
-        }
+
+          return true;
+        };
+
+        if (await loadInitialIfInteracted()) return;
 
         let effectiveFilters = { ...initialFilters };
+        let optionsCountry = initialFilters.country;
+        let resolvedCityOptions = null;
         let autoLocation = false;
 
-        const hasExplicitLocation =
-          Object.prototype.hasOwnProperty.call(router.query, "country") ||
-          Object.prototype.hasOwnProperty.call(router.query, "city");
+        if (hasExplicitLocation) {
+          const matchedCountry = (countryRows || []).find(
+            (item) =>
+              String(item.country).toLowerCase() ===
+              initialFilters.country.toLowerCase()
+          );
 
-        if (!hasExplicitLocation) {
-          const geo = await getApproximateLocation();
-
-          if (cancelled) return;
-        if (userInteractedRef.current) {
-          if (!manualSearchIssuedRef.current) {
-            await fetchList(null, initialFilters, {
-              append: false,
-              requestedPage: 1,
-              syncUrl: false,
-            });
+          if (matchedCountry) {
+            effectiveFilters.country = matchedCountry.country;
           }
-          return;
-        }
 
-          if (
-            geo &&
-            typeof geo.countryCode === "string" &&
-            /^[A-Z]{2}$/.test(geo.countryCode) &&
-            Array.isArray(countryRows)
-          ) {
-            let countryName = null;
+          let locationCities = initialCityRows || [];
 
-            try {
-              countryName = geo.countryCode === "GB"
-                ? "United Kingdom"
-                : new Intl.DisplayNames(["en"], {
-                    type: "region",
-                  }).of(geo.countryCode);
-            } catch {
-              countryName = null;
-            }
-
-            const matchedCountry = countryRows.find(
-              (item) =>
-                typeof item.country === "string" &&
-                item.country.toLowerCase() ===
-                  String(countryName || "").toLowerCase()
+          if (effectiveFilters.country !== optionsCountry) {
+            const rows = await readCityOptions(
+              effectiveFilters.country
             );
 
-            if (matchedCountry) {
-              effectiveFilters.country = matchedCountry.country;
-              autoLocation = true;
+            locationCities = rows || [];
 
-              const matchedCity = Array.isArray(cityRows)
-                ? cityRows.find(
-                    (item) =>
-                      typeof item.city === "string" &&
-                      typeof geo.city === "string" &&
-                      item.city.trim().toLocaleLowerCase() ===
-                        geo.city.trim().toLocaleLowerCase()
-                  )
-                : null;
+            resolvedCityOptions = {
+              country: effectiveFilters.country,
+              rows,
+            };
+          }
 
-              if (matchedCity) {
-                effectiveFilters.city = matchedCity.city;
-              }
+          if (!isCurrent()) return;
+          if (await loadInitialIfInteracted()) return;
+
+          const matchedCity = locationCities.find(
+            (item) =>
+              String(item.city).toLowerCase() ===
+              initialFilters.city.toLowerCase()
+          );
+
+          if (matchedCity) {
+            effectiveFilters.city = matchedCity.city;
+          }
+        } else {
+          const geo = await getApproximateLocation();
+
+          if (!isCurrent()) return;
+          if (await loadInitialIfInteracted()) return;
+
+          const countryName =
+            geo &&
+            typeof geo.countryCode === "string" &&
+            /^[A-Z]{2}$/.test(geo.countryCode)
+              ? Country.getCountryByCode(geo.countryCode)?.name
+              : null;
+
+          const matchedCountry = (countryRows || []).find(
+            (item) =>
+              String(item.country).toLowerCase() ===
+              String(countryName || "").toLowerCase()
+          );
+
+          if (matchedCountry) {
+            effectiveFilters.country = matchedCountry.country;
+            autoLocation = true;
+
+            const rows = await readCityOptions(
+              matchedCountry.country
+            );
+
+            const localCities = rows || [];
+
+            resolvedCityOptions = {
+              country: matchedCountry.country,
+              rows,
+            };
+
+            if (!isCurrent()) return;
+            if (await loadInitialIfInteracted()) return;
+
+            const matchedCity = localCities.find(
+              (item) =>
+                typeof geo.city === "string" &&
+                String(item.city).trim().toLowerCase() ===
+                geo.city.trim().toLowerCase()
+            );
+
+            if (matchedCity) {
+              effectiveFilters.city = matchedCity.city;
             }
           }
         }
@@ -288,56 +386,65 @@ function Home() {
           });
         }
 
-        let firstPageResult = null;
+        let pageResult = null;
+        let loadedPage = 1;
 
         for (const candidate of candidates) {
-          if (cancelled || userInteractedRef.current) return;
+          if (!isCurrent() || userInteractedRef.current) return;
 
           effectiveFilters = candidate;
+
           setCountry(candidate.country);
           setCity(candidate.city);
           setCategory(candidate.category);
           setSubcategory(candidate.subcategory);
           setQ(candidate.q);
 
-          firstPageResult = await fetchList(
-            null,
-            candidate,
-            {
-              append: false,
-              requestedPage: 1,
-              syncUrl: false,
+          if (candidate.country !== optionsCountry) {
+            if (
+              resolvedCityOptions?.country === candidate.country &&
+              Array.isArray(resolvedCityOptions.rows)
+            ) {
+              cityRequestVersionRef.current += 1;
+              setCities(resolvedCityOptions.rows);
+              setLoadingCities(false);
+            } else {
+              fetchCities(candidate.country);
             }
-          );
 
-          if (cancelled || userInteractedRef.current) return;
+            optionsCountry = candidate.country;
+          }
+
+          pageResult = await fetchList(null, candidate, {
+            requestedPage: 1,
+            syncUrl: false,
+          });
+
+          if (!isCurrent() || userInteractedRef.current) return;
 
           if (
-            firstPageResult === null ||
-            firstPageResult.rowCount > 0 ||
+            !pageResult ||
+            pageResult.rowCount > 0 ||
             !autoLocation
           ) {
             break;
           }
         }
 
-        if (
-          !firstPageResult ||
-          requestedPage <= 1
+        if (!pageResult) return;
+
+        loadedPage = pageResult.page;
+        let exhausted = !pageResult.hasMore;
+
+        while (
+          loadedPage < requestedPage &&
+          pageResult.hasMore
         ) {
-          return;
-        }
-  
-        for (
-          let nextPage = 2;
-          nextPage <= requestedPage;
-          nextPage += 1
-        ) {
-          if (cancelled || userInteractedRef.current) {
-            return;
-          }
-  
-          const nextPageResult = await fetchList(
+          if (!isCurrent() || userInteractedRef.current) return;
+
+          const nextPage = loadedPage + 1;
+
+          const nextResult = await fetchList(
             null,
             effectiveFilters,
             {
@@ -346,18 +453,78 @@ function Home() {
               syncUrl: false,
             }
           );
-  
-          if (
-            !nextPageResult ||
-            nextPageResult.page !== nextPage
-          ) {
+
+          if (!isCurrent()) return;
+
+          if (!nextResult) return;
+
+          if (nextResult.rejected || nextResult.page !== nextPage) {
+            exhausted = true;
             break;
           }
+
+          pageResult = nextResult;
+          loadedPage = nextResult.page;
+          exhausted = !nextResult.hasMore;
+        }
+
+        if (!isCurrent() || userInteractedRef.current) return;
+
+        const invalidPage =
+          Object.prototype.hasOwnProperty.call(router.query, "page") &&
+          (
+            !Number.isSafeInteger(rawPage) ||
+            rawPage < 1 ||
+            rawPageValue !== String(rawPage)
+          );
+
+        const locationNormalized =
+          hasExplicitLocation &&
+          (
+            initialFilters.country !== effectiveFilters.country ||
+            initialFilters.city !== effectiveFilters.city
+          );
+
+        if (
+          invalidPage ||
+          locationNormalized ||
+          (exhausted && loadedPage < requestedPage)
+        ) {
+          initializingRef.current = false;
+          setIsInitializing(false);
+
+          await syncSearchUrl(
+            hasExplicitLocation ? effectiveFilters : initialFilters,
+            loadedPage,
+            hasExplicitLocation
+          );
         }
       }
-  
-      initializeSearchPage();
-  
+
+      initializeSearchPage()
+        .catch((err) => {
+          if (isCurrent()) {
+            console.error("Search initialization error:", err);
+          }
+        })
+        .finally(() => {
+          if (isCurrent()) {
+            initializingRef.current = false;
+            setIsInitializing(false);
+            setLoading(false);
+          }
+        });
+
+      return () => {
+        cancelled = true;
+
+        if (version === searchRequestVersionRef.current) {
+          searchRequestVersionRef.current += 1;
+        }
+      };
+    }, [router.isReady, routeKey]);
+
+    useEffect(() => {
       const current =
         document.documentElement.getAttribute(
           "data-theme"
@@ -383,10 +550,9 @@ function Home() {
       );
   
       return () => {
-        cancelled = true;
         observer.disconnect();
       };
-    }, [router.isReady]);
+    }, []);
 
   async function fetchCountries() {
     try {
@@ -398,20 +564,53 @@ function Home() {
     }
   }
 
-  async function fetchCities() {
-    setLoadingCities(true);
-  
+
+  async function readCityOptions(selectedCountry = "") {
     try {
-      const res = await apiClient.get(
-        "/businesses/cities"
+      const response = await apiClient.get(
+        "/businesses/cities",
+        {
+          params: selectedCountry
+            ? { country: selectedCountry }
+            : {},
+        }
       );
-  
-      setCities(res.data || []);
-      return res.data || [];
+
+      return Array.isArray(response.data)
+        ? response.data
+        : [];
     } catch (err) {
-      console.error(err);
+      console.error("City options lookup error:", err);
+      return null;
+    }
+  }
+
+  async function fetchCities(selectedCountry = "") {
+    const version = ++cityRequestVersionRef.current;
+
+    setLoadingCities(true);
+    setCities([]);
+
+    try {
+      const rows = await readCityOptions(
+        selectedCountry
+      );
+
+      if (version !== cityRequestVersionRef.current) {
+        return null;
+      }
+
+      setCities(rows || []);
+      return rows;
+    } catch (err) {
+      if (version === cityRequestVersionRef.current) {
+        console.error("City options error:", err);
+      }
+      return null;
     } finally {
-      setLoadingCities(false);
+      if (version === cityRequestVersionRef.current) {
+        setLoadingCities(false);
+      }
     }
   }
 
@@ -529,17 +728,46 @@ function Home() {
         Number(nextPagination.page) ||
         requestedPage;
 
-      setBusinesses((currentRows) =>
-        append
+
+      if (append && receivedPage !== requestedPage) {
+        setHasMore(false);
+
+        return {
+          rowCount: 0,
+          page: receivedPage,
+          hasMore: false,
+          rejected: true,
+        };
+      }
+
+      setBusinesses((currentRows) => {
+        const combinedRows = append
           ? [...currentRows, ...nextRows]
-          : nextRows
-      );
+          : nextRows;
+
+        const seen = new Set();
+
+        return combinedRows.filter((row) => {
+          const key = String(row.id);
+
+          if (seen.has(key)) return false;
+
+          seen.add(key);
+          return true;
+        });
+      });
+
+      if (!append) {
+        appliedFiltersRef.current = resolvedFilters;
+      }
 
       setCurrentPage(receivedPage);
 
-      setHasMore(
-        Boolean(nextPagination.hasNextPage)
-      );
+      const nextHasMore =
+        nextRows.length > 0 &&
+        Boolean(nextPagination.hasNextPage);
+
+      setHasMore(nextHasMore);
 
       if (syncUrl) {
         await syncSearchUrl(
@@ -551,9 +779,7 @@ function Home() {
       return {
         rowCount: nextRows.length,
         page: receivedPage,
-        hasMore: Boolean(
-          nextPagination.hasNextPage
-        ),
+        hasMore: nextHasMore,
       };
     } catch (err) {
       if (requestVersion !== searchRequestVersionRef.current) {
@@ -561,7 +787,9 @@ function Home() {
       }
       console.error("Search list error:", err);
 
+
       if (!append) {
+        appliedFiltersRef.current = null;
         setBusinesses([]);
         setCurrentPage(1);
         setHasMore(false);
@@ -576,42 +804,77 @@ function Home() {
     }
   }
 
-  function handleLoadMore() {
-    if (loadingMore || !hasMore) {
+
+  async function handleLoadMore() {
+    if (
+      loading ||
+      loadingMore ||
+      initializingRef.current ||
+      loadMoreLockRef.current !== null ||
+      !hasMore ||
+      !appliedFiltersRef.current
+    ) {
       return;
     }
-    userInteractedRef.current = true;
-    searchRequestVersionRef.current += 1;
 
-    fetchList(
-      null,
-      {},
-      {
-        append: true,
-        requestedPage: currentPage + 1,
-        syncUrl: true,
+    userInteractedRef.current = true;
+
+    const version = ++searchRequestVersionRef.current;
+    loadMoreLockRef.current = version;
+
+    try {
+      await fetchList(
+        null,
+        appliedFiltersRef.current,
+        {
+          append: true,
+          requestedPage: currentPage + 1,
+          syncUrl: true,
+        }
+      );
+    } finally {
+      if (loadMoreLockRef.current === version) {
+        loadMoreLockRef.current = null;
       }
-    );
+    }
   }
 
   const handleCountryChange = (event) => {
     userInteractedRef.current = true;
-    setCountry(event.target.value);
+
+    const nextCountry = event.target.value;
+
+    setCountry(nextCountry);
     setCity("");
-    setCategory("");
-    setSubcategory("");
+    fetchCities(nextCountry);
   };
 
   const handleCityChange = (event) => {
     userInteractedRef.current = true;
     setCity(event.target.value);
-    setCategory("");
-    setSubcategory("");
   };
 
   const handleCategoryChange = (event) => {
     userInteractedRef.current = true;
-    setCategory(event.target.value);
+
+    const nextCategory = event.target.value;
+    setCategory(nextCategory);
+
+    if (nextCategory && subcategory) {
+      const parent = categories.find(
+        (item) => item.slug === nextCategory
+      );
+
+      const compatible = parent && subcategories.some(
+        (item) =>
+          item.slug === subcategory &&
+          String(item.category_id) === String(parent.id)
+      );
+
+      if (!compatible) {
+        setSubcategory("");
+      }
+    }
   };
 
   const handleSearch = (event) => {
@@ -619,6 +882,10 @@ function Home() {
     userInteractedRef.current = true;
     searchRequestVersionRef.current += 1;
     manualSearchIssuedRef.current = true;
+
+    initializingRef.current = false;
+    setIsInitializing(false);
+    loadMoreLockRef.current = null;
 
     fetchList(
       null,
@@ -636,7 +903,12 @@ function Home() {
     userInteractedRef.current = true;
     searchRequestVersionRef.current += 1;
     manualSearchIssuedRef.current = true;
-  
+
+    initializingRef.current = false;
+    setIsInitializing(false);
+    loadMoreLockRef.current = null;
+    fetchCities("");
+
     setQ("");
     setCountry("");
     setCity("");
@@ -659,6 +931,20 @@ function Home() {
       }
     );
   };
+
+  const selectedCategory = categories.find(
+    (item) => item.slug === category
+  );
+
+  const visibleSubcategories = category
+    ? selectedCategory
+      ? subcategories.filter(
+          (item) =>
+            String(item.category_id) ===
+            String(selectedCategory.id)
+        )
+      : []
+    : subcategories;
 
   const selectClass = 'input-default w-full h-11';
 
@@ -696,7 +982,13 @@ function Home() {
                   onChange={handleCountryChange}
                 >
                   <option value="">Country</option>
-  
+
+                  {country && !countries.some(
+                    (item) => item.country === country
+                  ) && (
+                    <option value={country}>{country}</option>
+                  )}
+
                   {countries.map((c, idx) => (
                     <option key={idx} value={c.country}>
                       {c.country}
@@ -714,7 +1006,13 @@ function Home() {
                   <option value="">
                     {loadingCities ? 'Loading cities...' : 'City'}
                   </option>
-  
+
+                  {city && !cities.some(
+                    (item) => item.city === city
+                  ) && (
+                    <option value={city}>{city}</option>
+                  )}
+
                   {cities.map((ct, idx) => (
                     <option key={idx} value={ct.city}>
                       {ct.city}
@@ -729,7 +1027,15 @@ function Home() {
                   onChange={handleCategoryChange}
                 >
                   <option value="">Category</option>
-  
+
+                  {category && !categories.some(
+                    (item) => item.slug === category
+                  ) && (
+                    <option value={category}>
+                      {FEATURED_CATEGORY_NAMES[category] || category}
+                    </option>
+                  )}
+
                   {categories.map((cat) => (
                     <option
                       key={cat.id}
@@ -750,8 +1056,18 @@ function Home() {
                   }}
                 >
                   <option value="">Subcategory</option>
-  
-                  {subcategories.map((sub) => (
+
+                  {subcategory && !visibleSubcategories.some(
+                    (item) => item.slug === subcategory
+                  ) && (
+                    <option value={subcategory} disabled>
+                      {subcategories.find(
+                        (item) => item.slug === subcategory
+                      )?.name || subcategory} (Unavailable)
+                    </option>
+                  )}
+
+                  {visibleSubcategories.map((sub) => (
                     <option
                       key={sub.id}
                       value={sub.slug}
@@ -840,7 +1156,7 @@ function Home() {
                     <button
                       type="button"
                       onClick={handleLoadMore}
-                      disabled={loadingMore}
+                      disabled={loadingMore || isInitializing}
                       className="
                         btn-primary
                         w-full

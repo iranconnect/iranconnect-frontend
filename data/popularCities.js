@@ -30,7 +30,7 @@ const popularCities = [
 
   {
     city: "Los Angeles",
-    country: "USA",
+    country: "United States",
     slug: "los-angeles",
     image: "/images/los-angeles-palm-boulevard-iranconnect.webp",
     imageAlt:

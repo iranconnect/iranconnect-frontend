@@ -1,5 +1,6 @@
 //frontend/components/home/FeaturedBusinesses.jsx
 import { useEffect, useState } from "react";
+import { Country } from "country-state-city";
 
 import SectionWrapper from "./SectionWrapper";
 import SectionTitle from "./SectionTitle";
@@ -7,6 +8,106 @@ import BusinessCard from "../BusinessCard";
 import RevealOnScroll from "../ui/RevealOnScroll";
 
 import apiClient from "../../utils/apiClient";
+
+async function resolveFeaturedLocation() {
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    2500
+  );
+
+  let geo = null;
+
+  try {
+    const response = await fetch("/api/geo", {
+      method: "GET",
+      cache: "no-store",
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    });
+
+    if (response.ok) {
+      geo = await response.json();
+    }
+  } catch {
+    return {};
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (
+    !geo ||
+    typeof geo.countryCode !== "string" ||
+    !/^[A-Z]{2}$/.test(geo.countryCode)
+  ) {
+    return {};
+  }
+
+  const countryName =
+    Country.getCountryByCode(geo.countryCode)?.name;
+
+  if (!countryName) return {};
+
+  let country = "";
+
+  try {
+    const response = await apiClient.get(
+      "/businesses/countries",
+      { timeout: 2500 }
+    );
+
+    const countries = Array.isArray(response.data)
+      ? response.data
+      : [];
+
+    const match = countries.find(
+      (item) =>
+        typeof item.country === "string" &&
+        item.country.toLowerCase() ===
+          countryName.toLowerCase()
+    );
+
+    if (!match) return {};
+
+    country = match.country;
+  } catch {
+    return {};
+  }
+
+  if (
+    typeof geo.city !== "string" ||
+    !geo.city.trim()
+  ) {
+    return { country };
+  }
+
+  try {
+    const response = await apiClient.get(
+      "/businesses/cities",
+      {
+        params: { country },
+        timeout: 2500,
+      }
+    );
+
+    const cities = Array.isArray(response.data)
+      ? response.data
+      : [];
+
+    const match = cities.find(
+      (item) =>
+        typeof item.city === "string" &&
+        item.city.trim().toLowerCase() ===
+          geo.city.trim().toLowerCase()
+    );
+
+    return match
+      ? { country, city: match.city }
+      : { country };
+  } catch {
+    return { country };
+  }
+}
 
 export default function FeaturedBusinesses() {
   const [businesses, setBusinesses] = useState([]);
@@ -17,8 +118,18 @@ export default function FeaturedBusinesses() {
 
     async function loadFeaturedBusinesses() {
       try {
+        const location = await resolveFeaturedLocation();
+
+        if (!mounted) return;
+
         const response = await apiClient.get(
-          "/businesses/featured?limit=3"
+          "/businesses/featured",
+          {
+            params: {
+              limit: 3,
+              ...location,
+            },
+          }
         );
 
         if (!mounted) {

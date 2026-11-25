@@ -6,11 +6,15 @@ export default function CategoryCard({
   description,
   icon,
   slug,
+  href,
   alt,
 }) {
   return (
     <Link
-      href={`/search?category=${slug}`}
+      href={href || {
+        pathname: "/search",
+        query: { category: slug },
+      }}
       className="block group h-full"
     >
       <div

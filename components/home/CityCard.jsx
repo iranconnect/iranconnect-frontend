@@ -13,7 +13,10 @@ export default function CityCard({
 }) {
   return (
     <Link
-      href={`/search?city=${slug}`}
+      href={{
+        pathname: "/search",
+        query: { country, city },
+      }}
       className="block group h-[184px]"
     >
       <div
