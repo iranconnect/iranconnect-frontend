@@ -78,7 +78,7 @@ async function resolveFeaturedLocation() {
     typeof geo.city !== "string" ||
     !geo.city.trim()
   ) {
-    return { country };
+    return {};
   }
 
   try {
@@ -103,9 +103,9 @@ async function resolveFeaturedLocation() {
 
     return match
       ? { country, city: match.city }
-      : { country };
+      : {};
   } catch {
-    return { country };
+    return {};
   }
 }
 
@@ -121,6 +121,11 @@ export default function FeaturedBusinesses() {
         const location = await resolveFeaturedLocation();
 
         if (!mounted) return;
+
+        if (!location.country || !location.city) {
+          setBusinesses([]);
+          return;
+        }
 
         const response = await apiClient.get(
           "/businesses/featured",
@@ -139,6 +144,13 @@ export default function FeaturedBusinesses() {
         setBusinesses(
           Array.isArray(response.data)
             ? response.data
+                .filter(
+                  (business) =>
+                    business &&
+                    business.country === location.country &&
+                    business.city === location.city
+                )
+                .slice(0, 3)
             : []
         );
       } catch (error) {
@@ -166,8 +178,10 @@ export default function FeaturedBusinesses() {
 
   /*
     Featured is a commercial/curated placement.
-    When there are no active placements, do not render
-    an empty section or substitute ordinary businesses.
+    Require an exact country and city match.
+    Hide the section when location is unavailable or
+    no eligible local placements exist.
+    Never substitute non-local or ordinary businesses.
   */
   if (loading || businesses.length === 0) {
     return null;
