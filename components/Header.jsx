@@ -6,6 +6,7 @@ import ProfileMenu from './ProfileMenu';
 import apiClient from '../utils/apiClient.js';
 import { logoutAndRedirect } from '../utils/logoutAndRedirect';
 import { useAuthSession } from '../hooks/useAuthSession';
+import { Search } from 'lucide-react';
 
 export default function Header() {
   const [theme, setTheme] = useState('light');
@@ -124,9 +125,11 @@ export default function Header() {
             <Link
               href="/search"
               prefetch={false}
-              className="text-sm text-[var(--text)] hover:text-turquoise transition"
+              aria-label="Search"
+              title="Search"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-[var(--text)] hover:text-turquoise focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition"
             >
-              Search
+              <Search size={24} strokeWidth={2} aria-hidden="true" />
             </Link>
           )}
 
@@ -183,6 +186,19 @@ export default function Header() {
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
 
+          {isLoggedIn && (
+            <Link
+              href="/search"
+              prefetch={false}
+              aria-label="Search"
+              title="Search"
+              onClick={() => setMenuOpen(false)}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-[var(--text)] hover:text-turquoise focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition"
+            >
+              <Search size={24} strokeWidth={2} aria-hidden="true" />
+            </Link>
+          )}
+
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="text-[var(--text)] focus:outline-none"
@@ -219,17 +235,6 @@ export default function Header() {
             <div className="pb-2 border-b border-[var(--border)] mb-2">
               <p className="text-sm font-medium text-turquoise truncate">{email}</p>
             </div>
-          )}
-
-          {isLoggedIn && (
-            <Link
-              href="/search"
-              prefetch={false}
-              onClick={() => setMenuOpen(false)}
-              className="text-[var(--text)] hover:text-turquoise"
-            >
-              Search
-            </Link>
           )}
 
           {status === "unauthenticated" && (
