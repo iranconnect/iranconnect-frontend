@@ -1,16 +1,34 @@
 // frontend/components/Header.jsx
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ProfileMenu from './ProfileMenu';
 import apiClient from '../utils/apiClient.js';
 import { logoutAndRedirect } from '../utils/logoutAndRedirect';
 import { useAuthSession } from '../hooks/useAuthSession';
-import { Search } from 'lucide-react';
+import {
+  Search,
+  Menu,
+  X,
+  User,
+  ChevronRight,
+  Mail,
+  Info,
+  LogIn,
+  History,
+  Building2,
+  LockKeyhole,
+  LogOut,
+  LayoutDashboard,
+} from 'lucide-react';
+import { useRouter } from 'next/router';
 
 export default function Header() {
   const [theme, setTheme] = useState('light');
   const [menuOpen, setMenuOpen] = useState(false);
+  const headerRef = useRef(null);
+  const menuButtonRef = useRef(null);
+  const router = useRouter();
   const [hasBusiness, setHasBusiness] = useState(false);
 
   const { status, role, user } = useAuthSession();
@@ -19,6 +37,41 @@ export default function Header() {
   const isAdmin = role === "admin" || role === "superadmin";
   const email = user?.email || "";
   const hasRequests = !!user?.hasRequests;
+
+  /* PLR-14: Mobile navigation interaction */
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handleOutside = (event) => {
+      if (
+        headerRef.current &&
+        !headerRef.current.contains(event.target)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
+
+    const handleNavigation = () => {
+      setMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handleOutside);
+    document.addEventListener("keydown", handleEscape);
+    router.events.on("routeChangeStart", handleNavigation);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleOutside);
+      document.removeEventListener("keydown", handleEscape);
+      router.events.off("routeChangeStart", handleNavigation);
+    };
+  }, [menuOpen, router.events]);
 
   /* 🧩 Load ownership metadata only after authentication */
   useEffect(() => {
@@ -104,12 +157,13 @@ export default function Header() {
     await logoutAndRedirect();
   };
   return (
-    <header className="site-header shadow-sm border-b border-[var(--border)] bg-[var(--bg)] transition">
+    <header ref={headerRef} className="site-header shadow-sm border-b border-[var(--border)] bg-[var(--bg)] transition">
       <div className="mx-auto w-full max-w-5xl flex flex-wrap items-center justify-between py-3 px-4 md:px-2 gap-3">
 
         {/* Logo */}
         <Link
           href="/"
+          onClick={() => setMenuOpen(false)}
           className="font-bold text-turquoise text-xl md:text-2xl flex items-center gap-3"
         >
           <img
@@ -149,7 +203,7 @@ export default function Header() {
             About
           </Link>
 
-          {!isLoggedIn && (
+          {status === "unauthenticated" && (
             <Link
               href="/auth/login"
               className="text-sm text-[var(--text)] hover:text-turquoise transition"
@@ -177,13 +231,19 @@ export default function Header() {
           </button>
         </nav>
 
-        {/* Mobile Nav Icon */}
-        <div className="flex items-center gap-3 md:hidden">
+        {/* Mobile Navigation Controls */}
+        <div className="flex items-center gap-2 md:hidden">
           <button
+            type="button"
             onClick={toggleTheme}
-            className="px-3 py-1.5 text-sm rounded-lg border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text)] shadow-[3px_3px_6px_var(--shadow-dark),-3px_-3px_6px_var(--shadow-light)] hover:scale-[1.03] transition"
+            aria-label={
+              theme === "light"
+                ? "Switch to dark mode"
+                : "Switch to light mode"
+            }
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center text-sm rounded-lg border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text)] shadow-[3px_3px_6px_var(--shadow-dark),-3px_-3px_6px_var(--shadow-light)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition"
           >
-            {theme === 'light' ? '🌙' : '☀️'}
+            {theme === "light" ? "🌙" : "☀️"}
           </button>
 
           {isLoggedIn && (
@@ -200,128 +260,170 @@ export default function Header() {
           )}
 
           <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="text-[var(--text)] focus:outline-none"
-            aria-label="Toggle menu"
+            ref={menuButtonRef}
+            type="button"
+            onClick={() => setMenuOpen((value) => !value)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-navigation"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--text)] hover:text-turquoise focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-7 w-7"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d={
-                  menuOpen
-                    ? 'M6 18L18 6M6 6l12 12'
-                    : 'M4 6h16M4 12h16M4 18h16'
-                }
-              />
-            </svg>
+            {menuOpen ? (
+              <X size={28} strokeWidth={2} aria-hidden="true" />
+            ) : (
+              <Menu size={28} strokeWidth={2} aria-hidden="true" />
+            )}
           </button>
         </div>
       </div>
 
-      {/* === Mobile dropdown menu === */}
-      {menuOpen && (
-        <div className="md:hidden bg-[var(--bg)] border-t border-[var(--border)] flex flex-col px-6 py-4 space-y-3 shadow-md">
-          
-          {/* Email above menu */}
-          {isLoggedIn && email && (
-            <div className="pb-2 border-b border-[var(--border)] mb-2">
-              <p className="text-sm font-medium text-turquoise truncate">{email}</p>
-            </div>
-          )}
-
-          {status === "unauthenticated" && (
-            <Link
-              href="/contact"
-              onClick={() => setMenuOpen(false)}
-              className="text-[var(--text)] hover:text-turquoise"
-            >
-              Contact
-            </Link>
-          )}
-
-          <Link
-            href="/about"
-            onClick={() => setMenuOpen(false)}
-            className="text-[var(--text)] hover:text-turquoise"
-          >
-            About
-          </Link>
-
-          {!isLoggedIn && (
-            <Link
-              href="/auth/login"
-              onClick={() => setMenuOpen(false)}
-              className="text-[var(--text)] hover:text-turquoise"
-            >
-              Login
-            </Link>
-          )}
-
-          {isLoggedIn && (
-            <>
-              {/* Requests */}
+      {/* PLR-14: Animated mobile navigation */}
+      <nav
+        id="mobile-navigation"
+        aria-label="Mobile navigation"
+        aria-hidden={!menuOpen}
+        ref={(node) => {
+          node?.toggleAttribute("inert", !menuOpen);
+        }}
+        className={`grid md:hidden transition-[grid-template-rows,opacity] duration-[250ms] ease-in-out motion-reduce:transition-none ${
+          menuOpen
+            ? "grid-rows-[1fr] opacity-100"
+            : "grid-rows-[0fr] opacity-0 pointer-events-none"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="bg-[var(--bg)] border-t border-[var(--border)] flex flex-col px-5 py-3 shadow-md">
+            {isLoggedIn && (
               <Link
-                  href="/account/requests"
-                  onClick={() => setMenuOpen(false)}
-                  className="text-[var(--text)] hover:text-turquoise"
-                >
-                  Requests / History
-                </Link>
-              
-              {/* Business Management */}
-              {hasBusiness && (
-                <>
-                  <div className="border-t border-[var(--border)] my-2"></div>
-              
+                href="/account"
+                prefetch={false}
+                onClick={() => setMenuOpen(false)}
+                className="flex min-h-[56px] items-center gap-3 rounded-lg px-1 py-2 text-[var(--text)] hover:text-turquoise focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                <User
+                  size={24}
+                  className="shrink-0 text-turquoise"
+                  aria-hidden="true"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold">
+                    My Account
+                  </div>
+                  {email && (
+                    <div className="truncate text-xs text-turquoise">
+                      {email}
+                    </div>
+                  )}
+                </div>
+                <ChevronRight
+                  size={18}
+                  className="shrink-0"
+                  aria-hidden="true"
+                />
+              </Link>
+            )}
+
+            {isLoggedIn && (
+              <div className="my-1 border-t border-[var(--border)]" />
+            )}
+
+            {status === "unauthenticated" && (
+              <Link
+                href="/contact"
+                prefetch={false}
+                onClick={() => setMenuOpen(false)}
+                className="flex min-h-[44px] items-center gap-3 rounded-lg px-1 text-[var(--text)] hover:text-turquoise focus-visible:outline focus-visible:outline-2"
+              >
+                <Mail size={18} aria-hidden="true" />
+                <span>Contact</span>
+              </Link>
+            )}
+
+            <Link
+              href="/about"
+              prefetch={false}
+              onClick={() => setMenuOpen(false)}
+              className="flex min-h-[44px] items-center gap-3 rounded-lg px-1 text-[var(--text)] hover:text-turquoise focus-visible:outline focus-visible:outline-2"
+            >
+              <Info size={18} aria-hidden="true" />
+              <span>About</span>
+            </Link>
+
+            {status === "unauthenticated" && (
+              <Link
+                href="/auth/login"
+                prefetch={false}
+                onClick={() => setMenuOpen(false)}
+                className="flex min-h-[44px] items-center gap-3 rounded-lg px-1 text-[var(--text)] hover:text-turquoise focus-visible:outline focus-visible:outline-2"
+              >
+                <LogIn size={18} aria-hidden="true" />
+                <span>Login</span>
+              </Link>
+            )}
+
+            {isLoggedIn && (
+              <>
+                {hasRequests && (
+                  <Link
+                    href="/account/requests"
+                    prefetch={false}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex min-h-[44px] items-center gap-3 rounded-lg px-1 text-[var(--text)] hover:text-turquoise focus-visible:outline focus-visible:outline-2"
+                  >
+                    <History size={18} aria-hidden="true" />
+                    <span>Requests / History</span>
+                  </Link>
+                )}
+
+                {hasBusiness && (
                   <Link
                     href="/account/businesses"
+                    prefetch={false}
                     onClick={() => setMenuOpen(false)}
-                    className="font-medium text-[var(--text)] hover:text-turquoise"
+                    className="flex min-h-[44px] items-center gap-3 rounded-lg px-1 font-medium text-[var(--text)] hover:text-turquoise focus-visible:outline focus-visible:outline-2"
                   >
-                    🏢 Business Management
+                    <Building2 size={18} aria-hidden="true" />
+                    <span>Business Management</span>
                   </Link>
-                </>
-              )}
+                )}
 
-              <div className="border-t border-[var(--border)] my-2"></div>
+                <div className="my-1 border-t border-[var(--border)]" />
 
-              {/* Admin */}
-              {isAdmin && (
+                {isAdmin && (
+                  <Link
+                    href="/admin/dashboard"
+                    prefetch={false}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex min-h-[44px] items-center gap-3 rounded-lg px-1 text-[var(--text)] hover:text-turquoise focus-visible:outline focus-visible:outline-2"
+                  >
+                    <LayoutDashboard size={18} aria-hidden="true" />
+                    <span>Admin Dashboard</span>
+                  </Link>
+                )}
+
                 <Link
-                  href="/admin/dashboard"
+                  href="/account/change-password"
+                  prefetch={false}
                   onClick={() => setMenuOpen(false)}
-                  className="text-[var(--text)] hover:text-turquoise"
+                  className="flex min-h-[44px] items-center gap-3 rounded-lg px-1 text-[var(--text)] hover:text-turquoise focus-visible:outline focus-visible:outline-2"
                 >
-                  Admin Dashboard
+                  <LockKeyhole size={18} aria-hidden="true" />
+                  <span>Change Password</span>
                 </Link>
-              )}
 
-              <Link
-                href="/account/change-password"
-                onClick={() => setMenuOpen(false)}
-                className="text-[var(--text)] hover:text-turquoise"
-              >
-                Change Password
-              </Link>
-
-              <button
-                onClick={handleLogout}
-                className="text-left text-red-500 hover:text-turquoise"
-              >
-                Logout
-              </button>
-            </>
-          )}
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex min-h-[44px] items-center gap-3 rounded-lg px-1 text-red-500 hover:text-red-600 focus-visible:outline focus-visible:outline-2"
+                >
+                  <LogOut size={18} aria-hidden="true" />
+                  <span>Logout</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
-      )}
+      </nav>
     </header>
   );
 }

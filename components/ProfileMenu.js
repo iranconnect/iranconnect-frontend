@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { User } from 'lucide-react';
+import Link from 'next/link';
 import { logoutAndRedirect } from '../utils/logoutAndRedirect';
 
 export default function ProfileMenu({ role, email, hasRequests, hasBusiness }) {
@@ -57,23 +58,26 @@ export default function ProfileMenu({ role, email, hasRequests, hasBusiness }) {
                      p-3 z-50"
         >
           {/* User email → clickable to account */}
-          <a
+          <Link
             href="/account"
+              prefetch={false}
             onClick={() => setMenuOpen(false)}
             className="block text-sm font-medium text-turquoise mb-3 truncate hover:underline"
           >
             {email}
-          </a>
+          </Link>
 
 
           {/* Business features */}
           {hasRequests && (
-            <a
+            <Link
               href="/account/requests"
+              prefetch={false}
+              onClick={() => setMenuOpen(false)}
               className="block text-sm text-turquoise hover:underline mb-2"
             >
               Requests / History
-            </a>
+            </Link>
           )}
           
           {/* Business Management */}
@@ -81,12 +85,14 @@ export default function ProfileMenu({ role, email, hasRequests, hasBusiness }) {
             <>
               <div className="border-t border-[var(--border)] my-2"></div>
           
-              <a
+              <Link
                 href="/account/businesses"
+              prefetch={false}
+              onClick={() => setMenuOpen(false)}
                 className="block text-sm font-medium text-[var(--text)] hover:text-turquoise mb-2"
               >
                 🏢 Business Management
-              </a>
+              </Link>
             </>
           )}
 
@@ -94,21 +100,25 @@ export default function ProfileMenu({ role, email, hasRequests, hasBusiness }) {
 
           {/* Admin */}
           {(role === 'admin' || role === 'superadmin') && (
-            <a
+            <Link
               href="/admin/dashboard"
+              prefetch={false}
+              onClick={() => setMenuOpen(false)}
               className="block text-sm text-turquoise hover:underline mb-2"
             >
               Admin Dashboard
-            </a>
+            </Link>
           )}
 
           {/* Change Password */}
-          <a
+          <Link
             href="/account/change-password"
+              prefetch={false}
+              onClick={() => setMenuOpen(false)}
             className="block text-sm text-turquoise hover:underline mb-2"
           >
             Change Password
-          </a>
+          </Link>
 
           {/* Logout */}
           <button
