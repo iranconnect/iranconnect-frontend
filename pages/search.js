@@ -1452,11 +1452,27 @@ function Home() {
   
           {/* Results */}
           <section>
-            <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+            <div className="mb-4 flex w-full flex-wrap items-center justify-start gap-3 text-left" dir="ltr">
               <label
                 htmlFor="search-sort"
-                className="text-sm font-medium text-[var(--text)]"
+                className="flex shrink-0 items-center gap-2 text-sm font-medium text-black"
               >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#0b1c34"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M7 4v16M3 8l4-4 4 4" />
+                  <path d="M17 20V4m-4 12 4 4 4-4" />
+                </svg>
                 {sortLabels[0]}
               </label>
 
@@ -1471,7 +1487,11 @@ function Home() {
                   (loading && !sortingBusy) ||
                   !appliedFiltersRef.current
                 }
-                className="w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-3 py-2 text-sm text-[var(--text)] disabled:opacity-60 sm:w-auto"
+                className={`h-11 min-w-0 flex-1 cursor-pointer rounded-xl border px-3 text-left text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#159b91] disabled:cursor-not-allowed disabled:opacity-60 sm:w-[200px] sm:flex-none ${
+                  theme === "dark"
+                    ? "border-[#243e5e] bg-[#13294b] text-white [color-scheme:dark]"
+                    : "border-[#d9e2ec] bg-[#f5f8fa] text-[#0b1c34] [color-scheme:light]"
+                }`}
               >
                 {SEARCH_SORT_OPTIONS.map((value, index) => (
                   <option key={value} value={value}>
