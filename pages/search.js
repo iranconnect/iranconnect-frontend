@@ -14,9 +14,61 @@ import { Country } from "country-state-city";
 
 const SEARCH_QUERY_MAX_LENGTH = 100;
 const SEARCH_LIST_TIMEOUT_MS = 15000;
+const SEARCH_SORT_DEBOUNCE_MS = 500;
+const DEFAULT_SEARCH_SORT = "newest";
+
+const SEARCH_SORT_OPTIONS = [
+  "newest",
+  "oldest",
+  "verified",
+  "highest_rated",
+  "most_reviewed",
+  "name_asc",
+  "name_desc",
+];
+
+const SEARCH_SORT_LABELS = {
+  en: [
+    "Sort by",
+    "Newest first",
+    "Oldest first",
+    "Verified first",
+    "Highest rated",
+    "Most reviewed",
+    "Name A–Z",
+    "Name Z–A",
+  ],
+  fr: [
+    "Trier par",
+    "Plus récents",
+    "Plus anciens",
+    "Vérifiés en priorité",
+    "Mieux notés",
+    "Plus d’avis",
+    "Nom A–Z",
+    "Nom Z–A",
+  ],
+  fa: [
+    "مرتب‌سازی بر اساس",
+    "جدیدترین‌ها",
+    "قدیمی‌ترین‌ها",
+    "تأییدشده‌ها در اولویت",
+    "بالاترین امتیاز",
+    "بیشترین تعداد نظرات",
+    "نام، صعودی",
+    "نام، نزولی",
+  ],
+};
+
+function normalizeSearchSort(value) {
+  return typeof value === "string" &&
+    SEARCH_SORT_OPTIONS.includes(value)
+    ? value
+    : DEFAULT_SEARCH_SORT;
+}
 
 const SEARCH_KEYS = [
-  "country", "city", "category", "subcategory", "q", "page"
+  "country", "city", "category", "subcategory", "q", "page", "sort"
 ];
 
 function searchUrlKey(query) {
@@ -46,11 +98,18 @@ function Home() {
 
   const cityRequestVersionRef = useRef(0);
   const appliedFiltersRef = useRef(null);
+  const sortingTimerRef = useRef(null);
+  const sortingBusyRef = useRef(false);
+  const selectedSortRef = useRef(DEFAULT_SEARCH_SORT);
   const internalUrlRef = useRef(null);
   const loadMoreLockRef = useRef(null);
   const initializingRef = useRef(false);
   const routeKey = searchUrlKey(router.query);
   const [isInitializing, setIsInitializing] = useState(false);
+
+  const [sort, setSort] = useState(DEFAULT_SEARCH_SORT);
+  const [sortingBusy, setSortingBusy] = useState(false);
+  const [sortLanguage, setSortLanguage] = useState("en");
 
   const [q, setQ] = useState('');
   const [country, setCountry] = useState('');
@@ -75,7 +134,36 @@ function Home() {
   const [theme, setTheme] = useState('light');
 
   useEffect(() => {
+    const updateLanguage = () => {
+      const language = String(
+        router.locale ||
+        document.documentElement.lang ||
+        "en"
+      ).toLowerCase().split("-")[0];
+
+      setSortLanguage(
+        ["en", "fr", "fa"].includes(language)
+          ? language
+          : "en"
+      );
+    };
+
+    updateLanguage();
+
+    const observer = new MutationObserver(updateLanguage);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["lang"],
+    });
+
+    return () => observer.disconnect();
+  }, [router.locale]);
+
+  useEffect(() => {
     return () => {
+      clearTimeout(sortingTimerRef.current);
+      sortingTimerRef.current = null;
+      sortingBusyRef.current = false;
       searchRequestVersionRef.current += 1;
       const active = activeListRequestRef.current;
       activeListRequestRef.current = null;
@@ -148,6 +236,9 @@ function Home() {
     ) {
       const query = {
         page: String(Math.max(1, loadedPage)),
+        sort: normalizeSearchSort(
+          nextFilters.sort ?? selectedSortRef.current
+        ),
       };
 
       if (nextFilters.country || explicitLocation) {
@@ -222,6 +313,8 @@ function Home() {
 
       internalUrlRef.current = null;
 
+      cancelPendingSorting();
+
       let cancelled = false;
       const version = ++searchRequestVersionRef.current;
 
@@ -250,7 +343,11 @@ function Home() {
           category: getUrlValue("category"),
           subcategory: getUrlValue("subcategory"),
           q: getUrlValue("q"),
+          sort: normalizeSearchSort(router.query.sort),
         };
+
+        selectedSortRef.current = initialFilters.sort;
+        setSort(initialFilters.sort);
 
         const rawPageValue = getUrlValue("page");
         const rawPage = Number(rawPageValue);
@@ -502,8 +599,13 @@ function Home() {
             initialFilters.city !== effectiveFilters.city
           );
 
+        const invalidSort =
+          Object.prototype.hasOwnProperty.call(router.query, "sort") &&
+          router.query.sort !== initialFilters.sort;
+
         if (
           invalidPage ||
+          invalidSort ||
           locationNormalized ||
           (exhausted && loadedPage < requestedPage)
         ) {
@@ -663,6 +765,9 @@ function Home() {
       filters.category || "",
       filters.subcategory || "",
       String(filters.q ?? "").trim(),
+      normalizeSearchSort(
+        filters.sort ?? selectedSortRef.current
+      ),
       page,
     ]);
   }
@@ -698,6 +803,7 @@ function Home() {
       append = false,
       requestedPage = 1,
       syncUrl = false,
+      preserveAppliedOnError = false,
     } = options;
 
     const requestVersion = searchRequestVersionRef.current;
@@ -708,6 +814,9 @@ function Home() {
       category: filterOverrides.category ?? forceCategory ?? category,
       subcategory: filterOverrides.subcategory ?? subcategory,
       q: filterOverrides.q ?? q,
+      sort: normalizeSearchSort(
+        filterOverrides.sort ?? selectedSortRef.current
+      ),
     };
 
     const query = String(resolvedFilters.q ?? "").trim();
@@ -758,6 +867,7 @@ function Home() {
       const params = {
         page: requestedPage,
         limit: 10,
+        sort: resolvedFilters.sort,
       };
 
       if (resolvedFilters.country) {
@@ -888,7 +998,7 @@ function Home() {
         );
       }
 
-      if (!append) {
+      if (!append && !preserveAppliedOnError) {
         appliedFiltersRef.current = null;
         setBusinesses([]);
         setCurrentPage(1);
@@ -910,6 +1020,7 @@ function Home() {
 
   async function handleLoadMore() {
     if (
+      sortingBusyRef.current ||
       loading ||
       loadingMore ||
       initializingRef.current ||
@@ -983,6 +1094,8 @@ function Home() {
   const handleSearch = (event) => {
     event?.preventDefault?.();
 
+    cancelPendingSorting();
+
     userInteractedRef.current = true;
     manualSearchIssuedRef.current = true;
     initializingRef.current = false;
@@ -993,6 +1106,7 @@ function Home() {
       String(q ?? "").length <= SEARCH_QUERY_MAX_LENGTH &&
       reuseActiveListRequest({
         country, city, category, subcategory, q,
+        sort: selectedSortRef.current,
       })
     ) {
       return;
@@ -1010,6 +1124,10 @@ function Home() {
   const handleClear = (event) => {
     event?.preventDefault?.();
 
+    cancelPendingSorting();
+    selectedSortRef.current = DEFAULT_SEARCH_SORT;
+    setSort(DEFAULT_SEARCH_SORT);
+
     userInteractedRef.current = true;
     manualSearchIssuedRef.current = true;
     initializingRef.current = false;
@@ -1017,6 +1135,7 @@ function Home() {
     loadMoreLockRef.current = null;
 
     const clearedFilters = {
+      sort: DEFAULT_SEARCH_SORT,
       q: "",
       country: "",
       city: "",
@@ -1046,6 +1165,100 @@ function Home() {
       syncUrl: true,
     });
   };
+
+  function cancelPendingSorting() {
+    clearTimeout(sortingTimerRef.current);
+    sortingTimerRef.current = null;
+    sortingBusyRef.current = false;
+    setSortingBusy(false);
+  }
+
+  function handleSortChange(event) {
+    const nextSort = normalizeSearchSort(event.target.value);
+    const applied = appliedFiltersRef.current;
+
+    if (
+      !applied ||
+      initializingRef.current ||
+      loadingMore ||
+      (loading && !sortingBusyRef.current) ||
+      nextSort === selectedSortRef.current
+    ) {
+      return;
+    }
+
+    clearTimeout(sortingTimerRef.current);
+    sortingTimerRef.current = null;
+
+    selectedSortRef.current = nextSort;
+    setSort(nextSort);
+
+    userInteractedRef.current = true;
+    manualSearchIssuedRef.current = true;
+
+    const version = ++searchRequestVersionRef.current;
+
+    cancelActiveListRequest();
+    loadMoreLockRef.current = null;
+    setSearchError("");
+
+    if (
+      nextSort === normalizeSearchSort(applied.sort)
+    ) {
+      sortingBusyRef.current = false;
+      setSortingBusy(false);
+      setLoading(false);
+      setLoadingMore(false);
+      return;
+    }
+
+    sortingBusyRef.current = true;
+    setSortingBusy(true);
+
+    const nextFilters = {
+      ...applied,
+      sort: nextSort,
+    };
+
+    sortingTimerRef.current = setTimeout(async () => {
+      sortingTimerRef.current = null;
+
+      if (
+        version !== searchRequestVersionRef.current ||
+        !sortingBusyRef.current
+      ) {
+        return;
+      }
+
+      try {
+        const result = await fetchList(null, nextFilters, {
+          append: false,
+          requestedPage: 1,
+          syncUrl: true,
+          preserveAppliedOnError: true,
+        });
+
+        if (
+          !result &&
+          version === searchRequestVersionRef.current
+        ) {
+          const lastAppliedSort = normalizeSearchSort(
+            appliedFiltersRef.current?.sort ?? applied.sort
+          );
+
+          selectedSortRef.current = lastAppliedSort;
+          setSort(lastAppliedSort);
+        }
+      } finally {
+        if (version === searchRequestVersionRef.current) {
+          sortingBusyRef.current = false;
+          setSortingBusy(false);
+        }
+      }
+    }, SEARCH_SORT_DEBOUNCE_MS);
+  }
+
+  const sortLabels = SEARCH_SORT_LABELS[sortLanguage];
 
   const selectedCategory = categories.find(
     (item) => item.slug === category
@@ -1239,6 +1452,35 @@ function Home() {
   
           {/* Results */}
           <section>
+            <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+              <label
+                htmlFor="search-sort"
+                className="text-sm font-medium text-[var(--text)]"
+              >
+                {sortLabels[0]}
+              </label>
+
+              <select
+                id="search-sort"
+                value={sort}
+                onChange={handleSortChange}
+                dir={sortLanguage === "fa" ? "rtl" : "ltr"}
+                disabled={
+                  isInitializing ||
+                  loadingMore ||
+                  (loading && !sortingBusy) ||
+                  !appliedFiltersRef.current
+                }
+                className="w-full min-w-0 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-3 py-2 text-sm text-[var(--text)] disabled:opacity-60 sm:w-auto"
+              >
+                {SEARCH_SORT_OPTIONS.map((value, index) => (
+                  <option key={value} value={value}>
+                    {sortLabels[index + 1]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {searchError && (
               <div
                 role="alert"
