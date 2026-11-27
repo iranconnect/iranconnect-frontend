@@ -8,7 +8,7 @@ import featuredCategories from "../../data/featuredCategories";
 
 export default function FeaturedCategories() {
   return (
-    <SectionWrapper>
+    <SectionWrapper id="categories">
       <RevealOnScroll>
         <SectionTitle
           title="Popular Categories"

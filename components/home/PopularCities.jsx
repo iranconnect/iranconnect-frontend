@@ -8,7 +8,7 @@ import popularCities from "../../data/popularCities";
 
 export default function PopularCities({ cityCounts = {} }) {
   return (
-    <SectionWrapper>
+    <SectionWrapper id="popular-cities">
       <RevealOnScroll>
         <SectionTitle
           title="Popular Cities"

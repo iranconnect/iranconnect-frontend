@@ -110,10 +110,24 @@ export default function AnalyticsPage() {
 
         <div className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text)]
           shadow-[5px_5px_15px_var(--shadow-dark),-5px_-5px_15px_var(--shadow-light)] text-center transition-all duration-300">
-          <h3 className="text-sm opacity-80 mb-2">Average Rating</h3>
+          <h3 className="text-sm opacity-80 mb-2">Average Review Rating</h3>
           <p className="text-2xl font-bold text-yellow-500">
-            {stats.avg_rating?.toFixed(2) ?? "0.00"}
-          </p>
+            {Number.isFinite(stats.avg_rating) &&
+              Number.isInteger(stats.approved_review_count) &&
+              stats.approved_review_count > 0
+                ? stats.avg_rating.toFixed(2)
+                : "—"}
+            </p>
+            <p className="mt-2 text-sm opacity-70">
+              {Number.isInteger(stats.approved_review_count) &&
+              stats.approved_review_count >= 0
+                ? `Based on ${stats.approved_review_count} approved ${
+                    stats.approved_review_count === 1
+                      ? "review"
+                      : "reviews"
+                  }`
+                : "Review count unavailable"}
+            </p>
         </div>
       </section>
 

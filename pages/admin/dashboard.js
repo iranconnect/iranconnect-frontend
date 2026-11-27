@@ -10,7 +10,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   const [totalBusinesses, setTotalBusinesses] =
     useState(0);
   
-  const [averageRating, setAverageRating] =
+  const [publicBusinesses, setPublicBusinesses] =
     useState("—");
   const [users, setUsers] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -52,7 +52,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
         {
           rows: [],
           pagination: { total },
-          summary: { averageRating }
+          summary: { publicBusinesses }
         }
       */
       if (Array.isArray(r.data)) {
@@ -61,24 +61,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
         setBusinesses(legacyRows);
         setTotalBusinesses(legacyRows.length);
   
-        const ratings = legacyRows
-          .map((business) =>
-            Number(business.avg_rating)
-          )
-          .filter(
-            (rating) => !Number.isNaN(rating)
-          );
-  
-        setAverageRating(
-          ratings.length
-            ? (
-                ratings.reduce(
-                  (sum, rating) => sum + rating,
-                  0
-                ) / ratings.length
-              ).toFixed(2)
-            : "—"
-        );
+        setPublicBusinesses("—");
   
         return;
       }
@@ -89,8 +72,12 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
         Number(r.data?.pagination?.total) || 0
       );
   
-      setAverageRating(
-        r.data?.summary?.averageRating || "—"
+      const publicCount = r.data?.summary?.publicBusinesses;
+
+      setPublicBusinesses(
+        Number.isInteger(publicCount) && publicCount >= 0
+          ? publicCount
+          : "—"
       );
     } catch (e) {
       console.error(
@@ -100,7 +87,7 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
   
       setBusinesses([]);
       setTotalBusinesses(0);
-      setAverageRating("—");
+      setPublicBusinesses("—");
     } finally {
       setLoadingBiz(false);
     }
@@ -172,12 +159,12 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
     
     return {
       totalBusinesses,
-      avgRatings: averageRating,
+      publicBusinesses: publicBusinesses,
       totalUsers,
     };
   }, [
     totalBusinesses,
-    averageRating,
+    publicBusinesses,
     totalUsers,
   ]);
 
@@ -260,9 +247,9 @@ export default function AdminDashboard({ toggleTheme, currentTheme }) {
         <StatCard title="Total Businesses" value={stats.totalBusinesses} />
 
         <StatCard
-          title="Average Ratings"
-          value={stats.avgRatings}
-          subtitle="Across all businesses"
+          title="Public Businesses"
+          value={stats.publicBusinesses}
+          subtitle="Publicly visible businesses"
         />
 
         <StatCard
