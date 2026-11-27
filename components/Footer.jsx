@@ -193,13 +193,20 @@ export default function Footer() {
   return (
     <footer
       className="site-footer"
+      style={{ paddingInline: 0 }}
       lang={lang}
       dir={lang === 'fa' ? 'rtl' : 'ltr'}
     >
-      <div className="ic-footer-inner">
+      <div className="ic-footer-inner mx-auto w-full max-w-5xl px-4 md:px-2">
         <div className="ic-footer-grid">
           <div className="ic-footer-brand">
-            <h3>IranConnect</h3>
+            <img
+              src="/logo-dark.png"
+              alt="IranConnect"
+              className="ic-footer-brand-logo"
+              loading="lazy"
+              decoding="async"
+            />
 
             <p>{t.description}</p>
 
@@ -246,28 +253,23 @@ export default function Footer() {
 
       <style jsx global>{`
         .site-footer .ic-footer-inner {
-          width: 100%;
-          max-width: 1200px;
-          margin-inline: auto;
-          padding-inline: 16px;
+          box-sizing: border-box;
         }
 
         .site-footer .ic-footer-grid {
           display: grid;
-          grid-template-columns:
-            minmax(0, 1.6fr)
-            minmax(0, 1.1fr)
-            minmax(0, 0.8fr)
-            minmax(0, 1fr);
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           align-items: start;
           gap: 32px;
         }
 
-        .site-footer .ic-footer-brand h3 {
-          color: #fff;
-          font-size: 20px;
-          font-weight: 700;
-          margin: 0 0 12px;
+        .site-footer .ic-footer-brand-logo {
+          display: block;
+          width: 180px;
+          max-width: 100%;
+          height: auto;
+          object-fit: contain;
+          margin: 0 0 16px;
         }
 
         .site-footer .ic-footer-brand p {
@@ -275,6 +277,9 @@ export default function Footer() {
           line-height: 1.75;
           color: rgba(255, 255, 255, 0.85);
           margin: 0;
+          text-align: justify;
+          text-align-last: start;
+          overflow-wrap: break-word;
         }
 
         .site-footer .ic-footer-social {
@@ -367,13 +372,21 @@ export default function Footer() {
         }
 
         @media (min-width: 640px) and (max-width: 1023px) {
+          .site-footer .ic-footer-brand-logo {
+            width: 160px;
+          }
+
           .site-footer .ic-footer-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 28px;
+            gap: 32px;
           }
         }
 
         @media (max-width: 639px) {
+          .site-footer .ic-footer-brand-logo {
+            width: 150px;
+          }
+
           .site-footer .ic-footer-grid {
             grid-template-columns: minmax(0, 1fr);
             gap: 0;
