@@ -265,11 +265,11 @@ export default function Footer() {
 
         .site-footer .ic-footer-brand-logo {
           display: block;
-          width: 180px;
+          width: 110px;
           max-width: 100%;
           height: auto;
           object-fit: contain;
-          margin: 0 0 16px;
+          margin: 0 0 12px;
         }
 
         .site-footer .ic-footer-brand p {
@@ -286,16 +286,16 @@ export default function Footer() {
           display: flex;
           align-items: center;
           flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 16px;
+          gap: 5px;
+          margin-top: 12px;
         }
 
         .site-footer .ic-footer-social a {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 40px;
-          height: 40px;
+          width: 32px;
+          height: 36px;
           color: #00bfa6;
           border-radius: 6px;
         }
@@ -342,8 +342,8 @@ export default function Footer() {
           justify-content: space-between;
           flex-wrap: wrap;
           gap: 12px 24px;
-          margin-top: 32px;
-          padding-top: 20px;
+          margin-top: 24px;
+          padding-top: 16px;
           border-top: 1px solid rgba(255,255,255,0.2);
           color: rgba(255,255,255,0.75);
           font-size: 13px;
@@ -371,9 +371,38 @@ export default function Footer() {
           border-radius: 3px;
         }
 
+        @media (min-width: 1024px) {
+          .site-footer .ic-footer-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            align-items: stretch;
+            gap: 32px;
+          }
+
+          .site-footer .ic-footer-grid > * {
+            position: relative;
+            min-width: 0;
+          }
+
+          .site-footer .ic-footer-grid > *:not(:first-child)::before {
+            content: '';
+            position: absolute;
+            inset-inline-start: -16px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: rgba(255, 255, 255, 0.16);
+            pointer-events: none;
+          }
+
+          .site-footer .ic-footer-brand-logo {
+            margin-top: -8px;
+            margin-bottom: 8px;
+          }
+        }
+
         @media (min-width: 640px) and (max-width: 1023px) {
           .site-footer .ic-footer-brand-logo {
-            width: 160px;
+            width: 120px;
           }
 
           .site-footer .ic-footer-grid {
@@ -384,7 +413,7 @@ export default function Footer() {
 
         @media (max-width: 639px) {
           .site-footer .ic-footer-brand-logo {
-            width: 150px;
+            width: 130px;
           }
 
           .site-footer .ic-footer-grid {
