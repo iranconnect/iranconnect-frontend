@@ -277,7 +277,7 @@ export default function Footer() {
           line-height: 1.75;
           color: rgba(255, 255, 255, 0.85);
           margin: 0;
-          text-align: justify;
+          text-align: start;
           text-align-last: start;
           overflow-wrap: break-word;
         }
@@ -405,7 +405,7 @@ export default function Footer() {
             align-items: flex-start;
             width: 100%;
             margin: 0;
-            padding: 0;
+            padding: 64px 0 0;
           }
 
           .site-footer .ic-footer-desktop-group h4 {
@@ -416,12 +416,12 @@ export default function Footer() {
             width: 100%;
             font-size: 14px;
             line-height: 1.65;
-            text-align: justify;
+            text-align: start;
             text-align-last: start;
-            text-wrap: balance;
+            text-wrap: wrap;
             word-spacing: normal;
             letter-spacing: normal;
-            hyphens: auto;
+            hyphens: none;
             overflow-wrap: normal;
           }
 
