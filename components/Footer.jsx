@@ -15,7 +15,7 @@ import {
 const FOOTER_TEXT = {
   en: {
     description:
-      'Iranian business listings',
+      'IranConnect is an online directory of Iranian businesses and professional services, providing information across various categories and locations to help users discover businesses within Iranian communities in Europe and beyond.',
     explore: 'Explore',
     search: 'Explore Businesses',
     categories: 'Browse Categories',
