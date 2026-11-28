@@ -374,7 +374,7 @@ export default function Footer() {
         @media (min-width: 1024px) {
           .site-footer .ic-footer-grid {
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            align-items: stretch;
+            align-items: start;
             gap: 32px;
           }
 
@@ -399,6 +399,10 @@ export default function Footer() {
           }
 
           .site-footer .ic-footer-desktop-group {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
             width: 100%;
             margin: 0;
             padding: 0;
@@ -410,15 +414,15 @@ export default function Footer() {
 
           .site-footer .ic-footer-brand p {
             width: 100%;
-            font-size: 13px;
-            line-height: 1.75;
+            font-size: 14px;
+            line-height: 1.65;
             text-align: justify;
             text-align-last: start;
-            text-justify: inter-word;
+            text-wrap: balance;
             word-spacing: normal;
             letter-spacing: normal;
             hyphens: auto;
-            text-wrap: pretty;
+            overflow-wrap: normal;
           }
 
           .site-footer .ic-footer-grid > *:not(:first-child)::before {
