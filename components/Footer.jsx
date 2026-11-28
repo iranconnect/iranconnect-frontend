@@ -15,7 +15,7 @@ import {
 const FOOTER_TEXT = {
   en: {
     description:
-      'Helping Iranians abroad find professionals and connect with their community.',
+      'Iranian business listings',
     explore: 'Explore',
     search: 'Explore Businesses',
     categories: 'Browse Categories',
@@ -373,7 +373,9 @@ export default function Footer() {
 
         @media (min-width: 1024px) {
           .site-footer .ic-footer-grid {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns:
+              minmax(0, 2fr)
+              repeat(3, minmax(0, 1fr));
             align-items: start;
             gap: 32px;
           }
@@ -385,10 +387,13 @@ export default function Footer() {
           }
 
           .site-footer .ic-footer-brand {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            justify-content: flex-start;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            grid-auto-rows: min-content;
+            align-content: start;
+            align-items: start;
+            justify-items: start;
+            min-width: 0;
           }
 
           .site-footer .ic-footer-group {
@@ -399,13 +404,42 @@ export default function Footer() {
           }
 
           .site-footer .ic-footer-desktop-group {
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: flex-start;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            grid-auto-rows: min-content;
+            align-content: start;
+            align-items: start;
+            justify-items: start;
             width: 100%;
             margin: 0;
             padding: 64px 0 0;
+          }
+
+
+          .site-footer .ic-footer-brand > * {
+            min-width: 0;
+            max-width: 100%;
+          }
+
+          .site-footer .ic-footer-social {
+            display: grid;
+            grid-template-columns: repeat(5, 32px);
+            gap: 5px;
+            align-items: center;
+            justify-content: start;
+          }
+
+          .site-footer .ic-footer-desktop-group
+          > :is(ul, ol, div, nav) {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            grid-auto-rows: min-content;
+            min-width: 0;
+          }
+
+          .site-footer .ic-footer-desktop-group a {
+            max-width: 100%;
+            overflow-wrap: break-word;
           }
 
           .site-footer .ic-footer-desktop-group h4 {
