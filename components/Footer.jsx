@@ -381,6 +381,44 @@ export default function Footer() {
           .site-footer .ic-footer-grid > * {
             position: relative;
             min-width: 0;
+            align-self: stretch;
+          }
+
+          .site-footer .ic-footer-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-start;
+          }
+
+          .site-footer .ic-footer-group {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+          }
+
+          .site-footer .ic-footer-desktop-group {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+          }
+
+          .site-footer .ic-footer-desktop-group h4 {
+            margin-top: 0;
+          }
+
+          .site-footer .ic-footer-brand p {
+            width: 100%;
+            font-size: 13px;
+            line-height: 1.75;
+            text-align: justify;
+            text-align-last: start;
+            text-justify: inter-word;
+            word-spacing: normal;
+            letter-spacing: normal;
+            hyphens: auto;
+            text-wrap: pretty;
           }
 
           .site-footer .ic-footer-grid > *:not(:first-child)::before {
